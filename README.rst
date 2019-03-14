@@ -1,0 +1,49 @@
+=====
+py7zr
+=====
+
+Pure python 7zr implementation
+
+Usage
+=====
+
+You can run command script py7zr like as follows;
+
+.. code-block::
+
+    $ py7zr l test.7z
+
+
+py7zr is a library which can use in your pyhton application.
+Here is a code snippet how to decompress some file in your applicaiton.
+
+.. code-block::
+
+    import py7zr
+
+    def decompress(file):
+        archive = py7zr.Archive(file)
+        archive.extract(dest="/tmp")
+
+
+License
+=======
+
+Copyright (C) 2019 Hiroshi Miura
+Copyright (c) 2004-2015 by Joachim Bauch
+7-Zip Copyright (C) 1999-2010 Igor Pavlov
+LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA

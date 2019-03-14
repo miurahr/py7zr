@@ -1,4 +1,10 @@
+*.pyc
 .venv
 venv
 build
 dist
+*.egg-info
+.idea
+__pycache__
+*.egg-info
+.tox
