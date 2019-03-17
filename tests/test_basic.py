@@ -3,7 +3,7 @@ from io import StringIO
 
 
 def test_list_1():
-    archive = py7zr.Archive(open('tests/test.7z', 'rb'))
+    archive = py7zr.Archive(open('tests/archive/test_1.7z', 'rb'))
     output = StringIO()
     archive.list(file=output)
     contents = output.getvalue()
@@ -15,13 +15,8 @@ def test_list_1():
     assert expected == contents
 
 def test_extract_1():
-    archive = py7zr.Archive(open('tests/test.7z', 'rb'))
+    archive = py7zr.Archive(open('tests/archive/test_1.7z', 'rb'))
     archive.extract_all(dest='/tmp/py7zr-test')
-    expected = """[flake8]
-max-line-length = 125
-
-[bdist_wheel]
-universal=1
-"""
-    f = open("/tmp/py7zr-test/setup.cfg", "r")
-    assert expected == f.read()
+    with open("tests/origin/test_1/setup.cfg") as expected:
+        with open("/tmp/py7zr-test/setup.cfg", "r") as f:
+            assert expected.read() == f.read()
