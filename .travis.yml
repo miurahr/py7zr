@@ -1,0 +1,19 @@
+language: python
+matrix:
+  include:
+    - python: 3.5
+      env: PYTHON_TAG=py35
+    - python: 3.6
+      env: PYTHON_TAG=py3
+    - python: pypy3
+      env: PYTHON_TAG=pypy3
+
+install:
+  - pip install pytest
+  - pip install tox-travis
+
+script: tox
+
+after_success:
+  - python setup.py bdist_wheel --python-tag=${PYTHON_TAG}
+  - coveralls
