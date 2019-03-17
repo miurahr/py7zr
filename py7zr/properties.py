@@ -22,7 +22,7 @@
 #
 
 from binascii import unhexlify
-from enum import Enum
+from enum import Enum, IntEnum
 
 class ByteEnum(bytes, Enum):
     pass
@@ -66,7 +66,7 @@ class CompressionMethod(ByteEnum):
     P7Z_AES256_SHA256 = unhexlify('06f10701')  # '\x06\xf1\x07\x01'
     LZMA2 = unhexlify('21')  # '\x21'
 
-class FileAttribute(Enum):
+class FileAttribute(IntEnum):
     DIRECTORY = 0x10
     READONLY = 0x01
     HIDDEN = 0x02

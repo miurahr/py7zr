@@ -20,7 +20,7 @@
 import argparse
 import os
 
-from .py7zrlib import Archive
+from .archive7z import Archive
 
 __all__ = ['Archive']
 
@@ -29,6 +29,7 @@ def main():
     parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
                                      formatter_class=argparse.RawTextHelpFormatter, add_help=True)
     parser.add_argument('subcommand', choices=['l', 'x'], help="command l list, x extract")
+    parser.add_argument('-o', nargs='?', help="output directory")
     parser.add_argument("file", help="7z archive file")
 
     args = parser.parse_args()
@@ -42,5 +43,8 @@ def main():
 
     if com == 'x':
         f = Archive(open(target, 'rb'))
-        f.extract_all()
+        if args.o:
+            f.extract_all(dest=args.o)
+        else:
+            f.extract_all()
         exit(0)
