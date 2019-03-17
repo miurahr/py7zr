@@ -118,8 +118,8 @@ class ArchiveProperties(Base):
 
     def __init__(self, file):
         self.propertydata = []
-        id = file.read(1)
-        if id == Property.ARCHIVE_PROPERTIES:
+        pid = file.read(1)
+        if pid == Property.ARCHIVE_PROPERTIES:
             while True:
                 type = ord(file.read(1))
                 if type == 0x0:
@@ -139,17 +139,17 @@ class PackInfo(Base):
     def __init__(self, file):
         self.packpos = self._read64Bit(file)
         self.numstreams = self._read64Bit(file)
-        id = file.read(1)
-        if id == Property.SIZE:
+        pid = file.read(1)
+        if pid == Property.SIZE:
             self.packsizes = [self._read64Bit(file) for x in range(self.numstreams)]
-            id = file.read(1)
+            pid = file.read(1)
             
-            if id == Property.CRC:
+            if pid == Property.CRC:
                 self.crcs = [self._read64Bit(file) for x in range(self.numstreams)]
-                id = file.read(1)
+                pid = file.read(1)
             
-        if id != Property.END:
-            raise FormatError('end id expected but %s found' % repr(id))
+        if pid != Property.END:
+            raise FormatError('end id expected but %s found' % repr(pid))
 
 
 class Folder(Base):
@@ -245,9 +245,9 @@ class UnpackInfo(Base):
     """ combines multiple folders """
 
     def __init__(self, file):
-        id = file.read(1)
-        if id != Property.FOLDER:
-            raise FormatError('folder id expected but %s found' % repr(id))
+        pid = file.read(1)
+        if pid != Property.FOLDER:
+            raise FormatError('folder id expected but %s found' % repr(pid))
         self.numfolders = self._read64Bit(file)
         self.folders = []
         external = file.read(1)
@@ -258,24 +258,24 @@ class UnpackInfo(Base):
         else:
             raise FormatError('0x00 or 0x01 expected but %s found' % repr(external))
         
-        id = file.read(1)
-        if id != Property.CODERS_UNPACK_SIZE:
-            raise FormatError('coders unpack size id expected but %s found' % repr(id))
+        pid = file.read(1)
+        if pid != Property.CODERS_UNPACK_SIZE:
+            raise FormatError('coders unpack size id expected but %s found' % repr(pid))
         
         for folder in self.folders:
             folder.unpacksizes = [self._read64Bit(file) for x in range(folder.totalout)]
             
-        id = file.read(1)
-        if id == Property.CRC:
+        pid = file.read(1)
+        if pid == Property.CRC:
             digests = UnpackDigests(file, self.numfolders)
             for idx, folder in enumerate(self.folders):
                 folder.digestdefined = digests.defined[idx]
                 folder.crc = digests.crcs[idx]
                 
-            id = file.read(1)
+            pid = file.read(1)
         
-        if id != Property.END:
-            raise FormatError('end id expected but %s found' % repr(id))
+        if pid != Property.END:
+            raise FormatError('end id expected but %s found' % repr(pid))
 
 
 class SubstreamsInfo(Base):
@@ -284,14 +284,14 @@ class SubstreamsInfo(Base):
     def __init__(self, file, numfolders, folders):
         self.digests = []
         self.digestsdefined = []
-        id = file.read(1)
-        if id == Property.NUM_UNPACK_STREAM:
+        pid = file.read(1)
+        if pid == Property.NUM_UNPACK_STREAM:
             self.numunpackstreams = [self._read64Bit(file) for x in range(numfolders)]
-            id = file.read(1)
+            pid = file.read(1)
         else:
             self.numunpackstreams = [1] * numfolders
         
-        if id == Property.SIZE:
+        if pid == Property.SIZE:
             self.unpacksizes = []
             for i in range(len(self.numunpackstreams)):
                 sum = 0
@@ -301,7 +301,7 @@ class SubstreamsInfo(Base):
                     sum += size
                 self.unpacksizes.append(folders[i].getUnpackSize() - sum)
                 
-            id = file.read(1)
+            pid = file.read(1)
 
         numdigests = 0
         numdigeststotal = 0
@@ -311,7 +311,7 @@ class SubstreamsInfo(Base):
                 numdigests += numsubstreams
             numdigeststotal += numsubstreams
         
-        if id == Property.CRC:
+        if pid == Property.CRC:
             digests = Digests(file, numdigests)
             didx = 0
             for i in range(numfolders):
@@ -326,10 +326,10 @@ class SubstreamsInfo(Base):
                         self.digests.append(digests.crcs[didx])
                         didx += 1
                             
-            id = file.read(1)
+            pid = file.read(1)
             
-        if id != Property.END:
-            raise FormatError('end id expected but %r found' % id)
+        if pid != Property.END:
+            raise FormatError('end id expected but %r found' % pid)
 
         if not self.digestsdefined:
             self.digestsdefined = [False] * numdigeststotal
@@ -340,21 +340,21 @@ class StreamsInfo(Base):
     """ information about compressed streams """
     
     def __init__(self, file):
-        id = file.read(1)
-        if id == Property.PACK_INFO:
+        pid = file.read(1)
+        if pid == Property.PACK_INFO:
             self.packinfo = PackInfo(file)
-            id = file.read(1)
+            pid = file.read(1)
         
-        if id == Property.UNPACK_INFO:
+        if pid == Property.UNPACK_INFO:
             self.unpackinfo = UnpackInfo(file)
-            id = file.read(1)
+            pid = file.read(1)
             
-        if id == Property.SUBSTREAMS_INFO:
+        if pid == Property.SUBSTREAMS_INFO:
             self.substreamsinfo = SubstreamsInfo(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
-            id = file.read(1)
+            pid = file.read(1)
         
-        if id != Property.END:
-            raise FormatError('end id expected but %s found' % repr(id))
+        if pid != Property.END:
+            raise FormatError('end id expected but %s found' % repr(pid))
 
 
 class FilesInfo(Base):
@@ -453,25 +453,25 @@ class Header(Base):
     """ the archive header """
     
     def __init__(self, file):
-        id = file.read(1)
-        if id == Property.ARCHIVE_PROPERTIES:
+        pid = file.read(1)
+        if pid == Property.ARCHIVE_PROPERTIES:
             self.properties = ArchiveProperties(file)
-            id = file.read(1)
+            pid = file.read(1)
         
-        if id == Property.ADDITIONAL_STREAMS_INFO:
+        if pid == Property.ADDITIONAL_STREAMS_INFO:
             self.additional_streams = StreamsInfo(file)
-            id = file.read(1)
+            pid = file.read(1)
         
-        if id == Property.MAIN_STREAMS_INFO:
+        if pid == Property.MAIN_STREAMS_INFO:
             self.main_streams = StreamsInfo(file)
-            id = file.read(1)
+            pid = file.read(1)
             
-        if id == Property.FILES_INFO:
+        if pid == Property.FILES_INFO:
             self.files = FilesInfo(file)
-            id = file.read(1)
+            pid = file.read(1)
             
-        if id != Property.END:
-            raise FormatError('end id expected but %s found' % (repr(id)))
+        if pid != Property.END:
+            raise FormatError('end id expected but %s found' % (repr(pid)))
 
 
 class ArchiveFile(Base):

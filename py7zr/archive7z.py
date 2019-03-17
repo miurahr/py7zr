@@ -66,11 +66,11 @@ class Archive(Base):
             raise FormatError('invalid header data')
 
         while True:
-            id = buffer.read(1)
-            if not id or id == Property.HEADER:
+            pid = buffer.read(1)
+            if not pid or pid == Property.HEADER:
                 break
 
-            if id != Property.ENCODED_HEADER:
+            if pid != Property.ENCODED_HEADER:
                 raise TypeError('Unknown field: %r' % (id))
 
             streams = StreamsInfo(buffer)
@@ -104,7 +104,7 @@ class Archive(Base):
 
         self.files = []
         self.files_map = {}
-        if not id:
+        if not pid:
             # empty archive
             self.solid = False
             self.numfiles = 0
