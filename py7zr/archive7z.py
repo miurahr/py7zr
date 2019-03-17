@@ -215,7 +215,10 @@ class Archive(Base):
 
     def extract_all(self, dest=None):
         for name in self.filenames:
-            outfilename = os.path.join(dest, name)
+            if dest:
+                outfilename = os.path.join(dest, name)
+            else:
+                outfilename = name
             outdir = os.path.dirname(outfilename)
             if not os.path.exists(outdir):
                 os.makedirs(outdir)
