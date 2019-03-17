@@ -2,7 +2,17 @@
 py7zr
 =====
 
+.. image:: https://travis-ci.org/miurahr/py7zr.svg?branch=master
+  :target: https://travis-ci.org/miurahr/py7zr
+
 Pure python 7zr implementation
+
+
+Dependency
+==========
+
+It uses a standard lzma module that is supported in Python3.3 and later.
+
 
 Usage
 =====
