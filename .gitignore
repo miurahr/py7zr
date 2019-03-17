@@ -3,8 +3,10 @@
 venv
 build
 dist
+tmp
 *.egg-info
 .idea
 __pycache__
+.coverage
 *.egg-info
 .tox
