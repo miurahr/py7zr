@@ -1,6 +1,6 @@
 #!/usr/bin/python -u
 #
-# p7zip library
+# p7zr library
 #
 # Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
@@ -21,7 +21,6 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id$
 #
 """Read 7zip format archives."""
 
@@ -31,11 +30,13 @@ from datetime import datetime
 from struct import pack, unpack
 from zlib import crc32
 
+import logging
 import lzma
 import os
 import sys
+import traceback
 
-from io import BytesIO
+from io import BytesIO, StringIO
 from functools import reduce
 from datetime import timedelta, tzinfo
 
@@ -68,45 +69,45 @@ else:
     assert array('I').itemsize == 4
     ARRAY_TYPE_UINT32 = 'I'
 
-READ_BLOCKSIZE                   = 16384
+READ_BLOCKSIZE = 16384
 
-MAGIC_7Z                         = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
+MAGIC_7Z = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
 
-PROPERTY_END                     = unhexlify('00')  # '\x00'
-PROPERTY_HEADER                  = unhexlify('01')  # '\x01'
-PROPERTY_ARCHIVE_PROPERTIES      = unhexlify('02')  # '\x02'
+PROPERTY_END = unhexlify('00')  # '\x00'
+PROPERTY_HEADER = unhexlify('01')  # '\x01'
+PROPERTY_ARCHIVE_PROPERTIES = unhexlify('02')  # '\x02'
 PROPERTY_ADDITIONAL_STREAMS_INFO = unhexlify('03')  # '\x03'
-PROPERTY_MAIN_STREAMS_INFO       = unhexlify('04')  # '\x04'
-PROPERTY_FILES_INFO              = unhexlify('05')  # '\x05'
-PROPERTY_PACK_INFO               = unhexlify('06')  # '\x06'
-PROPERTY_UNPACK_INFO             = unhexlify('07')  # '\x07'
-PROPERTY_SUBSTREAMS_INFO         = unhexlify('08')  # '\x08'
-PROPERTY_SIZE                    = unhexlify('09')  # '\x09'
-PROPERTY_CRC                     = unhexlify('0a')  # '\x0a'
-PROPERTY_FOLDER                  = unhexlify('0b')  # '\x0b'
-PROPERTY_CODERS_UNPACK_SIZE      = unhexlify('0c')  # '\x0c'
-PROPERTY_NUM_UNPACK_STREAM       = unhexlify('0d')  # '\x0d'
-PROPERTY_EMPTY_STREAM            = unhexlify('0e')  # '\x0e'
-PROPERTY_EMPTY_FILE              = unhexlify('0f')  # '\x0f'
-PROPERTY_ANTI                    = unhexlify('10')  # '\x10'
-PROPERTY_NAME                    = unhexlify('11')  # '\x11'
-PROPERTY_CREATION_TIME           = unhexlify('12')  # '\x12'
-PROPERTY_LAST_ACCESS_TIME        = unhexlify('13')  # '\x13'
-PROPERTY_LAST_WRITE_TIME         = unhexlify('14')  # '\x14'
-PROPERTY_ATTRIBUTES              = unhexlify('15')  # '\x15'
-PROPERTY_COMMENT                 = unhexlify('16')  # '\x16'
-PROPERTY_ENCODED_HEADER          = unhexlify('17')  # '\x17'
-PROPERTY_START_POS               = unhexlify('18')  # '\x18'
-PROPERTY_DUMMY                   = unhexlify('19')  # '\x19'
+PROPERTY_MAIN_STREAMS_INFO = unhexlify('04')  # '\x04'
+PROPERTY_FILES_INFO = unhexlify('05')  # '\x05'
+PROPERTY_PACK_INFO = unhexlify('06')  # '\x06'
+PROPERTY_UNPACK_INFO = unhexlify('07')  # '\x07'
+PROPERTY_SUBSTREAMS_INFO = unhexlify('08')  # '\x08'
+PROPERTY_SIZE = unhexlify('09')  # '\x09'
+PROPERTY_CRC = unhexlify('0a')  # '\x0a'
+PROPERTY_FOLDER = unhexlify('0b')  # '\x0b'
+PROPERTY_CODERS_UNPACK_SIZE = unhexlify('0c')  # '\x0c'
+PROPERTY_NUM_UNPACK_STREAM = unhexlify('0d')  # '\x0d'
+PROPERTY_EMPTY_STREAM = unhexlify('0e')  # '\x0e'
+PROPERTY_EMPTY_FILE = unhexlify('0f')  # '\x0f'
+PROPERTY_ANTI = unhexlify('10')  # '\x10'
+PROPERTY_NAME = unhexlify('11')  # '\x11'
+PROPERTY_CREATION_TIME = unhexlify('12')  # '\x12'
+PROPERTY_LAST_ACCESS_TIME = unhexlify('13')  # '\x13'
+PROPERTY_LAST_WRITE_TIME = unhexlify('14')  # '\x14'
+PROPERTY_ATTRIBUTES = unhexlify('15')  # '\x15'
+PROPERTY_COMMENT = unhexlify('16')  # '\x16'
+PROPERTY_ENCODED_HEADER = unhexlify('17')  # '\x17'
+PROPERTY_START_POS = unhexlify('18')  # '\x18'
+PROPERTY_DUMMY = unhexlify('19')  # '\x19'
 
-COMPRESSION_METHOD_COPY          = unhexlify('00')  # '\x00'
-COMPRESSION_METHOD_LZMA          = unhexlify('03')  # '\x03'
-COMPRESSION_METHOD_CRYPTO        = unhexlify('06')  # '\x06'
-COMPRESSION_METHOD_MISC          = unhexlify('04')  # '\x04'
-COMPRESSION_METHOD_MISC_ZIP      = unhexlify('0401')  # '\x04\x01'
-COMPRESSION_METHOD_MISC_BZIP     = unhexlify('0402')  # '\x04\x02'
+COMPRESSION_METHOD_COPY = unhexlify('00')  # '\x00'
+COMPRESSION_METHOD_LZMA = unhexlify('03')  # '\x03'
+COMPRESSION_METHOD_CRYPTO = unhexlify('06')  # '\x06'
+COMPRESSION_METHOD_MISC = unhexlify('04')  # '\x04'
+COMPRESSION_METHOD_MISC_ZIP = unhexlify('0401')  # '\x04\x01'
+COMPRESSION_METHOD_MISC_BZIP = unhexlify('0402')  # '\x04\x02'
 COMPRESSION_METHOD_7Z_AES256_SHA256 = unhexlify('06f10701')  # '\x06\xf1\x07\x01'
-COMPRESSION_METHOD_LZMA2         = unhexlify('21')  # '\x21'
+COMPRESSION_METHOD_LZMA2 = unhexlify('21')  # '\x21'
 
 FILE_ATTRIBUTE_DIRECTORY = 0x10
 FILE_ATTRIBUTE_READONLY = 0x01
@@ -116,7 +117,7 @@ FILE_ATTRIBUTE_ARCHIVE = 0x20
 
 # number of seconds between 1601/01/01 and 1970/01/01 (UTC)
 # used to adjust 7z FILETIME to Python timestamp
-TIMESTAMP_ADJUST                 = -11644473600
+TIMESTAMP_ADJUST = -11644473600
 
 
 def toTimestamp(filetime):
@@ -461,7 +462,7 @@ class FilesInfo(Base):
         defined = self._readBoolean(file, len(files), checkall=1)
         
         # NOTE: the "external" flag is currently ignored, should be 0x00
-        external = file.read(1)
+        self.external = file.read(1)
         for i in range(len(files)):
             if defined[i]:
                 files[i][name] = ArchiveTimestamp(self._readReal64Bit(file)[0])
@@ -496,15 +497,22 @@ class FilesInfo(Base):
                         numemptystreams += 1
                 emptyfiles = [False] * numemptystreams
                 antifiles = [False] * numemptystreams
+                # FIXME: evaluate emptyfiles and antifiles
             elif typ == PROPERTY_EMPTY_FILE:
                 emptyfiles = self._readBoolean(buffer, numemptystreams)
+                # FIXME: evaluate emptyfiles and antifiles
             elif typ == PROPERTY_ANTI:
                 antifiles = self._readBoolean(buffer, numemptystreams)
+                # FIXME: evaluate emptyfiles and antifiles
             elif typ == PROPERTY_NAME:
                 external = buffer.read(1)
                 if external != unhexlify('00'):
                     self.dataindex = self._read64Bit(buffer)
-                    # XXX: evaluate external
+                    # FIXME: evaluate external
+                    print("Ignore external: %s" % self.external)
+                    exc_buffer = StringIO()
+                    traceback.print_exc(file=exc_buffer)
+                    logging.error('Ignore external:\n%s', exc_buffer.getvalue())
                     raise NotImplementedError
                     
                 for f in self.files:
@@ -526,7 +534,11 @@ class FilesInfo(Base):
                 external = buffer.read(1)
                 if external != unhexlify('00'):
                     self.dataindex = self._read64Bit(buffer)
-                    # XXX: evaluate external
+                    # FIXME: evaluate external
+                    print("Ignore external: %s" % self.external)
+                    exc_buffer = StringIO()
+                    traceback.print_exc(file=exc_buffer)
+                    logging.error('Ignore external:\n%s', exc_buffer.getvalue())
                     raise NotImplementedError
 
                 for idx, f in enumerate(self.files):
