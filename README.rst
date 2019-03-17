@@ -29,10 +29,10 @@ Here is a code snippet how to decompress some file in your applicaiton.
 License
 =======
 
-Copyright (C) 2019 Hiroshi Miura
-Copyright (c) 2004-2015 by Joachim Bauch
-7-Zip Copyright (C) 1999-2010 Igor Pavlov
-LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
+* Copyright (C) 2019 Hiroshi Miura
+* Copyright (c) 2004-2015 by Joachim Bauch
+* 7-Zip Copyright (C) 1999-2010 Igor Pavlov
+* LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
