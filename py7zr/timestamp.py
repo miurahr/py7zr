@@ -1,0 +1,67 @@
+#
+# p7zr library
+#
+# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
+# 7-Zip Copyright (C) 1999-2010 Igor Pavlov
+# LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+from datetime import timedelta, tzinfo
+import datetime
+
+ZERO = timedelta(0)
+
+# number of seconds between 1601/01/01 and 1970/01/01 (UTC)
+# used to adjust 7z FILETIME to Python timestamp
+TIMESTAMP_ADJUST = -11644473600
+
+
+class UTC(datetime.tzinfo):
+    """UTC"""
+
+    def utcoffset(self, dt):
+        return ZERO
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return ZERO
+
+    def _call__(self):
+        return self
+
+
+UTC = UTC()
+
+
+class ArchiveTimestamp(int):
+    """Windows FILETIME timestamp."""
+
+
+    def __repr__(self):
+        return '%s(%d)' % (type(self).__name__, self)
+
+    def totimestamp(self):
+        """Convert 7z FILETIME to Python timestamp."""
+        # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+        return (self / 10000000.0) + TIMESTAMP_ADJUST
+
+    def as_datetime(self):
+        """Convert FILETIME to Python datetime object."""
+        return datetime.fromtimestamp(self.totimestamp(), UTC)
