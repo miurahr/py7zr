@@ -20,9 +20,9 @@
 import argparse
 import os
 
-from .py7zrlib import Archive7z
+from .py7zrlib import Archive
 
-__all__ = ['Archive7z']
+__all__ = ['Archive']
 
 
 def main():
@@ -36,12 +36,12 @@ def main():
     target = args.file
 
     if com == 'l':
-        f = Archive7z(open(target, 'rb'))
+        f = Archive(open(target, 'rb'))
         f.list()
         exit(0)
 
     if com == 'x':
-        f = Archive7z(open(target, 'rb'))
+        f = Archive(open(target, 'rb'))
         for name in f.getnames():
             outfilename = name
             outdir = os.path.dirname(outfilename)

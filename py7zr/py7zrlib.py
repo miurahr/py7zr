@@ -715,7 +715,7 @@ class ArchiveFile(Base):
         return super(ArchiveFile, self).checkcrc(self.digest, data)
         
 
-class Archive7z(Base):
+class Archive(Base):
     """ the archive itself """
     
     def __init__(self, file):
