@@ -23,7 +23,7 @@ Here is a code snippet how to decompress some file in your applicaiton.
 
     def decompress(file):
         archive = py7zr.Archive(file)
-        archive.extract(dest="/tmp")
+        archive.extract_all(dest="/tmp")
 
 
 License

@@ -901,3 +901,17 @@ class Archive(Base):
         for f in self.files:
             extra = (f.compressed and '%10d ' % (f.compressed)) or ' '
             file.write('%10d%s%.8x %s\n' % (f.size, extra, f.digest, f.filename))
+
+    def extract_all(self, dest=None):
+        for name in self.filenames:
+            if dest:
+                outfilename = os.path.join(dest, name)
+            else:
+                outfilename = name
+            outdir = os.path.dirname(outfilename)
+            if not os.path.exists(outdir):
+                print("mkdir path %s" % outdir)
+                os.makedirs(outdir)
+            outfile = open(outfilename, 'wb')
+            outfile.write(self.getmember(name).read())
+            outfile.close()

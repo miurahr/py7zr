@@ -42,12 +42,5 @@ def main():
 
     if com == 'x':
         f = Archive(open(target, 'rb'))
-        for name in f.getnames():
-            outfilename = name
-            outdir = os.path.dirname(outfilename)
-            if not os.path.exists(outdir):
-                os.makedirs(outdir)
-            outfile = open(outfilename, 'wb')
-            outfile.write(f.getmember(name).read())
-            outfile.close()
+        f.extract_all()
         exit(0)
