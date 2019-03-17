@@ -9,11 +9,10 @@ matrix:
       env: PYTHON_TAG=pypy3
 
 install:
-  - pip install pytest
-  - pip install tox-travis
+  - pip install tox-travis coveralls
 
 script: tox
 
 after_success:
-  - python setup.py bdist_wheel --python-tag=${PYTHON_TAG}
+  - python setup.py sdist bdist_wheel --python-tag=${PYTHON_TAG}
   - coveralls
