@@ -1,3 +1,4 @@
+#!/usr/bin/python -u
 #
 # p7zr library
 #
@@ -20,47 +21,32 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+#
 
-from datetime import timedelta
-import datetime
-
-ZERO = timedelta(0)
-
-# number of seconds between 1601/01/01 and 1970/01/01 (UTC)
-# used to adjust 7z FILETIME to Python timestamp
-TIMESTAMP_ADJUST = -11644473600
+from zlib import crc32
+import array
+import sys
 
 
-class UTC(datetime.tzinfo):
-    """UTC"""
+NEED_BYTESWAP = sys.byteorder != 'little'
 
-    def utcoffset(self, dt):
-        return ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return ZERO
-
-    def _call__(self):
-        return self
+if array('L').itemsize == 4:
+    ARRAY_TYPE_UINT32 = 'L'
+else:
+    assert array('I').itemsize == 4
+    ARRAY_TYPE_UINT32 = 'I'
 
 
-UTC = UTC()
+def calculate_crc32(data, value=None, blocksize=1024 * 1024):
+    """Calculate CRC32 of strings with arbitrary lengths."""
+    length = len(data)
+    pos = blocksize
+    if value:
+        value = crc32(data[:pos], value)
+    else:
+        value = crc32(data[:pos])
+    while pos < length:
+        value = crc32(data[pos:pos + blocksize], value)
+        pos += blocksize
 
-
-class ArchiveTimestamp(int):
-    """Windows FILETIME timestamp."""
-
-    def __repr__(self):
-        return '%s(%d)' % (type(self).__name__, self)
-
-    def totimestamp(self):
-        """Convert 7z FILETIME to Python timestamp."""
-        # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
-        return (self / 10000000.0) + TIMESTAMP_ADJUST
-
-    def as_datetime(self):
-        """Convert FILETIME to Python datetime object."""
-        return datetime.fromtimestamp(self.totimestamp(), UTC)
+    return value & 0xffffffff

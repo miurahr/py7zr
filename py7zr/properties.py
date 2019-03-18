@@ -24,8 +24,10 @@
 from binascii import unhexlify
 from enum import Enum, IntEnum
 
+
 class ByteEnum(bytes, Enum):
     pass
+
 
 class Property(ByteEnum):
     END = unhexlify('00')  # '\x00'
@@ -65,6 +67,7 @@ class CompressionMethod(ByteEnum):
     MISC_BZIP = unhexlify('0402')  # '\x04\x02'
     P7Z_AES256_SHA256 = unhexlify('06f10701')  # '\x06\xf1\x07\x01'
     LZMA2 = unhexlify('21')  # '\x21'
+
 
 class FileAttribute(IntEnum):
     DIRECTORY = 0x10

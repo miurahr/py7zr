@@ -30,12 +30,12 @@ from binascii import unhexlify
 from io import BytesIO
 from struct import unpack
 
-from py7zr.py7zrlib import Base, StreamsInfo, Header, ArchiveFile, calculate_crc32
+from py7zr.py7zrlib import Base, StreamsInfo, Header, ArchiveFile
 from py7zr.exceptions import FormatError, UnsupportedCompressionMethodError
 from py7zr.properties import Property, FileAttribute
+from py7zr.helper import calculate_crc32
 
 MAGIC_7Z = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
-
 
 
 class Archive(Base):
