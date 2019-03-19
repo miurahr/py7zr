@@ -20,3 +20,10 @@ def test_extract_1():
     with open("tests/origin/test_1/setup.cfg") as expected:
         with open("/tmp/py7zr-test/setup.cfg", "r") as f:
             assert expected.read() == f.read()
+
+def test_extract_2():
+    archive = py7zr.Archive(open('tests/archive/test_2.7z', 'rb'))
+    archive.extract_all(dest='/tmp/py7zr-test')
+    with open("tests/origin/test_2/qt.qt5.597.gcc_64/installscript.qs") as expected:
+        with open("/tmp/py7zr-test/qt.qt5.597.gcc_64/installscript.qs", "r") as f:
+            assert expected.read() == f.read()
