@@ -43,6 +43,10 @@ def test_archive():
         archive = py7zr.Archive(open('tests/archive/%s' % f, 'rb'))
         check_archive(archive)
 
+def test_copy():
+    # test loading of copy compressed files
+    check_archive(py7zr.Archive(open('tests/archive/copy.7z','rb')))
+
 
 def test_empty():
     # decompress empty archive
