@@ -43,6 +43,7 @@ def test_archive():
         archive = py7zr.Archive(open('tests/archive/%s' % f, 'rb'))
         check_archive(archive)
 
+
 def test_empty():
     # decompress empty archive
     archive = py7zr.Archive(open('tests/archive/empty.7z', 'rb'))
@@ -77,4 +78,6 @@ def test_github_14():
     assert len(data) == cf.uncompressed
     assert data == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
-
+def test_github_37():
+    archive = py7zr.Archive(open('tests/archive/github_37_dummy.7z', 'rb'))
+    check_archive(archive)
