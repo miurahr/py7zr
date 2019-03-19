@@ -21,8 +21,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-from datetime import timedelta
-import datetime
+from datetime import timedelta, datetime, tzinfo
 
 ZERO = timedelta(0)
 
@@ -31,7 +30,7 @@ ZERO = timedelta(0)
 TIMESTAMP_ADJUST = -11644473600
 
 
-class UTC(datetime.tzinfo):
+class UTC(tzinfo):
     """UTC"""
 
     def utcoffset(self, dt):
