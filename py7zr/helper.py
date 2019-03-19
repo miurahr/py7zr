@@ -24,7 +24,7 @@
 #
 
 from zlib import crc32
-import array
+from array import array
 import sys
 
 
