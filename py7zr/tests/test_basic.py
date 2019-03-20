@@ -1,12 +1,13 @@
+import os
 import py7zr
-import test7zr
+from py7zr.tests import utils
 from io import StringIO
 
 
-
+testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def test_list_1():
-    archive = py7zr.Archive(open('tests/archive/test_1.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'test_1.7z'), 'rb'))
     output = StringIO()
     archive.list(file=output)
     contents = output.getvalue()
@@ -18,7 +19,7 @@ def test_list_1():
     assert expected == contents
 
 def test_list_2():
-    archive = py7zr.Archive(open('tests/archive/test_3.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'test_3.7z'), 'rb'))
     output = StringIO()
     archive.list(file=output)
     contents = output.getvalue()
@@ -46,20 +47,20 @@ def test_list_2():
 
 
 def test_extract_1():
-    archive = py7zr.Archive(open('tests/archive/test_1.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'test_1.7z'), 'rb'))
     archive.extract_all(dest='/tmp/py7zr-test')
     with open("tests/origin/test_1/setup.cfg") as expected:
         with open("/tmp/py7zr-test/setup.cfg", "r") as f:
             assert expected.read() == f.read()
 
 def test_extract_2():
-    archive = py7zr.Archive(open('tests/archive/test_2.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'test_2.7z'), 'rb'))
     archive.extract_all(dest='/tmp/py7zr-test')
-    with open("tests/origin/test_2/qt.qt5.597.gcc_64/installscript.qs") as expected:
+    with open(os.path.join(testdata_path,"test_2/qt.qt5.597.gcc_64/installscript.qs")) as expected:
         with open("/tmp/py7zr-test/qt.qt5.597.gcc_64/installscript.qs", "r") as f:
             assert expected.read() == f.read()
 
 def test_decode_4():
-    archive = py7zr.Archive(open('tests/archive/test_4.7z', 'rb'))
-    test7zr.decode_all(archive)
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'test_4.7z'), 'rb'))
+    utils.decode_all(archive)
 

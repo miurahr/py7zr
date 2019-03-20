@@ -1,25 +1,28 @@
 import py7zr
-import test7zr
+import os
+from py7zr.tests import utils
 
+
+testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def test_archive():
     test_archive_files = ['non_solid.7z',  'solid.7z']
     for f in test_archive_files:
-        archive = py7zr.Archive(open('tests/archive/%s' % f, 'rb'))
-        test7zr.check_archive(archive)
+        archive = py7zr.Archive(open(os.path.join(testdata_path, '%s' % f), 'rb'))
+        utils.check_archive(archive)
 
 def test_copy():
     # test loading of copy compressed files
-    test7zr.check_archive(py7zr.Archive(open('tests/archive/copy.7z','rb')))
+    utils.check_archive(py7zr.Archive(open(os.path.join(testdata_path,'copy.7z'),'rb')))
 
 
 def test_empty():
     # decompress empty archive
-    archive = py7zr.Archive(open('tests/archive/empty.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'empty.7z'), 'rb'))
     assert archive.getnames() == []
 
 def test_github_14():
-    archive = py7zr.Archive(open('tests/archive/github_14.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     cf = archive.getmember('github_14')
     assert cf != None
@@ -28,7 +31,7 @@ def test_github_14():
     assert data == bytes('Hello GitHub issue #14.\n', 'ascii')
     # accessing by name returns an arbitrary compressed streams
     # if both don't have a name in the archive
-    archive = py7zr.Archive(open('tests/archive/github_14_multi.7z', 'rb'))
+    archive = py7zr.Archive(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     cf = archive.getmember('github_14_multi')
     assert cf != None
@@ -48,5 +51,5 @@ def test_github_14():
     assert data == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 def test_github_37():
-    archive = py7zr.Archive(open('tests/archive/github_37_dummy.7z', 'rb'))
-    test7zr.check_archive(archive)
+    archive = py7zr.Archive(open(os.path.join(testdata_path, 'github_37_dummy.7z'), 'rb'))
+    utils.check_archive(archive)

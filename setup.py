@@ -25,5 +25,5 @@ setup(name='py7zr',
             'pytest'
         ]
       },
-      scripts=["scripts/py7zr"]
+      scripts=["bin/py7zr"]
       )
