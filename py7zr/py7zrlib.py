@@ -478,10 +478,9 @@ class ArchiveFile(Base):
             input = self._file.read(size)
         return input[self._start:self._start + size]
 
-    def read_decompress(self, coder, input, level, num_coders, filter):
+    def _read_decompress(self, coder, input, level, num_coders, filter):
         size = self._uncompressed[level]
         is_last_coder = (level + 1) == num_coders
-        decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
         can_partial_decompress = True
         with_cache = True
         if is_last_coder and not self.folder.solid:
@@ -492,11 +491,11 @@ class ArchiveFile(Base):
             size = self._uncompressed[level]
             properties = coder.get('properties', None)
             if properties:
-                try:
-                    # FIXME: the method is privte in cpython lzma module in commit a425c3d5a264c556d31bdd88097c79246b533ea3
-                    lzma.decode_filter_properties(filter_id=filter, encoded_props=properties)
-                except Exception:
-                    pass
+                decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[
+                    lzma._decode_filter_properties(filter, properties)
+                ])
+            else:
+                decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
             total = self.compressed
             is_last_coder = (level + 1) == num_coders
             if not input and is_last_coder:
@@ -544,10 +543,10 @@ class ArchiveFile(Base):
         return data[self._start:self._start + size]
 
     def read_lzma(self, coder, input, level, num_coders):
-        return self.read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA1)
+        return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA1)
 
     def read_lzma2(self, coder, input, level, num_coders):
-        return self.read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA2)
+        return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA2)
 
     def read_unsupported(self, coder, input, level, num_coders):
         raise UnsupportedCompressionMethodError()
