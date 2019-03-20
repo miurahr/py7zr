@@ -53,3 +53,20 @@ def test_github_14():
 def test_github_37():
     archive = py7zr.Archive(open(os.path.join(testdata_path, 'github_37_dummy.7z'), 'rb'))
     utils.check_archive(archive)
+
+def _test_umlaut_archive(filename):
+    archive = py7zr.Archive(open(os.path.join(testdata_path, filename), 'rb'))
+    assert sorted(archive.getnames()) == ['t\xe4st.txt']
+    assert archive.getmember('test.txt') == None
+    cf = archive.getmember('t\xe4st.txt')
+    assert cf.read() == bytes('This file contains a german umlaut in the filename.', 'ascii')
+    cf.reset()
+    assert cf.read() == bytes('This file contains a german umlaut in the filename.', 'ascii')
+
+def test_non_solid_umlaut():
+    # test loading of a non-solid archive containing files with umlauts
+    _test_umlaut_archive('umlaut-non_solid.7z')
+
+def test_solid_umlaut():
+    # test loading of a solid archive containing files with umlauts
+    _test_umlaut_archive('umlaut-solid.7z')
