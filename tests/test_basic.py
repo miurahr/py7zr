@@ -1,5 +1,8 @@
 import py7zr
+import test7zr
 from io import StringIO
+
+
 
 
 def test_list_1():
@@ -55,3 +58,8 @@ def test_extract_2():
     with open("tests/origin/test_2/qt.qt5.597.gcc_64/installscript.qs") as expected:
         with open("/tmp/py7zr-test/qt.qt5.597.gcc_64/installscript.qs", "r") as f:
             assert expected.read() == f.read()
+
+def test_decode_4():
+    archive = py7zr.Archive(open('tests/archive/test_4.7z', 'rb'))
+    test7zr.decode_all(archive)
+
