@@ -70,3 +70,27 @@ def test_non_solid_umlaut():
 def test_solid_umlaut():
     # test loading of a solid archive containing files with umlauts
     _test_umlaut_archive('umlaut-solid.7z')
+
+def test_bugzilla_4():
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'bugzilla_4.7z'), 'rb'))
+    utils.decode_all(archive)
+
+def test_bugzilla_16():
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'bugzilla_16.7z'), 'rb'))
+    utils.decode_all(archive)
+
+def test_regression_1():
+    archive = py7zr.Archive(open(os.path.join(testdata_path,'regress_1.7z'), 'rb'))
+    filenames = list(archive.getnames())
+    assert len(filenames) == 1
+    cf = archive.getmember(filenames[0])
+    assert cf != None
+    assert cf.checkcrc() == True
+    data = cf.read()
+    assert len(data) == cf.size
+
+def test_github_43_provided():
+    # test loading file submitted by @mikenye
+    archive = py7zr.Archive(open(os.path.join(testdata_path, 'test-issue-43.7z'), 'rb'))
+    assert sorted(archive.getnames()) == ['blah.txt'] + ['blah%d.txt' % x for x in range(2, 10)]
+    utils.decode_all(archive)
