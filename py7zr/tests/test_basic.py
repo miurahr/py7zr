@@ -61,7 +61,7 @@ def test_extract_2():
         with open("/tmp/py7zr-test/qt.qt5.597.gcc_64/installscript.qs", "r") as f:
             assert expected.read() == f.read()
 
-@pytest.mark.xfail(reason="Uknown issue")
+@pytest.mark.xfail(reason="Known issue")
 def test_decode_4():
     archive = py7zr.Archive(open(os.path.join(testdata_path,'test_4.7z'), 'rb'))
     utils.decode_all(archive)
