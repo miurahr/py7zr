@@ -19,8 +19,9 @@
 
 import argparse
 
-from py7zr.sevenzipfile import SevenZipFile, ArchiveFile, is_7zfile
+from py7zr.py7zr import SevenZipFile, ArchiveFile, is_7zfile
 from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, DecompressionError
+
 
 __all__ = ['SevenZipFile', 'ArchiveFile', 'is_7zfile',
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError']

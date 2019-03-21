@@ -6,15 +6,17 @@ def decode_all(archive):
     filenames = archive.getnames()
     for filename in filenames:
         cf = archive.getmember(filename)
-        #assert cf == filename
-        assert cf.checkcrc() == True, 'crc failed for %s' % (filename)
+        assert cf.filename == filename
+        assert cf.lastwritetime is not None
+        assert cf.checkcrc() is True, 'crc failed for %s' % (filename)
         assert len(cf.read()) == cf.uncompressed
+
 
 def check_archive(archive):
     assert sorted(archive.getnames()) == ['test/test2.txt', 'test1.txt']
-    assert archive.getmember('test2.txt') == None
+    assert archive.getmember('test2.txt') is None
     cf = archive.getmember('test1.txt')
-    assert cf.checkcrc() == True
+    assert cf.checkcrc() is True
     assert cf.lastwritetime // 10000000 == 12786932628
     assert cf.lastwritetime.as_datetime().replace(microsecond=0) == \
         datetime(2006, 3, 15, 21, 43, 48, 0, UTC)
@@ -22,7 +24,7 @@ def check_archive(archive):
     cf.reset()
     assert cf.read() == bytes('This file is located in the root.', 'ascii')
     cf = archive.getmember('test/test2.txt')
-    assert cf.checkcrc() == True
+    assert cf.checkcrc() is True
     assert cf.lastwritetime // 10000000 == 12786932616
     assert cf.lastwritetime.as_datetime().replace(microsecond=0) == \
         datetime(2006, 3, 15, 21, 43, 36, 0, UTC)

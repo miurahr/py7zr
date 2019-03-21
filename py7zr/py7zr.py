@@ -37,38 +37,26 @@ from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, Decom
 from py7zr.properties import Property, CompressionMethod, FileAttribute
 from py7zr.helper import calculate_crc32
 
+
 MAGIC_7Z = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
 READ_BLOCKSIZE = 16384
 
 
-#--------------------
-# exported functions
-#--------------------
-def is_7zfile(filename):
-    """Quickly see if a file is a 7Z file by checking the magic number.
-    The filename argument may be a file or file-like object too.
-    """
-    result = False
-    try:
-        if hasattr(filename, "read"):
-            result = SevenZipFile._check_7zfile(fp=filename)
-        else:
-            with open(filename, "rb") as fp:
-                result = SevenZipFile._check_7zfile(fp)
-    except OSError:
-        pass
-    return result
-
-
-#------------------
+# ------------------
 # Exported Classes
-#------------------
+# ------------------
 class ArchiveFile(Base):
     """Informational class which holds the details about an
        archive member.
        ArchiveFile objects are returned by SevenZipFile.getmember(),
        SevenZipFile.getmembers() and are usually created internally.
     """
+
+    __slots__ = ["folder", "filename", "size", "compressed", "uncompressed",
+                 "creationtime", "lastaccesstime", "lastwritetime", "attributes",
+                 "digest", "pos", "emptystream",
+                 "_archive", "_file", "_start", "_src_start", "_maxsize",
+                 "_uncompressed", "_decoders"]
 
     def __init__(self, info, start, src_start, folder, archive, maxsize=None):
         self.digest = None
@@ -93,39 +81,15 @@ class ArchiveFile(Base):
                 self.filename = os.path.splitext(os.path.basename(basefilename))[0]
         self.reset()
         self._decoders = {
-            CompressionMethod.COPY: 'read_copy',
-            CompressionMethod.LZMA: 'read_lzma',
-            CompressionMethod.LZMA2: 'read_lzma2',
-            CompressionMethod.MISC_ZIP: 'read_unsupported',
-            CompressionMethod.MISC_BZIP: 'read_unsupported',
-            CompressionMethod.P7Z_AES256_SHA256: 'read_unsupported',
+            CompressionMethod.COPY: '_read_copy',
+            CompressionMethod.LZMA: '_read_lzma',
+            CompressionMethod.LZMA2: '_read_lzma2',
+            CompressionMethod.MISC_ZIP: '_read_unsupported',
+            CompressionMethod.MISC_BZIP: '_read_unsupported',
+            CompressionMethod.P7Z_AES256_SHA256: '_read_unsupported',
         }
 
-    def is_encrypted(self):
-        return self.folder.is_encrypted()
-
-    def reset(self):
-        self.pos = 0
-
-    def read(self):
-        if not self.size:
-            return ''
-        elif not self.folder.coders:
-            raise TypeError("file has no coder information")
-        data = None
-        num_coders = len(self.folder.coders)
-        for level, coder in enumerate(self.folder.coders):
-            method = coder['method']
-            decoder = None
-            while method and decoder is None:
-                decoder = self._decoders.get(method, None)
-                method = method[:-1]
-            if decoder is None:
-                raise UnsupportedCompressionMethodError(repr(coder['method']))
-            data = getattr(self, decoder)(coder, data, level, num_coders)
-        return data
-
-    def read_copy(self, coder, input, level, num_coders):
+    def _read_copy(self, coder, input, level, num_coders):
         size = self._uncompressed[level]
         if not input:
             self._file.seek(self._src_start)
@@ -196,14 +160,41 @@ class ArchiveFile(Base):
 
         return data[self._start:self._start + size]
 
-    def read_lzma(self, coder, input, level, num_coders):
+    def _read_lzma(self, coder, input, level, num_coders):
         return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA1)
 
-    def read_lzma2(self, coder, input, level, num_coders):
+    def _read_lzma2(self, coder, input, level, num_coders):
         return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA2)
 
-    def read_unsupported(self, coder, input, level, num_coders):
+    def _read_unsupported(self, coder, input, level, num_coders):
         raise UnsupportedCompressionMethodError()
+
+    # --------------------------------------------------------------------------
+    # The public methods which ArchiveFile provides:
+
+    def is_encrypted(self):
+        return self.folder.is_encrypted()
+
+    def reset(self):
+        self.pos = 0
+
+    def read(self):
+        if not self.size:
+            return ''
+        elif not self.folder.coders:
+            raise TypeError("file has no coder information")
+        data = None
+        num_coders = len(self.folder.coders)
+        for level, coder in enumerate(self.folder.coders):
+            method = coder['method']
+            decoder = None
+            while method and decoder is None:
+                decoder = self._decoders.get(method, None)
+                method = method[:-1]
+            if decoder is None:
+                raise UnsupportedCompressionMethodError(repr(coder['method']))
+            data = getattr(self, decoder)(coder, data, level, num_coders)
+        return data
 
     def checkcrc(self):
         if self.digest is None:
@@ -365,7 +356,7 @@ class SevenZipFile(Base):
             return False
         return True
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     # interface like TarFile
 
@@ -439,3 +430,32 @@ class SevenZipFile(Base):
         outfile.write(target.read())
         outfile.close()
 
+    def close(self):
+        """Close the file, and for mode 'w', 'x' and 'a' write the ending
+        records."""
+        raise NotImplementedError
+
+    def write(self, filename, arcname=None,
+              compress_type=None, compresslevel=None):
+        """Put the bytes from filename into the archive under the name
+        arcname."""
+        raise NotImplementedError
+
+
+# --------------------
+# exported functions
+# --------------------
+def is_7zfile(filename):
+    """Quickly see if a file is a 7Z file by checking the magic number.
+    The filename argument may be a file or file-like object too.
+    """
+    result = False
+    try:
+        if hasattr(filename, "read"):
+            result = SevenZipFile._check_7zfile(fp=filename)
+        else:
+            with open(filename, "rb") as fp:
+                result = SevenZipFile._check_7zfile(fp)
+    except OSError:
+        pass
+    return result

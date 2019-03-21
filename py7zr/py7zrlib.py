@@ -40,7 +40,6 @@ from py7zr.exceptions import Bad7zFile
 from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32
 
 
-
 class Base(object):
     """ base class with support for various basic read/write functions """
 
@@ -409,4 +408,3 @@ class Header(Base):
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
-
