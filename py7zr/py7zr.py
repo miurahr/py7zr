@@ -435,8 +435,7 @@ class SevenZipFile(Base):
         records."""
         raise NotImplementedError
 
-    def write(self, filename, arcname=None,
-              compress_type=None, compresslevel=None):
+    def write(self, filename, arcname=None):
         """Put the bytes from filename into the archive under the name
         arcname."""
         raise NotImplementedError
