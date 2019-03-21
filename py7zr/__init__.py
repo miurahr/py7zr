@@ -19,9 +19,11 @@
 
 import argparse
 
-from .archive7z import Archive
+from py7zr.sevenzipfile import SevenZipFile, ArchiveFile, is_7zfile
+from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, DecompressionError
 
-__all__ = ['Archive']
+__all__ = ['SevenZipFile', 'ArchiveFile', 'is_7zfile',
+           'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError']
 
 
 def main():
@@ -34,16 +36,21 @@ def main():
     args = parser.parse_args()
     com = args.subcommand
     target = args.file
+    if not is_7zfile(target):
+        print('not a 7z file')
+        exit(1)
 
     if com == 'l':
-        f = Archive(open(target, 'rb'))
-        f.list()
+        with open(target, 'rb') as f:
+            a = SevenZipFile(f)
+            a.list()
         exit(0)
 
     if com == 'x':
-        f = Archive(open(target, 'rb'))
-        if args.o:
-            f.extract_all(dest=args.o)
-        else:
-            f.extract_all()
+        with open(target, 'rb') as f:
+            a = SevenZipFile(f)
+            if args.o:
+                a.extractall(path=args.o)
+            else:
+                a.extractall()
         exit(0)

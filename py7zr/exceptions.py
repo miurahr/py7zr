@@ -26,7 +26,7 @@ class ArchiveError(Exception):
     pass
 
 
-class FormatError(ArchiveError):
+class Bad7zFile(ArchiveError):
     pass
 
 
