@@ -17,6 +17,14 @@ Dependency
 It uses a standard lzma module that is supported in Python3.3 and later.
 
 
+Document
+========
+
+Here is a readthedocs `manual`_ document.
+
+.. _`manual`: https://py7zr.readthedocs.io/en/latest/
+
+
 Usage
 =====
 
