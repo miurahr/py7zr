@@ -4,9 +4,9 @@ matrix:
     - python: 3.5
       env: PYTHON_TAG=py35
     - python: 3.6
-      env: PYTHON_TAG=py3
-    - python: pypy3
-      env: PYTHON_TAG=pypy3
+      env: PYTHON_TAG=py36
+#- python: pypy3
+#  env: PYTHON_TAG=pypy3
 
 install:
   - pip install tox-travis coveralls
