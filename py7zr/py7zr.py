@@ -98,12 +98,12 @@ class ArchiveFile(Base):
         is_last_coder = (level + 1) == num_coders
         can_partial_decompress = True
         with_cache = True
+        total = self.compressed
         if is_last_coder and not self.folder.solid:
             maxlength = self._start + size
         else:
             maxlength = -1
         try:
-            size = self._uncompressed[level]
             properties = coder.get('properties', None)
             if properties:
                 decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[
@@ -111,8 +111,6 @@ class ArchiveFile(Base):
                 ])
             else:
                 decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
-            total = self.compressed
-            is_last_coder = (level + 1) == num_coders
             if not input and is_last_coder:
                 remaining = self._start + size
                 out = BytesIO()
