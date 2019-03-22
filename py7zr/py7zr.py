@@ -124,10 +124,10 @@ class ArchiveFile(Base):
                     self._file.seek(pos)
                 else:
                     self._file.seek(self._src_start)
-                checkremaining = is_last_coder and not self.folder.solid and can_partial_decompress
+                check_remaining = is_last_coder and not self.folder.solid and can_partial_decompress
                 while remaining > 0:
                     data = self._file.read(READ_BLOCKSIZE)
-                    if checkremaining or (with_cache and len(data) < READ_BLOCKSIZE):
+                    if check_remaining or (with_cache and len(data) < READ_BLOCKSIZE):
                         tmp = decompressor.decompress(data, max_length=remaining)
                     else:
                         tmp = decompressor.decompress(data, max_length=maxlength)
@@ -195,6 +195,7 @@ class ArchiveFile(Base):
         return super(ArchiveFile, self).checkcrc(self.digest, data)
 
 class SignatureHeader(Base):
+    """The SignatureHeader class hold information of a signature header of archive."""
 
     def __init__(self, file):
         file.seek(len(MAGIC_7Z), 0)
@@ -291,19 +292,13 @@ class SevenZipFile(Base):
         self.files_map.update([(x.filename, x) for x in self.files])
 
     def _get_files_information(self):
-        files = self.header.files
         if hasattr(self.header, 'main_streams'):
-            folders = self.header.main_streams.unpackinfo.folders
-            packinfo = self.header.main_streams.packinfo
-            subinfo = self.header.main_streams.substreamsinfo
-            packsizes = packinfo.packsizes
-            self.solid = packinfo.num_streams == 1
-            if hasattr(subinfo, 'unpacksizes'):
-                unpacksizes = subinfo.unpacksizes
+            self.solid = self.header.main_streams.packinfo.num_streams == 1
+            if hasattr(self.header.main_streams.substreamsinfo, 'unpacksizes'):
+                self._unpacksizes = self.header.main_streams.substreamsinfo.unpacksizes
             else:
-                unpacksizes = [x.unpacksizes for x in folders]
+                self._unpacksizes = [x.unpacksizes for x in self.header.main_streams.unpackinfo.folders]
         else:
-            # TODO(fancycode): is it necessary to provide empty values for folder, packinfo, etc?
             self.solid = False
 
         fidx = 0
@@ -312,28 +307,28 @@ class SevenZipFile(Base):
         src_pos = self._afterheader
         pos = 0
         folder_pos = src_pos
-        for info in files.files:
+        for info in self.header.files.files:
             # Skip all directory entries.
             attributes = info.get('attributes', None)
             if attributes and attributes & FileAttribute.DIRECTORY != 0:
                 continue
 
             if not info['emptystream']:
-                folder = folders[fidx]
+                folder = self.header.main_streams.unpackinfo.folders[fidx]
                 if streamidx == 0:
-                    folder.solid = subinfo.num_unpackstreams[fidx] > 1
+                    folder.solid = self.header.main_streams.substreamsinfo.num_unpackstreams[fidx] > 1
 
-                maxsize = (folder.solid and packinfo.packsizes[fidx]) or None
-                uncompressed = unpacksizes[obidx]
+                maxsize = (folder.solid and self.header.main_streams.packinfo.packsizes[fidx]) or None
+                uncompressed = self._unpacksizes[obidx]
                 if not isinstance(uncompressed, (list, tuple)):
                     uncompressed = [uncompressed] * len(folder.coders)
                 if pos > 0:
                     # file is part of solid archive
-                    assert fidx < len(packsizes), 'Folder outside index for solid archive'
-                    info['compressed'] = packsizes[fidx]
-                elif fidx < len(packsizes):
+                    assert fidx < len(self.header.main_streams.packinfo.packsizes), 'Folder outside index for solid archive'
+                    info['compressed'] = self.header.main_streams.packinfo.packsizes[fidx]
+                elif fidx < len(self.header.main_streams.packinfo.packsizes):
                     # file is compressed
-                    info['compressed'] = packsizes[fidx]
+                    info['compressed'] = self.header.main_streams.packinfo.packsizes[fidx]
                 else:
                     # file is not compressed
                     info['compressed'] = uncompressed
@@ -345,18 +340,18 @@ class SevenZipFile(Base):
                 maxsize = 0
 
             archive_file = ArchiveFile(info, pos, src_pos, folder, self.fp, maxsize=maxsize)
-            if folder is not None and subinfo.digestsdefined[obidx]:
-                archive_file.digest = subinfo.digests[obidx]
+            if folder is not None and self.header.main_streams.substreamsinfo.digestsdefined[obidx]:
+                archive_file.digest = self.header.main_streams.substreamsinfo.digests[obidx]
             self.files.append(archive_file)
             if folder is not None and folder.solid:
-                pos += unpacksizes[obidx]
+                pos += self._unpacksizes[obidx]
             else:
                 src_pos += info['compressed']
             obidx += 1
             streamidx += 1
-            if folder is not None and streamidx >= subinfo.num_unpackstreams[fidx]:
+            if folder is not None and streamidx >= self.header.main_streams.substreamsinfo.num_unpackstreams[fidx]:
                 pos = 0
-                folder_pos += packinfo.packsizes[fidx]
+                folder_pos += self.header.main_streams.packinfo.packsizes[fidx]
                 src_pos = folder_pos
                 fidx += 1
                 streamidx = 0
