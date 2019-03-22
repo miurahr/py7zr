@@ -71,17 +71,21 @@ SevenZipFile Objects
    existing file, or ``'x'`` to exclusively create and write a new file.
    If *mode* is ``'x'`` and *file* refers to an existing file,
    a :exc:`FileExistsError` will be raised.
-   If *mode* is ``'r'`` or ``'a'``, the file should be seekable.
+   If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#]_
 
    The *compresslevel* parameter controls the compression level to use when
-   writing files to the archive. Integers ``0`` through ``9`` are accepted.
+   writing files to the archive. Integers ``0`` through ``9`` are accepted. [#]_
 
+.. [#]: Modes other than ```'r'``` has not implemented yet. If given other than 'r',
+        it will generate :exc:`NotImplementedError`
+.. [#]: *compresslevel* is always ignored in current version.
 
 .. method:: SevenZipFile.close()
 
    Close the archive file.  You must call :meth:`close` before exiting your program
-   or essential records will not be written.
+   or essential records will not be written. [#]_
 
+.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
 
 .. method:: SevenZipFile.getmember(name)
 
@@ -108,14 +112,13 @@ SevenZipFile Objects
    Extract a member from the archive to the current working directory; *member*
    must be its full name or a :class:`ArchiveFile` object.  Its file information is
    extracted as accurately as possible.  *path* specifies a different directory
-   to extract to.  *member* can be a filename or a :class:`ArchiveFile` object.
-   *pwd* is the password used for encrypted files.
+   to extract to.  *member* can be a filename or a :class:`ArchiveFile` object. [#]_
 
 
 .. method:: SevenZipFile.extractall(path=None)
 
    Extract all members from the archive to the current working directory.  *path*
-   specifies a different directory to extract to.
+   specifies a different directory to extract to. [#]_
 
 
 .. method:: SevenZipFile.list()
@@ -126,7 +129,9 @@ SevenZipFile Objects
 .. method:: ZipFile.testzip()
 
    Read all the files in the archive and check their CRC's and file headers.
-   Return the name of the first bad file, or else return ``None``.
+   Return the name of the first bad file, or else return ``None``. [#]_
+
+.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
 
 
 .. method:: SevenZipFile.write(filename, arcname=None)
@@ -134,10 +139,9 @@ SevenZipFile Objects
    Write the file named *filename* to the archive, giving it the archive name
    *arcname* (by default, this will be the same as *filename*, but without a drive
    letter and with leading path separators removed).
-   The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``.
+   The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``. [#]_
 
-   This method has not implemented yet.
-
+.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
 
 
 .. _archivefile-objects:

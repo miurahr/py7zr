@@ -24,9 +24,11 @@
 #
 """Read 7zip format archives."""
 
+import io
 import lzma
 import os
 import sys
+import threading
 from binascii import unhexlify
 from io import BytesIO
 from struct import unpack
@@ -36,7 +38,6 @@ from py7zr.py7zrlib import Base, StreamsInfo, Header
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, DecompressionError
 from py7zr.properties import Property, CompressionMethod, FileAttribute
 from py7zr.helper import calculate_crc32
-
 
 MAGIC_7Z = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
 READ_BLOCKSIZE = 16384
@@ -55,13 +56,12 @@ class ArchiveFile(Base):
     __slots__ = ["folder", "filename", "size", "compressed", "uncompressed",
                  "creationtime", "lastaccesstime", "lastwritetime", "attributes",
                  "digest", "pos", "emptystream",
-                 "_archive", "_file", "_start", "_src_start", "_maxsize",
+                 "_file", "_start", "_src_start", "_maxsize",
                  "_uncompressed", "_decoders"]
 
-    def __init__(self, info, start, src_start, folder, archive, maxsize=None):
+    def __init__(self, info, start, src_start, folder, file, maxsize=None):
         self.digest = None
-        self._archive = archive
-        self._file = archive._file
+        self._file = file
         self._start = start
         self._src_start = src_start
         self.folder = folder
@@ -84,9 +84,6 @@ class ArchiveFile(Base):
             CompressionMethod.COPY: '_read_copy',
             CompressionMethod.LZMA: '_read_lzma',
             CompressionMethod.LZMA2: '_read_lzma2',
-            CompressionMethod.MISC_ZIP: '_read_unsupported',
-            CompressionMethod.MISC_BZIP: '_read_unsupported',
-            CompressionMethod.P7Z_AES256_SHA256: '_read_unsupported',
         }
 
     def _read_copy(self, coder, input, level, num_coders):
@@ -134,11 +131,8 @@ class ArchiveFile(Base):
                         tmp = decompressor.decompress(data, max_length=remaining)
                     else:
                         tmp = decompressor.decompress(data, max_length=maxlength)
-                    if not tmp and not data:
-                        raise DecompressionError('end of stream while decompressing')
                     out.write(tmp)
                     remaining -= len(tmp)
-
                 data = out.getvalue()
                 if with_cache and self.folder.solid:
                     # don't decompress start of solid archive for next file
@@ -165,9 +159,6 @@ class ArchiveFile(Base):
 
     def _read_lzma2(self, coder, input, level, num_coders):
         return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA2)
-
-    def _read_unsupported(self, coder, input, level, num_coders):
-        raise UnsupportedCompressionMethodError()
 
     # --------------------------------------------------------------------------
     # The public methods which ArchiveFile provides:
@@ -203,18 +194,12 @@ class ArchiveFile(Base):
         data = self.read()
         return super(ArchiveFile, self).checkcrc(self.digest, data)
 
-
-class SevenZipFile(Base):
-    """The SevenZipFile Class provides an interface to 7z archives."""
+class SignatureHeader(Base):
 
     def __init__(self, file):
-        self._file = file
-        self.header = file.read(len(MAGIC_7Z))
-        if self.header != MAGIC_7Z:
-            raise Bad7zFile('not a 7z file')
+        file.seek(len(MAGIC_7Z), 0)
         self.version = unpack('BB', file.read(2))
-
-        self.startheadercrc = unpack('<L', file.read(4))[0]
+        self._startheadercrc = unpack('<L', file.read(4))[0]
         self.nextheaderofs, data = self._read_real_uint64(file)
         crc = calculate_crc32(data)
         self.nextheadersize, data = self._read_real_uint64(file)
@@ -222,15 +207,70 @@ class SevenZipFile(Base):
         data = file.read(4)
         self.nextheadercrc = unpack('<L', data)[0]
         crc = calculate_crc32(data, crc)
-        if crc != self.startheadercrc:
-            raise Bad7zFile('invalid header data')
-        self.afterheader = file.tell()
-
-        file.seek(self.nextheaderofs, 1)
-        buffer = BytesIO(file.read(self.nextheadersize))
-        if not self.checkcrc(self.nextheadercrc, buffer.getvalue()):
+        if crc != self._startheadercrc:
             raise Bad7zFile('invalid header data')
 
+
+class SevenZipFile(Base):
+    """The SevenZipFile Class provides an interface to 7z archives."""
+
+    _fileRefCnt = ...  # type: int
+
+    def __init__(self, file, mode='r'):
+        # Check if we were passed a file-like object or not
+        if isinstance(file, str):
+            self._filePassed = False
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = True
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        try:
+            if mode == "r":
+                self._real_get_contents()
+            elif mode in ('w', 'x'):
+                raise NotImplementedError
+            elif mode == 'a':
+                raise NotImplementedError
+            else:
+                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
+        except:
+            fp = self.fp
+            self.fp = None
+            self._fpclose(fp)
+            raise
+
+    def _fpclose(self, fp):
+        assert self._fileRefCnt > 0
+        self._fileRefCnt -= 1
+        if not self._fileRefCnt and not self._filePassed:
+            fp.close()
+
+    def _real_get_contents(self):
+        if MAGIC_7Z != self.fp.read(len(MAGIC_7Z)):
+            raise Bad7zFile('not a 7z file')
+        self._sig_header = SignatureHeader(self.fp)
+        self._afterheader = self.fp.tell()
+        self.fp.seek(self._sig_header.nextheaderofs, 1)
+        buffer = BytesIO(self.fp.read(self._sig_header.nextheadersize))
+        if not self.checkcrc(self._sig_header.nextheadercrc, buffer.getvalue()):
+            raise Bad7zFile('invalid header data')
+        self.files = []
+        self.files_map = {}
         while True:
             pid = buffer.read(1)
             if not pid or pid == Property.HEADER:
@@ -240,42 +280,17 @@ class SevenZipFile(Base):
                 raise TypeError('Unknown field: %r' % (id))
 
             streams = StreamsInfo(buffer)
-            file.seek(self.afterheader + 0)
-            data = bytes('', 'ascii')
-            src_start = self.afterheader
-            for folder in streams.unpackinfo.folders:
-                if folder.is_encrypted():
-                    raise UnsupportedCompressionMethodError()
-
-                src_start += streams.packinfo.packpos
-                uncompressed = folder.unpacksizes
-                if not isinstance(uncompressed, (list, tuple)):
-                    uncompressed = [uncompressed] * len(folder.coders)
-                info = {
-                    'compressed': streams.packinfo.packsizes[0],
-                    '_uncompressed': uncompressed,
-                }
-                tmp = ArchiveFile(info, 0, src_start, folder, self)
-                uncompressed_size = uncompressed[-1]
-                folderdata = tmp.read()[:uncompressed_size]
-                src_start += uncompressed_size
-
-                if folder.digestdefined:
-                    if not self.checkcrc(folder.crc, folderdata):
-                        raise Bad7zFile('invalid block data')
-
-                data += folderdata
-
-            buffer = BytesIO(data)
-
-        self.files = []
-        self.files_map = {}
+            self.fp.seek(self._afterheader + 0)
+            buffer = self._get_folder_data(streams)
         if not pid:
             # empty archive
             self.solid = False
             return
-
         self.header = Header(buffer)
+        self._get_files_information()
+        self.files_map.update([(x.filename, x) for x in self.files])
+
+    def _get_files_information(self):
         files = self.header.files
         if hasattr(self.header, 'main_streams'):
             folders = self.header.main_streams.unpackinfo.folders
@@ -294,7 +309,7 @@ class SevenZipFile(Base):
         fidx = 0
         obidx = 0
         streamidx = 0
-        src_pos = self.afterheader
+        src_pos = self._afterheader
         pos = 0
         folder_pos = src_pos
         for info in files.files:
@@ -329,10 +344,10 @@ class SevenZipFile(Base):
                 folder = None
                 maxsize = 0
 
-            file = ArchiveFile(info, pos, src_pos, folder, self, maxsize=maxsize)
+            archive_file = ArchiveFile(info, pos, src_pos, folder, self.fp, maxsize=maxsize)
             if folder is not None and subinfo.digestsdefined[obidx]:
-                file.digest = subinfo.digests[obidx]
-            self.files.append(file)
+                archive_file.digest = subinfo.digests[obidx]
+            self.files.append(archive_file)
             if folder is not None and folder.solid:
                 pos += unpacksizes[obidx]
             else:
@@ -346,12 +361,38 @@ class SevenZipFile(Base):
                 fidx += 1
                 streamidx = 0
 
-        self.files_map.update([(x.filename, x) for x in self.files])
+
+    def _get_folder_data(self, streams):
+            data = bytes('', 'ascii')
+            src_start = self._afterheader
+            for folder in streams.unpackinfo.folders:
+                if folder.is_encrypted():
+                    raise UnsupportedCompressionMethodError()
+
+                src_start += streams.packinfo.packpos
+                uncompressed = folder.unpacksizes
+                if not isinstance(uncompressed, (list, tuple)):
+                    uncompressed = [uncompressed] * len(folder.coders)
+                info = {
+                    'compressed': streams.packinfo.packsizes[0],
+                    '_uncompressed': uncompressed,
+                }
+                tmp = ArchiveFile(info, 0, src_start, folder, self.fp)
+                uncompressed_size = uncompressed[-1]
+                folderdata = tmp.read()[:uncompressed_size]
+                src_start += uncompressed_size
+
+                if folder.digestdefined:
+                    if not self.checkcrc(folder.crc, folderdata):
+                        raise Bad7zFile('invalid block data')
+
+                data += folderdata
+
+            return BytesIO(data)
 
     @classmethod
     def _check_7zfile(cls, fp):
         signature = fp.read(len(MAGIC_7Z))
-        fp.seek(0)
         if signature != MAGIC_7Z:
             return False
         return True
@@ -440,6 +481,9 @@ class SevenZipFile(Base):
         arcname."""
         raise NotImplementedError
 
+    def testzip(self):
+        raise NotImplementedError
+
 
 # --------------------
 # exported functions
@@ -452,6 +496,7 @@ def is_7zfile(filename):
     try:
         if hasattr(filename, "read"):
             result = SevenZipFile._check_7zfile(fp=filename)
+            filename.seek(0)
         else:
             with open(filename, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
