@@ -93,6 +93,16 @@ class ArchiveFile(Base):
             input = self._file.read(size)
         return input[self._start:self._start + size]
 
+    def _get_decompressor(self, coder, filter):
+        properties = coder.get('properties', None)
+        if properties:
+            decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[
+                lzma._decode_filter_properties(filter, properties)
+            ])
+        else:
+            decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
+        return decompressor
+
     def _read_decompress(self, coder, input, level, num_coders, filter):
         size = self._uncompressed[level]
         is_last_coder = (level + 1) == num_coders
@@ -104,13 +114,7 @@ class ArchiveFile(Base):
         else:
             maxlength = -1
         try:
-            properties = coder.get('properties', None)
-            if properties:
-                decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[
-                    lzma._decode_filter_properties(filter, properties)
-                ])
-            else:
-                decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
+            decompressor = self._get_decompressor(coder, filter)
             if not input and is_last_coder:
                 remaining = self._start + size
                 out = BytesIO()
@@ -124,13 +128,17 @@ class ArchiveFile(Base):
                     self._file.seek(self._src_start)
                 check_remaining = is_last_coder and not self.folder.solid and can_partial_decompress
                 while remaining > 0:
-                    data = self._file.read(READ_BLOCKSIZE)
-                    if check_remaining or (with_cache and len(data) < READ_BLOCKSIZE):
-                        tmp = decompressor.decompress(data, max_length=remaining)
+                    read_data = self._file.read(READ_BLOCKSIZE)
+                    if check_remaining or (with_cache and len(read_data) < READ_BLOCKSIZE):
+                        tmp = decompressor.decompress(read_data, max_length=remaining)
                     else:
-                        tmp = decompressor.decompress(data, max_length=maxlength)
+                        tmp = decompressor.decompress(read_data, max_length=maxlength)
                     out.write(tmp)
                     remaining -= len(tmp)
+                    if decompressor.eof:
+                        break
+                    if decompressor.needs_input:
+                        pass
                 data = out.getvalue()
                 if with_cache and self.folder.solid:
                     # don't decompress start of solid archive for next file
@@ -139,11 +147,13 @@ class ArchiveFile(Base):
             else:
                 if not input:
                     self._file.seek(self._src_start)
-                    input = self._file.read(total)
-                if is_last_coder and can_partial_decompress:
-                    data = decompressor.decompress(input, max_length=self._start + size)
+                    read_data = self._file.read(total)
                 else:
-                    data = decompressor.decompress(input, max_length=maxlength)
+                    read_data = input
+                if is_last_coder and can_partial_decompress:
+                    data = decompressor.decompress(read_data, max_length=self._start + size)
+                else:
+                    data = decompressor.decompress(read_data, max_length=maxlength)
                     if can_partial_decompress and not is_last_coder:
                         return data
         except ValueError:
@@ -189,8 +199,7 @@ class ArchiveFile(Base):
         if self.digest is None:
             return True
         self.reset()
-        data = self.read()
-        return super(ArchiveFile, self).checkcrc(self.digest, data)
+        return super(ArchiveFile, self).checkcrc(self.digest, self.read())
 
 class SignatureHeader(Base):
     """The SignatureHeader class hold information of a signature header of archive."""
