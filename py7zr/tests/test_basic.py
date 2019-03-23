@@ -69,3 +69,8 @@ def test_extract_2():
 def test_decode_4():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_4.7z'), 'rb'))
     utils.decode_all(archive)
+
+@pytest.mark.xfail(reason="Not supported yet")
+def test_lzma2bcj2():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_lzma2bcj2.7z'), 'rb'))
+    utils.check_archive(archive)

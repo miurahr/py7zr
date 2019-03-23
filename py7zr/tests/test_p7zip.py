@@ -11,7 +11,7 @@ def test_7za433_7zip_lzma_7z():
     utils.decode_all(py7zr.SevenZipFile(open(os.path.join(testdata_path, '7za433_7zip_lzma.7z'), 'rb')))
 
 
-@pytest.mark.xfail(reason="should fix")
+@pytest.mark.xfail(reason="Not supported yet")
 def test_7za433_7zip_lzma_bcj2_7z():
     utils.decode_all(py7zr.SevenZipFile(open(os.path.join(testdata_path, '7za433_7zip_lzma_bcj2.7z'), 'rb')))
 
@@ -21,6 +21,6 @@ def test_7za433_7zip_lzma2_7z():
     utils.decode_all(py7zr.SevenZipFile(open(os.path.join(testdata_path, '7za433_7zip_lzma2.7z'), 'rb')))
 
 
-@pytest.mark.xfail(reason="should fix")
+@pytest.mark.xfail(reason="Not supported yet")
 def test_7za433_7zip_lzma2_bcj2_7z():
     utils.decode_all(py7zr.SevenZipFile(open(os.path.join(testdata_path, '7za433_7zip_lzma2_bcj2.7z'), 'rb')))

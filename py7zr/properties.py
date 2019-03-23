@@ -59,15 +59,29 @@ class Property(ByteEnum):
 
 
 class CompressionMethod(ByteEnum):
-    COPY = unhexlify('00')  # '\x00'
-    LZMA = unhexlify('03')  # '\x03'
-    CRYPTO = unhexlify('06')  # '\x06'
-    MISC = unhexlify('04')  # '\x04'
-    MISC_ZIP = unhexlify('0401')  # '\x04\x01'
-    MISC_BZIP = unhexlify('0402')  # '\x04\x02'
-    P7Z_AES256_SHA256 = unhexlify('06f10701')  # '\x06\xf1\x07\x01'
-    LZMA2 = unhexlify('21')  # '\x21'
+    COPY = unhexlify('00')
+    LZMA = unhexlify('03')
+    CRYPTO = unhexlify('06')
+    MISC = unhexlify('04')
+    MISC_ZIP = unhexlify('0401')
+    MISC_BZIP2 = unhexlify('040202')
+    MISC_DEFLATE = unhexlify('040108')
+    MISC_DEFLATE64 = unhexlify('040109')
+    MISC_PPMD = unhexlify('030401')
+    P7Z_AES256_SHA256 = unhexlify('06f10701')
+    LZMA2 = unhexlify('21')
 
+
+class FilterProperty(ByteEnum):
+    BCJ = unhexlify('03030103')
+    BCJ2 = unhexlify('0303011b')
+    POWERPC = unhexlify('03030205')
+    IA64 = unhexlify('03030401')
+    ARM = unhexlify('03030501')
+    ARMTHUMB = unhexlify('03030701')
+    SPARC = unhexlify('03030805')
+
+FilterProperties = [FilterProperty.X86, FilterProperty.ARM]
 
 class FileAttribute(IntEnum):
     DIRECTORY = 0x10
