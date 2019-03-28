@@ -4,8 +4,6 @@
 #
 # Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
-# 7-Zip Copyright (C) 1999-2010 Igor Pavlov
-# LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -23,6 +21,8 @@
 #
 #
 
+import struct
+from datetime import datetime, timedelta, timezone, tzinfo
 from zlib import crc32
 from array import array
 import sys
@@ -50,3 +50,64 @@ def calculate_crc32(data, value=None, blocksize=1024 * 1024):
         pos += blocksize
 
     return value & 0xffffffff
+
+EPOCH_AS_FILETIME = 116444736000000000
+
+def filetime_to_dt(ft):
+    us = (ft - EPOCH_AS_FILETIME) // 10
+    return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds = us)
+
+
+ZERO = timedelta(0)
+HOUR = timedelta(hours=1)
+SECOND = timedelta(seconds=1)
+
+# A class capturing the platform's idea of local time.
+# (May result in wrong values on historical times in
+#  timezones where UTC offset and/or the DST rules had
+#  changed in the past.)
+import time as _time
+
+STDOFFSET = timedelta(seconds = -_time.timezone)
+if _time.daylight:
+    DSTOFFSET = timedelta(seconds = -_time.altzone)
+else:
+    DSTOFFSET = STDOFFSET
+
+DSTDIFF = DSTOFFSET - STDOFFSET
+
+class LocalTimezone(tzinfo):
+
+    def fromutc(self, dt):
+        assert dt.tzinfo is self
+        stamp = (dt - datetime(1970, 1, 1, tzinfo=self)) // SECOND
+        args = _time.localtime(stamp)[:6]
+        dst_diff = DSTDIFF // SECOND
+        # Detect fold
+        fold = (args == _time.localtime(stamp - dst_diff))
+        return datetime(*args, microsecond=dt.microsecond, tzinfo=self)
+
+    def utcoffset(self, dt):
+        if self._isdst(dt):
+            return DSTOFFSET
+        else:
+            return STDOFFSET
+
+    def dst(self, dt):
+        if self._isdst(dt):
+            return DSTDIFF
+        else:
+            return ZERO
+
+    def tzname(self, dt):
+        return _time.tzname[self._isdst(dt)]
+
+    def _isdst(self, dt):
+        tt = (dt.year, dt.month, dt.day,
+              dt.hour, dt.minute, dt.second,
+              dt.weekday(), 0, 0)
+        stamp = _time.mktime(tt)
+        tt = _time.localtime(stamp)
+        return tt.tm_isdst > 0
+
+Local = LocalTimezone()

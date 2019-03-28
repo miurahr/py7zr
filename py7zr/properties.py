@@ -23,6 +23,8 @@
 
 from binascii import unhexlify
 from enum import Enum, IntEnum
+import lzma
+from py7zr import altmethods
 
 
 class ByteEnum(bytes, Enum):
@@ -60,7 +62,8 @@ class Property(ByteEnum):
 
 class CompressionMethod(ByteEnum):
     COPY = unhexlify('00')
-    LZMA = unhexlify('03')
+    DELTA = unhexlify('03')
+    LZMA = unhexlify('030101')
     CRYPTO = unhexlify('06')
     MISC = unhexlify('04')
     MISC_ZIP = unhexlify('0401')
@@ -70,18 +73,13 @@ class CompressionMethod(ByteEnum):
     MISC_PPMD = unhexlify('030401')
     P7Z_AES256_SHA256 = unhexlify('06f10701')
     LZMA2 = unhexlify('21')
-
-
-class FilterProperty(ByteEnum):
     BCJ = unhexlify('03030103')
-    BCJ2 = unhexlify('0303011b')
-    POWERPC = unhexlify('03030205')
-    IA64 = unhexlify('03030401')
-    ARM = unhexlify('03030501')
-    ARMTHUMB = unhexlify('03030701')
-    SPARC = unhexlify('03030805')
+    BCJ_PPC = unhexlify('03030205')
+    BCJ_IA64 = unhexlify('03030401')
+    BCJ_ARM = unhexlify('03030501')
+    BCJ_ARMT = unhexlify('03030701')
+    BCJ_SPARC = unhexlify('03030805')
 
-FilterProperties = [FilterProperty.X86, FilterProperty.ARM]
 
 class FileAttribute(IntEnum):
     DIRECTORY = 0x10
@@ -89,3 +87,29 @@ class FileAttribute(IntEnum):
     HIDDEN = 0x02
     SYSTEM = 0x04
     ARCHIVE = 0x20
+    DEVICE = 0x40
+    NORMAL = 0x80
+    TEMPORARY = 0x100
+    SPARSE_FILE = 0x200
+    REPARSE_POINT = 0x400
+    COMPRESSED = 0x800
+    OFFLINE = 0x1000
+    ENCRYPTED = 0x4000
+    UNIX_EXTENSION = 0x8000
+
+lzma_methods_map = {
+    CompressionMethod.LZMA:lzma.FILTER_LZMA1,
+    CompressionMethod.LZMA2:lzma.FILTER_LZMA2,
+    CompressionMethod.DELTA:lzma.FILTER_DELTA,
+    CompressionMethod.BCJ:lzma.FILTER_X86,
+    CompressionMethod.BCJ_ARM:lzma.FILTER_ARM,
+    CompressionMethod.BCJ_ARMT:lzma.FILTER_ARMTHUMB,
+    CompressionMethod.BCJ_IA64:lzma.FILTER_IA64,
+    CompressionMethod.BCJ_PPC:lzma.FILTER_POWERPC,
+    CompressionMethod.BCJ_SPARC:lzma.FILTER_SPARC,
+}
+
+alt_methods_map = {
+    CompressionMethod.COPY:altmethods.FILTER_COPY,
+    CompressionMethod.MISC_BZIP2:altmethods.FILTER_BZIP2,
+}

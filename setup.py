@@ -20,6 +20,7 @@ setup(name='py7zr',
       author='Hioshi Miura',
       author_email='miurahr@linux.com',
       packages=["py7zr"],
+      requires=['bringbuf'],
       extras_require={
         'dev': [
             'pytest'

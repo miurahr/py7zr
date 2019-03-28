@@ -18,10 +18,40 @@
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
-from py7zr.py7zr import SevenZipFile, ArchiveFile, is_7zfile, main
-from py7zr.properties import FileAttribute
-from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, DecompressionError
+from py7zr.exceptions import DecompressionError, UnsupportedCompressionMethodError
+import bz2
+import zlib
+
+FILTER_COPY = 1
+FILTER_BZIP2 = 2
+FILTER_ZIP = 3
 
 
-__all__ = ['SevenZipFile', 'ArchiveFile', 'is_7zfile', 'main', 'FileAttribute',
-           'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError']
+def get_compressor(filter=None):
+    if filter == FILTER_BZIP2:
+        return bz2.BZ2Decompressor()
+    elif filter == FILTER_ZIP:
+        return zlib.decompressobj(-15)
+    elif filter == FILTER_COPY:
+        return DecompressorCopy(100)
+    else:
+        raise UnsupportedCompressionMethodError
+
+
+class DecompressorCopy():
+
+    def __init__(self, total):
+        self.remaining = total
+
+    def decompress(self, data, max_length=None):
+        self.remaining -= len(data)
+        return data
+
+    @property
+    def need_input(self):
+        return self.remaining > 0
+
+    @property
+    def eof(self):
+        return self.remaining <= 0
+
