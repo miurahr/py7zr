@@ -125,6 +125,7 @@ class ArchiveFile(Base):
         return None
 
     def decompress(self, input, fp, can_partial_decompress=False):
+        decompressor = self.folder.decompressor
         if not input:
             remaining = self._start + self.size
             out = io.BytesIO()
@@ -138,9 +139,9 @@ class ArchiveFile(Base):
             while remaining > 0:
                 data = fp.read(READ_BLOCKSIZE)
                 if checkremaining or len(data) < READ_BLOCKSIZE:
-                    tmp = self.folder.read(data, remaining)
+                    tmp = decompressor.decompress(data, remaining)
                 else:
-                    tmp = self.folder.read(data)
+                    tmp = decompressor.decompress(data)
                 if not tmp and not data:
                     raise DecompressionError('end of stream while decompressing')
                 out.write(tmp)
@@ -153,11 +154,10 @@ class ArchiveFile(Base):
                 self.folder._decompress_cache = (data, fp.tell())
         else:
             if can_partial_decompress:
-                data = self.folder.read(input, self._start + self.size)
+                data = decompressor.decompress(input, self._start + self.size)
             else:
-                data = self.folder.read(input)
+                data = decompressor.decompress(input)
         return data[self._start:self._start + self.size]
-
 
 
 class SevenZipFile(Base):

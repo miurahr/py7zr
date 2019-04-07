@@ -22,11 +22,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-
 import io
 from bringbuf.bringbuf import bRingBuf
-
-READ_BLOCKSIZE = 16384
+from py7zr.properties import READ_BLOCKSIZE
 
 
 class CallBack():

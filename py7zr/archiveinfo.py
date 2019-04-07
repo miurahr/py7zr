@@ -21,23 +21,21 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-#
 
 from array import array
 from binascii import unhexlify
 from struct import pack, unpack
 
 import logging
-import lzma
 import os
 import traceback
 from io import BytesIO, StringIO
 from functools import reduce
 
-from py7zr.altmethods import get_compressor
-from py7zr.properties import Property, CompressionMethod, lzma_methods_map, alt_methods_map, MAGIC_7Z
+from py7zr.decompressors import get_decompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32, ArchiveTimestamp
+from py7zr.properties import Property, CompressionMethod, MAGIC_7Z
 
 
 class Base(object):
@@ -91,7 +89,7 @@ class ArchiveProperties(Base):
                 type = ord(file.read(1))
                 if type == 0x0:
                     break
-                # retrieve propertydata
+                # retrieve property
                 size = self._read_uint64(file)
                 property = []
                 for i in range(size):
@@ -169,39 +167,11 @@ class Folder(Base):
             for i in range(num_packedstreams):
                 self.packed_indices.append(self._read_uint64(file))
         try:
-            self._get_decompressor()
+            self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
         except:
             raise
 
-    def _get_decompressor(self):
-        filters = []
-        try:
-            for coder in self.coders:
-                filter = lzma_methods_map.get(coder['method'], None)
-                if filter is not None:
-                    properties = coder.get('properties', None)
-                    if properties is not None:
-                        filters.append(lzma._decode_filter_properties(filter, properties))
-                    else:
-                        filters.append({'id': filter})
-                else:
-                    raise UnsupportedCompressionMethodError
-        except UnsupportedCompressionMethodError as e:
-            filter = alt_methods_map.get(self.coders[0]['method'], None)
-            if len(self.coders) == 1 and filter is not None:
-                self.decompressor = get_compressor(filter=filter)
-                self.can_partial_decompress = False
-            else:
-                raise e
-        else:
-            self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-            self.can_partial_decompress = True
 
-    def read(self, data, max_length=None):
-        if max_length is None:
-            return self.decompressor.decompress(data)
-        elif self.can_partial_decompress:
-            return self.decompressor.decompress(data, max_length=max_length)
 
     def get_unpack_size(self):
         if not self.unpacksizes:

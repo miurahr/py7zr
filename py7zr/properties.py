@@ -23,8 +23,10 @@
 
 from binascii import unhexlify
 from enum import Enum, IntEnum
-import lzma
-from py7zr import altmethods
+
+
+MAGIC_7Z = unhexlify('377abcaf271c')
+READ_BLOCKSIZE = 16384
 
 
 class ByteEnum(bytes, Enum):
@@ -96,23 +98,3 @@ class FileAttribute(IntEnum):
     OFFLINE = 0x1000
     ENCRYPTED = 0x4000
     UNIX_EXTENSION = 0x8000
-
-lzma_methods_map = {
-    CompressionMethod.LZMA:lzma.FILTER_LZMA1,
-    CompressionMethod.LZMA2:lzma.FILTER_LZMA2,
-    CompressionMethod.DELTA:lzma.FILTER_DELTA,
-    CompressionMethod.BCJ:lzma.FILTER_X86,
-    CompressionMethod.BCJ_ARM:lzma.FILTER_ARM,
-    CompressionMethod.BCJ_ARMT:lzma.FILTER_ARMTHUMB,
-    CompressionMethod.BCJ_IA64:lzma.FILTER_IA64,
-    CompressionMethod.BCJ_PPC:lzma.FILTER_POWERPC,
-    CompressionMethod.BCJ_SPARC:lzma.FILTER_SPARC,
-}
-
-alt_methods_map = {
-    CompressionMethod.COPY:altmethods.FILTER_COPY,
-    CompressionMethod.MISC_BZIP2:altmethods.FILTER_BZIP2,
-    CompressionMethod.MISC_ZIP:altmethods.FILTER_ZIP,
-}
-MAGIC_7Z = unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 16384
