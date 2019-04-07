@@ -114,3 +114,5 @@ alt_methods_map = {
     CompressionMethod.MISC_BZIP2:altmethods.FILTER_BZIP2,
     CompressionMethod.MISC_ZIP:altmethods.FILTER_ZIP,
 }
+MAGIC_7Z = unhexlify('377abcaf271c')
+READ_BLOCKSIZE = 16384

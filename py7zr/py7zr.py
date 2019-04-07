@@ -30,18 +30,14 @@ import os
 import stat
 import sys
 import threading
-from binascii import unhexlify
 from functools import reduce
 from io import BytesIO
 
 from py7zr.writerworker import Worker, FileWriter, BufferWriter
 from py7zr.archiveinfo import Base, StreamsInfo, Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, DecompressionError
-from py7zr.properties import Property, FileAttribute
+from py7zr.properties import Property, FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
 from py7zr.helper import calculate_crc32, filetime_to_dt, Local
-
-MAGIC_7Z = unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 16384
 
 
 # ------------------

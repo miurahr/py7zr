@@ -34,14 +34,10 @@ import traceback
 from io import BytesIO, StringIO
 from functools import reduce
 
-from py7zr import Bad7zFile
 from py7zr.altmethods import get_compressor
-from py7zr.properties import Property, CompressionMethod, lzma_methods_map, alt_methods_map
-from py7zr.py7zr import MAGIC_7Z
+from py7zr.properties import Property, CompressionMethod, lzma_methods_map, alt_methods_map, MAGIC_7Z
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32, ArchiveTimestamp
-
-READ_BLOCKSIZE=16384
 
 
 class Base(object):
