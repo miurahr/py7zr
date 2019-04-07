@@ -21,12 +21,10 @@
 #
 #
 
-import struct
 from datetime import datetime, timedelta, timezone, tzinfo
 from zlib import crc32
 from array import array
 import sys
-
 
 NEED_BYTESWAP = sys.byteorder != 'little'
 
@@ -111,3 +109,39 @@ class LocalTimezone(tzinfo):
         return tt.tm_isdst > 0
 
 Local = LocalTimezone()
+TIMESTAMP_ADJUST = -11644473600
+
+
+class UTC(tzinfo):
+    """UTC"""
+
+    def utcoffset(self, dt):
+        return ZERO
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return ZERO
+
+    def _call__(self):
+        return self
+
+
+UTC = UTC()
+
+
+class ArchiveTimestamp(int):
+    """Windows FILETIME timestamp."""
+
+    def __repr__(self):
+        return '%s(%d)' % (type(self).__name__, self)
+
+    def totimestamp(self):
+        """Convert 7z FILETIME to Python timestamp."""
+        # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+        return (self / 10000000.0) + TIMESTAMP_ADJUST
+
+    def as_datetime(self):
+        """Convert FILETIME to Python datetime object."""
+        return datetime.fromtimestamp(self.totimestamp(), UTC)

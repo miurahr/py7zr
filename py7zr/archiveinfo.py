@@ -34,11 +34,12 @@ import traceback
 from io import BytesIO, StringIO
 from functools import reduce
 
+from py7zr import Bad7zFile
 from py7zr.altmethods import get_compressor
 from py7zr.properties import Property, CompressionMethod, lzma_methods_map, alt_methods_map
-from py7zr.timestamp import ArchiveTimestamp
+from py7zr.py7zr import MAGIC_7Z
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
-from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32
+from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32, ArchiveTimestamp
 
 READ_BLOCKSIZE=16384
 
@@ -448,3 +449,21 @@ class Header(Base):
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
+
+
+class SignatureHeader(Base):
+    """The SignatureHeader class hold information of a signature header of archive."""
+
+    def __init__(self, file):
+        file.seek(len(MAGIC_7Z), 0)
+        self.version = unpack('BB', file.read(2))
+        self._startheadercrc = unpack('<L', file.read(4))[0]
+        self.nextheaderofs, data = self._read_real_uint64(file)
+        crc = calculate_crc32(data)
+        self.nextheadersize, data = self._read_real_uint64(file)
+        crc = calculate_crc32(data, crc)
+        data = file.read(4)
+        self.nextheadercrc = unpack('<L', data)[0]
+        crc = calculate_crc32(data, crc)
+        if crc != self._startheadercrc:
+            raise Bad7zFile('invalid header data')

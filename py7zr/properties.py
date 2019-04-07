@@ -32,32 +32,32 @@ class ByteEnum(bytes, Enum):
 
 
 class Property(ByteEnum):
-    END = unhexlify('00')  # '\x00'
-    HEADER = unhexlify('01')  # '\x01'
-    ARCHIVE_PROPERTIES = unhexlify('02')  # '\x02'
-    ADDITIONAL_STREAMS_INFO = unhexlify('03')  # '\x03'
-    MAIN_STREAMS_INFO = unhexlify('04')  # '\x04'
-    FILES_INFO = unhexlify('05')  # '\x05'
-    PACK_INFO = unhexlify('06')  # '\x06'
-    UNPACK_INFO = unhexlify('07')  # '\x07'
-    SUBSTREAMS_INFO = unhexlify('08')  # '\x08'
-    SIZE = unhexlify('09')  # '\x09'
-    CRC = unhexlify('0a')  # '\x0a'
-    FOLDER = unhexlify('0b')  # '\x0b'
-    CODERS_UNPACK_SIZE = unhexlify('0c')  # '\x0c'
-    NUM_UNPACK_STREAM = unhexlify('0d')  # '\x0d'
-    EMPTY_STREAM = unhexlify('0e')  # '\x0e'
-    EMPTY_FILE = unhexlify('0f')  # '\x0f'
-    ANTI = unhexlify('10')  # '\x10'
-    NAME = unhexlify('11')  # '\x11'
-    CREATION_TIME = unhexlify('12')  # '\x12'
-    LAST_ACCESS_TIME = unhexlify('13')  # '\x13'
-    LAST_WRITE_TIME = unhexlify('14')  # '\x14'
-    ATTRIBUTES = unhexlify('15')  # '\x15'
-    COMMENT = unhexlify('16')  # '\x16'
-    ENCODED_HEADER = unhexlify('17')  # '\x17'
-    START_POS = unhexlify('18')  # '\x18'
-    DUMMY = unhexlify('19')  # '\x19'
+    END = unhexlify('00')
+    HEADER = unhexlify('01')
+    ARCHIVE_PROPERTIES = unhexlify('02')
+    ADDITIONAL_STREAMS_INFO = unhexlify('03')
+    MAIN_STREAMS_INFO = unhexlify('04')
+    FILES_INFO = unhexlify('05')
+    PACK_INFO = unhexlify('06')
+    UNPACK_INFO = unhexlify('07')
+    SUBSTREAMS_INFO = unhexlify('08')
+    SIZE = unhexlify('09')
+    CRC = unhexlify('0a')
+    FOLDER = unhexlify('0b')
+    CODERS_UNPACK_SIZE = unhexlify('0c')
+    NUM_UNPACK_STREAM = unhexlify('0d')
+    EMPTY_STREAM = unhexlify('0e')
+    EMPTY_FILE = unhexlify('0f')
+    ANTI = unhexlify('10')
+    NAME = unhexlify('11')
+    CREATION_TIME = unhexlify('12')
+    LAST_ACCESS_TIME = unhexlify('13')
+    LAST_WRITE_TIME = unhexlify('14')
+    ATTRIBUTES = unhexlify('15')
+    COMMENT = unhexlify('16')
+    ENCODED_HEADER = unhexlify('17')
+    START_POS = unhexlify('18')
+    DUMMY = unhexlify('19')
 
 
 class CompressionMethod(ByteEnum):
@@ -112,4 +112,5 @@ lzma_methods_map = {
 alt_methods_map = {
     CompressionMethod.COPY:altmethods.FILTER_COPY,
     CompressionMethod.MISC_BZIP2:altmethods.FILTER_BZIP2,
+    CompressionMethod.MISC_ZIP:altmethods.FILTER_ZIP,
 }

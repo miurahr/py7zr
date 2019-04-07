@@ -1,6 +1,6 @@
 from datetime import datetime
 import io
-from py7zr.timestamp import UTC
+from py7zr.helper import UTC
 
 
 def decode_all(archive):

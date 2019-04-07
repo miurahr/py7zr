@@ -33,34 +33,15 @@ import threading
 from binascii import unhexlify
 from functools import reduce
 from io import BytesIO
-from struct import unpack
 
-from py7zr.callback import Worker, FileWriter, BufferWriter
-from py7zr.py7zrlib import Base, StreamsInfo, Header
+from py7zr.writerworker import Worker, FileWriter, BufferWriter
+from py7zr.archiveinfo import Base, StreamsInfo, Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, DecompressionError
 from py7zr.properties import Property, FileAttribute
 from py7zr.helper import calculate_crc32, filetime_to_dt, Local
 
 MAGIC_7Z = unhexlify('377abcaf271c')
 READ_BLOCKSIZE = 16384
-
-
-class SignatureHeader(Base):
-    """The SignatureHeader class hold information of a signature header of archive."""
-
-    def __init__(self, file):
-        file.seek(len(MAGIC_7Z), 0)
-        self.version = unpack('BB', file.read(2))
-        self._startheadercrc = unpack('<L', file.read(4))[0]
-        self.nextheaderofs, data = self._read_real_uint64(file)
-        crc = calculate_crc32(data)
-        self.nextheadersize, data = self._read_real_uint64(file)
-        crc = calculate_crc32(data, crc)
-        data = file.read(4)
-        self.nextheadercrc = unpack('<L', data)[0]
-        crc = calculate_crc32(data, crc)
-        if crc != self._startheadercrc:
-            raise Bad7zFile('invalid header data')
 
 
 # ------------------
