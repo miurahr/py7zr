@@ -218,17 +218,14 @@ class SevenZipFile(Base):
         self.afterheader = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, 1)
         buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        if not self.checkcrc(self.sig_header.nextheadercrc, buffer.getvalue()):
+        headerrawdata = buffer.getvalue()
+        if not self.checkcrc(self.sig_header.nextheadercrc, headerrawdata):
             raise Bad7zFile('invalid header data')
         self.fp.seek(self.afterheader + 0)
-        self.decode(buffer)
-
-    def decode(self, buffer):
         header = self._decode_header_or_encoded_header(self.fp, buffer)
         if header is None:
             return
         files_list = self._decode_file_info(header)
-
         # Set retrieved archive properties into SevenZipFile properties
         self.numfiles = len(files_list)
         self.header = header
@@ -246,7 +243,7 @@ class SevenZipFile(Base):
                 raise TypeError('Unknown field: %r' % (id))
 
             stream = StreamsInfo(buffer)
-            buffer = self._get_headerdata(fp, stream)
+            buffer = self._get_headerdata_from_stream(fp, stream)
         if not pid:
             # empty archive
             self.solid = False
@@ -269,8 +266,8 @@ class SevenZipFile(Base):
         else:
             subinfo = None
             folders = None
+            packinfo = None
             packsizes = []
-            self.solid = False
 
         src_pos = self.afterheader
         folder_index = 0
@@ -317,7 +314,7 @@ class SevenZipFile(Base):
             file_info['folder'] = folder
             file_info['offset'] = pos
 
-            archive_file = ArchiveFile(file_info, self.archive, folder, maxsize)
+            archive_file = ArchiveFile(file_info, self, folder, maxsize)
             if folder is not None and subinfo.digestsdefined[output_binary_index]:
                 archive_file.digest = subinfo.digests[output_binary_index]
             files_list.append(archive_file)
@@ -331,7 +328,7 @@ class SevenZipFile(Base):
             if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
                 pos = 0
                 for x in range(numinstreams):
-                    folder_pos += packinfo.packsizes[instreamindex+x]
+                    folder_pos += packinfo.packsizes[instreamindex + x]
                 src_pos = folder_pos
                 folder_index += 1
                 instreamindex += numinstreams
@@ -339,8 +336,10 @@ class SevenZipFile(Base):
 
         return files_list
 
-    def _get_headerdata(self, fp, streams):
-        data = BytesIO()
+    def _get_headerdata_from_stream(self, fp, streams):
+        """get header data from given streams.unpackinfo and packinfo.
+        folder data are stored in raw data positioned in afterheader."""
+        buffer = BytesIO()
         src_start = self.afterheader
         for folder in streams.unpackinfo.folders:
             if folder.is_encrypted():
@@ -354,14 +353,14 @@ class SevenZipFile(Base):
 
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
-            folder_data = folder.read(fp.read(compressed_size))[:uncompressed_size]
+            folder_data = folder.decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
             src_start += uncompressed_size
             if folder.digestdefined:
                 if not self.checkcrc(folder.crc, folder_data):
                     raise Bad7zFile('invalid block data')
-            data.write(folder_data)
-        return data
-
+            buffer.write(folder_data)
+        buffer.seek(0, 0)  # reset seekable buffer position
+        return buffer
 
     @classmethod
     def _check_7zfile(cls, fp):
@@ -440,7 +439,7 @@ class SevenZipFile(Base):
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
-        file.write('total %d files and directories in %sarchive\n' % (len(self.files), (self.solid and 'solid ') or ''))
+        file.write('total %d files and directories in %sarchive\n' % (self.numfiles, (self.solid and 'solid ') or ''))
         if not verbose:
             file.write('\n'.join(self.getnames()) + '\n')
             return

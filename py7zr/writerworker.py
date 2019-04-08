@@ -89,7 +89,7 @@ class Worker():
             handler = self.handler.get(f.filename, None)
             if folder is not None and handler is not None:
                 while f.size > self.buf.len:
-                    self.buf.enqueue(folder.decompress(self.fp))
+                    self.buf.enqueue(folder.decompressor.decompress(self.fp.read(READ_BLOCKSIZE)))
                 handler.write(self.buf.dequeue(f.size))
                 handler.flush()
 
