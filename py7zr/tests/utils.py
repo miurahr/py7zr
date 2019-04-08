@@ -15,7 +15,7 @@ def decode_all(archive):
         archive.get(cf, buf)
     archive.extract()
     for cf, buf in extracted:
-        actual = len(buf.read())
+        actual = len(buf.getvalue())
         assert actual == cf.uncompressed[0]
 
 
