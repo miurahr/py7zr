@@ -11,7 +11,7 @@ matrix:
 #  env: PYTHON_TAG=pypy3
 
 install:
-  - pip install tox-travis coveralls
+  - pip install tox-travis coveralls bringbuf
 
 script: tox
 
