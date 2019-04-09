@@ -113,7 +113,7 @@ class PackInfo(Base):
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
-        self.packpositions = [ sum(self.packsizes[:i]) for i in range(self.numstreams)]
+        self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
 
 
 class Folder(Base):
@@ -161,17 +161,15 @@ class Folder(Base):
         self.packed_indices = []
         if num_packedstreams == 1:
             for i in range(self.totalin):
-                if self._find_in_bin_pair(i) < 0: #  there is no in_bin_pair
+                if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
                     self.packed_indices.append(i)
         elif num_packedstreams > 1:
             for i in range(num_packedstreams):
                 self.packed_indices.append(self._read_uint64(file))
         try:
             self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
-        except:
-            raise
-
-
+        except Exception as e:
+            raise e
 
     def get_unpack_size(self):
         if not self.unpacksizes:
@@ -448,7 +446,6 @@ class Header(Base):
             buffer.write(folder_data)
         buffer.seek(0, 0)
         return buffer
-
 
     def _extract_header_info(self, fp):
         pid = fp.read(1)

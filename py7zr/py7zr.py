@@ -34,9 +34,9 @@ from functools import reduce
 from io import BytesIO
 
 from py7zr.writerworker import Worker, FileWriter, BufferWriter
-from py7zr.archiveinfo import Base, StreamsInfo, Header, SignatureHeader
-from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, DecompressionError
-from py7zr.properties import Property, FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
+from py7zr.archiveinfo import Base, Header, SignatureHeader
+from py7zr.exceptions import Bad7zFile, DecompressionError
+from py7zr.properties import FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
 from py7zr.helper import calculate_crc32, filetime_to_dt, Local
 
 
@@ -95,14 +95,14 @@ class ArchiveFile(Base):
         :return: True if unix mode is read+exec, otherwise False
         """
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes  >> 16
+            st_mode = self.attributes >> 16
             if (st_mode & 0b0101 == 0b0101):
                 return True
         return False
 
     def is_symlink(self):
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes  >> 16
+            st_mode = self.attributes >> 16
             return stat.S_ISLNK(st_mode)
         return False
 
@@ -111,7 +111,7 @@ class ArchiveFile(Base):
         :return: Return file stat mode can be set by os.chmod()
         """
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes  >> 16
+            st_mode = self.attributes >> 16
             return stat.S_IMODE(st_mode)
         return None
 
@@ -120,7 +120,7 @@ class ArchiveFile(Base):
         :return: Return the portion of the file mode that describes the file type
         """
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes  >> 16
+            st_mode = self.attributes >> 16
             return stat.S_IFMT(st_mode)
         return None
 
@@ -170,7 +170,7 @@ class SevenZipFile(Base):
         if isinstance(file, str):
             self._filePassed = False
             self.filename = file
-            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+            modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                         'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
             filemode = modeDict[mode]
             while True:
@@ -198,11 +198,11 @@ class SevenZipFile(Base):
                 raise NotImplementedError
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
-        except:
+        except Exception as e:
             fp = self.fp
             self.fp = None
             self._fpclose(fp)
-            raise
+            raise e
         self.reset()
 
     def _fpclose(self, fp):
@@ -326,7 +326,6 @@ class SevenZipFile(Base):
             return False
         return True
 
-
     def _extract(self, archive_file, path="", crc=False):
         """Extract a member from the archive to the current working directory,
            using its full name. Its file information is extracted as accurately
@@ -418,7 +417,7 @@ class SevenZipFile(Base):
             else:
                 attrib += '.'
             extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
-            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, f.size, extra,  f.filename))
+            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, f.size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
     def extractall(self, path=None, crc=False):

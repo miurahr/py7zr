@@ -10,7 +10,7 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def test_initinfo():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    assert archive != None
+    assert archive is not None
 
 
 def test_list_1():

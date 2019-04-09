@@ -1,6 +1,5 @@
 import io
 import os
-from binascii import unhexlify
 from py7zr import archiveinfo
 from py7zr.properties import Property
 
@@ -9,7 +8,7 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 def test_py7zr_signatureheader():
     header_data = io.BytesIO(b'\x37\x7a\xbc\xaf\x27\x1c\x00\x02\x70\x2a\xb7\x37\xa0\x00\x00\x00\x00\x00\x00\x00\x21'
-                            b'\x00\x00\x00\x00\x00\x00\x00\xb9\xb8\xe4\xbf')
+                             b'\x00\x00\x00\x00\x00\x00\x00\xb9\xb8\xe4\xbf')
     header = archiveinfo.SignatureHeader(header_data)
     assert header is not None
     assert header.version == (0, 2)
@@ -57,7 +56,8 @@ def test_py7zr_header():
 def test_py7zr_encoded_header():
     fp = open(os.path.join(testdata_path, 'solid.7z'), 'rb')
     # set test data to buffer that start with Property.ENCODED_HEADER
-    buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
+    buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
+                        b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
     header = archiveinfo.Header(fp, buffer, start_pos=32)
     assert header is not None
     assert header.files_info is not None

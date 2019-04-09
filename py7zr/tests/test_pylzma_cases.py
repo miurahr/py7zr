@@ -38,7 +38,7 @@ def test_github_14():
     cf = archive.getmember('github_14')
     assert cf is not None
     data = io.BytesIO()
-    archive.get(cf , data)
+    archive.get(cf, data)
     archive.extract()
     actual = data.read()
     assert len(actual) == cf.uncompressed[0]
@@ -56,16 +56,16 @@ def test_github_14():
     assert (data in (bytes('Hello GitHub issue #14 1/2.\n', 'ascii'),
                      bytes('Hello GitHub issue #14 2/2.\n', 'ascii'))) is True
     # accessing by index returns both values
-    #cf = archive.getmember(0)
-    #assert cf is not None
-    #data = cf.read()
-    #assert len(data) == cf.uncompressed
-    #assert data == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
-    #cf = archive.getmember(1)
-    #assert cf is not None
-    #data = cf.read()
-    #assert len(data) == cf.uncompressed
-    #assert data == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
+    # cf = archive.getmember(0)
+    # assert cf is not None
+    # data = cf.read()
+    # assert len(data) == cf.uncompressed
+    # assert data == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
+    # cf = archive.getmember(1)
+    # assert cf is not None
+    # data = cf.read()
+    # assert len(data) == cf.uncompressed
+    # assert data == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
 def test_github_37():
@@ -83,8 +83,8 @@ def _test_umlaut_archive(filename):
     archive.extract()
     actual = data.read()
     assert actual == bytes('This file contains a german umlaut in the filename.', 'ascii')
-    #cf.reset()
-    #assert cf.read() == bytes('This file contains a german umlaut in the filename.', 'ascii')
+    # cf.reset()
+    # assert cf.read() == bytes('This file contains a german umlaut in the filename.', 'ascii')
 
 
 def test_non_solid_umlaut():
@@ -117,7 +117,7 @@ def test_regression_1():
     archive.get(cf, buf)
     archive.extract()
     data = buf.read()
-    #assert cf.checkcrc() is True
+    # assert cf.checkcrc() is True
     assert len(data) == cf.size
 
 

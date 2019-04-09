@@ -21,10 +21,11 @@
 #
 #
 
+import sys
+import time as _time
 from datetime import datetime, timedelta, timezone, tzinfo
 from zlib import crc32
 from array import array
-import sys
 
 NEED_BYTESWAP = sys.byteorder != 'little'
 
@@ -49,11 +50,13 @@ def calculate_crc32(data, value=None, blocksize=1024 * 1024):
 
     return value & 0xffffffff
 
+
 EPOCH_AS_FILETIME = 116444736000000000
+
 
 def filetime_to_dt(ft):
     us = (ft - EPOCH_AS_FILETIME) // 10
-    return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds = us)
+    return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=us)
 
 
 ZERO = timedelta(0)
@@ -64,15 +67,15 @@ SECOND = timedelta(seconds=1)
 # (May result in wrong values on historical times in
 #  timezones where UTC offset and/or the DST rules had
 #  changed in the past.)
-import time as _time
 
-STDOFFSET = timedelta(seconds = -_time.timezone)
+STDOFFSET = timedelta(seconds=-_time.timezone)
 if _time.daylight:
-    DSTOFFSET = timedelta(seconds = -_time.altzone)
+    DSTOFFSET = timedelta(seconds=-_time.altzone)
 else:
     DSTOFFSET = STDOFFSET
 
 DSTDIFF = DSTOFFSET - STDOFFSET
+
 
 class LocalTimezone(tzinfo):
 
@@ -107,6 +110,7 @@ class LocalTimezone(tzinfo):
         stamp = _time.mktime(tt)
         tt = _time.localtime(stamp)
         return tt.tm_isdst > 0
+
 
 Local = LocalTimezone()
 TIMESTAMP_ADJUST = -11644473600

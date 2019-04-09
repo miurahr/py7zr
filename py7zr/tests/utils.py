@@ -24,22 +24,16 @@ def check_archive(archive):
     assert archive.getmember('test2.txt') is None
     cf = archive.getmember('test1.txt')
     assert cf.lastwritetime // 10000000 == 12786932628
-    assert cf.lastwritetime.as_datetime().replace(microsecond=0) == \
-        datetime(2006, 3, 15, 21, 43, 48, 0, UTC)
+    assert cf.lastwritetime.as_datetime().replace(microsecond=0) == datetime(2006, 3, 15, 21, 43, 48, 0, UTC)
     outbuf1 = io.BytesIO()
     outbuf2 = io.BytesIO()
     archive.get(cf, outbuf1)
     cf = archive.getmember('test/test2.txt')
     assert cf.lastwritetime // 10000000 == 12786932616
-    assert cf.lastwritetime.as_datetime().replace(microsecond=0) == \
-           datetime(2006, 3, 15, 21, 43, 36, 0, UTC)
+    assert cf.lastwritetime.as_datetime().replace(microsecond=0) == datetime(2006, 3, 15, 21, 43, 36, 0, UTC)
     archive.get(cf, outbuf2)
     archive.extract()
     actual = outbuf1.read()
     assert actual == bytes('This file is located in the root.', 'ascii')
     actual = outbuf2.read()
     assert actual == bytes('This file is located in a folder.', 'ascii')
-    #cf.reset()
-    #assert cf.read() == bytes('This file is located in the root.', 'ascii')
-    #cf.reset()
-    #assert cf.read() == bytes('This file is located in a folder.', 'ascii')
