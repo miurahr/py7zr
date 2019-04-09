@@ -221,8 +221,7 @@ class SevenZipFile(Base):
         headerrawdata = buffer.getvalue()
         if not self.checkcrc(self.sig_header.nextheadercrc, headerrawdata):
             raise Bad7zFile('invalid header data')
-        self.fp.seek(self.afterheader + 0)
-        header = self._decode_header_or_encoded_header(self.fp, buffer)
+        header = Header(fp, buffer, self.afterheader)
         if header is None:
             return
         files_list = self._decode_file_info(header)
@@ -232,23 +231,7 @@ class SevenZipFile(Base):
         self.filenames = list(map(lambda x: x.filename, files_list))
         self.files_map.update([(x.filename, x) for x in files_list])
         self.files = files_list
-
-    def _decode_header_or_encoded_header(self, fp, buffer):
-        while True:
-            pid = buffer.read(1)
-            if not pid or pid == Property.HEADER:
-                break
-
-            if pid != Property.ENCODED_HEADER:
-                raise TypeError('Unknown field: %r' % (id))
-
-            stream = StreamsInfo(buffer)
-            buffer = self._get_headerdata_from_stream(fp, stream)
-        if not pid:
-            # empty archive
-            self.solid = False
-            return None
-        return Header(buffer)
+        buffer.close()
 
     def _decode_file_info(self, header):
         files_list = []
@@ -335,32 +318,6 @@ class SevenZipFile(Base):
                 streamidx = 0
 
         return files_list
-
-    def _get_headerdata_from_stream(self, fp, streams):
-        """get header data from given streams.unpackinfo and packinfo.
-        folder data are stored in raw data positioned in afterheader."""
-        buffer = BytesIO()
-        src_start = self.afterheader
-        for folder in streams.unpackinfo.folders:
-            if folder.is_encrypted():
-                raise UnsupportedCompressionMethodError()
-
-            uncompressed = folder.unpacksizes
-            if not isinstance(uncompressed, (list, tuple)):
-                uncompressed = [uncompressed] * len(folder.coders)
-            compressed_size = streams.packinfo.packsizes[0]
-            uncompressed_size = uncompressed[-1]
-
-            src_start += streams.packinfo.packpos
-            fp.seek(src_start, 0)
-            folder_data = folder.decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
-            src_start += uncompressed_size
-            if folder.digestdefined:
-                if not self.checkcrc(folder.crc, folder_data):
-                    raise Bad7zFile('invalid block data')
-            buffer.write(folder_data)
-        buffer.seek(0, 0)  # reset seekable buffer position
-        return buffer
 
     @classmethod
     def _check_7zfile(cls, fp):

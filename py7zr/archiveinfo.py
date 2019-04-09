@@ -314,33 +314,33 @@ class StreamsInfo(Base):
 class FilesInfo(Base):
     """ holds file properties """
 
-    def _readTimes(self, file, files, name):
-        defined = self._read_boolean(file, len(files), checkall=1)
+    def _readTimes(self, fp, files, name):
+        defined = self._read_boolean(fp, len(files), checkall=1)
         # NOTE: the "external" flag is currently ignored, should be 0x00
-        self.external = file.read(1)
+        self.external = fp.read(1)
         for i in range(len(files)):
             if defined[i]:
-                files[i][name] = ArchiveTimestamp(self._read_real_uint64(file)[0])
+                files[i][name] = ArchiveTimestamp(self._read_real_uint64(fp)[0])
             else:
                 files[i][name] = None
 
-    def __init__(self, file):
-        self.numfiles = self._read_uint64(file)
+    def __init__(self, fp):
+        self.numfiles = self._read_uint64(fp)
         self.files = [{'emptystream': False} for x in range(self.numfiles)]
         numemptystreams = 0
         while True:
-            typ = self._read_uint64(file)
+            typ = self._read_uint64(fp)
             if typ > 255:
                 raise Bad7zFile('invalid type, must be below 256, is %d' % typ)
             typ = pack('B', typ)
             if typ == Property.END:
                 break
-            size = self._read_uint64(file)
+            size = self._read_uint64(fp)
             if typ == Property.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
-                file.seek(size, os.SEEK_CUR)
+                fp.seek(size, os.SEEK_CUR)
                 continue
-            buffer = BytesIO(file.read(size))
+            buffer = BytesIO(fp.read(size))
             if typ == Property.EMPTY_STREAM:
                 isempty = self._read_boolean(buffer, self.numfiles)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))
@@ -397,22 +397,73 @@ class FilesInfo(Base):
 class Header(Base):
     """ the archive header """
 
-    __slot__ = ['properties', 'additional_streams', 'main_streams', 'files_info']
+    __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
+                '_start_pos']
 
-    def __init__(self, file):
-        pid = file.read(1)
+    def __init__(self, fp, buffer, start_pos):
+        self._start_pos = start_pos
+        fp.seek(self._start_pos)
+        self._decode_header(fp, buffer)
+
+    def _decode_header(self, fp, buffer):
+        """
+        Decode header data or encoded header data from buffer.
+        When buffer consist of encoded buffer, it get stream data
+        from it and call itself recursively
+        """
+        pid = buffer.read(1)
+        if not pid:
+            # empty archive
+            return None
+        elif pid == Property.HEADER:
+            return self._extract_header_info(buffer)
+        elif pid != Property.ENCODED_HEADER:
+            raise TypeError('Unknown field: %r' % (id))
+        # get from encoded header
+        streams = StreamsInfo(buffer)
+        return self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
+
+    def _get_headerdata_from_streams(self, fp, streams):
+        """get header data from given streams.unpackinfo and packinfo.
+        folder data are stored in raw data positioned in afterheader."""
+        buffer = BytesIO()
+        src_start = self._start_pos
+        for folder in streams.unpackinfo.folders:
+            if folder.is_encrypted():
+                raise UnsupportedCompressionMethodError()
+
+            uncompressed = folder.unpacksizes
+            if not isinstance(uncompressed, (list, tuple)):
+                uncompressed = [uncompressed] * len(folder.coders)
+            compressed_size = streams.packinfo.packsizes[0]
+            uncompressed_size = uncompressed[-1]
+
+            src_start += streams.packinfo.packpos
+            fp.seek(src_start, 0)
+            folder_data = folder.decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
+            src_start += uncompressed_size
+            if folder.digestdefined:
+                if not self.checkcrc(folder.crc, folder_data):
+                    raise Bad7zFile('invalid block data')
+            buffer.write(folder_data)
+        buffer.seek(0, 0)
+        return buffer
+
+
+    def _extract_header_info(self, fp):
+        pid = fp.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
-            self.properties = ArchiveProperties(file)
-            pid = file.read(1)
+            self.properties = ArchiveProperties(fp)
+            pid = fp.read(1)
         if pid == Property.ADDITIONAL_STREAMS_INFO:
-            self.additional_streams = StreamsInfo(file)
-            pid = file.read(1)
+            self.additional_streams = StreamsInfo(fp)
+            pid = fp.read(1)
         if pid == Property.MAIN_STREAMS_INFO:
-            self.main_streams = StreamsInfo(file)
-            pid = file.read(1)
+            self.main_streams = StreamsInfo(fp)
+            pid = fp.read(1)
         if pid == Property.FILES_INFO:
-            self.files_info = FilesInfo(file)
-            pid = file.read(1)
+            self.files_info = FilesInfo(fp)
+            pid = fp.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
 
