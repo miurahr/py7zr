@@ -25,7 +25,7 @@
 import io
 from bringbuf.bringbuf import bRingBuf
 from py7zr.properties import READ_BLOCKSIZE
-
+from py7zr.helper import calculate_crc32
 
 class CallBack():
 
@@ -83,14 +83,12 @@ class Worker():
                 self.handler[name] = func
                 break
 
-    def extract(self):
+    def extract(self, fp):
         for f in self.files:
-            folder = f.folder
             handler = self.handler.get(f.filename, None)
-            if folder is not None and handler is not None:
+            if handler is not None:
                 while f.size > self.buf.len:
-                    indata = self.fp.read(READ_BLOCKSIZE)
-                    extracted = folder.decompressor.decompress(indata)
+                    extracted = f.decompress(None, fp)
                     self.buf.enqueue(extracted)
                 handler.write(self.buf.dequeue(f.size))
                 handler.flush()

@@ -127,7 +127,7 @@ class ArchiveFile(Base):
     def decompress(self, input, fp, can_partial_decompress=False):
         decompressor = self.folder.decompressor
         if not input:
-            remaining = self._start + self.size
+            remaining = self.size
             out = io.BytesIO()
             cache = getattr(self.folder, '_decompress_cache', None)
             if cache is not None:
@@ -154,10 +154,10 @@ class ArchiveFile(Base):
                 self.folder._decompress_cache = (data, fp.tell())
         else:
             if can_partial_decompress:
-                data = decompressor.decompress(input, self._start + self.size)
+                data = decompressor.decompress(input, self.size)
             else:
                 data = decompressor.decompress(input)
-        return data[self._start:self._start + self.size]
+        return data[: self.size]
 
 
 class SevenZipFile(Base):
@@ -260,6 +260,9 @@ class SevenZipFile(Base):
         instreamindex = 0
         folder_pos = src_pos
 
+        if getattr(header, 'files_info', None) is None:
+            return files_list
+
         for file_info in header.files_info.files:
             if not file_info['emptystream'] or folders is None:
                 folder = folders[folder_index]
@@ -326,32 +329,6 @@ class SevenZipFile(Base):
             return False
         return True
 
-    def _extract(self, archive_file, path="", crc=False):
-        """Extract a member from the archive to the current working directory,
-           using its full name. Its file information is extracted as accurately
-           as possible. `member' may be a filename or a SevenZipInfo object. You can
-           specify a different directory using `path'.
-        """
-
-        property = archive_file.property()
-        if path:
-            outfilename = os.path.join(path, property.filename)
-        else:
-            outfilename = property.filename
-
-        if property.is_directory():
-            os.makedirs(outfilename, exist_ok=True)
-        elif property.is_symlink():
-            sym_src = property.link_target()
-            if path:
-                sym_src = os.path.join(path, sym_src)
-            os.symlink(sym_src, outfilename)
-        else:
-            archive_file.extract(outfilename)
-            with open(outfilename) as f:
-                if not calculate_crc32(f.read()) == property.digest:
-                    raise DecompressionError
-
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     # interface like TarFile
@@ -387,9 +364,6 @@ class SevenZipFile(Base):
             raise DecompressionError
         self.worker.register_reader(member.filename, BufferWriter(buf))
 
-    def extract(self):
-        self.worker.extract()
-
     def list(self, verbose=True, file=sys.stdout):
         """Print a table of contents to sys.stdout. If `verbose' is False, only
            the names of the members are printed. If it is True, an `ls -l'-like
@@ -420,12 +394,16 @@ class SevenZipFile(Base):
             file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, f.size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
+    def extract(self):
+        self.worker.extract(self.fp)
+
     def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
+        target_sym = []
         self.reset()
         if path is not None and not os.path.exists(path):
             os.mkdir(path)
@@ -436,10 +414,18 @@ class SevenZipFile(Base):
                 outfilename = f.filename
             if f.is_directory():
                 os.mkdir(outfilename)
+            elif f.is_symlink():
+                sym_src = f.link_target()
+                if path:
+                    sym_src = os.path.join(path, sym_src)
+                pair = (sym_src, outfilename)
+                target_sym.append(pair)
             else:
                 self.worker.register_reader(f.filename, FileWriter(open(outfilename, 'wb')))
-        self.worker.extract()
+        self.worker.extract(self.fp)
         self.worker.close()
+        for s, t in target_sym:
+            os.symlink(s.sym_src, s.outfilename)
 
 
 # --------------------
