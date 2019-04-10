@@ -25,7 +25,6 @@
 import io
 from bringbuf.bringbuf import bRingBuf
 from py7zr.properties import READ_BLOCKSIZE
-from py7zr.helper import calculate_crc32
 
 class CallBack():
 
@@ -71,11 +70,11 @@ class FileWriter(CallBack):
 
 class Worker():
 
-    def __init__(self, files, fp):
+    def __init__(self, files, fp, src_start):
         self.handler = {}
-        self.buf = bRingBuf(READ_BLOCKSIZE * 2)
         self.files = files
         self.fp = fp
+        self.src_start = src_start
 
     def register_reader(self, name, func):
         for f in self.files:
@@ -84,13 +83,12 @@ class Worker():
                 break
 
     def extract(self, fp):
+        fp.seek(self.src_start)
         for f in self.files:
+            extracted = f.decompress(None, fp)
             handler = self.handler.get(f.filename, None)
             if handler is not None:
-                while f.size > self.buf.len:
-                    extracted = f.decompress(None, fp)
-                    self.buf.enqueue(extracted)
-                handler.write(self.buf.dequeue(f.size))
+                handler.write(extracted)
                 handler.flush()
 
     def close(self):

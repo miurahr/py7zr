@@ -29,13 +29,14 @@ from struct import pack, unpack
 import logging
 import os
 import traceback
+from bringbuf.bringbuf import bRingBuf
 from io import BytesIO, StringIO
 from functools import reduce
 
 from py7zr.decompressors import get_decompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helper import ARRAY_TYPE_UINT32, NEED_BYTESWAP, calculate_crc32, ArchiveTimestamp
-from py7zr.properties import Property, CompressionMethod, MAGIC_7Z
+from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, READ_BLOCKSIZE
 
 
 class Base(object):
@@ -170,6 +171,7 @@ class Folder(Base):
             self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
         except Exception as e:
             raise e
+        self.queue = bRingBuf(READ_BLOCKSIZE * 2)
 
     def get_unpack_size(self):
         if not self.unpacksizes:

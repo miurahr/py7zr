@@ -88,7 +88,7 @@ class DecompressorCopy():
         return data
 
     @property
-    def need_input(self):
+    def needs_input(self):
         return self.remaining > 0
 
     @property

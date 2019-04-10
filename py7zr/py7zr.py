@@ -32,12 +32,13 @@ import sys
 import threading
 from functools import reduce
 from io import BytesIO
+from bringbuf.bringbuf import bRingBuf
 
 from py7zr.writerworker import Worker, FileWriter, BufferWriter
 from py7zr.archiveinfo import Base, Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, DecompressionError
 from py7zr.properties import FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
-from py7zr.helper import calculate_crc32, filetime_to_dt, Local
+from py7zr.helper import filetime_to_dt, Local
 
 
 # ------------------
@@ -72,6 +73,7 @@ class ArchiveFile(Base):
                 self.filename = 'contents'
             else:
                 self.filename = os.path.splitext(os.path.basename(basefilename))[0]
+        self.queue = bRingBuf(READ_BLOCKSIZE * 2)
 
     def _plus(self, a, b):
         return a + b
@@ -124,40 +126,36 @@ class ArchiveFile(Base):
             return stat.S_IFMT(st_mode)
         return None
 
-    def decompress(self, input, fp, can_partial_decompress=False):
+    def decompress(self, input, fp):
+        if self.folder is None:
+            return b''
         decompressor = self.folder.decompressor
+        queue = self.folder.queue
         if not input:
-            remaining = self.size
-            out = io.BytesIO()
-            cache = getattr(self.folder, '_decompress_cache', None)
-            if cache is not None:
-                data, pos = cache
-                out.write(data)
-                remaining -= len(data)
-                fp.seek(pos)
-            checkremaining = not self.folder.solid and can_partial_decompress
-            while remaining > 0:
-                data = fp.read(READ_BLOCKSIZE)
-                if checkremaining or len(data) < READ_BLOCKSIZE:
-                    tmp = decompressor.decompress(data, remaining)
-                else:
-                    tmp = decompressor.decompress(data)
-                if not tmp and not data:
-                    raise DecompressionError('end of stream while decompressing')
-                out.write(tmp)
-                remaining -= len(tmp)
-
-            data = out.getvalue()
-            if self.folder.solid:
-                # don't decompress start of solid archive for next file
-                # TODO: limit size of cached data
-                self.folder._decompress_cache = (data, fp.tell())
+            out_remaining = self.size
+            if out_remaining > queue.len:
+                out_remaining -= queue.len
+                while out_remaining > 0:
+                    if decompressor.needs_input:
+                        inp = fp.read(READ_BLOCKSIZE)
+                    else:
+                        inp = b''
+                    if not decompressor.eof:
+                        tmp = decompressor.decompress(inp, out_remaining)
+                        queue.enqueue(tmp)
+                        out_remaining -= len(tmp)
+                    else:
+                        if queue.len < out_remaining:
+                            data = queue.dequeue(queue.len)
+                            raise DecompressionError("Corrupted data")
+            data = queue.dequeue(self.size)
         else:
-            if can_partial_decompress:
-                data = decompressor.decompress(input, self.size)
-            else:
-                data = decompressor.decompress(input)
-        return data[: self.size]
+            tmp = decompressor.decompress(input, self.size)
+            if not tmp:
+                raise DecompressionError('end of stream while decompressing')
+            queue.enqueue(tmp)
+            data = self.queue.dequeue(self.size)
+        return data
 
 
 class SevenZipFile(Base):
@@ -355,7 +353,7 @@ class SevenZipFile(Base):
 
     def reset(self):
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.fp)
+        self.worker = Worker(self.files, self.fp, self.afterheader)
 
     def get(self, member, buf):
         if not isinstance(buf, io.BytesIO):
