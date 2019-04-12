@@ -26,7 +26,7 @@ from enum import Enum, IntEnum
 
 
 MAGIC_7Z = unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 1024
+READ_BLOCKSIZE = 2048
 
 
 class ByteEnum(bytes, Enum):
@@ -65,22 +65,36 @@ class Property(ByteEnum):
 class CompressionMethod(ByteEnum):
     COPY = unhexlify('00')
     DELTA = unhexlify('03')
+    BCJ = unhexlify('04')
+    PPC = unhexlify('05')
+    IA64 = unhexlify('06')
+    ARM = unhexlify('07')
+    ARMT = unhexlify('08')
+    SPARC = unhexlify('09')
+    # 7Z = 03..
     LZMA = unhexlify('030101')
-    CRYPTO = unhexlify('06')
-    MISC = unhexlify('04')
-    MISC_ZIP = unhexlify('0401')
-    MISC_BZIP2 = unhexlify('040202')
-    MISC_DEFLATE = unhexlify('040108')
-    MISC_DEFLATE64 = unhexlify('040109')
-    MISC_PPMD = unhexlify('030401')
-    P7Z_AES256_SHA256 = unhexlify('06f10701')
-    LZMA2 = unhexlify('21')
-    BCJ = unhexlify('03030103')
+    PPMD = unhexlify('030401')
+    P7Z_BCJ = unhexlify('03030103')
+    P7Z_BCJ2 = unhexlify('0303011B')
     BCJ_PPC = unhexlify('03030205')
     BCJ_IA64 = unhexlify('03030401')
     BCJ_ARM = unhexlify('03030501')
     BCJ_ARMT = unhexlify('03030701')
     BCJ_SPARC = unhexlify('03030805')
+    LZMA2 = unhexlify('21')
+    # MISC : 04..
+    MISC_ZIP = unhexlify('0401')
+    MISC_BZIP2 = unhexlify('040202')
+    MISC_DEFLATE = unhexlify('040108')
+    MISC_DEFLATE64 = unhexlify('040109')
+    MISC_Z = unhexlify('0405')
+    MISC_LZH = unhexlify('0406')
+    NSIS_DEFLATE = unhexlify('040901')
+    NSIS_BZIP2 = unhexlify('040902')
+    # CRYPTO 06..
+    CRYPT_ZIPCRYPT = unhexlify('06f10101')
+    CRYPT_RAR29AES = unhexlify('06f10303')
+    CRYPT_AES256_SHA256 = unhexlify('06f10701')
 
 
 class FileAttribute(IntEnum):

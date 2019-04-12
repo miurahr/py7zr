@@ -23,17 +23,70 @@
 
 import sys
 import time as _time
+from binascii import unhexlify
 from datetime import datetime, timedelta, timezone, tzinfo
+from functools import reduce
 from zlib import crc32
 from array import array
+from struct import unpack
+
 
 NEED_BYTESWAP = sys.byteorder != 'little'
+
 
 if array('L').itemsize == 4:
     ARRAY_TYPE_UINT32 = 'L'
 else:
     assert array('I').itemsize == 4
     ARRAY_TYPE_UINT32 = 'I'
+
+
+def read_crc(file, count):
+    crcs = array(ARRAY_TYPE_UINT32, file.read(4 * count))
+    if NEED_BYTESWAP:
+        crcs.byteswap()
+    return crcs
+
+
+def read_real_uint64(file):
+    res = file.read(8)
+    a, b = unpack('<LL', res)
+    return b << 32 | a, res
+
+
+def read_uint64(file):
+    b = ord(file.read(1))
+    mask = 0x80
+    for i in range(8):
+        if b & mask == 0:
+            bytes = array('B', file.read(i))
+            bytes.reverse()
+            value = (bytes and reduce(lambda x, y: x << 8 | y, bytes)) or 0
+            highpart = b & (mask - 1)
+            return value + (highpart << (i * 8))
+        mask >>= 1
+
+
+def read_boolean(file, count, checkall=0):
+    if checkall:
+        all_defined = file.read(1)
+        if all_defined != unhexlify('00'):
+            return [True] * count
+    result = []
+    b = 0
+    mask = 0
+    for i in range(count):
+        if mask == 0:
+            b = ord(file.read(1))
+            mask = 0x80
+        result.append(b & mask != 0)
+        mask >>= 1
+    return result
+
+
+def checkcrc(crc, data):
+    check = calculate_crc32(data)
+    return crc == check
 
 
 def calculate_crc32(data, value=None, blocksize=1024 * 1024):

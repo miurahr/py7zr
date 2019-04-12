@@ -46,7 +46,7 @@ alt_methods_map = {
 }
 
 
-def get_decompressor(coders):
+def get_decompressor(coders, unpacksize=None):
     decompressor = None
     filters = []
     try:
@@ -68,7 +68,7 @@ def get_decompressor(coders):
             elif filter == FILTER_ZIP:
                 decompressor = zlib.decompressobj(-15)
             elif filter == FILTER_COPY:
-                decompressor = DecompressorCopy(100)
+                decompressor = DecompressorCopy(unpacksize)
             can_partial_decompress = False
         else:
             raise e

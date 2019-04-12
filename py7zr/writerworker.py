@@ -23,8 +23,7 @@
 #
 
 import io
-from bringbuf.bringbuf import bRingBuf
-from py7zr.properties import READ_BLOCKSIZE
+
 
 class CallBack():
 
@@ -85,11 +84,11 @@ class Worker():
     def extract(self, fp):
         fp.seek(self.src_start)
         for f in self.files:
-            extracted = f.decompress(None, fp)
             handler = self.handler.get(f.filename, None)
             if handler is not None:
-                handler.write(extracted)
-                handler.flush()
+                f.decompress(fp, handler)
+            else:
+                f.decompress(fp, io.BytesIO())
 
     def close(self):
         for f in self.files:

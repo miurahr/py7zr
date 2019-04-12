@@ -32,19 +32,18 @@ import sys
 import threading
 from functools import reduce
 from io import BytesIO
-from bringbuf.bringbuf import bRingBuf
 
 from py7zr.writerworker import Worker, FileWriter, BufferWriter
-from py7zr.archiveinfo import Base, Header, SignatureHeader
+from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, DecompressionError
 from py7zr.properties import FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
-from py7zr.helper import filetime_to_dt, Local
+from py7zr.helper import filetime_to_dt, Local, checkcrc
 
 
 # ------------------
 # Exported Classes
 # ------------------
-class ArchiveFile(Base):
+class ArchiveFile():
     """Informational class which holds the details about an
        archive member.
        ArchiveFile objects are returned by SevenZipFile.getmember(),
@@ -52,7 +51,8 @@ class ArchiveFile(Base):
     """
 
     __slots__ = ['digest', 'attributes', 'folder', 'size', 'uncompressed',
-                 'filename']
+                 'filename', 'maxsize', 'out_remaining', 'offset', 'emptystream',
+                 'lastwritetime', 'creationtime', 'lastaccesstime', 'compressed', 'packsizes']
 
     def __init__(self, info, archive, folder, maxsize):
         self.digest = None
@@ -73,7 +73,7 @@ class ArchiveFile(Base):
                 self.filename = 'contents'
             else:
                 self.filename = os.path.splitext(os.path.basename(basefilename))[0]
-        self.queue = bRingBuf(READ_BLOCKSIZE * 2)
+        self.out_remaining = self.size
 
     def _plus(self, a, b):
         return a + b
@@ -126,39 +126,40 @@ class ArchiveFile(Base):
             return stat.S_IFMT(st_mode)
         return None
 
-    def decompress(self, input, fp):
+    def decompress(self, fp, data):
         if self.folder is None:
             return b''
         decompressor = self.folder.decompressor
         queue = self.folder.queue
-        if not input:
-            out_remaining = self.size
-            if out_remaining > queue.len:
-                out_remaining -= queue.len
-                while out_remaining > 0:
-                    if decompressor.needs_input:
-                        inp = fp.read(READ_BLOCKSIZE)
-                    else:
-                        inp = b''
-                    if not decompressor.eof:
-                        tmp = decompressor.decompress(inp, out_remaining)
-                        queue.enqueue(tmp)
-                        out_remaining -= len(tmp)
-                    else:
-                        if queue.len < out_remaining:
-                            data = queue.dequeue(queue.len)
-                            raise DecompressionError("Corrupted data")
-            data = queue.dequeue(self.size)
-        else:
-            tmp = decompressor.decompress(input, self.size)
-            if not tmp:
-                raise DecompressionError('end of stream while decompressing')
-            queue.enqueue(tmp)
-            data = self.queue.dequeue(self.size)
-        return data
+        if queue.len > 0:
+            if self.out_remaining > queue.len:
+                self.out_remaining -= queue.len
+                data.write(queue.dequeue(queue.len))
+            else:
+                data.write(queue.dequeue(self.out_remaining))
+                self.out_remaining = 0
+                return
+
+        while self.out_remaining > 0:
+            if decompressor.needs_input:
+                inp = fp.read(READ_BLOCKSIZE)
+            else:
+                inp = b''
+            if not decompressor.eof:
+                tmp = decompressor.decompress(inp, self.out_remaining)
+                if self.out_remaining > len(tmp):
+                    data.write(tmp)
+                    self.out_remaining -= len(tmp)
+                else:
+                    queue.enqueue(tmp)
+                    data.write(queue.dequeue(self.out_remaining))
+                    break
+            else:
+                raise DecompressionError("Corrupted data")
+        return
 
 
-class SevenZipFile(Base):
+class SevenZipFile():
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file, mode='r'):
@@ -217,7 +218,7 @@ class SevenZipFile(Base):
         self.fp.seek(self.sig_header.nextheaderofs, 1)
         buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
         headerrawdata = buffer.getvalue()
-        if not self.checkcrc(self.sig_header.nextheadercrc, headerrawdata):
+        if not checkcrc(self.sig_header.nextheadercrc, headerrawdata):
             raise Bad7zFile('invalid header data')
         header = Header(fp, buffer, self.afterheader)
         if header is None:

@@ -24,17 +24,6 @@ def test_py7zr_mainstreams():
     assert streams is not None
 
 
-def test_py7zr_files_info():
-    header_data = io.BytesIO(b'\x05\x03\x0e\x01\x80\x11=\x00t\x00e\x00s\x00t\x00\x00\x00t\x00e\x00s\x00t\x001\x00.'
-                             b'\x00t\x00x\x00t\x00\x00\x00t\x00e\x00s\x00t\x00/\x00t\x00e\x00s\x00t\x002\x00.\x00t\x00x'
-                             b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
-                             b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
-    pid = header_data.read(1)
-    assert pid == Property.FILES_INFO
-    files_info = archiveinfo.FilesInfo(header_data)
-    assert files_info is not None
-
-
 def test_py7zr_header():
     fp = open(os.path.join(testdata_path, 'solid.7z'), 'rb')
     header_data = io.BytesIO(b'\x01'
@@ -64,3 +53,41 @@ def test_py7zr_encoded_header():
     assert header.main_streams is not None
     assert header.files_info.numfiles == 3
     assert len(header.files_info.files) == header.files_info.numfiles
+
+
+def test_py7zr_files_info():
+    header_data = io.BytesIO(b'\x05\x03\x0e\x01\x80\x11=\x00t\x00e\x00s\x00t\x00\x00\x00t\x00e\x00s\x00t\x001\x00.'
+                             b'\x00t\x00x\x00t\x00\x00\x00t\x00e\x00s\x00t\x00/\x00t\x00e\x00s\x00t\x002\x00.\x00t\x00x'
+                             b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
+                             b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
+    pid = header_data.read(1)
+    assert pid == Property.FILES_INFO
+    files_info = archiveinfo.FilesInfo(header_data)
+    assert files_info is not None
+
+
+def test_py7zr_files_info2():
+    header_data = io.BytesIO(b'\x05\x04\x11_\x00c\x00o\x00p\x00y\x00i\x00n\x00g\x00.\x00t\x00x\x00t\x00\x00\x00H\x00'
+                             b'i\x00s\x00t\x00o\x00r\x00y\x00.\x00t\x00x\x00t\x00\x00\x00L\x00i\x00c\x00e\x00n\x00s'
+                             b'\x00e\x00.\x00t\x00x\x00t\x00\x00\x00r\x00e\x00a\x00d\x00m\x00e\x00.\x00t\x00x\x00t\x00'
+                             b'\x00\x00\x14"\x01\x00\x00[\x17\xe6\xc70\xc1\x01\x00Vh\xb5\xda\xf8\xc5\x01\x00\x97\xbd'
+                             b'\xf9\x07\xf7\xc4\x01\x00gK\xa8\xda\xf8\xc5\x01\x15\x12\x01\x00  \x00\x00  \x00'
+                             b'\x00  \x00\x00  \x00\x00\x00\x00')
+    pid = header_data.read(1)
+    assert pid == Property.FILES_INFO
+    files_info = archiveinfo.FilesInfo(header_data)
+    assert files_info is not None
+    assert files_info.numfiles == 4
+    assert files_info.files[0].get('filename') == 'copying.txt'
+    assert files_info.files[0].get('attributes') == 0x2020
+    assert files_info.files[1].get('filename') == 'History.txt'
+    assert files_info.files[1].get('attributes') == 0x2020
+    assert files_info.files[2].get('filename') == 'License.txt'
+    assert files_info.files[2].get('attributes') == 0x2020
+    assert files_info.files[3].get('filename') == 'readme.txt'
+    assert files_info.files[3].get('attributes') == 0x2020
+
+    # assert archivefile.files_info.get('uncompressed') == 26948
+    # assert archivefile.files_info.get('uncompressed') == 26317
+    # assert archivefile.files_info.get('uncompressed') == 938
+    # assert archivefile.files_info.get('uncompressed') == 3500
