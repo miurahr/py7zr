@@ -33,7 +33,7 @@ from io import BytesIO, StringIO
 
 from py7zr.decompressors import get_decompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
-from py7zr.helper import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp, read_boolean, read_real_uint64, read_uint64
+from py7zr.helpers import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp, read_boolean, read_real_uint64, read_uint64
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, READ_BLOCKSIZE
 
 

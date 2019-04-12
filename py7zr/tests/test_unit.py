@@ -64,6 +64,9 @@ def test_py7zr_files_info():
     assert pid == Property.FILES_INFO
     files_info = archiveinfo.FilesInfo(header_data)
     assert files_info is not None
+    assert files_info.files[0].get('filename') == 'test'
+    assert files_info.files[1].get('filename') == 'test1.txt'
+    assert files_info.files[2].get('filename') == 'test/test2.txt'
 
 
 def test_py7zr_files_info2():
@@ -86,8 +89,3 @@ def test_py7zr_files_info2():
     assert files_info.files[2].get('attributes') == 0x2020
     assert files_info.files[3].get('filename') == 'readme.txt'
     assert files_info.files[3].get('attributes') == 0x2020
-
-    # assert archivefile.files_info.get('uncompressed') == 26948
-    # assert archivefile.files_info.get('uncompressed') == 26317
-    # assert archivefile.files_info.get('uncompressed') == 938
-    # assert archivefile.files_info.get('uncompressed') == 3500

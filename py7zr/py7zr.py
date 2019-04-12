@@ -33,11 +33,11 @@ import threading
 from functools import reduce
 from io import BytesIO
 
-from py7zr.writerworker import Worker, FileWriter, BufferWriter
+from py7zr.decompressors import BufferWriter, FileWriter, Worker
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, DecompressionError
 from py7zr.properties import FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
-from py7zr.helper import filetime_to_dt, Local, checkcrc
+from py7zr.helpers import filetime_to_dt, Local, checkcrc
 
 
 # ------------------

@@ -16,13 +16,14 @@
 #    You should have received a copy of the GNU Lesser General Public
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
 
-
-from py7zr.exceptions import UnsupportedCompressionMethodError
-from py7zr.properties import CompressionMethod
+import io
 import lzma
 import bz2
 import zlib
+from py7zr.exceptions import UnsupportedCompressionMethodError
+from py7zr.properties import CompressionMethod
 
 FILTER_COPY = 1
 FILTER_BZIP2 = 2
@@ -94,3 +95,64 @@ class DecompressorCopy():
     @property
     def eof(self):
         return self.remaining <= 0
+
+
+class BufferWriter():
+
+    def __init__(self, target):
+        self.buf = target
+
+    def write(self, data):
+        self.buf.write(data)
+
+    def flush(self):
+        pass
+
+    def close(self):
+        self.buf.close()
+
+
+class FileWriter():
+
+    def __init__(self, target):
+        self.fp = io.BufferedWriter(target)
+
+    def write(self, data):
+        self.fp.write(data)
+
+    def flush(self):
+        self.fp.flush()
+
+    def close(self):
+        self.fp.close()
+
+
+class Worker():
+
+    def __init__(self, files, fp, src_start):
+        self.handler = {}
+        self.files = files
+        self.fp = fp
+        self.src_start = src_start
+
+    def register_reader(self, name, func):
+        for f in self.files:
+            if name == f.filename:
+                self.handler[name] = func
+                break
+
+    def extract(self, fp):
+        fp.seek(self.src_start)
+        for f in self.files:
+            handler = self.handler.get(f.filename, None)
+            if handler is not None:
+                f.decompress(fp, handler)
+            else:
+                f.decompress(fp, io.BytesIO())
+
+    def close(self):
+        for f in self.files:
+            n = f.filename
+            handler = self.handler.get(n, None)
+            if handler is not None:
+                handler.close()
