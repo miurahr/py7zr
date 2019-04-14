@@ -20,8 +20,8 @@
 
 from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, DecompressionError
 from py7zr.properties import FileAttribute
-from py7zr.py7zr import SevenZipFile, ArchiveFile, is_7zfile, main
+from py7zr.py7zr import SevenZipFile, is_7zfile, main
 
 
-__all__ = ['SevenZipFile', 'ArchiveFile', 'is_7zfile', 'main', 'FileAttribute',
+__all__ = ['SevenZipFile', 'is_7zfile', 'main', 'FileAttribute',
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError']

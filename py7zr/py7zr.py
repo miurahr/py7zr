@@ -27,138 +27,20 @@
 import argparse
 import io
 import os
-import stat
 import sys
 import threading
-from functools import reduce
 from io import BytesIO
 
-from py7zr.decompressors import BufferWriter, FileWriter, Worker
+from py7zr.decompressors import BufferWriter, FileWriter, Worker, decode_file_info, ArchiveFile
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile, DecompressionError
-from py7zr.properties import FileAttribute, MAGIC_7Z, READ_BLOCKSIZE
+from py7zr.properties import MAGIC_7Z
 from py7zr.helpers import filetime_to_dt, Local, checkcrc
 
 
 # ------------------
 # Exported Classes
 # ------------------
-class ArchiveFile():
-    """Informational class which holds the details about an
-       archive member.
-       ArchiveFile objects are returned by SevenZipFile.getmember(),
-       SevenZipFile.getmembers() and are usually created internally.
-    """
-
-    __slots__ = ['digest', 'attributes', 'folder', 'size', 'uncompressed',
-                 'filename', 'maxsize', 'out_remaining', 'offset', 'emptystream',
-                 'lastwritetime', 'creationtime', 'lastaccesstime', 'compressed', 'packsizes']
-
-    def __init__(self, info, archive, folder, maxsize):
-        self.digest = None
-        self.attributes = None
-        self.folder = folder
-        self.maxsize = maxsize
-        for k, v in info.items():
-            setattr(self, k, v)
-        if hasattr(self, 'uncompressed'):
-            self.size = reduce(self._plus, self.uncompressed)
-        else:
-            self.size = 0
-        if not hasattr(self, 'filename'):
-            # when compressed file is stored without a name
-            try:
-                basefilename = archive.filename
-            except AttributeError:
-                self.filename = 'contents'
-            else:
-                self.filename = os.path.splitext(os.path.basename(basefilename))[0]
-        self.out_remaining = self.size
-
-    def _plus(self, a, b):
-        return a + b
-
-    def _test_attribute(self, target_bit):
-        if not self.attributes:
-            return False
-        return self.attributes & target_bit == target_bit
-
-    def is_archivable(self):
-        return self._test_attribute(FileAttribute.ARCHIVE)
-
-    def is_directory(self):
-        return self._test_attribute(FileAttribute.DIRECTORY)
-
-    def is_readonly(self):
-        return self._test_attribute(FileAttribute.READONLY)
-
-    def is_executable(self):
-        """
-        :return: True if unix mode is read+exec, otherwise False
-        """
-        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes >> 16
-            if (st_mode & 0b0101 == 0b0101):
-                return True
-        return False
-
-    def is_symlink(self):
-        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes >> 16
-            return stat.S_ISLNK(st_mode)
-        return False
-
-    def get_posix_mode(self):
-        """
-        :return: Return file stat mode can be set by os.chmod()
-        """
-        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes >> 16
-            return stat.S_IMODE(st_mode)
-        return None
-
-    def get_st_fmt(self):
-        """
-        :return: Return the portion of the file mode that describes the file type
-        """
-        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
-            st_mode = self.attributes >> 16
-            return stat.S_IFMT(st_mode)
-        return None
-
-    def decompress(self, fp, data):
-        if self.folder is None:
-            return b''
-        decompressor = self.folder.decompressor
-        queue = self.folder.queue
-        if queue.len > 0:
-            if self.out_remaining > queue.len:
-                self.out_remaining -= queue.len
-                data.write(queue.dequeue(queue.len))
-            else:
-                data.write(queue.dequeue(self.out_remaining))
-                self.out_remaining = 0
-                return
-
-        while self.out_remaining > 0:
-            if decompressor.needs_input:
-                inp = fp.read(READ_BLOCKSIZE)
-            else:
-                inp = b''
-            if not decompressor.eof:
-                tmp = decompressor.decompress(inp, self.out_remaining)
-                if self.out_remaining > len(tmp):
-                    data.write(tmp)
-                    self.out_remaining -= len(tmp)
-                else:
-                    queue.enqueue(tmp)
-                    data.write(queue.dequeue(self.out_remaining))
-                    break
-            else:
-                raise DecompressionError("Corrupted data")
-        return
-
-
 class SevenZipFile():
     """The SevenZipFile Class provides an interface to 7z archives."""
 
@@ -211,19 +93,15 @@ class SevenZipFile():
             fp.close()
 
     def _real_get_contents(self, fp):
-        if MAGIC_7Z != fp.read(len(MAGIC_7Z)):
+        if not self._check_7zfile(fp):
             raise Bad7zFile('not a 7z file')
         self.sig_header = SignatureHeader(self.fp)
         self.afterheader = self.fp.tell()
-        self.fp.seek(self.sig_header.nextheaderofs, 1)
-        buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        headerrawdata = buffer.getvalue()
-        if not checkcrc(self.sig_header.nextheadercrc, headerrawdata):
-            raise Bad7zFile('invalid header data')
-        header = Header(fp, buffer, self.afterheader)
+        buffer = self._read_header_data()
+        header = Header(self.fp, buffer, self.afterheader)
         if header is None:
             return
-        files_list = self._decode_file_info(header)
+        files_list = decode_file_info(header, self.afterheader)
         # Set retrieved archive properties into SevenZipFile properties
         self.numfiles = len(files_list)
         self.header = header
@@ -232,98 +110,17 @@ class SevenZipFile():
         self.files = files_list
         buffer.close()
 
-    def _decode_file_info(self, header):
-        files_list = []
-        self.unpacksizes = [0]
-        if hasattr(header, 'main_streams'):
-            folders = header.main_streams.unpackinfo.folders
-            packinfo = header.main_streams.packinfo
-            subinfo = header.main_streams.substreamsinfo
-            packsizes = packinfo.packsizes
-            self.solid = packinfo.numstreams == 1
-            if hasattr(subinfo, 'unpacksizes'):
-                self.unpacksizes = subinfo.unpacksizes
-            else:
-                self.unpacksizes = [x.unpacksizes for x in folders]
-        else:
-            subinfo = None
-            folders = None
-            packinfo = None
-            packsizes = []
-
-        src_pos = self.afterheader
-        folder_index = 0
-        output_binary_index = 0
-        streamidx = 0
-        pos = 0
-        instreamindex = 0
-        folder_pos = src_pos
-
-        if getattr(header, 'files_info', None) is None:
-            return files_list
-
-        for file_info in header.files_info.files:
-            if not file_info['emptystream'] or folders is None:
-                folder = folders[folder_index]
-                if streamidx == 0:
-                    folder.solid = subinfo.num_unpackstreams_folders[folder_index] > 1
-
-                maxsize = (folder.solid and packinfo.packsizes[instreamindex]) or None
-                uncompressed = self.unpacksizes[output_binary_index]
-                if not isinstance(uncompressed, (list, tuple)):
-                    uncompressed = [uncompressed] * len(folder.coders)
-                if pos > 0:
-                    # file is part of solid archive
-                    assert instreamindex < len(packsizes), 'Folder outside index for solid archive'
-                    file_info['compressed'] = packsizes[instreamindex]
-                elif instreamindex < len(packsizes):
-                    # file is compressed
-                    file_info['compressed'] = packsizes[instreamindex]
-                else:
-                    # file is not compressed
-                    file_info['compressed'] = uncompressed
-                file_info['uncompressed'] = uncompressed
-                numinstreams = 1
-                for coder in folder.coders:
-                    numinstreams = max(numinstreams, coder.get('numinstreams', 1))
-                file_info['packsizes'] = packsizes[instreamindex:instreamindex + numinstreams]
-                streamidx += 1
-            else:
-                file_info['compressed'] = 0
-                file_info['uncompressed'] = [0]
-                file_info['packsizes'] = [0]
-                folder = None
-                maxsize = 0
-                numinstreams = 1
-
-            file_info['folder'] = folder
-            file_info['offset'] = pos
-
-            archive_file = ArchiveFile(file_info, self, folder, maxsize)
-            if folder is not None and subinfo.digestsdefined[output_binary_index]:
-                archive_file.digest = subinfo.digests[output_binary_index]
-            files_list.append(archive_file)
-
-            if folder is not None:
-                if folder.solid:
-                    pos += self.unpacksizes[output_binary_index]
-                output_binary_index += 1
-            else:
-                src_pos += file_info['compressed']
-            if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
-                pos = 0
-                for x in range(numinstreams):
-                    folder_pos += packinfo.packsizes[instreamindex + x]
-                src_pos = folder_pos
-                folder_index += 1
-                instreamindex += numinstreams
-                streamidx = 0
-
-        return files_list
+    def _read_header_data(self):
+        self.fp.seek(self.sig_header.nextheaderofs, 1)
+        buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
+        headerrawdata = buffer.getvalue()
+        if not checkcrc(self.sig_header.nextheadercrc, headerrawdata):
+            raise Bad7zFile('invalid header data')
+        return buffer
 
     @classmethod
     def _check_7zfile(cls, fp):
-        signature = fp.peek(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+        signature = fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
         if signature != MAGIC_7Z:
             return False
         return True
@@ -430,17 +227,17 @@ class SevenZipFile():
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(filename):
+def is_7zfile(file):
     """Quickly see if a file is a 7Z file by checking the magic number.
     The filename argument may be a file or file-like object too.
     """
     result = False
     try:
-        if hasattr(filename, "read"):
-            result = SevenZipFile._check_7zfile(fp=filename)
-            filename.seek(0)
+        if hasattr(file, "read"):
+            result = SevenZipFile._check_7zfile(fp=file)
+            file.seek(-len(MAGIC_7Z), 1)
         else:
-            with open(filename, "rb") as fp:
+            with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
     except OSError:
         pass

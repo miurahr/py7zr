@@ -360,6 +360,25 @@ class Header():
         fp.seek(self._start_pos)
         self._decode_header(fp, buffer)
 
+    # proxy functions
+    def get_files(self):
+        return self.files_info.files
+
+    def get_decompress_info(self):
+        decompress_info = []
+        packsizes = self.main_streams.packinfo.packsizes
+        for i in range(self.main_streams.unpackinfo.numfolders):
+            coders = self.main_streams.unpackinfo.folders[i].coders
+            unpacksize = self.main_streams.unpackinfo.folders[i].get_unpack_size()
+            packsize = 0
+            for j in range(self.main_streams.unpackinfo.folders[i].totalin):
+                packsize += packsizes[j]
+            decompress_info.append((coders, unpacksize, packsize))
+        return decompress_info
+
+    def get_packpositions(self):
+        return self.main_streams.packinfo.packpositions
+
     def _decode_header(self, fp, buffer):
         """
         Decode header data or encoded header data from buffer.
