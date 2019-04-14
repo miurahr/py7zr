@@ -101,14 +101,9 @@ class SevenZipFile():
         header = Header(self.fp, buffer, self.afterheader)
         if header is None:
             return
-        files_list = decode_file_info(header, self.afterheader)
-        # Set retrieved archive properties into SevenZipFile properties
-        self.numfiles = len(files_list)
         self.header = header
-        self.filenames = list(map(lambda x: x.filename, files_list))
-        self.files_map.update([(x.filename, x) for x in files_list])
-        self.files = files_list
         buffer.close()
+        self.files, self.solid = decode_file_info(header, self.afterheader)
 
     def _read_header_data(self):
         self.fp.seek(self.sig_header.nextheaderofs, 1)
@@ -141,13 +136,7 @@ class SevenZipFile():
            than once in the archive, its last occurrence is assumed to be the
            most up-to-date version.
         """
-        try:
-            if isinstance(name, (int, int)):
-                return self.files[name]
-            else:
-                return self.files_map.get(name, None)
-        except IndexError:
-            raise KeyError("filename %r not found" % name)
+        return self.files[name]
 
     def reset(self):
         self.fp.seek(self.afterheader)
@@ -165,7 +154,7 @@ class SevenZipFile():
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
-        file.write('total %d files and directories in %sarchive\n' % (self.numfiles, (self.solid and 'solid ') or ''))
+        file.write('total %d files and directories in %sarchive\n' % (len(self.files), (self.solid and 'solid ') or ''))
         if not verbose:
             file.write('\n'.join(self.getnames()) + '\n')
             return
@@ -243,6 +232,10 @@ def is_7zfile(file):
         pass
     return result
 
+def unpack_7zarchive(archive, path, extra=None):
+    """Function for registering with shutil.register_unpack_archive()"""
+    arc = SevenZipFile(archive)
+    arc.extractall(path)
 
 def main():
     parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',

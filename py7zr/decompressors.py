@@ -21,7 +21,6 @@
 import io
 import lzma
 import bz2
-import os
 import stat
 import zlib
 from functools import reduce
@@ -213,6 +212,7 @@ def decode_file_info(header, src_pos):
         folders = None
         packinfo = None
         packsizes = []
+        solid = False
 
     folder_index = 0
     output_binary_index = 0
@@ -281,7 +281,7 @@ def decode_file_info(header, src_pos):
             instreamindex += numinstreams
             streamidx = 0
 
-    return files_list
+    return files_list, solid
 
 
 class ArchiveFile():

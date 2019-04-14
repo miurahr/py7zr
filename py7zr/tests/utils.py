@@ -6,8 +6,8 @@ from py7zr.helpers import UTC
 def decode_all(archive):
     filenames = archive.getnames()
     extracted = []
-    for filename in filenames:
-        cf = archive.getmember(filename)
+    for i, filename in enumerate(filenames):
+        cf = archive.getmember(i)
         assert cf.filename == filename
         assert cf.lastwritetime is not None
         buf = io.BytesIO()
@@ -21,14 +21,13 @@ def decode_all(archive):
 
 def check_archive(archive):
     assert sorted(archive.getnames()) == ['test', 'test/test2.txt', 'test1.txt']
-    assert archive.getmember('test2.txt') is None
-    cf = archive.getmember('test1.txt')
+    cf = archive.getmember(1)
     assert cf.lastwritetime // 10000000 == 12786932628
     assert cf.lastwritetime.as_datetime().replace(microsecond=0) == datetime(2006, 3, 15, 21, 43, 48, 0, UTC)
     outbuf1 = io.BytesIO()
     outbuf2 = io.BytesIO()
     archive.get(cf, outbuf1)
-    cf = archive.getmember('test/test2.txt')
+    cf = archive.getmember(2)
     assert cf.lastwritetime // 10000000 == 12786932616
     assert cf.lastwritetime.as_datetime().replace(microsecond=0) == datetime(2006, 3, 15, 21, 43, 36, 0, UTC)
     archive.get(cf, outbuf2)
