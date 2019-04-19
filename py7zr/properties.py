@@ -26,7 +26,7 @@ from enum import Enum, IntEnum
 
 
 MAGIC_7Z = unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 2048
+READ_BLOCKSIZE = 1024
 
 
 class ByteEnum(bytes, Enum):

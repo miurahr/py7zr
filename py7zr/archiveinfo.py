@@ -128,7 +128,7 @@ class Folder():
             self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
         except Exception as e:
             raise e
-        self.queue = bRingBuf(READ_BLOCKSIZE * 2)
+        self.queue = bRingBuf(READ_BLOCKSIZE * 10)
 
     def get_unpack_size(self):
         if not self.unpacksizes:

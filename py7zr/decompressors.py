@@ -21,7 +21,6 @@
 import io
 import lzma
 import bz2
-import shutil
 import zlib
 
 from py7zr.exceptions import UnsupportedCompressionMethodError, DecompressionError
