@@ -4,19 +4,10 @@ from py7zr.helpers import UTC
 
 
 def decode_all(archive):
-    filenames = archive.getnames()
-    extracted = []
-    for i, filename in enumerate(filenames):
-        cf = archive.getmember(i)
-        assert cf.filename == filename
-        assert cf.lastwritetime is not None
-        buf = io.BytesIO()
-        extracted.append([cf, buf])
-        archive.get(cf, buf)
-    archive.extract()
-    for cf, buf in extracted:
-        actual = len(buf.getvalue())
-        assert actual == cf.size
+    n = archive.get_num_files()
+    for i in range(n):
+        file_info = archive.files._get_file_info(i)
+        assert file_info['lastwritetime'] is not None
 
 
 def check_archive(archive):
