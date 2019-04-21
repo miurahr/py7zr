@@ -33,11 +33,10 @@ import threading
 from functools import reduce
 from io import BytesIO
 
-from py7zr import FileAttribute
-from py7zr.decompressors import Worker
+from py7zr import FileAttribute, DecompressionError
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
-from py7zr.properties import MAGIC_7Z
+from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
 from py7zr.helpers import filetime_to_dt, Local, checkcrc
 
 
@@ -490,3 +489,106 @@ def main():
             else:
                 a.extractall()
         exit(0)
+
+
+class BufferWriter():
+
+    def __init__(self, target):
+        self.buf = target
+
+    def write(self, data):
+        self.buf.write(data)
+
+    def flush(self):
+        pass
+
+    def close(self):
+        self.buf.close()
+
+
+class FileWriter():
+
+    def __init__(self, target):
+        self.fp = io.BufferedWriter(target)
+
+    def write(self, data):
+        self.fp.write(data)
+
+    def flush(self):
+        self.fp.flush()
+
+    def close(self):
+        self.fp.close()
+
+
+class Worker():
+    """Extract worker class to invoke handler"""
+
+    def __init__(self, files, fp, src_start):
+        self.handler = {}
+        self.files = files
+        self.fp = fp
+        self.src_start = src_start
+
+    def register_writer(self, index, func):
+        self.handler[index] = func
+
+    def extract(self, fp):
+        fp.seek(self.src_start)
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
+            if f.emptystream:
+                continue
+            else:
+                folder = f.folder
+                sizes = f.uncompressed
+                for s in sizes:
+                    self.decompress(fp, folder, handler, s)
+
+    def close(self):
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
+            if handler is not None:
+                handler.close()
+
+    def decompress(self, fp, folder, data, size):
+        if folder is None:
+            return b''
+        out_remaining = size
+        decompressor = folder.get_decompressor()
+        queue = folder.queue
+        queue_maxlength = QUEUELEN
+        if queue.len > 0:
+            if out_remaining > queue.len:
+                out_remaining -= queue.len
+                data.write(queue.dequeue(queue.len))
+            else:
+                data.write(queue.dequeue(out_remaining))
+                return
+
+        while out_remaining > 0:
+            if decompressor.needs_input:
+                inp = fp.read(READ_BLOCKSIZE)
+            else:
+                inp = b''
+            if not decompressor.eof:
+                max_length = min(out_remaining, queue_maxlength - queue.len)
+                tmp = decompressor.decompress(inp, max_length)
+                if out_remaining >= len(tmp):
+                    out_remaining -= len(tmp)
+                    data.write(tmp)
+                    if out_remaining <= 0:
+                        break
+                else:
+                    queue.enqueue(tmp)
+                    data.write(queue.dequeue(out_remaining))
+                    break
+            else:
+                raise DecompressionError("Corrupted data")
+        return
+
+    def register_filelike(self, id, fileish):
+        if isinstance(fileish, io.BytesIO):
+            self.register_writer(id, BufferWriter(fileish))
+        else:
+            self.register_writer(id, FileWriter(fileish))

@@ -21,6 +21,9 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+import bz2
+import lzma
+import zlib
 
 from binascii import unhexlify
 from struct import pack, unpack
@@ -31,7 +34,6 @@ import traceback
 from bringbuf.bringbuf import bRingBuf
 from io import BytesIO, StringIO
 
-from py7zr.decompressors import get_decompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp, read_boolean, read_real_uint64, read_uint64
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
@@ -131,7 +133,7 @@ class Folder():
             return self.decompressor
         else:
             try:
-                self.decompressor, self.can_partial_decompress = get_decompressor(self.coders, self.get_unpack_size())
+                self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
             except Exception as e:
                 raise e
             return self.decompressor
@@ -463,3 +465,52 @@ class SignatureHeader():
         crc = calculate_crc32(data, crc)
         if crc != self._startheadercrc:
             raise Bad7zFile('invalid header data')
+
+
+FILTER_BZIP2 = 1
+FILTER_ZIP = 2
+lzma_methods_map = {
+    CompressionMethod.LZMA: lzma.FILTER_LZMA1,
+    CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
+    CompressionMethod.DELTA: lzma.FILTER_DELTA,
+    CompressionMethod.BCJ: lzma.FILTER_X86,
+    CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
+    CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
+    CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
+    CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
+    CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
+}
+alt_methods_map = {
+    CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
+    CompressionMethod.MISC_ZIP: FILTER_ZIP,
+}
+
+
+def get_decompressor(coders):
+    decompressor = None
+    filters = []
+    try:
+        for coder in coders:
+            filter = lzma_methods_map.get(coder['method'], None)
+            if filter is not None:
+                properties = coder.get('properties', None)
+                if properties is not None:
+                    filters.append(lzma._decode_filter_properties(filter, properties))
+                else:
+                    filters.append({'id': filter})
+            else:
+                raise UnsupportedCompressionMethodError
+    except UnsupportedCompressionMethodError as e:
+        filter = alt_methods_map.get(coders[0]['method'], None)
+        if len(coders) == 1 and filter is not None:
+            if filter == FILTER_BZIP2:
+                decompressor = bz2.BZ2Decompressor()
+            elif filter == FILTER_ZIP:
+                decompressor = zlib.decompressobj(-15)
+            can_partial_decompress = False
+        else:
+            raise e
+    else:
+        decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+        can_partial_decompress = True
+    return decompressor, can_partial_decompress
