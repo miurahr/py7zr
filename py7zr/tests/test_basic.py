@@ -153,7 +153,7 @@ def test_py7zr_header():
 
 @pytest.mark.unit
 def test_py7zr_encoded_header():
-    fp = open(os.path.join(testdata_path, 'solid.7z'), 'rb')
+    fp = open(os.path.join(testdata_path, 'test_5.7z'), 'rb')
     # set test data to buffer that start with Property.ENCODED_HEADER
     buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
                         b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
