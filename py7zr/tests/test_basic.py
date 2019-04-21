@@ -8,10 +8,12 @@ from py7zr.tests import decode_all
 import pytest
 import shutil
 import tempfile
+import time
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
-
+os.environ['TZ'] = 'Asia/Tokyo'
+time.tzset()
 
 @pytest.mark.basic
 def test_basic_initinfo():
