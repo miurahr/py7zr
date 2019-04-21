@@ -137,25 +137,24 @@ class Worker():
         self.fp = fp
         self.src_start = src_start
 
-    def register_reader(self, index, func):
+    def register_writer(self, index, func):
         self.handler[index] = func
 
     def extract(self, fp):
         fp.seek(self.src_start)
-        for i in range(self.files.len()):
-            f = self.files._get_file_info(i)
-            handler = self.handler.get(i, None)
-            if f['emptystream']:
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
+            if f.emptystream:
                 continue
             else:
-                folder = f['folder']
-                sizes = f['uncompressed']
+                folder = f.folder
+                sizes = f.uncompressed
                 for s in sizes:
                     self.decompress(fp, folder, handler, s)
 
     def close(self):
-        for i in range(self.files.len()):
-            handler = self.handler.get(i, None)
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
             if handler is not None:
                 handler.close()
 
@@ -165,6 +164,7 @@ class Worker():
         out_remaining = size
         decompressor = folder.decompressor
         queue = folder.queue
+        queue_maxlength = READ_BLOCKSIZE * 10
         if queue.len > 0:
             if out_remaining > queue.len:
                 out_remaining -= queue.len
@@ -179,7 +179,8 @@ class Worker():
             else:
                 inp = b''
             if not decompressor.eof:
-                tmp = decompressor.decompress(inp, out_remaining)
+                max_length = min(out_remaining, queue_maxlength - queue.len)
+                tmp = decompressor.decompress(inp, max_length)
                 if out_remaining > len(tmp):
                     data.write(tmp)
                     out_remaining -= len(tmp)

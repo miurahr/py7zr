@@ -131,34 +131,39 @@ class SevenZipFile():
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def get_num_files(self):
-        return self.files.len()
+        return self.files.len
+
+    def getnames(self):
+        """Return the members of the archive as a list of their names. It has
+           the same order as the list returned by getmembers().
+        """
+        return list(map(lambda x: x.filename, self.files))
 
     def list(self, file=sys.stdout):
         """Print a table of contents to sys.stdout. If `verbose' is False, only
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
-        file.write('total %d files and directories in %sarchive\n' % (self.files.len(), (self.solid and 'solid ') or ''))
+        file.write('total %d files and directories in %sarchive\n' % (self.files.len, (self.solid and 'solid ') or ''))
         file.write('   Date      Time    Attr         Size   Compressed  Name\n')
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
-        for i in range(self.files.len()):
-            f = self.files._get_file_info(i)
-            if f['lastwritetime'] is not None:
-                creationdate = filetime_to_dt(f['lastwritetime']).astimezone(Local).strftime("%Y-%m-%d")
-                creationtime = filetime_to_dt(f['lastwritetime']).astimezone(Local).strftime("%H:%M:%S")
+        for f in self.files:
+            if f.lastwritetime is not None:
+                creationdate = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%Y-%m-%d")
+                creationtime = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%H:%M:%S")
             else:
                 creationdate = '         '
                 creationtime = '         '
-            if self.files.is_directory(i):
+            if f.is_directory:
                 attrib = 'D...'
             else:
                 attrib = '....'
-            if self.files.is_archivable(i):
+            if f.archivable:
                 attrib += 'A'
             else:
                 attrib += '.'
-            extra = (f['compressed'] and '%12d ' % (f['compressed'])) or '           0 '
-            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, self.files.get_uncompressed_size(i), extra, f['filename']))
+            extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
+            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
     def extractall(self, path=None, crc=False):
@@ -171,34 +176,36 @@ class SevenZipFile():
         self.reset()
         if path is not None and not os.path.exists(path):
             os.mkdir(path)
-        for i in range(self.files.len()):
-            f = self.files._get_file_info(i)
+        for f in self.files:
             if path is not None:
-                outfilename = os.path.join(path, f['filename'])
+                outfilename = os.path.join(path, f.filename)
             else:
-                outfilename = f['filename']
-            if self.files.is_directory(i):
+                outfilename = f.filename
+            if f.is_directory:
                 os.mkdir(outfilename)
-            elif self.files.is_symlink(i):
-                sym_src = f['link_target']
+            elif f.is_symlink:
+                sym_src = f.link_target
                 if path:
                     sym_src = os.path.join(path, sym_src)
                 pair = (sym_src, outfilename)
                 target_sym.append(pair)
             else:
-                self.worker.register_reader(i, FileWriter(open(outfilename, 'wb')))
+                self._register_filelike(f.id, open(outfilename, 'wb'))
         self.worker.extract(self.fp)
         self.worker.close()
         for s, t in target_sym:
             os.symlink(s.sym_src, s.outfilename)
 
+    def _register_filelike(self, id, fileish):
+        self.worker.register_writer(id, FileWriter(fileish))
+
 
 class ArchiveFilesList():
-
     def __init__(self, header, src_pos):
         self.header = header
         self.files_list = []
         self.solid = False
+        self.iteration_count = 0
         if getattr(header, 'files_info', None) is None:
             return
 
@@ -229,6 +236,7 @@ class ArchiveFilesList():
         folder_pos = src_pos
 
         for file_info in header.files_info.files:
+
             if not file_info['emptystream'] and folders is not None:
                 folder = folders[folder_index]
                 if streamidx == 0:
@@ -284,73 +292,118 @@ class ArchiveFilesList():
                 instreamindex += numinstreams
                 streamidx = 0
 
+    @property
     def len(self):
         return len(self.header.files_info.files)
 
-    def _get_file_info(self, index):
-        return self.header.files_info.files[index]
+    # for iteratable interface
+    def __iter__(self):
+        self.iteration_count = 0
+        return self
 
-    def _get_unpack_info(self):
-        return self.header.unpack_info
+    def __next__(self):
+        self.iteration_count += 1
+        if self.iteration_count > self.len:
+            raise StopIteration()
+        else:
+            return self
 
-    def get_uncompressed_size(self, index):
-        f = self._get_file_info(index)
-        return reduce(self._plus, f['uncompressed'])
+    @property
+    def id(self):
+        if self.iteration_count == 0:
+            raise RuntimeError
+        return self.iteration_count - 1
+
+    def _get_property(self, key):
+        return self.files_list[self.id][key]
+
+    @property
+    def folder(self):
+        return self._get_property('folder')
+
+    @property
+    def filename(self):
+        return self._get_property('filename')
+
+    @property
+    def emptystream(self):
+        return self._get_property('emptystream')
+
+    @property
+    def uncompressed(self):
+        return self._get_property('uncompressed')
+
+    @property
+    def uncompressed_size(self):
+        return reduce(self._plus, self.uncompressed)
+
+    @property
+    def compressed(self):
+        return self._get_property('compressed')
 
     def _plus(self, a, b):
         return a + b
 
-    def _test_attribute(self, index, target_bit):
-        f = self._get_file_info(index)
-        if f['attributes'] is None:
+    def _test_attribute(self, target_bit):
+        attributes = self._get_property('attributes')
+        if attributes is None:
             return False
-        return f['attributes'] & target_bit == target_bit
+        return attributes & target_bit == target_bit
 
-    def is_archivable(self, index):
-        return self._test_attribute(index, FileAttribute.ARCHIVE)
+    @property
+    def archivable(self):
+        return self._test_attribute(FileAttribute.ARCHIVE)
 
-    def is_directory(self, index):
-        return self._test_attribute(index, FileAttribute.DIRECTORY)
+    @property
+    def is_directory(self):
+        return self._test_attribute(FileAttribute.DIRECTORY)
 
-    def is_readonly(self, index):
-        return self._test_attribute(index.FileAttribute.READONLY)
+    @property
+    def readonly(self):
+        return self._test_attribute(FileAttribute.READONLY)
 
-    def _get_unix_extension(self, index):
-        f = self._get_file_info(index)
-        if self._test_attribute(index, FileAttribute.UNIX_EXTENSION):
-            return f['attributes'] >> 16
+    def _get_unix_extension(self):
+        attributes = self._get_property('attributes')
+        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
+            return attributes >> 16
         return None
 
-    def is_executable(self, index):
+    @property
+    def executable(self):
         """
         :return: True if unix mode is read+exec, otherwise False
         """
-        e = self._get_unix_extension(index)
+        e = self._get_unix_extension()
         if e is not None:
             if e & 0b0101 == 0b0101:
                 return True
         return False
 
-    def is_symlink(self, index):
-        e = self._get_unix_extension(index)
+    @property
+    def is_symlink(self):
+        e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
         return False
 
-    def get_posix_mode(self, index):
+    @property
+    def lastwritetime(self):
+        return self._get_property('lastwritetime')
+
+    def get_posix_mode(self):
         """
         :return: Return file stat mode can be set by os.chmod()
         """
-        e = self._get_unix_extension(index)
+        e = self._get_unix_extension()
         if e is not None:
             return stat.S_IMODE(e)
         return None
 
-    def get_st_fmt(self, index):
+    def get_st_fmt(self):
         """
         :return: Return the portion of the file mode that describes the file type
         """
-        e = self._get_unix_extension(index)
+        e = self._get_unix_extension()
         if e is not None:
             return stat.S_IFMT(e)
         return None
