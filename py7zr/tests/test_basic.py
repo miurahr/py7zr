@@ -4,7 +4,7 @@ from io import StringIO
 import py7zr
 from py7zr import archiveinfo
 from py7zr.properties import Property
-from py7zr.tests import utils
+from py7zr.tests import decode_all
 import pytest
 import shutil
 import tempfile
@@ -82,13 +82,13 @@ def test_basic_list_2():
 @pytest.mark.basic
 def test_basic_decode_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    utils.decode_all(archive)
+    decode_all(archive)
 
 
 @pytest.mark.basic
 def test_basic_decode_2():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
-    utils.decode_all(archive)
+    decode_all(archive)
 
 
 @pytest.mark.basic
