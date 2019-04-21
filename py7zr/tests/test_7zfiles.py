@@ -8,30 +8,35 @@ from py7zr.tests import utils
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 
+@pytest.mark.files
 def test_non_solid():
     f = 'non_solid.7z'
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, '%s' % f), 'rb'))
     utils.check_archive(archive)
 
 
+@pytest.mark.files
 def test_solid():
     f = 'solid.7z'
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, '%s' % f), 'rb'))
     utils.check_archive(archive)
 
 
+@pytest.mark.files
 @pytest.mark.skip()
 def test_copy():
     # test loading of copy compressed files
     utils.check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
 
 
+@pytest.mark.files
 def test_empty():
     # decompress empty archive
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
     assert archive.getnames() == []
 
 
+@pytest.mark.files
 def test_github_14():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
@@ -68,11 +73,13 @@ def test_github_14():
     # assert data == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
+@pytest.mark.files
 def test_github_37():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_37_dummy.7z'), 'rb'))
     utils.check_archive(archive)
 
 
+@pytest.mark.files
 def _test_umlaut_archive(filename):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
@@ -87,26 +94,31 @@ def _test_umlaut_archive(filename):
     # assert cf.read() == bytes('This file contains a german umlaut in the filename.', 'ascii')
 
 
+@pytest.mark.files
 def test_non_solid_umlaut():
     # test loading of a non-solid archive containing files with umlauts
     _test_umlaut_archive('umlaut-non_solid.7z')
 
 
+@pytest.mark.files
 def test_solid_umlaut():
     # test loading of a solid archive containing files with umlauts
     _test_umlaut_archive('umlaut-solid.7z')
 
 
+@pytest.mark.files
 def test_bugzilla_4():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_4.7z'), 'rb'))
     utils.decode_all(archive)
 
 
+@pytest.mark.files
 def test_bugzilla_16():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_16.7z'), 'rb'))
     utils.decode_all(archive)
 
 
+@pytest.mark.files
 def test_regression_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'regress_1.7z'), 'rb'))
     filenames = list(archive.getnames())
@@ -121,6 +133,7 @@ def test_regression_1():
     assert len(data) == cf.size
 
 
+@pytest.mark.files
 def test_github_43_provided():
     # test loading file submitted by @mikenye
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test-issue-43.7z'), 'rb'))
