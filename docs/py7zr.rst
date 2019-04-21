@@ -163,7 +163,7 @@ Instances have the following methods and attributes:
    ``True`` if this archive member is a symbolic link.
 
 
-.. attribute:: ArchiveFile.archiveable
+.. attribute:: ArchiveFile.archivable
 
    ``True`` if `Archive` property of a member is enabled, otherwise ``False``.
 

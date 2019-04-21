@@ -266,7 +266,7 @@ class ArchiveFile():
         return attributes & target_bit == target_bit
 
     @property
-    def archiveable(self):
+    def archivable(self):
         return self._test_attribute(FileAttribute.ARCHIVE)
 
     @property
