@@ -22,6 +22,7 @@ import io
 import lzma
 import bz2
 import zlib
+from bringbuf.bringbuf import bRingBuf
 
 from py7zr.exceptions import UnsupportedCompressionMethodError, DecompressionError
 from py7zr.properties import CompressionMethod, READ_BLOCKSIZE, QUEUELEN
@@ -42,7 +43,6 @@ lzma_methods_map = {
     CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
 }
 alt_methods_map = {
-    CompressionMethod.COPY: FILTER_COPY,
     CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
     CompressionMethod.MISC_ZIP: FILTER_ZIP,
 }
@@ -69,8 +69,6 @@ def get_decompressor(coders, unpacksize=None):
                 decompressor = bz2.BZ2Decompressor()
             elif filter == FILTER_ZIP:
                 decompressor = zlib.decompressobj(-15)
-            elif filter == FILTER_COPY:
-                decompressor = DecompressorCopy(unpacksize)
             can_partial_decompress = False
         else:
             raise e
@@ -78,24 +76,6 @@ def get_decompressor(coders, unpacksize=None):
         decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
         can_partial_decompress = True
     return decompressor, can_partial_decompress
-
-
-class DecompressorCopy():
-
-    def __init__(self, total):
-        self.remaining = total
-
-    def decompress(self, data, max_length=None):
-        self.remaining -= len(data)
-        return data
-
-    @property
-    def needs_input(self):
-        return self.remaining > 0
-
-    @property
-    def eof(self):
-        return self.remaining <= 0
 
 
 class BufferWriter():
@@ -162,7 +142,7 @@ class Worker():
         if folder is None:
             return b''
         out_remaining = size
-        decompressor = folder.decompressor
+        decompressor = folder.get_decompressor()
         queue = folder.queue
         queue_maxlength = QUEUELEN
         if queue.len > 0:
@@ -181,9 +161,11 @@ class Worker():
             if not decompressor.eof:
                 max_length = min(out_remaining, queue_maxlength - queue.len)
                 tmp = decompressor.decompress(inp, max_length)
-                if out_remaining > len(tmp):
-                    data.write(tmp)
+                if out_remaining >= len(tmp):
                     out_remaining -= len(tmp)
+                    data.write(tmp)
+                    if out_remaining <= 0:
+                        break
                 else:
                     queue.enqueue(tmp)
                     data.write(queue.dequeue(out_remaining))

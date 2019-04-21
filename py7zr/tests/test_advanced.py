@@ -15,6 +15,7 @@ def test_solid():
 
 
 @pytest.mark.files
+@pytest.mark.xfail
 def test_copy():
     # test loading of copy compressed files
     check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))

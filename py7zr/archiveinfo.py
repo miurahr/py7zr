@@ -34,7 +34,7 @@ from io import BytesIO, StringIO
 from py7zr.decompressors import get_decompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp, read_boolean, read_real_uint64, read_uint64
-from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, READ_BLOCKSIZE
+from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
 class ArchiveProperties():
@@ -124,14 +124,20 @@ class Folder():
         elif num_packedstreams > 1:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
-        try:
-            self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
-        except Exception as e:
-            raise e
-        self.queue = bRingBuf(READ_BLOCKSIZE * 10)
+        self.queue = bRingBuf(QUEUELEN)
+
+    def get_decompressor(self):
+        if hasattr(self, 'decompressor'):
+            return self.decompressor
+        else:
+            try:
+                self.decompressor, self.can_partial_decompress = get_decompressor(self.coders, self.get_unpack_size())
+            except Exception as e:
+                raise e
+            return self.decompressor
 
     def get_unpack_size(self):
-        if not self.unpacksizes:
+        if not hasattr(self, 'unpacksizes'):
             return 0
         for i in range(len(self.unpacksizes) - 1, -1, -1):
             if self._find_out_bin_pair(i):
@@ -414,7 +420,7 @@ class Header():
 
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
-            folder_data = folder.decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
+            folder_data = folder.get_decompressor().decompress(fp.read(compressed_size))[:uncompressed_size]
             src_start += uncompressed_size
             if folder.digestdefined:
                 if not checkcrc(folder.crc, folder_data):
