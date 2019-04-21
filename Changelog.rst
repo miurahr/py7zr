@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* setup: set universal = 0 because only python 3 is supported.
+
 Deprecated
 ----------
 
