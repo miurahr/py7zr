@@ -185,17 +185,26 @@ class SevenZipFile():
             if f.is_directory:
                 os.mkdir(outfilename)
             elif f.is_symlink:
-                sym_src = f.link_target
-                if path:
-                    sym_src = os.path.join(path, sym_src)
-                pair = (sym_src, outfilename)
+                buf = io.BytesIO()
+                pair = (buf, f.filename)
                 target_sym.append(pair)
+                self.worker.register_filelike(f.id, buf)
             else:
                 self.worker.register_filelike(f.id, open(outfilename, 'wb'))
         self.worker.extract(self.fp)
+        # Handle symlink before calling close()
+        for b, t in target_sym:
+            b.seek(0)
+            sym_src = b.read().decode(encoding='utf-8')
+            dirname = os.path.dirname(t)
+            if path:
+                sym_src = os.path.join(path, dirname, sym_src)
+                sym_dst = os.path.join(path, t)
+            else:
+                sym_src = os.path.join(dirname, sym_src)
+                sym_dst = t
+            os.symlink(sym_src, sym_dst)
         self.worker.close()
-        for s, t in target_sym:
-            os.symlink(s.sym_src, s.outfilename)
 
 
 class ArchiveFile():

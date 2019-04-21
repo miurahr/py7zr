@@ -2,6 +2,8 @@ import py7zr
 import io
 import os
 import pytest
+import shutil
+import tempfile
 from py7zr.tests import decode_all, check_archive
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -117,3 +119,12 @@ def test_github_43_provided():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test-issue-43.7z'), 'rb'))
     assert sorted(archive.getnames()) == ['blah.txt'] + ['blah%d.txt' % x for x in range(2, 10)]
     decode_all(archive)
+
+@pytest.mark.files
+def test_symlink():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
+    assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
+                                          'lib/libabc.so.1.2.3', 'lib64']
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    shutil.rmtree(tmpdir)
