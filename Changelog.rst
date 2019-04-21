@@ -30,6 +30,15 @@ Security
 --------
 
 
+`v0.0.2`_
+=============
+
+Changed
+-------
+
+* refactoring all the code.
+
+
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/a49e35b8...HEAD
-.. Should add lines such as .. _v0.20: https://github.com/miurahr/py7zr/compare/v0.10...v0.20
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.2...HEAD
+.. _v0.0.2: https://github.com/miurahr/py7zr/compare/v0.0.1...v0.0.2
