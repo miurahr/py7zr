@@ -24,7 +24,7 @@ import bz2
 import zlib
 
 from py7zr.exceptions import UnsupportedCompressionMethodError, DecompressionError
-from py7zr.properties import CompressionMethod, READ_BLOCKSIZE
+from py7zr.properties import CompressionMethod, READ_BLOCKSIZE, QUEUELEN
 
 FILTER_COPY = 1
 FILTER_BZIP2 = 2
@@ -164,7 +164,7 @@ class Worker():
         out_remaining = size
         decompressor = folder.decompressor
         queue = folder.queue
-        queue_maxlength = READ_BLOCKSIZE * 10
+        queue_maxlength = QUEUELEN
         if queue.len > 0:
             if out_remaining > queue.len:
                 out_remaining -= queue.len
@@ -191,3 +191,9 @@ class Worker():
             else:
                 raise DecompressionError("Corrupted data")
         return
+
+    def register_filelike(self, id, fileish):
+        if isinstance(fileish, io.BytesIO):
+            self.register_writer(id, BufferWriter(fileish))
+        else:
+            self.register_writer(id, FileWriter(fileish))

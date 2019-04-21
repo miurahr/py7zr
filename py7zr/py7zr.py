@@ -34,7 +34,7 @@ from functools import reduce
 from io import BytesIO
 
 from py7zr import FileAttribute
-from py7zr.decompressors import FileWriter, Worker
+from py7zr.decompressors import BufferWriter, FileWriter, Worker
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
 from py7zr.properties import MAGIC_7Z
@@ -106,7 +106,7 @@ class SevenZipFile():
             return
         self.header = header
         buffer.close()
-        self.files = ArchiveFilesList(header, self.afterheader)
+        self.files = ArchiveFilesList(self, header, self.afterheader)
         self.solid = self.files.solid
 
     def _read_header_data(self):
@@ -191,18 +191,15 @@ class SevenZipFile():
                 pair = (sym_src, outfilename)
                 target_sym.append(pair)
             else:
-                self._register_filelike(f.id, open(outfilename, 'wb'))
+                self.worker.register_filelike(f.id, open(outfilename, 'wb'))
         self.worker.extract(self.fp)
         self.worker.close()
         for s, t in target_sym:
             os.symlink(s.sym_src, s.outfilename)
 
-    def _register_filelike(self, id, fileish):
-        self.worker.register_writer(id, FileWriter(fileish))
-
 
 class ArchiveFilesList():
-    def __init__(self, header, src_pos):
+    def __init__(self, archive, header, src_pos):
         self.header = header
         self.files_list = []
         self.solid = False
@@ -276,6 +273,16 @@ class ArchiveFilesList():
             if folder is not None and subinfo.digestsdefined[output_binary_index]:
                 file_info['digest'] = subinfo.digests[output_binary_index]
 
+            if not 'filename' in file_info:
+                # compressed file is stored without a name, generate one
+                try:
+                    basefilename = archive.filename
+                except AttributeError:
+                    # 7z archive file doesn't have a name
+                    file_info['filename'] = 'contents'
+                else:
+                    file_info['filename'] = os.path.splitext(os.path.basename(basefilename))[0]
+
             self.files_list.append(file_info)
 
             if folder is not None:
@@ -295,7 +302,9 @@ class ArchiveFilesList():
 
     @property
     def len(self):
-        return len(self.header.files_info.files)
+        if getattr(self.header, 'files_info', None) is not None:
+            return len(self.header.files_info.files)
+        return 0
 
     # for iteratable interface
     def __iter__(self):
@@ -316,7 +325,10 @@ class ArchiveFilesList():
         return self.iteration_count - 1
 
     def _get_property(self, key):
-        return self.files_list[self.id][key]
+        try:
+            return self.files_list[self.id][key]
+        except KeyError:
+            return None
 
     @property
     def folder(self):
