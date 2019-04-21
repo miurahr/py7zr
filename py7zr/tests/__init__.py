@@ -13,12 +13,12 @@ def check_archive(archive):
     expected = []
     outbuf = []
     expected.append({'filename':'test'})
-    expected.append({'lastwritetime':12786932628, 'as_datetime':datetime(2006, 3, 15, 21, 43, 48, 0, UTC),
-                     'filename':'test1.txt',
-                     'contents':bytes('This file is located in the root.', 'ascii')})
     expected.append({'lastwritetime':12786932616, 'as_datetime':datetime(2006, 3, 15, 21, 43, 36, 0, UTC),
                      'filename':'test/test2.txt',
                      'contents':bytes('This file is located in a folder.', 'ascii')})
+    expected.append({'lastwritetime':12786932628, 'as_datetime':datetime(2006, 3, 15, 21, 43, 48, 0, UTC),
+                     'filename':'test1.txt',
+                     'contents':bytes('This file is located in the root.', 'ascii')})
     for i, cf in enumerate(archive.files):
         assert cf.filename == expected[i]['filename']
         if not cf.is_directory:
@@ -30,7 +30,7 @@ def check_archive(archive):
     archive.worker.extract(archive.fp)
     outbuf[0].seek(0, 0)
     actual = outbuf[0].read()
-    assert actual == bytes('This file is located in the root.', 'ascii')
+    assert actual == bytes('This file is located in a folder.', 'ascii')
     outbuf[1].seek(0, 0)
     actual = outbuf[1].read()
-    assert actual == bytes('This file is located in a folder.', 'ascii')
+    assert actual == bytes('This file is located in the root.', 'ascii')

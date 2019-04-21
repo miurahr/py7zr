@@ -15,7 +15,6 @@ def test_solid():
 
 
 @pytest.mark.files
-@pytest.mark.skip()
 def test_copy():
     # test loading of copy compressed files
     check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
@@ -46,6 +45,7 @@ def test_github_14():
 
 
 @pytest.mark.files
+@pytest.mark.xfail
 def test_github_14_multi():
     """ multiple unnamed objects."""
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
