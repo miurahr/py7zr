@@ -48,7 +48,7 @@ def test_github_14():
 
 
 @pytest.mark.files
-@pytest.mark.xfail
+@pytest.mark.skip
 def test_github_14_multi():
     """ multiple unnamed objects."""
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
