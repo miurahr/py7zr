@@ -34,9 +34,9 @@ from functools import reduce
 from io import BytesIO
 
 from py7zr import FileAttribute
-from py7zr.decompressors import BufferWriter, FileWriter, Worker
+from py7zr.decompressors import FileWriter, Worker
 from py7zr.archiveinfo import Header, SignatureHeader
-from py7zr.exceptions import Bad7zFile, DecompressionError
+from py7zr.exceptions import Bad7zFile
 from py7zr.properties import MAGIC_7Z
 from py7zr.helpers import filetime_to_dt, Local, checkcrc
 
@@ -163,7 +163,8 @@ class SevenZipFile():
             else:
                 attrib += '.'
             extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
-            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib, f.uncompressed_size, extra, f.filename))
+            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
+                                                  f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
     def extractall(self, path=None, crc=False):
