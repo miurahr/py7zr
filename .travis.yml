@@ -5,8 +5,6 @@ matrix:
       env: PYTHON_TAG=py35
     - python: 3.6
       env: PYTHON_TAG=py36
-    - python: 3.7
-      env: PYTHON_TAG=py37
 
 install:
   - pip install tox-travis coveralls bringbuf
