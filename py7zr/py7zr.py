@@ -34,7 +34,7 @@ from functools import reduce
 from io import BytesIO
 
 from py7zr import FileAttribute
-from py7zr.decompressors import BufferWriter, FileWriter, Worker
+from py7zr.decompressors import Worker
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
 from py7zr.properties import MAGIC_7Z
@@ -399,7 +399,7 @@ class ArchiveFilesList():
             if folder is not None and subinfo.digestsdefined[output_binary_index]:
                 file_info['digest'] = subinfo.digests[output_binary_index]
 
-            if not 'filename' in file_info:
+            if 'filename' not in file_info:
                 # compressed file is stored without a name, generate one
                 try:
                     basefilename = archive.filename

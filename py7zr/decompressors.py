@@ -22,7 +22,6 @@ import io
 import lzma
 import bz2
 import zlib
-from bringbuf.bringbuf import bRingBuf
 
 from py7zr.exceptions import UnsupportedCompressionMethodError, DecompressionError
 from py7zr.properties import CompressionMethod, READ_BLOCKSIZE, QUEUELEN
@@ -48,7 +47,7 @@ alt_methods_map = {
 }
 
 
-def get_decompressor(coders, unpacksize=None):
+def get_decompressor(coders):
     decompressor = None
     filters = []
     try:

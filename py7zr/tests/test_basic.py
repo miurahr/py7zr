@@ -15,6 +15,7 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.environ['TZ'] = 'Asia/Tokyo'
 time.tzset()
 
+
 @pytest.mark.basic
 def test_basic_initinfo():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))

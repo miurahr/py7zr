@@ -29,6 +29,7 @@ MAGIC_7Z = unhexlify('377abcaf271c')
 READ_BLOCKSIZE = 1024
 QUEUELEN = READ_BLOCKSIZE * 2
 
+
 class ByteEnum(bytes, Enum):
     pass
 

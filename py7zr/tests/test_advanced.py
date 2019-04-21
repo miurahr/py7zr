@@ -120,6 +120,7 @@ def test_github_43_provided():
     assert sorted(archive.getnames()) == ['blah.txt'] + ['blah%d.txt' % x for x in range(2, 10)]
     decode_all(archive)
 
+
 @pytest.mark.files
 def test_symlink():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
