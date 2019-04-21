@@ -12,7 +12,7 @@ def readme():
 
 
 setup(name='py7zr',
-      version='0.0.1',
+      version='0.0.2',
       description='Pure python 7zr implementation',
       url='http://github.com/miurahr/py7zr',
       license='LGPL-2.1',
