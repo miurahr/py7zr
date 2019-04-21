@@ -24,212 +24,36 @@
 #
 """Read 7zip format archives."""
 
+import argparse
 import io
-import lzma
 import os
+import stat
 import sys
 import threading
-from binascii import unhexlify
+from functools import reduce
 from io import BytesIO
-from struct import unpack
 
-
-from py7zr.py7zrlib import Base, StreamsInfo, Header
-from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError, DecompressionError
-from py7zr.properties import Property, CompressionMethod, FileAttribute
-from py7zr.helper import calculate_crc32
-
-MAGIC_7Z = unhexlify('377abcaf271c')  # '7z\xbc\xaf\x27\x1c'
-READ_BLOCKSIZE = 16384
+from py7zr import FileAttribute, DecompressionError
+from py7zr.archiveinfo import Header, SignatureHeader
+from py7zr.exceptions import Bad7zFile
+from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
+from py7zr.helpers import filetime_to_dt, Local, checkcrc
 
 
 # ------------------
 # Exported Classes
 # ------------------
-class ArchiveFile(Base):
-    """Informational class which holds the details about an
-       archive member.
-       ArchiveFile objects are returned by SevenZipFile.getmember(),
-       SevenZipFile.getmembers() and are usually created internally.
-    """
-
-    __slots__ = ["folder", "filename", "size", "compressed", "uncompressed",
-                 "creationtime", "lastaccesstime", "lastwritetime", "attributes",
-                 "digest", "pos", "emptystream",
-                 "_file", "_start", "_src_start", "_maxsize",
-                 "_uncompressed", "_decoders"]
-
-    def __init__(self, info, start, src_start, folder, file, maxsize=None):
-        self.digest = None
-        self._file = file
-        self._start = start
-        self._src_start = src_start
-        self.folder = folder
-        # maxsize is only valid for solid archives
-        self._maxsize = maxsize
-        for k, v in info.items():
-            setattr(self, k, v)
-        self.size = self.uncompressed = self._uncompressed[-1]
-        if not hasattr(self, 'filename'):
-            # compressed file is stored without a name, generate one
-            try:
-                basefilename = self._file.name
-            except AttributeError:
-                # 7z archive file doesn't have a name
-                self.filename = 'contents'
-            else:
-                self.filename = os.path.splitext(os.path.basename(basefilename))[0]
-        self.reset()
-        self._decoders = {
-            CompressionMethod.COPY: '_read_copy',
-            CompressionMethod.LZMA: '_read_lzma',
-            CompressionMethod.LZMA2: '_read_lzma2',
-        }
-
-    def _read_copy(self, coder, input, level, num_coders):
-        size = self._uncompressed[level]
-        if not input:
-            self._file.seek(self._src_start)
-            input = self._file.read(size)
-        return input[self._start:self._start + size]
-
-    def _get_decompressor(self, coder, filter):
-        properties = coder.get('properties', None)
-        if properties:
-            decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[
-                lzma._decode_filter_properties(filter, properties)
-            ])
-        else:
-            decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=[{'id': filter}])
-        return decompressor
-
-    def _read_decompress(self, coder, input, level, num_coders, filter):
-        size = self._uncompressed[level]
-        is_last_coder = (level + 1) == num_coders
-        can_partial_decompress = True
-        with_cache = True
-        total = self.compressed
-        if is_last_coder and not self.folder.solid:
-            maxlength = self._start + size
-        else:
-            maxlength = -1
-        try:
-            decompressor = self._get_decompressor(coder, filter)
-            if not input and is_last_coder:
-                remaining = self._start + size
-                out = BytesIO()
-                cache = getattr(self.folder, '_decompress_cache', None)
-                if cache is not None:
-                    data, pos, decompressor = cache
-                    out.write(data)
-                    remaining -= len(data)
-                    self._file.seek(pos)
-                else:
-                    self._file.seek(self._src_start)
-                check_remaining = is_last_coder and not self.folder.solid and can_partial_decompress
-                while remaining > 0:
-                    read_data = self._file.read(READ_BLOCKSIZE)
-                    if check_remaining or (with_cache and len(read_data) < READ_BLOCKSIZE):
-                        tmp = decompressor.decompress(read_data, max_length=remaining)
-                    else:
-                        tmp = decompressor.decompress(read_data, max_length=maxlength)
-                    out.write(tmp)
-                    remaining -= len(tmp)
-                    if decompressor.eof:
-                        break
-                    if decompressor.needs_input:
-                        pass
-                data = out.getvalue()
-                if with_cache and self.folder.solid:
-                    # don't decompress start of solid archive for next file
-                    # TODO: limit size of cached data
-                    self.folder._decompress_cache = (data, self._file.tell(), decompressor)
-            else:
-                if not input:
-                    self._file.seek(self._src_start)
-                    read_data = self._file.read(total)
-                else:
-                    read_data = input
-                if is_last_coder and can_partial_decompress:
-                    data = decompressor.decompress(read_data, max_length=self._start + size)
-                else:
-                    data = decompressor.decompress(read_data, max_length=maxlength)
-                    if can_partial_decompress and not is_last_coder:
-                        return data
-        except ValueError:
-            if self.is_encrypted():
-                raise UnsupportedCompressionMethodError()
-
-        return data[self._start:self._start + size]
-
-    def _read_lzma(self, coder, input, level, num_coders):
-        return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA1)
-
-    def _read_lzma2(self, coder, input, level, num_coders):
-        return self._read_decompress(coder, input, level, num_coders, lzma.FILTER_LZMA2)
-
-    # --------------------------------------------------------------------------
-    # The public methods which ArchiveFile provides:
-
-    def is_encrypted(self):
-        return self.folder.is_encrypted()
-
-    def reset(self):
-        self.pos = 0
-
-    def read(self):
-        if not self.size:
-            return ''
-        elif not self.folder.coders:
-            raise TypeError("file has no coder information")
-        data = None
-        num_coders = len(self.folder.coders)
-        for level, coder in enumerate(self.folder.coders):
-            method = coder['method']
-            decoder = None
-            while method and decoder is None:
-                decoder = self._decoders.get(method, None)
-                method = method[:-1]
-            if decoder is None:
-                raise UnsupportedCompressionMethodError(repr(coder['method']))
-            data = getattr(self, decoder)(coder, data, level, num_coders)
-        return data
-
-    def checkcrc(self):
-        if self.digest is None:
-            return True
-        self.reset()
-        return super(ArchiveFile, self).checkcrc(self.digest, self.read())
-
-class SignatureHeader(Base):
-    """The SignatureHeader class hold information of a signature header of archive."""
-
-    def __init__(self, file):
-        file.seek(len(MAGIC_7Z), 0)
-        self.version = unpack('BB', file.read(2))
-        self._startheadercrc = unpack('<L', file.read(4))[0]
-        self.nextheaderofs, data = self._read_real_uint64(file)
-        crc = calculate_crc32(data)
-        self.nextheadersize, data = self._read_real_uint64(file)
-        crc = calculate_crc32(data, crc)
-        data = file.read(4)
-        self.nextheadercrc = unpack('<L', data)[0]
-        crc = calculate_crc32(data, crc)
-        if crc != self._startheadercrc:
-            raise Bad7zFile('invalid header data')
-
-
-class SevenZipFile(Base):
+class SevenZipFile():
     """The SevenZipFile Class provides an interface to 7z archives."""
-
-    _fileRefCnt = ...  # type: int
 
     def __init__(self, file, mode='r'):
         # Check if we were passed a file-like object or not
+        self.files = []
+        self.files_map = {}
         if isinstance(file, str):
             self._filePassed = False
             self.filename = file
-            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+            modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                         'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
             filemode = modeDict[mode]
             while True:
@@ -247,20 +71,22 @@ class SevenZipFile(Base):
             self.filename = getattr(file, 'name', None)
         self._fileRefCnt = 1
         self._lock = threading.RLock()
+        self.solid = False
         try:
             if mode == "r":
-                self._real_get_contents()
+                self._real_get_contents(self.fp)
             elif mode in ('w', 'x'):
                 raise NotImplementedError
             elif mode == 'a':
                 raise NotImplementedError
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
-        except:
+        except Exception as e:
             fp = self.fp
             self.fp = None
             self._fpclose(fp)
-            raise
+            raise e
+        self.reset()
 
     def _fpclose(self, fp):
         assert self._fileRefCnt > 0
@@ -268,160 +94,43 @@ class SevenZipFile(Base):
         if not self._fileRefCnt and not self._filePassed:
             fp.close()
 
-    def _real_get_contents(self):
-        if MAGIC_7Z != self.fp.read(len(MAGIC_7Z)):
+    def _real_get_contents(self, fp):
+        if not self._check_7zfile(fp):
             raise Bad7zFile('not a 7z file')
-        self._sig_header = SignatureHeader(self.fp)
-        self._afterheader = self.fp.tell()
-        self.fp.seek(self._sig_header.nextheaderofs, 1)
-        buffer = BytesIO(self.fp.read(self._sig_header.nextheadersize))
-        if not self.checkcrc(self._sig_header.nextheadercrc, buffer.getvalue()):
-            raise Bad7zFile('invalid header data')
-        self.files = []
-        self.files_map = {}
-        while True:
-            pid = buffer.read(1)
-            if not pid or pid == Property.HEADER:
-                break
-
-            if pid != Property.ENCODED_HEADER:
-                raise TypeError('Unknown field: %r' % (id))
-
-            streams = StreamsInfo(buffer)
-            self.fp.seek(self._afterheader + 0)
-            buffer = self._get_folder_data(streams)
-        if not pid:
-            # empty archive
-            self.solid = False
+        self.sig_header = SignatureHeader(self.fp)
+        self.afterheader = self.fp.tell()
+        buffer = self._read_header_data()
+        header = Header(self.fp, buffer, self.afterheader)
+        if header is None:
             return
-        self.header = Header(buffer)
-        self._get_files_information()
-        self.files_map.update([(x.filename, x) for x in self.files])
+        self.header = header
+        buffer.close()
+        self.files = ArchiveFilesList(self, header, self.afterheader)
+        self.solid = self.files.solid
 
-    def _get_files_information(self):
-        if hasattr(self.header, 'main_streams'):
-            self.solid = self.header.main_streams.packinfo.num_streams == 1
-            if hasattr(self.header.main_streams.substreamsinfo, 'unpacksizes'):
-                self._unpacksizes = self.header.main_streams.substreamsinfo.unpacksizes
-            else:
-                self._unpacksizes = [x.unpacksizes for x in self.header.main_streams.unpackinfo.folders]
-        else:
-            self.solid = False
+    def _read_header_data(self):
+        self.fp.seek(self.sig_header.nextheaderofs, 1)
+        buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
+        headerrawdata = buffer.getvalue()
+        if not checkcrc(self.sig_header.nextheadercrc, headerrawdata):
+            raise Bad7zFile('invalid header data')
+        return buffer
 
-        fidx = 0
-        obidx = 0
-        streamidx = 0
-        src_pos = self._afterheader
-        pos = 0
-        folder_pos = src_pos
-        for info in self.header.files.files:
-            # Skip all directory entries.
-            attributes = info.get('attributes', None)
-            if attributes and attributes & FileAttribute.DIRECTORY != 0:
-                continue
-
-            if not info['emptystream']:
-                folder = self.header.main_streams.unpackinfo.folders[fidx]
-                if streamidx == 0:
-                    folder.solid = self.header.main_streams.substreamsinfo.num_unpackstreams[fidx] > 1
-
-                maxsize = (folder.solid and self.header.main_streams.packinfo.packsizes[fidx]) or None
-                uncompressed = self._unpacksizes[obidx]
-                if not isinstance(uncompressed, (list, tuple)):
-                    uncompressed = [uncompressed] * len(folder.coders)
-                if pos > 0:
-                    # file is part of solid archive
-                    assert fidx < len(self.header.main_streams.packinfo.packsizes), 'Folder outside index for solid archive'
-                    info['compressed'] = self.header.main_streams.packinfo.packsizes[fidx]
-                elif fidx < len(self.header.main_streams.packinfo.packsizes):
-                    # file is compressed
-                    info['compressed'] = self.header.main_streams.packinfo.packsizes[fidx]
-                else:
-                    # file is not compressed
-                    info['compressed'] = uncompressed
-                info['_uncompressed'] = uncompressed
-            else:
-                info['compressed'] = 0
-                info['_uncompressed'] = [0]
-                folder = None
-                maxsize = 0
-
-            archive_file = ArchiveFile(info, pos, src_pos, folder, self.fp, maxsize=maxsize)
-            if folder is not None and self.header.main_streams.substreamsinfo.digestsdefined[obidx]:
-                archive_file.digest = self.header.main_streams.substreamsinfo.digests[obidx]
-            self.files.append(archive_file)
-            if folder is not None and folder.solid:
-                pos += self._unpacksizes[obidx]
-            else:
-                src_pos += info['compressed']
-            obidx += 1
-            streamidx += 1
-            if folder is not None and streamidx >= self.header.main_streams.substreamsinfo.num_unpackstreams[fidx]:
-                pos = 0
-                folder_pos += self.header.main_streams.packinfo.packsizes[fidx]
-                src_pos = folder_pos
-                fidx += 1
-                streamidx = 0
-
-
-    def _get_folder_data(self, streams):
-            data = bytes('', 'ascii')
-            src_start = self._afterheader
-            for folder in streams.unpackinfo.folders:
-                if folder.is_encrypted():
-                    raise UnsupportedCompressionMethodError()
-
-                src_start += streams.packinfo.packpos
-                uncompressed = folder.unpacksizes
-                if not isinstance(uncompressed, (list, tuple)):
-                    uncompressed = [uncompressed] * len(folder.coders)
-                info = {
-                    'compressed': streams.packinfo.packsizes[0],
-                    '_uncompressed': uncompressed,
-                }
-                tmp = ArchiveFile(info, 0, src_start, folder, self.fp)
-                uncompressed_size = uncompressed[-1]
-                folderdata = tmp.read()[:uncompressed_size]
-                src_start += uncompressed_size
-
-                if folder.digestdefined:
-                    if not self.checkcrc(folder.crc, folderdata):
-                        raise Bad7zFile('invalid block data')
-
-                data += folderdata
-
-            return BytesIO(data)
+    def reset(self):
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.fp, self.afterheader)
 
     @classmethod
     def _check_7zfile(cls, fp):
-        signature = fp.read(len(MAGIC_7Z))
+        signature = fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
         if signature != MAGIC_7Z:
             return False
         return True
 
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
-    # interface like TarFile
-
-    def getmember(self, name):
-        """Return a SevenZipInfo object for member `name'. If `name' can not be
-           found in the archive, KeyError is raised. If a member occurs more
-           than once in the archive, its last occurrence is assumed to be the
-           most up-to-date version.
-        """
-        try:
-            if isinstance(name, (int, int)):
-                return self.files[name]
-            else:
-                return self.files_map.get(name, None)
-        except IndexError:
-            raise KeyError("filename %r not found" % name)
-
-    def getmembers(self):
-        """Return the members of the archive as a list of SevenZipInfo objects. The
-           list has the same order as the members in the archive.
-        """
-        return self.files
+    def get_num_files(self):
+        return self.files.len
 
     def getnames(self):
         """Return the members of the archive as a list of their names. It has
@@ -429,79 +138,457 @@ class SevenZipFile(Base):
         """
         return list(map(lambda x: x.filename, self.files))
 
-    def list(self, verbose=True, file=sys.stdout):
+    def list(self, file=sys.stdout):
         """Print a table of contents to sys.stdout. If `verbose' is False, only
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
-        file.write('total %d files in %sarchive\n' % (len(self.files), (self.solid and 'solid ') or ''))
-        if not verbose:
-            file.write('\n'.join(self.getnames()) + '\n')
-            return
-
+        file.write('total %d files and directories in %sarchive\n' % (self.files.len, (self.solid and 'solid ') or ''))
+        file.write('   Date      Time    Attr         Size   Compressed  Name\n')
+        file.write('------------------- ----- ------------ ------------  ------------------------\n')
         for f in self.files:
-            extra = (f.compressed and '%10d ' % (f.compressed)) or ' '
-            file.write('%10d%s%.8x %s\n' % (f.size, extra, f.digest, f.filename))
+            if f.lastwritetime is not None:
+                creationdate = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%Y-%m-%d")
+                creationtime = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%H:%M:%S")
+            else:
+                creationdate = '         '
+                creationtime = '         '
+            if f.is_directory:
+                attrib = 'D...'
+            else:
+                attrib = '....'
+            if f.archivable:
+                attrib += 'A'
+            else:
+                attrib += '.'
+            extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
+            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
+                                                  f.uncompressed_size, extra, f.filename))
+        file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
-    def extractall(self, path=None):
+    def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        for member in self.files:
-            self.extract(member, path=path)
+        target_sym = []
+        self.reset()
+        if path is not None and not os.path.exists(path):
+            os.mkdir(path)
+        for f in self.files:
+            if path is not None:
+                outfilename = os.path.join(path, f.filename)
+            else:
+                outfilename = f.filename
+            if f.is_directory:
+                os.mkdir(outfilename)
+            elif f.is_symlink:
+                buf = io.BytesIO()
+                pair = (buf, f.filename)
+                target_sym.append(pair)
+                self.worker.register_filelike(f.id, buf)
+            else:
+                self.worker.register_filelike(f.id, open(outfilename, 'wb'))
+        self.worker.extract(self.fp)
+        # Handle symlink before calling close()
+        for b, t in target_sym:
+            b.seek(0)
+            sym_src = b.read().decode(encoding='utf-8')
+            dirname = os.path.dirname(t)
+            if path:
+                sym_src = os.path.join(path, dirname, sym_src)
+                sym_dst = os.path.join(path, t)
+            else:
+                sym_src = os.path.join(dirname, sym_src)
+                sym_dst = t
+            os.symlink(sym_src, sym_dst)
+        self.worker.close()
 
-    def extract(self, member, path=""):
-        """Extract a member from the archive to the current working directory,
-           using its full name. Its file information is extracted as accurately
-           as possible. `member' may be a filename or a SevenZipInfo object. You can
-           specify a different directory using `path'.
+
+class ArchiveFile():
+    def __init__(self, fileslist, length):
+        self.files_list = fileslist
+        self.length = length
+        self.iteration_count = 0
+
+    def __next__(self):
+        self.iteration_count += 1
+        if self.iteration_count > self.length:
+            raise StopIteration()
+        else:
+            return self
+
+    @property
+    def id(self):
+        if self.iteration_count == 0:
+            raise RuntimeError
+        return self.iteration_count - 1
+
+    def _get_property(self, key):
+        try:
+            return self.files_list[self.id][key]
+        except KeyError:
+            return None
+
+    @property
+    def folder(self):
+        return self._get_property('folder')
+
+    @property
+    def filename(self):
+        return self._get_property('filename')
+
+    @property
+    def emptystream(self):
+        return self._get_property('emptystream')
+
+    @property
+    def uncompressed(self):
+        return self._get_property('uncompressed')
+
+    @property
+    def uncompressed_size(self):
+        return reduce(self._plus, self.uncompressed)
+
+    @property
+    def compressed(self):
+        return self._get_property('compressed')
+
+    def _plus(self, a, b):
+        return a + b
+
+    def _test_attribute(self, target_bit):
+        attributes = self._get_property('attributes')
+        if attributes is None:
+            return False
+        return attributes & target_bit == target_bit
+
+    @property
+    def archivable(self):
+        return self._test_attribute(FileAttribute.ARCHIVE)
+
+    @property
+    def is_directory(self):
+        return self._test_attribute(FileAttribute.DIRECTORY)
+
+    @property
+    def readonly(self):
+        return self._test_attribute(FileAttribute.READONLY)
+
+    def _get_unix_extension(self):
+        attributes = self._get_property('attributes')
+        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
+            return attributes >> 16
+        return None
+
+    @property
+    def executable(self):
         """
-        if isinstance(member, str):
-            target = self.getmember(member)
+        :return: True if unix mode is read+exec, otherwise False
+        """
+        e = self._get_unix_extension()
+        if e is not None:
+            if e & 0b0101 == 0b0101:
+                return True
+        return False
+
+    @property
+    def is_symlink(self):
+        e = self._get_unix_extension()
+        if e is not None:
+            return stat.S_ISLNK(e)
+        return False
+
+    @property
+    def lastwritetime(self):
+        return self._get_property('lastwritetime')
+
+    def get_posix_mode(self):
+        """
+        :return: Return file stat mode can be set by os.chmod()
+        """
+        e = self._get_unix_extension()
+        if e is not None:
+            return stat.S_IMODE(e)
+        return None
+
+    def get_st_fmt(self):
+        """
+        :return: Return the portion of the file mode that describes the file type
+        """
+        e = self._get_unix_extension()
+        if e is not None:
+            return stat.S_IFMT(e)
+        return None
+
+
+class ArchiveFilesList():
+    def __init__(self, archive, header, src_pos):
+        self.header = header
+        self._files_list = []
+        self.solid = False
+        self.iteration_count = 0
+        if getattr(header, 'files_info', None) is None:
+            return
+
+        # Initialize references for convenience
+        if hasattr(header, 'main_streams'):
+            folders = header.main_streams.unpackinfo.folders
+            packinfo = header.main_streams.packinfo
+            subinfo = header.main_streams.substreamsinfo
+            packsizes = packinfo.packsizes
+            self.solid = packinfo.numstreams == 1
+            if hasattr(subinfo, 'unpacksizes'):
+                unpacksizes = subinfo.unpacksizes
+            else:
+                unpacksizes = [x.unpacksizes for x in folders]
         else:
-            target = member
-        if path:
-            outfilename = os.path.join(path, target.filename)
-        else:
-            outfilename = target.filename
-        outdir = os.path.dirname(outfilename)
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
-        outfile = open(outfilename, 'wb')
-        outfile.write(target.read())
-        outfile.close()
+            subinfo = None
+            folders = None
+            packinfo = None
+            packsizes = []
+            unpacksizes = [0]
 
-    def close(self):
-        """Close the file, and for mode 'w', 'x' and 'a' write the ending
-        records."""
-        raise NotImplementedError
+        # Initialize loop index variables
+        folder_index = 0
+        output_binary_index = 0
+        streamidx = 0
+        pos = 0
+        instreamindex = 0
+        folder_pos = src_pos
 
-    def write(self, filename, arcname=None):
-        """Put the bytes from filename into the archive under the name
-        arcname."""
-        raise NotImplementedError
+        for file_info in header.files_info.files:
 
-    def testzip(self):
-        raise NotImplementedError
+            if not file_info['emptystream'] and folders is not None:
+                folder = folders[folder_index]
+                if streamidx == 0:
+                    folder.solid = subinfo.num_unpackstreams_folders[folder_index] > 1
+
+                file_info['maxsize'] = (folder.solid and packinfo.packsizes[instreamindex]) or None
+                uncompressed = unpacksizes[output_binary_index]
+                if not isinstance(uncompressed, (list, tuple)):
+                    uncompressed = [uncompressed] * len(folder.coders)
+                if pos > 0:
+                    # file is part of solid archive
+                    assert instreamindex < len(packsizes), 'Folder outside index for solid archive'
+                    file_info['compressed'] = packsizes[instreamindex]
+                elif instreamindex < len(packsizes):
+                    # file is compressed
+                    file_info['compressed'] = packsizes[instreamindex]
+                else:
+                    # file is not compressed
+                    file_info['compressed'] = uncompressed
+                file_info['uncompressed'] = uncompressed
+                numinstreams = 1
+                for coder in folder.coders:
+                    numinstreams = max(numinstreams, coder.get('numinstreams', 1))
+                file_info['packsizes'] = packsizes[instreamindex:instreamindex + numinstreams]
+                streamidx += 1
+            else:
+                file_info['compressed'] = 0
+                file_info['uncompressed'] = [0]
+                file_info['packsizes'] = [0]
+                folder = None
+                file_info['maxsize'] = 0
+                numinstreams = 1
+
+            file_info['folder'] = folder
+            file_info['offset'] = pos
+            if folder is not None and subinfo.digestsdefined[output_binary_index]:
+                file_info['digest'] = subinfo.digests[output_binary_index]
+
+            if 'filename' not in file_info:
+                # compressed file is stored without a name, generate one
+                try:
+                    basefilename = archive.filename
+                except AttributeError:
+                    # 7z archive file doesn't have a name
+                    file_info['filename'] = 'contents'
+                else:
+                    file_info['filename'] = os.path.splitext(os.path.basename(basefilename))[0]
+
+            self._files_list.append(file_info)
+
+            if folder is not None:
+                if folder.solid:
+                    pos += unpacksizes[output_binary_index]
+                output_binary_index += 1
+            else:
+                src_pos += file_info['compressed']
+            if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
+                pos = 0
+                for x in range(numinstreams):
+                    folder_pos += packinfo.packsizes[instreamindex + x]
+                src_pos = folder_pos
+                folder_index += 1
+                instreamindex += numinstreams
+                streamidx = 0
+
+    def __iter__(self):
+        return ArchiveFile(self._files_list, self.len)
+
+    @property
+    def len(self):
+        if getattr(self.header, 'files_info', None) is not None:
+            return len(self.header.files_info.files)
+        return 0
 
 
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(filename):
+def is_7zfile(file):
     """Quickly see if a file is a 7Z file by checking the magic number.
     The filename argument may be a file or file-like object too.
     """
     result = False
     try:
-        if hasattr(filename, "read"):
-            result = SevenZipFile._check_7zfile(fp=filename)
-            filename.seek(0)
+        if hasattr(file, "read"):
+            result = SevenZipFile._check_7zfile(fp=file)
+            file.seek(-len(MAGIC_7Z), 1)
         else:
-            with open(filename, "rb") as fp:
+            with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
     except OSError:
         pass
     return result
+
+
+def unpack_7zarchive(archive, path, extra=None):
+    """Function for registering with shutil.register_unpack_archive()"""
+    arc = SevenZipFile(archive)
+    arc.extractall(path)
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
+                                     formatter_class=argparse.RawTextHelpFormatter, add_help=True)
+    parser.add_argument('subcommand', choices=['l', 'x'], help="command l list, x extract")
+    parser.add_argument('-o', nargs='?', help="output directory")
+    parser.add_argument("file", help="7z archive file")
+
+    args = parser.parse_args()
+    com = args.subcommand
+    target = args.file
+    if not is_7zfile(target):
+        print('not a 7z file')
+        exit(1)
+
+    if com == 'l':
+        with open(target, 'rb') as f:
+            a = SevenZipFile(f)
+            a.list()
+        exit(0)
+
+    if com == 'x':
+        with open(target, 'rb') as f:
+            a = SevenZipFile(f)
+            if args.o:
+                a.extractall(path=args.o)
+            else:
+                a.extractall()
+        exit(0)
+
+
+class BufferWriter():
+
+    def __init__(self, target):
+        self.buf = target
+
+    def write(self, data):
+        self.buf.write(data)
+
+    def flush(self):
+        pass
+
+    def close(self):
+        self.buf.close()
+
+
+class FileWriter():
+
+    def __init__(self, target):
+        self.fp = io.BufferedWriter(target)
+
+    def write(self, data):
+        self.fp.write(data)
+
+    def flush(self):
+        self.fp.flush()
+
+    def close(self):
+        self.fp.close()
+
+
+class Worker():
+    """Extract worker class to invoke handler"""
+
+    def __init__(self, files, fp, src_start):
+        self.handler = {}
+        self.files = files
+        self.fp = fp
+        self.src_start = src_start
+
+    def register_writer(self, index, func):
+        self.handler[index] = func
+
+    def extract(self, fp):
+        fp.seek(self.src_start)
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
+            if f.emptystream:
+                continue
+            else:
+                folder = f.folder
+                sizes = f.uncompressed
+                for s in sizes:
+                    self.decompress(fp, folder, handler, s)
+
+    def close(self):
+        for f in self.files:
+            handler = self.handler.get(f.id, None)
+            if handler is not None:
+                handler.close()
+
+    def decompress(self, fp, folder, data, size):
+        if folder is None:
+            return b''
+        out_remaining = size
+        decompressor = folder.get_decompressor()
+        queue = folder.queue
+        queue_maxlength = QUEUELEN
+        if queue.len > 0:
+            if out_remaining > queue.len:
+                out_remaining -= queue.len
+                data.write(queue.dequeue(queue.len))
+            else:
+                data.write(queue.dequeue(out_remaining))
+                return
+
+        while out_remaining > 0:
+            if decompressor.needs_input:
+                inp = fp.read(READ_BLOCKSIZE)
+            else:
+                inp = b''
+            if not decompressor.eof:
+                max_length = min(out_remaining, queue_maxlength - queue.len)
+                tmp = decompressor.decompress(inp, max_length)
+                if out_remaining >= len(tmp):
+                    out_remaining -= len(tmp)
+                    data.write(tmp)
+                    if out_remaining <= 0:
+                        break
+                else:
+                    queue.enqueue(tmp)
+                    data.write(queue.dequeue(out_remaining))
+                    break
+            else:
+                raise DecompressionError("Corrupted data")
+        return
+
+    def register_filelike(self, id, fileish):
+        if isinstance(fileish, io.BytesIO):
+            self.register_writer(id, BufferWriter(fileish))
+        else:
+            self.register_writer(id, FileWriter(fileish))

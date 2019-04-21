@@ -25,63 +25,78 @@ from binascii import unhexlify
 from enum import Enum, IntEnum
 
 
+MAGIC_7Z = unhexlify('377abcaf271c')
+READ_BLOCKSIZE = 1024
+QUEUELEN = READ_BLOCKSIZE * 2
+
+
 class ByteEnum(bytes, Enum):
     pass
 
 
 class Property(ByteEnum):
-    END = unhexlify('00')  # '\x00'
-    HEADER = unhexlify('01')  # '\x01'
-    ARCHIVE_PROPERTIES = unhexlify('02')  # '\x02'
-    ADDITIONAL_STREAMS_INFO = unhexlify('03')  # '\x03'
-    MAIN_STREAMS_INFO = unhexlify('04')  # '\x04'
-    FILES_INFO = unhexlify('05')  # '\x05'
-    PACK_INFO = unhexlify('06')  # '\x06'
-    UNPACK_INFO = unhexlify('07')  # '\x07'
-    SUBSTREAMS_INFO = unhexlify('08')  # '\x08'
-    SIZE = unhexlify('09')  # '\x09'
-    CRC = unhexlify('0a')  # '\x0a'
-    FOLDER = unhexlify('0b')  # '\x0b'
-    CODERS_UNPACK_SIZE = unhexlify('0c')  # '\x0c'
-    NUM_UNPACK_STREAM = unhexlify('0d')  # '\x0d'
-    EMPTY_STREAM = unhexlify('0e')  # '\x0e'
-    EMPTY_FILE = unhexlify('0f')  # '\x0f'
-    ANTI = unhexlify('10')  # '\x10'
-    NAME = unhexlify('11')  # '\x11'
-    CREATION_TIME = unhexlify('12')  # '\x12'
-    LAST_ACCESS_TIME = unhexlify('13')  # '\x13'
-    LAST_WRITE_TIME = unhexlify('14')  # '\x14'
-    ATTRIBUTES = unhexlify('15')  # '\x15'
-    COMMENT = unhexlify('16')  # '\x16'
-    ENCODED_HEADER = unhexlify('17')  # '\x17'
-    START_POS = unhexlify('18')  # '\x18'
-    DUMMY = unhexlify('19')  # '\x19'
+    END = unhexlify('00')
+    HEADER = unhexlify('01')
+    ARCHIVE_PROPERTIES = unhexlify('02')
+    ADDITIONAL_STREAMS_INFO = unhexlify('03')
+    MAIN_STREAMS_INFO = unhexlify('04')
+    FILES_INFO = unhexlify('05')
+    PACK_INFO = unhexlify('06')
+    UNPACK_INFO = unhexlify('07')
+    SUBSTREAMS_INFO = unhexlify('08')
+    SIZE = unhexlify('09')
+    CRC = unhexlify('0a')
+    FOLDER = unhexlify('0b')
+    CODERS_UNPACK_SIZE = unhexlify('0c')
+    NUM_UNPACK_STREAM = unhexlify('0d')
+    EMPTY_STREAM = unhexlify('0e')
+    EMPTY_FILE = unhexlify('0f')
+    ANTI = unhexlify('10')
+    NAME = unhexlify('11')
+    CREATION_TIME = unhexlify('12')
+    LAST_ACCESS_TIME = unhexlify('13')
+    LAST_WRITE_TIME = unhexlify('14')
+    ATTRIBUTES = unhexlify('15')
+    COMMENT = unhexlify('16')
+    ENCODED_HEADER = unhexlify('17')
+    START_POS = unhexlify('18')
+    DUMMY = unhexlify('19')
 
 
 class CompressionMethod(ByteEnum):
     COPY = unhexlify('00')
-    LZMA = unhexlify('03')
-    CRYPTO = unhexlify('06')
-    MISC = unhexlify('04')
+    DELTA = unhexlify('03')
+    BCJ = unhexlify('04')
+    PPC = unhexlify('05')
+    IA64 = unhexlify('06')
+    ARM = unhexlify('07')
+    ARMT = unhexlify('08')
+    SPARC = unhexlify('09')
+    # 7Z = 03..
+    LZMA = unhexlify('030101')
+    PPMD = unhexlify('030401')
+    P7Z_BCJ = unhexlify('03030103')
+    P7Z_BCJ2 = unhexlify('0303011B')
+    BCJ_PPC = unhexlify('03030205')
+    BCJ_IA64 = unhexlify('03030401')
+    BCJ_ARM = unhexlify('03030501')
+    BCJ_ARMT = unhexlify('03030701')
+    BCJ_SPARC = unhexlify('03030805')
+    LZMA2 = unhexlify('21')
+    # MISC : 04..
     MISC_ZIP = unhexlify('0401')
     MISC_BZIP2 = unhexlify('040202')
     MISC_DEFLATE = unhexlify('040108')
     MISC_DEFLATE64 = unhexlify('040109')
-    MISC_PPMD = unhexlify('030401')
-    P7Z_AES256_SHA256 = unhexlify('06f10701')
-    LZMA2 = unhexlify('21')
+    MISC_Z = unhexlify('0405')
+    MISC_LZH = unhexlify('0406')
+    NSIS_DEFLATE = unhexlify('040901')
+    NSIS_BZIP2 = unhexlify('040902')
+    # CRYPTO 06..
+    CRYPT_ZIPCRYPT = unhexlify('06f10101')
+    CRYPT_RAR29AES = unhexlify('06f10303')
+    CRYPT_AES256_SHA256 = unhexlify('06f10701')
 
-
-class FilterProperty(ByteEnum):
-    BCJ = unhexlify('03030103')
-    BCJ2 = unhexlify('0303011b')
-    POWERPC = unhexlify('03030205')
-    IA64 = unhexlify('03030401')
-    ARM = unhexlify('03030501')
-    ARMTHUMB = unhexlify('03030701')
-    SPARC = unhexlify('03030805')
-
-FilterProperties = [FilterProperty.X86, FilterProperty.ARM]
 
 class FileAttribute(IntEnum):
     DIRECTORY = 0x10
@@ -89,3 +104,12 @@ class FileAttribute(IntEnum):
     HIDDEN = 0x02
     SYSTEM = 0x04
     ARCHIVE = 0x20
+    DEVICE = 0x40
+    NORMAL = 0x80
+    TEMPORARY = 0x100
+    SPARSE_FILE = 0x200
+    REPARSE_POINT = 0x400
+    COMPRESSED = 0x800
+    OFFLINE = 0x1000
+    ENCRYPTED = 0x4000
+    UNIX_EXTENSION = 0x8000

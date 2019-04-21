@@ -13,7 +13,7 @@ This module provides tools to read and list 7z file. Features is not implemented
 to create, write and append a 7z file.  Any advanced use of this module will
  require an understanding of the format, as defined in `7z_format`_.
 
-The module is built upon awesome development effort and knowlege of `pylzma` module
+The module is built upon awesome development effort and knowledge of `pylzma` module
 and its `py7zlib.py` program by Joachim Bauch. Great appreciation for Joachim!
 
 The module defines the following items:
@@ -30,15 +30,12 @@ The module defines the following items:
    :ref:`sevenzipfile-objects` for constructor details.
 
 
-.. class:: ArchiveFile(filename='NoName', date_time=(1980,1,1,0,0,0))
+.. class:: ArchiveFile
 
    Class used to represent information about a member of an archive. Instances
-   of this class are returned by the :meth:`.getinfo` and :meth:`.infolist`
-   methods of :class:`SevenZipFile` objects.  Most users of the :mod:`py4zr` module
-   will not need to create these, but only use those created by this
-   module. *filename* should be the full name of the archive member, and
-   *date_time* should be a tuple containing six fields which describe the time
-   of the last modification to the file; the fields are described in section
+   of this class are returned by iteration of :attribute:`files_list` of :class:`SevenZipFile` objects.
+   Most users of the :mod:`py7zr` module should not create these, but only use those created by this
+   module.
    :ref:`archivefile-objects`.
 
 
@@ -87,38 +84,16 @@ SevenZipFile Objects
 
 .. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
 
-.. method:: SevenZipFile.getmember(name)
-
-   Return a :class:`ArchiveFile` object with information about the archive member
-   *name*.  Calling :meth:`getmember` for a name not currently contained in the
-   archive will raise a :exc:`KeyError`.
-
-
-.. method:: SevenZipFile.members()
-
-   Return a list containing a :class:`ArchiveFile` object for each member of the
-   archive.  The objects are in the same order as their entries in the actual 7z
-   file on disk if an existing archive was opened.
-
 
 .. method:: SevenZipFile.getnames()
 
-   Return a list of archive members by name.
-
-
-
-.. method:: SevenZipFile.extract(member, path=None)
-
-   Extract a member from the archive to the current working directory; *member*
-   must be its full name or a :class:`ArchiveFile` object.  Its file information is
-   extracted as accurately as possible.  *path* specifies a different directory
-   to extract to.  *member* can be a filename or a :class:`ArchiveFile` object. [#]_
+   Return a list of archive files by name.
 
 
 .. method:: SevenZipFile.extractall(path=None)
 
    Extract all members from the archive to the current working directory.  *path*
-   specifies a different directory to extract to. [#]_
+   specifies a different directory to extract to.
 
 
 .. method:: SevenZipFile.list()
@@ -149,17 +124,21 @@ SevenZipFile Objects
 ArchiveFile Objects
 -------------------
 
-Instances of the :class:`ArchiveFile` class are returned by the :meth:`.getmember` and
-:meth:`.getmembers` methods of :class:`SevenZipFile` objects.  Each object stores
-information about a single member of the 7z archive.
+Instances of the :class:`ArchiveFile` class are returned by iterating :attribute:`files_list`
+ of :class:`SevenZipFile` objects.
+Each object stores information about a single member of the 7z archive.
+Most of users don't use those directory, but use :method:`extractall()` instead.
 
 Instances have the following methods and attributes:
 
-.. method:: ArchiveFile.is_dir()
+.. method:: ArchiveFile.get_posix_mode()
 
-   Return ``True`` if this archive member is a directory.
+   Return posix mode when a member has a unix extension property, otherwise return None
 
-   This uses the entry's name: directories should always end with ``/``.
+
+.. attribute:: ArchiveFile.id
+
+   Reference identifier number of a member.
 
 
 .. attribute:: ArchiveFile.filename
@@ -167,19 +146,51 @@ Instances have the following methods and attributes:
    Name of the file in the archive.
 
 
-.. attribute:: ArchiveFile.CRC
+.. attribute:: ArchiveFile.lastwritetime
 
-   CRC-32 of the uncompressed file.
-
-
-.. attribute:: ArchiveFile.compress_size
-
-   Size of the compressed data.
+   Value of lastwritetime property of a member
 
 
-.. attribute:: ArchiveFile.file_size
+.. attribute:: ArchiveFile.is_directory
+
+   ``True`` if this archive member is a directory.
+
+   This uses the entry's name: directories should always end with ``/``.
+
+
+.. attribute:: ArchiveFile.is_symlink
+
+   ``True`` if this archive member is a symbolic link.
+
+
+.. attribute:: ArchiveFile.archivable
+
+   ``True`` if `Archive` property of a member is enabled, otherwise ``False``.
+
+
+.. attribute:: ArchiveFile.readonly
+
+   ``True`` if `Readonly` property of a member is enabled, otherwise ``False``.
+
+
+.. attribute:: ArchiveFile.executable
+
+   ``True`` if a member seems to be an executable file, otherwise ``False``.
+
+
+.. attribute:: ArchiveFile.emptystream
+
+   ``True`` if a member don't have a data stream, otherwise ``False``.
+
+
+.. attribute:: ArchiveFile.uncompressed_size
 
    Size of the uncompressed file.
+
+
+.. attribute:: ArchiveFile.uncompressed
+
+   Array data of uncompressed property of a member.
 
 
 .. _py7zr-commandline:
