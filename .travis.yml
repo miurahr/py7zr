@@ -16,7 +16,6 @@ after_success:
   - coveralls
 
 deploy:
-  matrix:
   - provider: pypi
     user: miurahr
     password:
