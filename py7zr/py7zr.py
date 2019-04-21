@@ -318,7 +318,7 @@ class ArchiveFile():
 class ArchiveFilesList():
     def __init__(self, archive, header, src_pos):
         self.header = header
-        self.files_list = []
+        self._files_list = []
         self.solid = False
         self.iteration_count = 0
         if getattr(header, 'files_info', None) is None:
@@ -400,7 +400,7 @@ class ArchiveFilesList():
                 else:
                     file_info['filename'] = os.path.splitext(os.path.basename(basefilename))[0]
 
-            self.files_list.append(file_info)
+            self._files_list.append(file_info)
 
             if folder is not None:
                 if folder.solid:
@@ -418,7 +418,7 @@ class ArchiveFilesList():
                 streamidx = 0
 
     def __iter__(self):
-        return ArchiveFile(self.files_list, self.len)
+        return ArchiveFile(self._files_list, self.len)
 
     @property
     def len(self):
