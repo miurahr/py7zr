@@ -4,8 +4,15 @@ from py7zr.helpers import UTC
 
 
 def decode_all(archive):
-    for file_info in archive.files:
+    outbuf = []
+    for i, file_info in enumerate(archive.files):
         assert file_info.lastwritetime is not None
+        assert file_info.filename is not None
+        if not file_info.is_directory:
+            buf = io.BytesIO()
+            outbuf.append(buf)
+            archive.worker.register_filelike(file_info.id, buf)
+    archive.worker.extract(archive.fp)
 
 
 def check_archive(archive):

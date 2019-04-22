@@ -108,6 +108,7 @@ def test_bugzilla_4():
 
 
 @pytest.mark.files
+@pytest.mark.xfail(reason='Not support LZMA1.')
 def test_bugzilla_16():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_16.7z'), 'rb'))
     decode_all(archive)
