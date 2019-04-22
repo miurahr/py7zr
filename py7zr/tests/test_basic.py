@@ -2,7 +2,7 @@ import io
 import os
 from io import StringIO
 import py7zr
-from py7zr import archiveinfo
+from py7zr import archiveinfo, is_7zfile
 from py7zr.properties import Property
 from py7zr.tests import decode_all
 import pytest
@@ -204,3 +204,7 @@ def test_py7zr_files_info2():
     assert files_info.files[2].get('attributes') == 0x2020
     assert files_info.files[3].get('filename') == 'readme.txt'
     assert files_info.files[3].get('attributes') == 0x2020
+
+@pytest.mark.unit
+def test_py7zr_is_7zfile():
+    assert is_7zfile(os.path.join(testdata_path, 'test_1.7z')) == True
