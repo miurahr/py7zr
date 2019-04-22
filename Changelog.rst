@@ -14,6 +14,7 @@ Current changes
 Added
 -----
 
+* Set file modes for extracted files.
 * More unit test.
 
 Changed
