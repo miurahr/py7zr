@@ -166,6 +166,18 @@ class SevenZipFile():
                                                   f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
+    def _set_file_property(self, target_f, outfilename):
+        if os.name == 'posix':
+            st_mode = target_f.get_posix_mode()
+            if st_mode is not None:
+                os.chmod(outfilename, st_mode)
+                return
+        # fallback: only set readonly if specified
+        if target_f.is_readonly():
+            ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+            mode = os.stat(outfilename)
+            os.chmod(outfilename, mode & ro_mask)
+
     def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
@@ -183,13 +195,16 @@ class SevenZipFile():
                 outfilename = f.filename
             if f.is_directory:
                 os.mkdir(outfilename)
+                self._set_file_property(f, outfilename)
             elif f.is_symlink:
                 buf = io.BytesIO()
                 pair = (buf, f.filename)
                 target_sym.append(pair)
                 self.worker.register_filelike(f.id, buf)
             else:
-                self.worker.register_filelike(f.id, open(outfilename, 'wb'))
+                outfile = open(outfilename, 'wb')
+                self.worker.register_filelike(f.id, outfile)
+                self._set_file_property(f, outfilename)
         self.worker.extract(self.fp)
         # Handle symlink before calling close()
         for b, t in target_sym:
@@ -550,6 +565,7 @@ class Worker():
             handler = self.handler.get(f.id, None)
             if handler is not None:
                 handler.close()
+
 
     def decompress(self, fp, folder, data, size):
         if folder is None:
