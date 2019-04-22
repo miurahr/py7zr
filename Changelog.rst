@@ -14,8 +14,12 @@ Current changes
 Added
 -----
 
+* More unit test.
+
 Changed
 -------
+
+* Travis-CI test on python 3.7.
 
 Fixed
 -----
