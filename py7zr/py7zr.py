@@ -194,8 +194,11 @@ class SevenZipFile():
             else:
                 outfilename = f.filename
             if f.is_directory:
-                os.mkdir(outfilename)
-                self._set_file_property(f, outfilename)
+                if not os.path.exists(outfilename):
+                    os.mkdir(outfilename)
+                    self._set_file_property(f, outfilename)
+                else:
+                    pass
             elif f.is_symlink:
                 buf = io.BytesIO()
                 pair = (buf, f.filename)
