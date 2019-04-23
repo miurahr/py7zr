@@ -586,7 +586,6 @@ class Worker():
             if handler is not None:
                 handler.close()
 
-
     def decompress(self, fp, folder, data, size):
         if folder is None:
             return b''
