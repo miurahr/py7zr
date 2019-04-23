@@ -44,7 +44,7 @@ Here is a code snippet how to decompress some file in your applicaiton.
 
     def decompress(file):
         archive = py7zr.Archive(file)
-        archive.extract_all(dest="/tmp")
+        archive.extractall(path="/tmp")
 
 
 License
