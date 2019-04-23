@@ -25,6 +25,8 @@ Changed
 Fixed
 -----
 
+* Fix to set extracted files timestamp as same as archived.
+
 Deprecated
 ----------
 

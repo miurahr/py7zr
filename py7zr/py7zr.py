@@ -183,7 +183,6 @@ class SevenZipFile():
             fmode = os.stat(outfilename).st_mode
             os.chmod(outfilename, fmode & ro_mask)
 
-
     def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
@@ -206,6 +205,8 @@ class SevenZipFile():
                     target_files.append((outfilename, {'st_mode': f.get_posix_mode(), 'lastwritetime': f.lastwritetime}))
                 else:
                     pass
+            elif f.is_socket:
+                pass
             elif f.is_symlink:
                 buf = io.BytesIO()
                 pair = (buf, f.filename)
@@ -325,6 +326,13 @@ class ArchiveFile():
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
+        return False
+
+    @property
+    def is_socket(self):
+        e = self._get_unix_extension()
+        if e is not None:
+            return stat.S_ISSOCK(e)
         return False
 
     @property
