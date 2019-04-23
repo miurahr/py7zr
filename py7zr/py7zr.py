@@ -37,7 +37,7 @@ from py7zr import FileAttribute, DecompressionError
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
 from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
-from py7zr.helpers import filetime_to_dt, Local, checkcrc
+from py7zr.helpers import filetime_to_dt, Local, checkcrc, ArchiveTimestamp
 
 
 # ------------------
@@ -166,17 +166,23 @@ class SevenZipFile():
                                                   f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
-    def _set_file_property(self, target_f, outfilename):
+    def _set_file_property(self, outfilename, properties):
+        # creation time
+        creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+        if creationtime is not None:
+            os.utime(outfilename, times=(creationtime, creationtime))
+
         if os.name == 'posix':
-            st_mode = target_f.get_posix_mode()
+            st_mode = properties.get('st_mode', None)
             if st_mode is not None:
                 os.chmod(outfilename, st_mode)
                 return
         # fallback: only set readonly if specified
-        if target_f.is_readonly():
+        if properties['readonly']:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-            mode = os.stat(outfilename)
-            os.chmod(outfilename, mode & ro_mask)
+            fmode = os.stat(outfilename).st_mode
+            os.chmod(outfilename, fmode & ro_mask)
+
 
     def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
@@ -185,6 +191,7 @@ class SevenZipFile():
            to extract to.
         """
         target_sym = []
+        target_files = []
         self.reset()
         if path is not None and not os.path.exists(path):
             os.mkdir(path)
@@ -196,7 +203,7 @@ class SevenZipFile():
             if f.is_directory:
                 if not os.path.exists(outfilename):
                     os.mkdir(outfilename)
-                    self._set_file_property(f, outfilename)
+                    target_files.append((outfilename, {'st_mode': f.get_posix_mode(), 'lastwritetime': f.lastwritetime}))
                 else:
                     pass
             elif f.is_symlink:
@@ -207,7 +214,7 @@ class SevenZipFile():
             else:
                 outfile = open(outfilename, 'wb')
                 self.worker.register_filelike(f.id, outfile)
-                self._set_file_property(f, outfilename)
+                target_files.append((outfilename, {'st_mode': f.get_posix_mode(), 'lastwritetime': f.lastwritetime}))
         self.worker.extract(self.fp)
         # Handle symlink before calling close()
         for b, t in target_sym:
@@ -222,6 +229,8 @@ class SevenZipFile():
                 sym_dst = t
             os.symlink(sym_src, sym_dst)
         self.worker.close()
+        for o, p in target_files:
+            self._set_file_property(o, p)
 
 
 class ArchiveFile():

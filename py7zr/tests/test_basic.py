@@ -99,8 +99,12 @@ def test_basic_extract_1():
     tmpdir = tempfile.mkdtemp()
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     archive.extractall(path=tmpdir)
-    with open(os.path.join(testdata_path, "test_1/setup.cfg")) as expected:
-        with open(os.path.join(tmpdir, "setup.cfg"), "r") as f:
+    target = os.path.join(tmpdir, "setup.cfg")
+    reference = os.path.join(testdata_path, "test_1/setup.cfg")
+    assert os.stat(target).st_mode == os.stat(reference).st_mode
+    assert os.stat(target).st_mtime == os.stat(reference).st_mtime
+    with open(reference) as expected:
+        with open(target, "r") as f:
             assert f.read() == expected.read()
     shutil.rmtree(tmpdir)
 
