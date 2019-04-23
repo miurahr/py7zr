@@ -23,7 +23,7 @@ from py7zr.properties import FileAttribute
 from py7zr.py7zr import SevenZipFile, is_7zfile, main
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __license__ = 'LGPL-2.1+'
 __author__ = 'Hiroshi Miura'
 __author_email__ = 'miurahr@linux.com'

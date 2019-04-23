@@ -14,6 +14,27 @@ Current changes
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.0.4`_
+=============
+
+Added
+-----
+
 * Set file modes for extracted files.
 * More unit test.
 
@@ -27,14 +48,6 @@ Fixed
 
 * Fix to set extracted files timestamp as same as archived.
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.0.3`_
 =============
@@ -59,6 +72,7 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.4...HEAD
+.. _v0.0.4: https://github.com/miurahr/py7zr/compare/v0.0.3...v0.0.4
 .. _v0.0.3: https://github.com/miurahr/py7zr/compare/v0.0.2...v0.0.3
 .. _v0.0.2: https://github.com/miurahr/py7zr/compare/v0.0.1...v0.0.2
