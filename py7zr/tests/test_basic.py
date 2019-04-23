@@ -100,10 +100,11 @@ def test_basic_extract_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     archive.extractall(path=tmpdir)
     target = os.path.join(tmpdir, "setup.cfg")
-    reference = os.path.join(testdata_path, "test_1/setup.cfg")
-    assert os.stat(target).st_mode == os.stat(reference).st_mode
-    assert os.stat(target).st_mtime == os.stat(reference).st_mtime
-    with open(reference) as expected:
+    expected_mode = 33188
+    expected_mtime = 1552522033
+    assert os.stat(target).st_mode == expected_mode
+    assert os.stat(target).st_mtime == expected_mtime
+    with open(os.path.join(testdata_path, "test_1/setup.cfg")) as expected:
         with open(target, "r") as f:
             assert f.read() == expected.read()
     shutil.rmtree(tmpdir)
