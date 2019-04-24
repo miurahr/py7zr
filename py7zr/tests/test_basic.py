@@ -1,6 +1,7 @@
 import io
 import os
 from io import StringIO
+import lzma
 import py7zr
 from py7zr import archiveinfo, is_7zfile
 from py7zr.properties import Property
@@ -214,3 +215,15 @@ def test_py7zr_files_info2():
 @pytest.mark.unit
 def test_py7zr_is_7zfile():
     assert is_7zfile(os.path.join(testdata_path, 'test_1.7z'))
+
+
+@pytest.mark.unit
+def test_lzma_lzma2_compressor():
+    filters = [{'id': 33, 'dict_size': 16777216}]
+    assert lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters) is not None
+
+
+@pytest.mark.unit
+def test_lzma_lzma2bcj_compressor():
+    filters = [ {'id': 4}, {'id': 33, 'dict_size': 16777216}]
+    assert lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters) is not None

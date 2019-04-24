@@ -130,3 +130,14 @@ def test_symlink():
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
+def test_lzma2bcj():
+    """Test extract archive compressed with LZMA2 and BCJ methods."""
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'lzma2bcj.7z'), 'rb'))
+    assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
+                                  '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    shutil.rmtree(tmpdir)
