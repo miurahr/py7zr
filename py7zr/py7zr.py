@@ -619,7 +619,7 @@ class Worker():
                     data.write(queue.dequeue(out_remaining))
                     break
             else:
-                raise DecompressionError("Corrupted data")
+                raise DecompressionError("Corrupted input data.")
         return
 
     def register_filelike(self, id, fileish):
