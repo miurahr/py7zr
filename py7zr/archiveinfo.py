@@ -473,7 +473,7 @@ lzma_methods_map = {
     CompressionMethod.LZMA: lzma.FILTER_LZMA1,
     CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
     CompressionMethod.DELTA: lzma.FILTER_DELTA,
-    CompressionMethod.BCJ: lzma.FILTER_X86,
+    CompressionMethod.P7Z_BCJ: lzma.FILTER_X86,
     CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
     CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
     CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
@@ -495,9 +495,9 @@ def get_decompressor(coders):
             if filter is not None:
                 properties = coder.get('properties', None)
                 if properties is not None:
-                    filters.append(lzma._decode_filter_properties(filter, properties))
+                    filters[:0] = [lzma._decode_filter_properties(filter, properties)]
                 else:
-                    filters.append({'id': filter})
+                    filters[:0] = [{'id': filter}]
             else:
                 raise UnsupportedCompressionMethodError
     except UnsupportedCompressionMethodError as e:
