@@ -178,7 +178,7 @@ class SevenZipFile():
                 os.chmod(outfilename, st_mode)
                 return
         # fallback: only set readonly if specified
-        if properties['readonly']:
+        if properties.get('readonly', None) is not None:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
             fmode = os.stat(outfilename).st_mode
             os.chmod(outfilename, fmode & ro_mask)
@@ -202,7 +202,7 @@ class SevenZipFile():
             if f.is_directory:
                 if not os.path.exists(outfilename):
                     os.mkdir(outfilename)
-                    target_files.append((outfilename, {'st_mode': f.get_posix_mode(), 'lastwritetime': f.lastwritetime}))
+                    target_files.append((outfilename, f.get_properties()))
                 else:
                     pass
             elif f.is_socket:
@@ -215,7 +215,7 @@ class SevenZipFile():
             else:
                 outfile = open(outfilename, 'wb')
                 self.worker.register_filelike(f.id, outfile)
-                target_files.append((outfilename, {'st_mode': f.get_posix_mode(), 'lastwritetime': f.lastwritetime}))
+                target_files.append((outfilename, f.get_properties()))
         self.worker.extract(self.fp)
         # Handle symlink before calling close()
         for b, t in target_sym:
@@ -252,6 +252,9 @@ class ArchiveFile():
         if self.iteration_count == 0:
             raise RuntimeError
         return self.iteration_count - 1
+
+    def get_properties(self):
+        return self.files_list[self.id]
 
     def _get_property(self, key):
         try:
