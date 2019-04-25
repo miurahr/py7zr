@@ -1,3 +1,5 @@
+import binascii
+import hashlib
 import io
 import os
 from io import StringIO
@@ -105,9 +107,15 @@ def test_basic_extract_1():
     expected_mtime = 1552522033
     assert os.stat(target).st_mode == expected_mode
     assert os.stat(target).st_mtime == expected_mtime
-    with open(os.path.join(testdata_path, "test_1/setup.cfg")) as expected:
-        with open(target, "r") as f:
-            assert f.read() == expected.read()
+    m = hashlib.sha256()
+    m.update(open(target, 'rb').read())
+    assert m.digest() == binascii.unhexlify('ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240')
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'setup.py'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     shutil.rmtree(tmpdir)
 
 
@@ -116,9 +124,9 @@ def test_basic_extract_2():
     tmpdir = tempfile.mkdtemp()
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
     archive.extractall(path=tmpdir)
-    with open(os.path.join(testdata_path, "test_2/qt.qt5.597.gcc_64/installscript.qs")) as expected:
-        with open(os.path.join(tmpdir, "qt.qt5.597.gcc_64/installscript.qs"), "r") as f:
-            assert expected.read() == f.read()
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'qt.qt5.597.gcc_64/installscript.qs'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('39445276e79ea43c0fa8b393b35dc621fcb2045cb82238ddf2b838a4fbf8a587')
     shutil.rmtree(tmpdir)
 
 
