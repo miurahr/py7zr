@@ -39,7 +39,7 @@ from py7zr.helpers import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp,
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
-class ArchiveProperties():
+class ArchiveProperties:
 
     def __init__(self, file):
         self.property_data = []
@@ -58,7 +58,7 @@ class ArchiveProperties():
                 self.property_data.append(property)
 
 
-class PackInfo():
+class PackInfo:
     """ information about packed streams """
 
     def __init__(self, file):
@@ -76,10 +76,11 @@ class PackInfo():
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
 
 
-class Folder():
+class Folder:
     """ a "Folder" represents a stream of compressed data """
 
     def __init__(self, file):
+        self.unpacksizes = None
         self.solid = False
         self._file = file
         self.consumed = 0
@@ -162,7 +163,7 @@ class Folder():
         return CompressionMethod.CRYPT_AES256_SHA256 in [x['method'] for x in self.coders]
 
 
-class Digests():
+class Digests:
     """ holds a list of checksums """
 
     def __init__(self, file, count):
@@ -173,7 +174,7 @@ class Digests():
 UnpackDigests = Digests
 
 
-class UnpackInfo():
+class UnpackInfo:
     """ combines multiple folders """
 
     def __init__(self, file):
@@ -205,7 +206,7 @@ class UnpackInfo():
             raise Bad7zFile('end id expected but %s found' % repr(pid))
 
 
-class SubstreamsInfo():
+class SubstreamsInfo:
     """ defines the substreams of a folder """
 
     def __init__(self, file, numfolders, folders):
@@ -256,7 +257,7 @@ class SubstreamsInfo():
             self.digests = [0] * num_digests_total
 
 
-class StreamsInfo():
+class StreamsInfo:
     """ information about compressed streams """
 
     def __init__(self, file):
@@ -274,7 +275,7 @@ class StreamsInfo():
             raise Bad7zFile('end id expected but %s found' % repr(pid))
 
 
-class FilesInfo():
+class FilesInfo:
     """ holds file properties """
 
     def _readTimes(self, fp, files, name):
@@ -357,7 +358,7 @@ class FilesInfo():
                 raise Bad7zFile('invalid type %r' % (typ))
 
 
-class Header():
+class Header:
     """ the archive header """
 
     __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
@@ -449,7 +450,7 @@ class Header():
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
 
 
-class SignatureHeader():
+class SignatureHeader:
     """The SignatureHeader class hold information of a signature header of archive."""
 
     def __init__(self, file):

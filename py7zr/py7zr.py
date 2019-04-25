@@ -25,25 +25,25 @@
 """Read 7zip format archives."""
 
 import argparse
+import functools
 import io
 import os
 import stat
 import sys
 import threading
-from functools import reduce
 from io import BytesIO
 
-from py7zr import FileAttribute, DecompressionError
+from py7zr import FileAttribute
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
-from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
 from py7zr.helpers import filetime_to_dt, Local, checkcrc, ArchiveTimestamp
+from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
 
 
 # ------------------
 # Exported Classes
 # ------------------
-class SevenZipFile():
+class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file, mode='r'):
@@ -234,7 +234,7 @@ class SevenZipFile():
             self._set_file_property(o, p)
 
 
-class ArchiveFile():
+class ArchiveFile:
     def __init__(self, fileslist, length):
         self.files_list = fileslist
         self.length = length
@@ -280,7 +280,7 @@ class ArchiveFile():
 
     @property
     def uncompressed_size(self):
-        return reduce(self._plus, self.uncompressed)
+        return functools.reduce(self._plus, self.uncompressed)
 
     @property
     def compressed(self):
@@ -361,7 +361,7 @@ class ArchiveFile():
         return None
 
 
-class ArchiveFilesList():
+class ArchiveFilesList:
     def __init__(self, archive, header, src_pos):
         self.header = header
         self._files_list = []
@@ -580,6 +580,7 @@ class Worker():
             else:
                 folder = f.folder
                 sizes = f.uncompressed
+                compressed =  f.compressed
                 for s in sizes:
                     self.decompress(fp, folder, handler, s)
 
@@ -607,7 +608,8 @@ class Worker():
         while out_remaining > 0:
             if not decompressor.eof:
                 if decompressor.needs_input:
-                    inp = fp.read(READ_BLOCKSIZE)
+                    read_size = min(READ_BLOCKSIZE, out_remaining)
+                    inp = fp.read(read_size)
                 else:
                     inp = b''
                 max_length = min(out_remaining, queue_maxlength - queue.len)

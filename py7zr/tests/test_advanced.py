@@ -6,7 +6,7 @@ import pytest
 import shutil
 import tempfile
 
-from binascii import unhexlify
+import binascii
 from py7zr.tests import decode_all, check_archive
 
 
@@ -146,5 +146,5 @@ def test_lzma2bcj():
     archive.extractall(path=tmpdir)
     m = hashlib.sha256()
     m.update(open(os.path.join(tmpdir, '5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
-    assert m.digest() == unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
+    assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
     shutil.rmtree(tmpdir)

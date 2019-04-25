@@ -21,12 +21,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-from binascii import unhexlify
+import binascii
 from enum import Enum, IntEnum
 
 
-MAGIC_7Z = unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 1024
+MAGIC_7Z = binascii.unhexlify('377abcaf271c')
+READ_BLOCKSIZE = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
 
 
@@ -35,67 +35,67 @@ class ByteEnum(bytes, Enum):
 
 
 class Property(ByteEnum):
-    END = unhexlify('00')
-    HEADER = unhexlify('01')
-    ARCHIVE_PROPERTIES = unhexlify('02')
-    ADDITIONAL_STREAMS_INFO = unhexlify('03')
-    MAIN_STREAMS_INFO = unhexlify('04')
-    FILES_INFO = unhexlify('05')
-    PACK_INFO = unhexlify('06')
-    UNPACK_INFO = unhexlify('07')
-    SUBSTREAMS_INFO = unhexlify('08')
-    SIZE = unhexlify('09')
-    CRC = unhexlify('0a')
-    FOLDER = unhexlify('0b')
-    CODERS_UNPACK_SIZE = unhexlify('0c')
-    NUM_UNPACK_STREAM = unhexlify('0d')
-    EMPTY_STREAM = unhexlify('0e')
-    EMPTY_FILE = unhexlify('0f')
-    ANTI = unhexlify('10')
-    NAME = unhexlify('11')
-    CREATION_TIME = unhexlify('12')
-    LAST_ACCESS_TIME = unhexlify('13')
-    LAST_WRITE_TIME = unhexlify('14')
-    ATTRIBUTES = unhexlify('15')
-    COMMENT = unhexlify('16')
-    ENCODED_HEADER = unhexlify('17')
-    START_POS = unhexlify('18')
-    DUMMY = unhexlify('19')
+    END = binascii.unhexlify('00')
+    HEADER = binascii.unhexlify('01')
+    ARCHIVE_PROPERTIES = binascii.unhexlify('02')
+    ADDITIONAL_STREAMS_INFO = binascii.unhexlify('03')
+    MAIN_STREAMS_INFO = binascii.unhexlify('04')
+    FILES_INFO = binascii.unhexlify('05')
+    PACK_INFO = binascii.unhexlify('06')
+    UNPACK_INFO = binascii.unhexlify('07')
+    SUBSTREAMS_INFO = binascii.unhexlify('08')
+    SIZE = binascii.unhexlify('09')
+    CRC = binascii.unhexlify('0a')
+    FOLDER = binascii.unhexlify('0b')
+    CODERS_UNPACK_SIZE = binascii.unhexlify('0c')
+    NUM_UNPACK_STREAM = binascii.unhexlify('0d')
+    EMPTY_STREAM = binascii.unhexlify('0e')
+    EMPTY_FILE = binascii.unhexlify('0f')
+    ANTI = binascii.unhexlify('10')
+    NAME = binascii.unhexlify('11')
+    CREATION_TIME = binascii.unhexlify('12')
+    LAST_ACCESS_TIME = binascii.unhexlify('13')
+    LAST_WRITE_TIME = binascii.unhexlify('14')
+    ATTRIBUTES = binascii.unhexlify('15')
+    COMMENT = binascii.unhexlify('16')
+    ENCODED_HEADER = binascii.unhexlify('17')
+    START_POS = binascii.unhexlify('18')
+    DUMMY = binascii.unhexlify('19')
 
 
 class CompressionMethod(ByteEnum):
-    COPY = unhexlify('00')
-    DELTA = unhexlify('03')
-    BCJ = unhexlify('04')
-    PPC = unhexlify('05')
-    IA64 = unhexlify('06')
-    ARM = unhexlify('07')
-    ARMT = unhexlify('08')
-    SPARC = unhexlify('09')
+    COPY = binascii.unhexlify('00')
+    DELTA = binascii.unhexlify('03')
+    BCJ = binascii.unhexlify('04')
+    PPC = binascii.unhexlify('05')
+    IA64 = binascii.unhexlify('06')
+    ARM = binascii.unhexlify('07')
+    ARMT = binascii.unhexlify('08')
+    SPARC = binascii.unhexlify('09')
     # 7Z = 03..
-    LZMA = unhexlify('030101')
-    PPMD = unhexlify('030401')
-    P7Z_BCJ = unhexlify('03030103')
-    P7Z_BCJ2 = unhexlify('0303011B')
-    BCJ_PPC = unhexlify('03030205')
-    BCJ_IA64 = unhexlify('03030401')
-    BCJ_ARM = unhexlify('03030501')
-    BCJ_ARMT = unhexlify('03030701')
-    BCJ_SPARC = unhexlify('03030805')
-    LZMA2 = unhexlify('21')
+    LZMA = binascii.unhexlify('030101')
+    PPMD = binascii.unhexlify('030401')
+    P7Z_BCJ = binascii.unhexlify('03030103')
+    P7Z_BCJ2 = binascii.unhexlify('0303011B')
+    BCJ_PPC = binascii.unhexlify('03030205')
+    BCJ_IA64 = binascii.unhexlify('03030401')
+    BCJ_ARM = binascii.unhexlify('03030501')
+    BCJ_ARMT = binascii.unhexlify('03030701')
+    BCJ_SPARC = binascii.unhexlify('03030805')
+    LZMA2 = binascii.unhexlify('21')
     # MISC : 04..
-    MISC_ZIP = unhexlify('0401')
-    MISC_BZIP2 = unhexlify('040202')
-    MISC_DEFLATE = unhexlify('040108')
-    MISC_DEFLATE64 = unhexlify('040109')
-    MISC_Z = unhexlify('0405')
-    MISC_LZH = unhexlify('0406')
-    NSIS_DEFLATE = unhexlify('040901')
-    NSIS_BZIP2 = unhexlify('040902')
+    MISC_ZIP = binascii.unhexlify('0401')
+    MISC_BZIP2 = binascii.unhexlify('040202')
+    MISC_DEFLATE = binascii.unhexlify('040108')
+    MISC_DEFLATE64 = binascii.unhexlify('040109')
+    MISC_Z = binascii.unhexlify('0405')
+    MISC_LZH = binascii.unhexlify('0406')
+    NSIS_DEFLATE = binascii.unhexlify('040901')
+    NSIS_BZIP2 = binascii.unhexlify('040902')
     # CRYPTO 06..
-    CRYPT_ZIPCRYPT = unhexlify('06f10101')
-    CRYPT_RAR29AES = unhexlify('06f10303')
-    CRYPT_AES256_SHA256 = unhexlify('06f10701')
+    CRYPT_ZIPCRYPT = binascii.unhexlify('06f10101')
+    CRYPT_RAR29AES = binascii.unhexlify('06f10303')
+    CRYPT_AES256_SHA256 = binascii.unhexlify('06f10701')
 
 
 class FileAttribute(IntEnum):
