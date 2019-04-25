@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Fix decompressiong archive with LZMA2 and BCJ method
+
 Deprecated
 ----------
 
@@ -61,6 +63,7 @@ Fixed
 -----
 
 * setup: set universal = 0 because only python 3 is supported.
+
 
 `v0.0.2`_
 =============

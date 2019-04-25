@@ -605,11 +605,11 @@ class Worker():
                 return
 
         while out_remaining > 0:
-            if decompressor.needs_input:
-                inp = fp.read(READ_BLOCKSIZE)
-            else:
-                inp = b''
             if not decompressor.eof:
+                if decompressor.needs_input:
+                    inp = fp.read(READ_BLOCKSIZE)
+                else:
+                    inp = b''
                 max_length = min(out_remaining, queue_maxlength - queue.len)
                 tmp = decompressor.decompress(inp, max_length)
                 if out_remaining >= len(tmp):
@@ -622,7 +622,9 @@ class Worker():
                     data.write(queue.dequeue(out_remaining))
                     break
             else:
-                raise DecompressionError("Corrupted input data.")
+                if queue.len >= 0:
+                    data.write(queue.dequeue(out_remaining))
+                break
         return
 
     def register_filelike(self, id, fileish):
