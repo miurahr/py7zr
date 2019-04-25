@@ -578,11 +578,8 @@ class Worker():
             if f.emptystream:
                 continue
             else:
-                folder = f.folder
-                sizes = f.uncompressed
-                compressed =  f.compressed
-                for s in sizes:
-                    self.decompress(fp, folder, handler, s)
+                for s in f.uncompressed:
+                    self.decompress(fp, f.folder, handler, s, f.compressed)
 
     def close(self):
         for f in self.files:
@@ -590,11 +587,11 @@ class Worker():
             if handler is not None:
                 handler.close()
 
-    def decompress(self, fp, folder, data, size):
+    def decompress(self, fp, folder, data, size, compressed_size):
         if folder is None:
             return b''
         out_remaining = size
-        decompressor = folder.get_decompressor()
+        decompressor = folder.get_decompressor(compressed_size)
         queue = folder.queue
         queue_maxlength = QUEUELEN
         if queue.len > 0:
@@ -608,7 +605,7 @@ class Worker():
         while out_remaining > 0:
             if not decompressor.eof:
                 if decompressor.needs_input:
-                    read_size = min(READ_BLOCKSIZE, out_remaining)
+                    read_size = min(READ_BLOCKSIZE, decompressor.remaining_size)
                     inp = fp.read(read_size)
                 else:
                     inp = b''

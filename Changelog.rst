@@ -21,6 +21,7 @@ Fixed
 -----
 
 * Fix decompressiong archive with LZMA2 and BCJ method
+* Fix decompressing multi block archive
 
 Deprecated
 ----------

@@ -225,5 +225,5 @@ def test_lzma_lzma2_compressor():
 
 @pytest.mark.unit
 def test_lzma_lzma2bcj_compressor():
-    filters = [ {'id': 4}, {'id': 33, 'dict_size': 16777216}]
+    filters = [{'id': 4}, {'id': 33, 'dict_size': 16777216}]
     assert lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters) is not None

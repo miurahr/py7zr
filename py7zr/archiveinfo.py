@@ -129,12 +129,12 @@ class Folder:
                 self.packed_indices.append(read_uint64(file))
         self.queue = bRingBuf(QUEUELEN)
 
-    def get_decompressor(self):
+    def get_decompressor(self, size):
         if hasattr(self, 'decompressor'):
             return self.decompressor
         else:
             try:
-                self.decompressor, self.can_partial_decompress = get_decompressor(self.coders)
+                self.decompressor, self.can_partial_decompress = get_decompressor(self.coders, size)
             except Exception as e:
                 raise e
             return self.decompressor
@@ -423,7 +423,7 @@ class Header:
 
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
-            folder_data = folder.get_decompressor().decompress(fp.read(compressed_size))[:uncompressed_size]
+            folder_data = folder.get_decompressor(compressed_size).decompress(fp.read(compressed_size))[:uncompressed_size]
             src_start += uncompressed_size
             if folder.digestdefined:
                 if not checkcrc(folder.crc, folder_data):
@@ -487,7 +487,37 @@ alt_methods_map = {
 }
 
 
-def get_decompressor(coders):
+class WrappedDecompressor:
+    def __init__(self, decompressor, size):
+        self.decompressor = decompressor
+        self.input_size = size
+        self.consumed = 0
+
+    @property
+    def needs_input(self):
+        return self.decompressor.needs_input
+
+    @property
+    def eof(self):
+        return self.decompressor.eof
+
+    def decompress(self, data, max_length=None):
+        self.consumed += len(data)
+        if max_length is not None:
+            return self.decompressor.decompress(data, max_length=max_length)
+        else:
+            return self.decompressor.decompress(data)
+
+    @property
+    def unused_data(self):
+        return self.decompressor.unused_data
+
+    @property
+    def remaining_size(self):
+        return self.input_size - self.consumed
+
+
+def get_decompressor(coders, size):
     decompressor = None
     filters = []
     try:
@@ -514,4 +544,4 @@ def get_decompressor(coders):
     else:
         decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
         can_partial_decompress = True
-    return decompressor, can_partial_decompress
+    return WrappedDecompressor(decompressor, size), can_partial_decompress
