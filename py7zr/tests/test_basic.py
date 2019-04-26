@@ -16,7 +16,8 @@ import time
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.environ['TZ'] = 'Asia/Tokyo'
-time.tzset()
+if os.name == 'posix':
+    time.tzset()
 
 
 @pytest.mark.basic
