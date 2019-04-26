@@ -31,6 +31,7 @@ import os
 import stat
 import sys
 import threading
+from copy import deepcopy
 from io import BytesIO
 
 from py7zr import FileAttribute
@@ -171,17 +172,15 @@ class SevenZipFile:
         creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
         if creationtime is not None:
             os.utime(outfilename, times=(creationtime, creationtime))
-
         if os.name == 'posix':
-            st_mode = properties.get('st_mode', None)
+            st_mode = properties['posix_mode']
             if st_mode is not None:
                 os.chmod(outfilename, st_mode)
                 return
         # fallback: only set readonly if specified
-        if properties.get('readonly', None) is not None:
+        if properties['readonly'] and not properties['is_directory']:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-            fmode = os.stat(outfilename).st_mode
-            os.chmod(outfilename, fmode & ro_mask)
+            os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
 
     def extractall(self, path=None, crc=False):
         """Extract all members from the archive to the current working
@@ -254,7 +253,12 @@ class ArchiveFile:
         return self.iteration_count - 1
 
     def get_properties(self):
-        return self.files_list[self.id]
+        property = deepcopy(self.files_list[self.id])
+        property['readonly'] = self.readonly
+        property['posix_mode'] = self.posix_mode
+        property['archivable'] = self.archivable
+        property['is_directory'] = self.is_directory
+        return property
 
     def _get_property(self, key):
         try:
@@ -342,7 +346,8 @@ class ArchiveFile:
     def lastwritetime(self):
         return self._get_property('lastwritetime')
 
-    def get_posix_mode(self):
+    @property
+    def posix_mode(self):
         """
         :return: Return file stat mode can be set by os.chmod()
         """
@@ -351,7 +356,8 @@ class ArchiveFile:
             return stat.S_IMODE(e)
         return None
 
-    def get_st_fmt(self):
+    @property
+    def st_fmt(self):
         """
         :return: Return the portion of the file mode that describes the file type
         """
