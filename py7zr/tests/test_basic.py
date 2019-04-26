@@ -15,7 +15,7 @@ import time
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
-os.environ['TZ'] = 'Europe/London'
+os.environ['TZ'] = 'UTC'
 if os.name == 'posix':
     time.tzset()
 
@@ -106,7 +106,8 @@ def test_basic_extract_1():
     target = os.path.join(tmpdir, "setup.cfg")
     expected_mode = 33188
     expected_mtime = 1552522033
-    assert os.stat(target).st_mode == expected_mode
+    if os.name == 'posix':
+        assert os.stat(target).st_mode == expected_mode
     assert os.stat(target).st_mtime == expected_mtime
     m = hashlib.sha256()
     m.update(open(target, 'rb').read())
