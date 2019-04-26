@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Fix test cases: bugzilla_16 and github_14.
+
 Deprecated
 ----------
 

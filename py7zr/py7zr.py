@@ -190,6 +190,7 @@ class SevenZipFile:
         """
         target_sym = []
         target_files = []
+        target_dirs = []
         self.reset()
         if path is not None and not os.path.exists(path):
             os.mkdir(path)
@@ -200,7 +201,7 @@ class SevenZipFile:
                 outfilename = f.filename
             if f.is_directory:
                 if not os.path.exists(outfilename):
-                    os.mkdir(outfilename)
+                    target_dirs.append(outfilename)
                     target_files.append((outfilename, f.get_properties()))
                 else:
                     pass
@@ -214,8 +215,9 @@ class SevenZipFile:
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.get_properties()))
+        for target_dir in sorted(target_dirs):
+            os.mkdir(target_dir)
         self.worker.extract(self.fp)
-        # Handle symlink before calling close()
         for b, t in target_sym:
             b.seek(0)
             sym_src = b.read().decode(encoding='utf-8')
@@ -227,7 +229,6 @@ class SevenZipFile:
                 sym_src = os.path.join(dirname, sym_src)
                 sym_dst = t
             os.symlink(sym_src, sym_dst)
-        self.worker.close()
         for o, p in target_files:
             self._set_file_property(o, p)
 
@@ -252,11 +253,14 @@ class ArchiveFile:
         return self.iteration_count - 1
 
     def get_properties(self):
-        property = deepcopy(self.files_list[self.id])
-        property['readonly'] = self.readonly
-        property['posix_mode'] = self.posix_mode
-        property['archivable'] = self.archivable
-        property['is_directory'] = self.is_directory
+        if self.files_list[self.id] is not None:
+            property = self.files_list[self.id]
+            property['readonly'] = self.readonly
+            property['posix_mode'] = self.posix_mode
+            property['archivable'] = self.archivable
+            property['is_directory'] = self.is_directory
+        else:
+            property = None
         return property
 
     def _get_property(self, key):
@@ -549,7 +553,7 @@ class BufferWriter():
         pass
 
     def close(self):
-        self.buf.close()
+        pass
 
 
 class FileWriter():
@@ -574,30 +578,32 @@ class Worker():
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, fp, src_start):
-        self.handler = {}
+        self.output_filepath = {}
         self.files = files
         self.fp = fp
         self.src_start = src_start
 
-    def register_writer(self, index, func):
-        self.handler[index] = func
+    def set_output_filepath(self, index, func):
+        self.output_filepath[index] = func
 
     def extract(self, fp):
         fp.seek(self.src_start)
         for f in self.files:
+            # Skip empty file read
             if f.emptystream:
                 continue
-            else:
-                fileish = self.handler.get(f.id, None)
-                fileish.open()
-                for s in f.uncompressed:
-                    self.decompress(fp, f.folder, fileish, s, f.compressed)
-
-    def close(self):
-        for f in self.files:
-            handler = self.handler.get(f.id, None)
-            if handler is not None:
-                handler.close()
+            # Does target path detected?
+            fileish = self.output_filepath.get(f.id, None)
+            if fileish is None:
+                fileish = io.BytesIO()
+                self.decompress(fp, f.folder, fileish, s, f.compressed)
+                fileish.close()
+                continue
+            # retrieve contents
+            fileish.open()
+            for s in f.uncompressed:
+                self.decompress(fp, f.folder, fileish, s, f.compressed)
+            fileish.close()
 
     def decompress(self, fp, folder, fileish, size, compressed_size):
         if folder is None:
@@ -641,6 +647,6 @@ class Worker():
 
     def register_filelike(self, id, fileish):
         if isinstance(fileish, io.BytesIO):
-            self.register_writer(id, BufferWriter(fileish))
+            self.set_output_filepath(id, BufferWriter(fileish))
         else:
-            self.register_writer(id, FileWriter(fileish))
+            self.set_output_filepath(id, FileWriter(fileish))

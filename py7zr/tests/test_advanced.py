@@ -38,42 +38,21 @@ def test_empty():
 def test_github_14():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
-    outbuf = []
-    for i, cf in enumerate(archive.files):
-        assert cf is not None
-        buf = io.BytesIO()
-        archive.worker.register_filelike(cf.id, buf)
-        outbuf.append(buf)
-    archive.worker.extract(archive.fp)
-    buf = outbuf[0]
-    buf.seek(0)
-    actual = buf.read()
-    assert actual == bytes('Hello GitHub issue #14.\n', 'ascii')
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    assert open(os.path.join(tmpdir, 'github_14'), 'rb').read() == bytes('Hello GitHub issue #14.\n', 'ascii')
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.files
-@pytest.mark.skip
 def test_github_14_multi():
     """ multiple unnamed objects."""
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
-    outbuf = []
-    for i, cf in enumerate(archive.files):
-        assert cf is not None
-        buf = io.BytesIO()
-        archive.worker.register_filelike(cf.id, buf)
-        outbuf.append(buf)
-    archive.worker.extract(archive.fp)
-    # check here
-    expected = [bytes('Hello GitHub issue #14 1/2.\n', 'ascii'), bytes('Hello GitHub issue #14 2/2.\n', 'ascii')]
-    buf = outbuf[0]
-    buf.seek(0)
-    actual = buf.read()
-    assert actual == expected[0]
-    buf = outbuf[1]
-    buf.seek(0)
-    actual = buf.read()
-    assert actual == expected[1]
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    assert open(os.path.join(tmpdir, 'github_14_multi'), 'rb').read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.files
@@ -112,7 +91,6 @@ def test_bugzilla_4():
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='Not support LZMA1.')
 def test_bugzilla_16():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_16.7z'), 'rb'))
     decode_all(archive)
