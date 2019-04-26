@@ -27,12 +27,11 @@
 import argparse
 import functools
 import io
+import operator
 import os
 import stat
 import sys
 import threading
-from copy import deepcopy
-from io import BytesIO
 
 from py7zr import FileAttribute
 from py7zr.archiveinfo import Header, SignatureHeader
@@ -111,9 +110,8 @@ class SevenZipFile:
 
     def _read_header_data(self):
         self.fp.seek(self.sig_header.nextheaderofs, 1)
-        buffer = BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        headerrawdata = buffer.getvalue()
-        if not checkcrc(self.sig_header.nextheadercrc, headerrawdata):
+        buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
+        if not checkcrc(self.sig_header.nextheadercrc, buffer.getvalue()):
             raise Bad7zFile('invalid header data')
         return buffer
 
@@ -123,16 +121,10 @@ class SevenZipFile:
 
     @classmethod
     def _check_7zfile(cls, fp):
-        signature = fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
-        if signature != MAGIC_7Z:
-            return False
-        return True
+        return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
 
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
-    def get_num_files(self):
-        return self.files.len
-
     def getnames(self):
         """Return the members of the archive as a list of their names. It has
            the same order as the list returned by getmembers().
@@ -287,14 +279,11 @@ class ArchiveFile:
 
     @property
     def uncompressed_size(self):
-        return functools.reduce(self._plus, self.uncompressed)
+        return functools.reduce(operator.add, self.uncompressed)
 
     @property
     def compressed(self):
         return self._get_property('compressed')
-
-    def _plus(self, a, b):
-        return a + b
 
     def _test_attribute(self, target_bit):
         attributes = self._get_property('attributes')
@@ -319,17 +308,6 @@ class ArchiveFile:
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
             return attributes >> 16
         return None
-
-    @property
-    def executable(self):
-        """
-        :return: True if unix mode is read+exec, otherwise False
-        """
-        e = self._get_unix_extension()
-        if e is not None:
-            if e & 0b0101 == 0b0101:
-                return True
-        return False
 
     @property
     def is_symlink(self):
@@ -549,9 +527,6 @@ class BufferWriter():
     def write(self, data):
         self.buf.write(data)
 
-    def flush(self):
-        pass
-
     def close(self):
         pass
 
@@ -566,9 +541,6 @@ class FileWriter():
 
     def write(self, data):
         self.fp.write(data)
-
-    def flush(self):
-        self.fp.flush()
 
     def close(self):
         self.fp.close()
