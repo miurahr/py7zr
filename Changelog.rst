@@ -20,8 +20,6 @@ Changed
 Fixed
 -----
 
-* Fix too many file descriptors opened error.
-
 Deprecated
 ----------
 
@@ -31,8 +29,17 @@ Removed
 Security
 --------
 
+`v0.0.6`_
+=========
+
+Fixed
+-----
+
+* Fix too many file descriptors opened error.
+
+
 `v0.0.5`_
-=============
+=========
 
 Changed
 -------
@@ -48,7 +55,7 @@ Fixed
 
 
 `v0.0.4`_
-=============
+=========
 
 Added
 -----
@@ -68,7 +75,7 @@ Fixed
 
 
 `v0.0.3`_
-=============
+=========
 
 Added
 -----
@@ -82,7 +89,7 @@ Fixed
 
 
 `v0.0.2`_
-=============
+=========
 
 Changed
 -------
@@ -91,7 +98,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.6...HEAD
+.. _v0.0.6: https://github.com/miurahr/py7zr/compare/v0.0.5...v0.0.6
 .. _v0.0.5: https://github.com/miurahr/py7zr/compare/v0.0.4...v0.0.5
 .. _v0.0.4: https://github.com/miurahr/py7zr/compare/v0.0.3...v0.0.4
 .. _v0.0.3: https://github.com/miurahr/py7zr/compare/v0.0.2...v0.0.3
