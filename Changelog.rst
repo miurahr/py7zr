@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Fix too many file descriptors opened error.
+
 Deprecated
 ----------
 
