@@ -1,0 +1,7 @@
+environment:
+  matrix:
+    - TOXENV: py35
+    - TOXENV: py36
+
+test_script:
+  - tox
