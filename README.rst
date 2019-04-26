@@ -5,6 +5,9 @@ py7zr
 .. image:: https://travis-ci.org/miurahr/py7zr.svg?branch=master
   :target: https://travis-ci.org/miurahr/py7zr
 
+.. image:: https://ci.appveyor.com/api/projects/status/966k084122lhs3i6?svg=true
+  :target: https://ci.appveyor.com/project/miurahr/py7zr/
+
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
