@@ -212,8 +212,7 @@ class SevenZipFile:
                 target_sym.append(pair)
                 self.worker.register_filelike(f.id, buf)
             else:
-                outfile = open(outfilename, 'wb')
-                self.worker.register_filelike(f.id, outfile)
+                self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.get_properties()))
         self.worker.extract(self.fp)
         # Handle symlink before calling close()
@@ -540,6 +539,9 @@ class BufferWriter():
     def __init__(self, target):
         self.buf = target
 
+    def open(self):
+        pass
+
     def write(self, data):
         self.buf.write(data)
 
@@ -553,7 +555,10 @@ class BufferWriter():
 class FileWriter():
 
     def __init__(self, target):
-        self.fp = io.BufferedWriter(target)
+        self.target = target
+
+    def open(self):
+        self.fp = open(self.target, 'wb')
 
     def write(self, data):
         self.fp.write(data)
@@ -580,12 +585,13 @@ class Worker():
     def extract(self, fp):
         fp.seek(self.src_start)
         for f in self.files:
-            handler = self.handler.get(f.id, None)
             if f.emptystream:
                 continue
             else:
+                fileish = self.handler.get(f.id, None)
+                fileish.open()
                 for s in f.uncompressed:
-                    self.decompress(fp, f.folder, handler, s, f.compressed)
+                    self.decompress(fp, f.folder, fileish, s, f.compressed)
 
     def close(self):
         for f in self.files:
@@ -593,9 +599,10 @@ class Worker():
             if handler is not None:
                 handler.close()
 
-    def decompress(self, fp, folder, data, size, compressed_size):
+    def decompress(self, fp, folder, fileish, size, compressed_size):
         if folder is None:
-            return b''
+            fileish.write(b'')
+            return
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         queue = folder.queue
@@ -603,9 +610,9 @@ class Worker():
         if queue.len > 0:
             if out_remaining > queue.len:
                 out_remaining -= queue.len
-                data.write(queue.dequeue(queue.len))
+                fileish.write(queue.dequeue(queue.len))
             else:
-                data.write(queue.dequeue(out_remaining))
+                fileish.write(queue.dequeue(out_remaining))
                 return
 
         while out_remaining > 0:
@@ -619,16 +626,16 @@ class Worker():
                 tmp = decompressor.decompress(inp, max_length)
                 if out_remaining >= len(tmp):
                     out_remaining -= len(tmp)
-                    data.write(tmp)
+                    fileish.write(tmp)
                     if out_remaining <= 0:
                         break
                 else:
                     queue.enqueue(tmp)
-                    data.write(queue.dequeue(out_remaining))
+                    fileish.write(queue.dequeue(out_remaining))
                     break
             else:
                 if queue.len >= 0:
-                    data.write(queue.dequeue(out_remaining))
+                    fileish.write(queue.dequeue(out_remaining))
                 break
         return
 
