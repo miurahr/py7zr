@@ -19,6 +19,9 @@ Added
 Changed
 -------
 
+* Improve main function.
+* Improve tests, checks outputs with sha256
+
 Fixed
 -----
 
