@@ -1,4 +1,5 @@
 environment:
+  COVERALLS_PARALLEL: true
   COVERALLS_REPO_TOKEN:
     secure: +RT7/cjX6V69+GWeuiqH5z8l8kgqPvlc9UkjacU/EMCknC7sa8fVoLDAqMQLY3BP
   matrix:
