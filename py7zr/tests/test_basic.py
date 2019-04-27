@@ -93,6 +93,7 @@ def test_basic_not_implemented_yet1():
         py7zr.SevenZipFile(os.path.join(tmpdir, 'test_x.7z'), mode='x')
     shutil.rmtree(tmpdir)
 
+
 @pytest.mark.api
 def test_basic_not_implemented_yet2():
     tmpdir = tempfile.mkdtemp()
@@ -240,6 +241,11 @@ def test_py7zr_files_info2():
 @pytest.mark.unit
 def test_py7zr_is_7zfile():
     assert is_7zfile(os.path.join(testdata_path, 'test_1.7z'))
+
+
+@pytest.mark.unit
+def test_py7zr_is_7zfile():
+    assert is_7zfile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
 
 
 @pytest.mark.unit
