@@ -131,6 +131,14 @@ def test_basic_not_implemented_yet3():
 
 
 @pytest.mark.basic
+def test_basic_wrong_option_value():
+    tmpdir = tempfile.mkdtemp()
+    with pytest.raises(ValueError):
+        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_p.7z'), mode='p')
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.basic
 def test_basic_extract_1():
     tmpdir = tempfile.mkdtemp()
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))

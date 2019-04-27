@@ -55,7 +55,10 @@ class SevenZipFile:
             self.filename = file
             modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                         'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
-            filemode = modeDict[mode]
+            try:
+                filemode = modeDict[mode]
+            except KeyError:
+                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
             while True:
                 try:
                     self.fp = io.open(file, filemode)
