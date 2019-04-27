@@ -131,9 +131,17 @@ Most of users don't use those directory, but use :method:`extractall()` instead.
 
 Instances have the following methods and attributes:
 
-.. method:: ArchiveFile.get_posix_mode()
+.. method:: ArchiveFile.get_properties()
 
-   Return posix mode when a member has a unix extension property, otherwise return None
+   Return file properties as a hash object. Following keys are included:
+   'readonly', 'is_directory', 'posix_mode', 'archivable',
+   'emptystream', 'filename', 'creationtime', 'lastaccesstime', 'lastwritetime',
+   'attributes'
+
+
+.. attribute:: ArchiveFile.posix_mode
+
+   posix mode when a member has a unix extension property, or None
 
 
 .. attribute:: ArchiveFile.id
@@ -173,11 +181,6 @@ Instances have the following methods and attributes:
    ``True`` if `Readonly` property of a member is enabled, otherwise ``False``.
 
 
-.. attribute:: ArchiveFile.executable
-
-   ``True`` if a member seems to be an executable file, otherwise ``False``.
-
-
 .. attribute:: ArchiveFile.emptystream
 
    ``True`` if a member don't have a data stream, otherwise ``False``.
@@ -195,6 +198,7 @@ Instances have the following methods and attributes:
 
 .. _py7zr-commandline:
 .. program:: py7zr
+
 
 Command-Line Interface
 ----------------------
