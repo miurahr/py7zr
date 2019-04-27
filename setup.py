@@ -44,11 +44,7 @@ setup(name=package_name,
             'pytest'
         ]
       },
-      entry_points = {
-        "console_scripts": [
-            "py7zr = py7zr.__main__:main",
-        ]
-      },
+      scripts=["bin/py7zr"],
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
