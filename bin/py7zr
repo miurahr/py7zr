@@ -19,8 +19,8 @@
 
 import sys
 
-from py7zr import main
+from py7zr import __main__
 
 if __name__ == '__main__':
-        sys.exit(main())
+        sys.exit(__main__.main())
 
