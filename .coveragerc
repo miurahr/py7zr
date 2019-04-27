@@ -1,3 +1,5 @@
 [report]
 exclude_lines =
     if __name__ == .__main__.:
+    # Don't complain about missing debug-only code:
+    def __repr__
