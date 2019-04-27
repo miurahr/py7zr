@@ -86,35 +86,14 @@ def test_basic_list_2():
     assert expected == contents
 
 
-@pytest.mark.basic
-def test_basic_decode_1():
-    '''Test basic extraction'''
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    decode_all(archive)
-
-
-@pytest.mark.basic
-def test_basic_decode_2():
-    '''Test another basic extraction'''
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
-    decode_all(archive)
-
-
-@pytest.mark.basic
-def test_basic_decode_3():
-    """Test when passing path string instead of file-like object."""
-    archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'))
-    decode_all(archive)
-
-
-@pytest.mark.basic
+@pytest.mark.api
 def test_basic_not_implemented_yet1():
     tmpdir = tempfile.mkdtemp()
     with pytest.raises(NotImplementedError):
         py7zr.SevenZipFile(os.path.join(tmpdir, 'test_x.7z'), mode='x')
     shutil.rmtree(tmpdir)
 
-@pytest.mark.basic
+@pytest.mark.api
 def test_basic_not_implemented_yet2():
     tmpdir = tempfile.mkdtemp()
     with pytest.raises(NotImplementedError):
@@ -122,7 +101,7 @@ def test_basic_not_implemented_yet2():
     shutil.rmtree(tmpdir)
 
 
-@pytest.mark.basic
+@pytest.mark.api
 def test_basic_not_implemented_yet3():
     tmpdir = tempfile.mkdtemp()
     with pytest.raises(NotImplementedError):
@@ -130,7 +109,7 @@ def test_basic_not_implemented_yet3():
     shutil.rmtree(tmpdir)
 
 
-@pytest.mark.basic
+@pytest.mark.api
 def test_basic_wrong_option_value():
     tmpdir = tempfile.mkdtemp()
     with pytest.raises(ValueError):
@@ -140,36 +119,32 @@ def test_basic_wrong_option_value():
 
 @pytest.mark.basic
 def test_basic_extract_1():
-    tmpdir = tempfile.mkdtemp()
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    archive.extractall(path=tmpdir)
-    target = os.path.join(tmpdir, "setup.cfg")
-    expected_mode = 33188
-    expected_mtime = 1552522033
-    if os.name == 'posix':
-        assert os.stat(target).st_mode == expected_mode
-    assert os.stat(target).st_mtime == expected_mtime
-    m = hashlib.sha256()
-    m.update(open(target, 'rb').read())
-    assert m.digest() == binascii.unhexlify('ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240')
-    m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'setup.py'), 'rb').read())
-    assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
-    m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
-    assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
-    shutil.rmtree(tmpdir)
+    expected = [{'filename':'setup.cfg', 'mode':33188, 'mtime': 1552522033,
+                 'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
+                {'filename':'setup.py', 'mode':33188, 'mtime': 1552522141,
+                 'digest': 'b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49'},
+                {'filename':'scripts/py7zr', 'mode':33261, 'mtime': 1552522208,
+                'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
+                ]
+    decode_all(archive, expected)
 
 
 @pytest.mark.basic
 def test_basic_extract_2():
-    tmpdir = tempfile.mkdtemp()
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
-    archive.extractall(path=tmpdir)
-    m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'qt.qt5.597.gcc_64/installscript.qs'), 'rb').read())
-    assert m.digest() == binascii.unhexlify('39445276e79ea43c0fa8b393b35dc621fcb2045cb82238ddf2b838a4fbf8a587')
-    shutil.rmtree(tmpdir)
+    expected = [{'filename': 'qt.qt5.597.gcc_64/installscript.qs',
+                 'digest': '39445276e79ea43c0fa8b393b35dc621fcb2045cb82238ddf2b838a4fbf8a587'}]
+    decode_all(archive, expected)
+
+
+@pytest.mark.api
+def test_basic_decode_3():
+    """Test when passing path string instead of file-like object."""
+    archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'))
+    expected = [{'filename':'setup.cfg', 'mode':33188, 'mtime': 1552522033,
+                 'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'}]
+    decode_all(archive, expected)
 
 
 @pytest.mark.unit

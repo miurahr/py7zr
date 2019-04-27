@@ -8,6 +8,7 @@ import tempfile
 
 import binascii
 from py7zr.tests import decode_all, check_archive
+from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -21,10 +22,10 @@ def test_solid():
 
 
 @pytest.mark.files
-@pytest.mark.xfail
 def test_copy():
-    # test loading of copy compressed files
-    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
+    """ test loading of copy compressed files.(help wanted)"""
+    with pytest.raises(UnsupportedCompressionMethodError):
+        check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
 
 
 @pytest.mark.files
@@ -87,21 +88,25 @@ def test_solid_umlaut():
 @pytest.mark.files
 def test_bugzilla_4():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_4.7z'), 'rb'))
-    decode_all(archive)
+    expected = [{'filename': 'History.txt', 'mtime': 1133704668, 'mode': 33188,
+                 'digest': '46b08f0af612371860ab39e3b47666c3bd6fb742c5e8775159310e19ebedae7e'},
+                {'filename': 'License.txt', 'mtime': 1105356710, 'mode': 33188,
+                 'digest': '4f49a4448499449f2864777c895f011fb989836a37990ae1ca532126ca75d25e'},
+                {'filename': 'copying.txt',
+                 'digest': '2c3c3ef532828bcd42bb3127349625a25291ff5ae7e6f8d42e0fe9b5be836a99'},
+                {'filename': 'readme.txt',
+                 'digest': '84f2693d9746e919883cf169fc83467be6566d7501b5044693a2480ab36a4899'}]
+    decode_all(archive, expected)
 
 
 @pytest.mark.files
 def test_bugzilla_16():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_16.7z'), 'rb'))
-    decode_all(archive)
-
-
-@pytest.mark.files
-def test_github_43_provided():
-    # test loading file submitted by @mikenye
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test-issue-43.7z'), 'rb'))
-    assert sorted(archive.getnames()) == ['blah.txt'] + ['blah%d.txt' % x for x in range(2, 10)]
-    decode_all(archive)
+    expected = [{'filename': 'mame4all_2.5.ini',
+                 'digest': 'aaebca5e140e0099a757903fc9f194f9e6da388eed22d37bfd1625c80aa25903'},
+                {'filename': 'mame4all_2.5/mame',
+                 'digest': '6bc23b11fbb9a64096408623d476ad16083ef71c5e7919335e8696036034987d'}]
+    decode_all(archive, expected)
 
 
 @pytest.mark.files
@@ -125,4 +130,27 @@ def test_lzma2bcj():
     m = hashlib.sha256()
     m.update(open(os.path.join(tmpdir, '5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.api
+def test_register_unpack_archive():
+    shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
+    tmpdir = tempfile.mkdtemp()
+    shutil.unpack_archive(os.path.join(testdata_path, 'test_1.7z'), tmpdir)
+    target = os.path.join(tmpdir, "setup.cfg")
+    expected_mode = 33188
+    expected_mtime = 1552522033
+    if os.name == 'posix':
+        assert os.stat(target).st_mode == expected_mode
+    assert os.stat(target).st_mtime == expected_mtime
+    m = hashlib.sha256()
+    m.update(open(target, 'rb').read())
+    assert m.digest() == binascii.unhexlify('ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240')
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'setup.py'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     shutil.rmtree(tmpdir)

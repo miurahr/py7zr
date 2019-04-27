@@ -1,16 +1,28 @@
-from datetime import datetime
+import binascii
+import hashlib
 import os
 import shutil
 import tempfile
+from datetime import datetime
 from py7zr.helpers import UTC
 
 
-def decode_all(archive):
+def decode_all(archive, expected):
     tmpdir = tempfile.mkdtemp()
     for i, file_info in enumerate(archive.files):
         assert file_info.lastwritetime is not None
         assert file_info.filename is not None
     archive.extractall(path=tmpdir)
+    for exp in expected:
+        target = os.path.join(tmpdir, exp['filename'])
+        if os.name == 'posix':
+            if exp.get('mode', None):
+                assert os.stat(target).st_mode == exp['mode']
+        if exp.get('mtime', None):
+            assert os.stat(target).st_mtime == exp['mtime']
+        m = hashlib.sha256()
+        m.update(open(target, 'rb').read())
+        assert m.digest() == binascii.unhexlify(exp['digest'])
     shutil.rmtree(tmpdir)
 
 
