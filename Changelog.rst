@@ -20,8 +20,6 @@ Changed
 Fixed
 -----
 
-* Fix test cases: bugzilla_16 and github_14.
-
 Deprecated
 ----------
 
@@ -30,6 +28,28 @@ Removed
 
 Security
 --------
+
+
+`v0.0.7`_
+=========
+
+Added
+-----
+
+* CI test on AppVeyor.
+
+Changed
+-------
+
+* Worker class refactoring.
+
+Fixed
+-----
+
+* Fix test cases: bugzilla_16 and github_14.
+* Test: set timezone to UTC on Unix and do nothing on Windows.
+
+
 
 `v0.0.6`_
 =========
@@ -100,7 +120,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.7...HEAD
+.. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.6...v0.0.7
 .. _v0.0.6: https://github.com/miurahr/py7zr/compare/v0.0.5...v0.0.6
 .. _v0.0.5: https://github.com/miurahr/py7zr/compare/v0.0.4...v0.0.5
 .. _v0.0.4: https://github.com/miurahr/py7zr/compare/v0.0.3...v0.0.4
