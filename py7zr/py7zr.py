@@ -24,7 +24,6 @@
 #
 """Read 7zip format archives."""
 
-import argparse
 import functools
 import io
 import operator
@@ -33,11 +32,10 @@ import stat
 import sys
 import threading
 
-from py7zr import FileAttribute
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import filetime_to_dt, Local, checkcrc, ArchiveTimestamp
-from py7zr.properties import MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
+from py7zr.properties import FileAttribute, MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
 
 
 # ------------------
@@ -489,36 +487,6 @@ def unpack_7zarchive(archive, path, extra=None):
     arc.extractall(path)
 
 
-def main():
-    parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
-                                     formatter_class=argparse.RawTextHelpFormatter, add_help=True)
-    parser.add_argument('subcommand', choices=['l', 'x'], help="command l list, x extract")
-    parser.add_argument('-o', nargs='?', help="output directory")
-    parser.add_argument("file", help="7z archive file")
-
-    args = parser.parse_args()
-    com = args.subcommand
-    target = args.file
-    if not is_7zfile(target):
-        print('not a 7z file')
-        exit(1)
-
-    if com == 'l':
-        with open(target, 'rb') as f:
-            a = SevenZipFile(f)
-            a.list()
-        exit(0)
-
-    if com == 'x':
-        with open(target, 'rb') as f:
-            a = SevenZipFile(f)
-            if args.o:
-                a.extractall(path=args.o)
-            else:
-                a.extractall()
-        exit(0)
-
-
 class BufferWriter():
 
     def __init__(self, target):
@@ -571,7 +539,8 @@ class Worker():
             fileish = self.output_filepath.get(f.id, None)
             if fileish is None:
                 fileish = io.BytesIO()
-                self.decompress(fp, f.folder, fileish, s, f.compressed)
+                for s in f.uncompressed:
+                    self.decompress(fp, f.folder, fileish, s, f.compressed)
                 fileish.close()
                 continue
             # retrieve contents

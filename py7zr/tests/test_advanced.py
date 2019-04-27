@@ -14,6 +14,7 @@ from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
 
+
 @pytest.mark.files
 def test_solid():
     f = 'solid.7z'
