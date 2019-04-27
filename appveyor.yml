@@ -12,4 +12,4 @@ test_script:
   - "%PYTHON%\\python.exe -m pytest -v --cov py7zr"
 
 on_success:
-  - %PYTHON%\\Scripts\\coveralls
+  - "%PYTHON%\\Scripts\\coveralls"
