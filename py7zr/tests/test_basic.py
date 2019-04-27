@@ -1,5 +1,3 @@
-import binascii
-import hashlib
 import io
 import os
 from io import StringIO
@@ -121,11 +119,11 @@ def test_basic_wrong_option_value():
 @pytest.mark.basic
 def test_basic_extract_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    expected = [{'filename':'setup.cfg', 'mode':33188, 'mtime': 1552522033,
+    expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
-                {'filename':'setup.py', 'mode':33188, 'mtime': 1552522141,
+                {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
                  'digest': 'b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49'},
-                {'filename':'scripts/py7zr', 'mode':33261, 'mtime': 1552522208,
+                {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
                 'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
                 ]
     decode_all(archive, expected)
@@ -143,7 +141,7 @@ def test_basic_extract_2():
 def test_basic_decode_3():
     """Test when passing path string instead of file-like object."""
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'))
-    expected = [{'filename':'setup.cfg', 'mode':33188, 'mtime': 1552522033,
+    expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'}]
     decode_all(archive, expected)
 
@@ -244,7 +242,7 @@ def test_py7zr_is_7zfile():
 
 
 @pytest.mark.unit
-def test_py7zr_is_7zfile():
+def test_py7zr_is_7zfile_fileish():
     assert is_7zfile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
 
 

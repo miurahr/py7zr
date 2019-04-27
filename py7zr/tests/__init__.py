@@ -17,12 +17,14 @@ def decode_all(archive, expected):
         target = os.path.join(tmpdir, exp['filename'])
         if os.name == 'posix':
             if exp.get('mode', None):
-                assert os.stat(target).st_mode == exp['mode']
+                assert os.stat(target).st_mode == exp['mode'],\
+                    "%s, actual: %d, expected: %d" % (exp['filename'], os.stat(target).st_mode, exp['mode'])
         if exp.get('mtime', None):
-            assert os.stat(target).st_mtime == exp['mtime']
+            assert os.stat(target).st_mtime == exp['mtime'],\
+                "%s, actual: %d, expected: %d" % (exp['filename'], os.stat(target).st_mtime, exp['mode'])
         m = hashlib.sha256()
         m.update(open(target, 'rb').read())
-        assert m.digest() == binascii.unhexlify(exp['digest'])
+        assert m.digest() == binascii.unhexlify(exp['digest']), "Fails digest for %s" % exp['filename']
     shutil.rmtree(tmpdir)
 
 

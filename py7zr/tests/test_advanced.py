@@ -92,9 +92,9 @@ def test_bugzilla_4():
                  'digest': '46b08f0af612371860ab39e3b47666c3bd6fb742c5e8775159310e19ebedae7e'},
                 {'filename': 'License.txt', 'mtime': 1105356710, 'mode': 33188,
                  'digest': '4f49a4448499449f2864777c895f011fb989836a37990ae1ca532126ca75d25e'},
-                {'filename': 'copying.txt',
+                {'filename': 'copying.txt', 'mtime': 999116366, 'mode': 33188,
                  'digest': '2c3c3ef532828bcd42bb3127349625a25291ff5ae7e6f8d42e0fe9b5be836a99'},
-                {'filename': 'readme.txt',
+                {'filename': 'readme.txt', 'mtime': 1133704646, 'mode': 33188,
                  'digest': '84f2693d9746e919883cf169fc83467be6566d7501b5044693a2480ab36a4899'}]
     decode_all(archive, expected)
 
