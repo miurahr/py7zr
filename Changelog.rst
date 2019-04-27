@@ -14,6 +14,8 @@ Current changes
 Added
 -----
 
+* Test for CLI.
+
 Changed
 -------
 
