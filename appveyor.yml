@@ -1,7 +1,7 @@
 environment:
   COVERALLS_PARALLEL: true
   COVERALLS_REPO_TOKEN:
-    secure: +RT7/cjX6V69+GWeuiqH5z8l8kgqPvlc9UkjacU/EMCknC7sa8fVoLDAqMQLY3BP
+    secure: dZWaKkr6xvP+aDksWLreF0p0L7LLiybUY2bUgGAqc3m/uVWHszncQcsXe5X1+rrf
   matrix:
     - PYTHON: "C:\\Python36-x64"
     - PYTHON: "C:\\Python37-x64"
