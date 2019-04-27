@@ -16,6 +16,7 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.environ['TZ'] = 'UTC'
 if os.name == 'posix':
     time.tzset()
+os.umask(0o022)
 
 
 @pytest.mark.basic
