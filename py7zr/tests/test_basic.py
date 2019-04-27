@@ -88,14 +88,46 @@ def test_basic_list_2():
 
 @pytest.mark.basic
 def test_basic_decode_1():
+    '''Test basic extraction'''
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     decode_all(archive)
 
 
 @pytest.mark.basic
 def test_basic_decode_2():
+    '''Test another basic extraction'''
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
     decode_all(archive)
+
+
+@pytest.mark.basic
+def test_basic_decode_3():
+    """Test when passing path string instead of file-like object."""
+    archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'))
+    decode_all(archive)
+
+
+@pytest.mark.basic
+def test_basic_not_implemented_yet1():
+    tmpdir = tempfile.mkdtemp()
+    with pytest.raises(NotImplementedError):
+        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_x.7z'), mode='x')
+    shutil.rmtree(tmpdir)
+
+@pytest.mark.basic
+def test_basic_not_implemented_yet2():
+    tmpdir = tempfile.mkdtemp()
+    with pytest.raises(NotImplementedError):
+        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_w.7z'), mode='w')
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.basic
+def test_basic_not_implemented_yet3():
+    tmpdir = tempfile.mkdtemp()
+    with pytest.raises(NotImplementedError):
+        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_a.7z'), mode='a')
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.basic
@@ -225,6 +257,16 @@ def test_py7zr_files_info2():
 @pytest.mark.unit
 def test_py7zr_is_7zfile():
     assert is_7zfile(os.path.join(testdata_path, 'test_1.7z'))
+
+
+@pytest.mark.unit
+def test_py7zr_is_not_7zfile():
+    tmpdir = tempfile.mkdtemp()
+    target = os.path.join(tmpdir, 'test_not.7z')
+    with open(target, 'wb') as f:
+        f.write(b'12345dahodjg98adfjfak;')
+    assert not is_7zfile(target)
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
