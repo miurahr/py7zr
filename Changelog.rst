@@ -14,13 +14,8 @@ Current changes
 Added
 -----
 
-* Test for CLI.
-
 Changed
 -------
-
-* Improve main function.
-* Improve tests, checks outputs with sha256
 
 Fixed
 -----
@@ -33,6 +28,21 @@ Removed
 
 Security
 --------
+
+
+`v0.0.8`_
+=============
+
+Added
+-----
+
+* Test for CLI.
+
+Changed
+-------
+
+* Improve main function.
+* Improve tests, checks outputs with sha256
 
 
 `v0.0.7`_
