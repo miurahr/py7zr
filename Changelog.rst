@@ -135,7 +135,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.8...HEAD
+.. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.7...v0.0.8
 .. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.6...v0.0.7
 .. _v0.0.6: https://github.com/miurahr/py7zr/compare/v0.0.5...v0.0.6
 .. _v0.0.5: https://github.com/miurahr/py7zr/compare/v0.0.4...v0.0.5
