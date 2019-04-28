@@ -4,6 +4,7 @@ from io import StringIO
 import lzma
 import py7zr
 from py7zr import archiveinfo, is_7zfile
+from py7zr.helpers import encode_uint64, convert_to_bytearray
 from py7zr.properties import Property
 from py7zr.tests import decode_all
 import pytest
@@ -267,3 +268,19 @@ def test_lzma_lzma2_compressor():
 def test_lzma_lzma2bcj_compressor():
     filters = [{'id': 4}, {'id': 33, 'dict_size': 16777216}]
     assert lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters) is not None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("testinput, expected",
+                         [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80'), (65535, b'\xff\xff'),
+                          (0x7fffff, b'\x7f\xff\xff'), (0xffffffff, b'\xff\xff\xff\xff')])
+def test_convert_to_bytearray(testinput, expected):
+    assert convert_to_bytearray(testinput) == bytearray(expected)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("testinput, expected",
+                         [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
+                          (0x7fffff, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff')])
+def test_encode_uint64(testinput, expected):
+    assert encode_uint64(testinput) == expected

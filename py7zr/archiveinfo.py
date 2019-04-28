@@ -41,11 +41,13 @@ from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 class ArchiveProperties:
 
+    __slots__ = ['property_data']
+
     def __init__(self, file):
+        self.property_data = []
         self.read(file)
 
     def read(self, file):
-        self.property_data = []
         pid = file.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
             while True:
@@ -60,6 +62,13 @@ class ArchiveProperties:
                     property.append(b)
                 self.property_data.append(property)
 
+    def write(self, file):
+        if len(self.property_data) > 0:
+            file.write(Property.ARCHIVE_PROPERTIES)
+            for data in self.property_data:
+                file.write_uint64(len(data))
+                file.write(data)
+            file.write(b'\x00')
 
 class PackInfo:
     """ information about packed streams """
@@ -80,6 +89,9 @@ class PackInfo:
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
+
+    def write(self, file):
+        file.write_uint64(self.packpos)
 
 
 class Folder:

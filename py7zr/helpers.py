@@ -21,6 +21,7 @@
 #
 #
 
+import struct
 import sys
 import time as _time
 from binascii import unhexlify
@@ -55,6 +56,20 @@ def read_real_uint64(file):
 
 
 def read_uint64(file):
+    """
+    UINT64 means real UINT64 encoded with the following scheme:
+
+      Size of encoding sequence depends from first byte:
+      First_Byte  Extra_Bytes        Value
+      (binary)
+      0xxxxxxx               : ( xxxxxxx           )
+      10xxxxxx    BYTE y[1]  : (  xxxxxx << (8 * 1)) + y
+      110xxxxx    BYTE y[2]  : (   xxxxx << (8 * 2)) + y
+      ...
+      1111110x    BYTE y[6]  : (       x << (8 * 6)) + y
+      11111110    BYTE y[7]  :                         y
+      11111111    BYTE y[8]  :                         y
+    """
     b = ord(file.read(1))
     mask = 0x80
     for i in range(8):
@@ -65,6 +80,38 @@ def read_uint64(file):
             highpart = b & (mask - 1)
             return value + (highpart << (i * 8))
         mask >>= 1
+
+
+def write_uint64(file, value):
+    barray = encode_uint64(value)
+    file.write(barray)
+
+
+def encode_uint64(value):
+    mask = 0x80
+    mv = memoryview(convert_to_bytearray(value))
+    l = len(mv.tobytes())
+    format = 'c'
+    for i in range(l - 1):
+        mask |= mask >> 1
+        format += 'c'
+    if mv[0] >= 2 ** (8 - l):
+        pass
+    elif l == 1:
+        mv[0] &= ~mask
+        return struct.pack(format, mv.tobytes())
+    else:
+        mv[0] |= mask
+        return struct.pack(format, mv.tobytes())
+
+
+def convert_to_bytearray(value):
+    bytelen = 0
+    v = value
+    while v > 0:
+        v >>= 8
+        bytelen += 1
+    return bytearray(value.to_bytes(bytelen, 'big'))
 
 
 def read_boolean(file, count, checkall=0):
