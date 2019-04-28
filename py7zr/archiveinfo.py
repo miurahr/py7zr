@@ -42,6 +42,9 @@ from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 class ArchiveProperties:
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         self.property_data = []
         pid = file.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
@@ -62,6 +65,9 @@ class PackInfo:
     """ information about packed streams """
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         self.packpos = read_uint64(file)
         self.numstreams = read_uint64(file)
         pid = file.read(1)
@@ -80,6 +86,9 @@ class Folder:
     """ a "Folder" represents a stream of compressed data """
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         self.unpacksizes = None
         self.solid = False
         self._file = file
@@ -167,6 +176,9 @@ class Digests:
     """ holds a list of checksums """
 
     def __init__(self, file, count):
+        self.read(file, count)
+
+    def read(self, file, count):
         self.defined = read_boolean(file, count, checkall=1)
         self.crcs = read_crc(file, count)
 
@@ -178,6 +190,9 @@ class UnpackInfo:
     """ combines multiple folders """
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         pid = file.read(1)
         if pid != Property.FOLDER:
             raise Bad7zFile('folder id expected but %s found' % repr(pid))
@@ -210,6 +225,9 @@ class SubstreamsInfo:
     """ defines the substreams of a folder """
 
     def __init__(self, file, numfolders, folders):
+        self.read(file, numfolders, folders)
+
+    def read(self, file, numfolders, folders):
         self.digests = []
         self.digestsdefined = []
         pid = file.read(1)
@@ -261,6 +279,9 @@ class StreamsInfo:
     """ information about compressed streams """
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         pid = file.read(1)
         if pid == Property.PACK_INFO:
             self.packinfo = PackInfo(file)
@@ -288,7 +309,10 @@ class FilesInfo:
             else:
                 files[i][name] = None
 
-    def __init__(self, fp):
+    def __init__(self, file):
+        self.read(file)
+
+    def read(self, fp):
         self.numfiles = read_uint64(fp)
         self.files = [{'emptystream': False} for x in range(self.numfiles)]
         numemptystreams = 0
@@ -365,6 +389,9 @@ class Header:
                 '_start_pos']
 
     def __init__(self, fp, buffer, start_pos):
+        self.read(fp, buffer, start_pos)
+
+    def read(self, fp, buffer, start_pos):
         self._start_pos = start_pos
         fp.seek(self._start_pos)
         self._decode_header(fp, buffer)
@@ -454,6 +481,9 @@ class SignatureHeader:
     """The SignatureHeader class hold information of a signature header of archive."""
 
     def __init__(self, file):
+        self.read(file)
+
+    def read(self, file):
         file.seek(len(MAGIC_7Z), 0)
         self.version = unpack('BB', file.read(2))
         self._startheadercrc = unpack('<L', file.read(4))[0]
