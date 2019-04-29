@@ -21,12 +21,12 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+import binascii
 import bz2
 import lzma
+import struct
 import zlib
 
-from binascii import unhexlify
-from struct import pack, unpack
 
 import logging
 import os
@@ -35,7 +35,8 @@ from bringbuf.bringbuf import bRingBuf
 from io import BytesIO, StringIO
 
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
-from py7zr.helpers import checkcrc, read_crc, calculate_crc32, ArchiveTimestamp, read_boolean, read_real_uint64, read_uint64
+from py7zr.helpers import calculate_crc32, ArchiveTimestamp
+from py7zr.archiveio import read_crc, read_real_uint64, read_uint32, read_uint64, write_uint64, write_real_uint64, read_boolean
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
@@ -91,7 +92,7 @@ class PackInfo:
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
 
     def write(self, file):
-        file.write_uint64(self.packpos)
+        write_uint64(file, self.packpos)
 
 
 class Folder:
@@ -211,9 +212,9 @@ class UnpackInfo:
         self.numfolders = read_uint64(file)
         self.folders = []
         external = file.read(1)
-        if external == unhexlify('00'):
+        if external == Property.END:
             self.folders = [Folder(file) for x in range(self.numfolders)]
-        elif external == unhexlify('01'):
+        elif external == binascii.unhexlify('01'):
             self.datastreamidx = read_uint64(file)
         else:
             raise Bad7zFile('0x00 or 0x01 expected but %s found' % repr(external))
@@ -332,7 +333,7 @@ class FilesInfo:
             typ = read_uint64(fp)
             if typ > 255:
                 raise Bad7zFile('invalid type, must be below 256, is %d' % typ)
-            typ = pack('B', typ)
+            typ = struct.pack('B', typ)
             if typ == Property.END:
                 break
             size = read_uint64(fp)
@@ -355,7 +356,7 @@ class FilesInfo:
                 antifiles = read_boolean(buffer, numemptystreams)
             elif typ == Property.NAME:
                 external = buffer.read(1)
-                if external != unhexlify('00'):
+                if external != Property.END:
                     self.dataindex = read_uint64(buffer)
                     # FIXME: evaluate external
                     raise NotImplementedError
@@ -364,7 +365,7 @@ class FilesInfo:
                     name = ''
                     while True:
                         ch = buffer.read(2)
-                        if ch == unhexlify('0000'):
+                        if ch == binascii.unhexlify('0000'):
                             f['filename'] = name
                             break
                         name += ch.decode('utf-16')
@@ -377,7 +378,7 @@ class FilesInfo:
             elif typ == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, self.numfiles, checkall=1)
                 external = buffer.read(1)
-                if external != unhexlify('00'):
+                if external != Property.END:
                     self.dataindex = read_uint64(buffer)
                     # FIXME: evaluate external
                     print("Ignore external: %s" % self.external)
@@ -387,7 +388,7 @@ class FilesInfo:
                     raise NotImplementedError
                 for idx, f in enumerate(self.files):
                     if defined[idx]:
-                        f['attributes'] = unpack('<L', buffer.read(4))[0]
+                        f['attributes'], _ = read_uint32(buffer)
                     else:
                         f['attributes'] = None
             else:
@@ -465,7 +466,7 @@ class Header:
             folder_data = folder.get_decompressor(compressed_size).decompress(fp.read(compressed_size))[:uncompressed_size]
             src_start += uncompressed_size
             if folder.digestdefined:
-                if not checkcrc(folder.crc, folder_data):
+                if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile('invalid block data')
             buffer.write(folder_data)
         buffer.seek(0, 0)
@@ -497,14 +498,13 @@ class SignatureHeader:
 
     def read(self, file):
         file.seek(len(MAGIC_7Z), 0)
-        self.version = unpack('BB', file.read(2))
-        self._startheadercrc = unpack('<L', file.read(4))[0]
+        self.version = struct.unpack('BB', file.read(2))
+        self._startheadercrc, _ = read_uint32(file)
         self.nextheaderofs, data = read_real_uint64(file)
         crc = calculate_crc32(data)
         self.nextheadersize, data = read_real_uint64(file)
         crc = calculate_crc32(data, crc)
-        data = file.read(4)
-        self.nextheadercrc = unpack('<L', data)[0]
+        self.nextheadercrc, data = read_uint32(file)
         crc = calculate_crc32(data, crc)
         if crc != self._startheadercrc:
             raise Bad7zFile('invalid header data')

@@ -34,7 +34,7 @@ import threading
 
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import filetime_to_dt, Local, checkcrc, ArchiveTimestamp
+from py7zr.helpers import filetime_to_dt, Local, ArchiveTimestamp, calculate_crc32
 from py7zr.properties import FileAttribute, MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
 
 
@@ -112,7 +112,7 @@ class SevenZipFile:
     def _read_header_data(self):
         self.fp.seek(self.sig_header.nextheaderofs, 1)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        if not checkcrc(self.sig_header.nextheadercrc, buffer.getvalue()):
+        if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
         return buffer
 
