@@ -36,8 +36,8 @@ from io import BytesIO, StringIO
 
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
-from py7zr.io import read_bytes, read_crc, read_real_uint64, read_uint32, read_uint64, read_boolean
-from py7zr.io import write_bytes, write_uint64
+from py7zr.io import read_byte, read_bytes, read_crc, read_real_uint64, read_uint32, read_uint64, read_boolean
+from py7zr.io import write_byte, write_bytes, write_uint64, write_boolean, write_crc
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
@@ -116,21 +116,21 @@ class Folder:
         self.solid = False
         self._file = file
         self.consumed = 0
-        num_coders = read_uint64(file)
+        self.num_coders = read_uint64(file)
         self.coders = []
         self.digestdefined = False
         self.totalin = 0
         self.totalout = 0
-        for i in range(num_coders):
+        for i in range(self.num_coders):
             while True:
-                b = ord(file.read(1))
+                b = read_byte(file)
                 methodsize = b & 0xf
-                issimple = b & 0x10 == 0
-                noattributes = b & 0x20 == 0
+                iscomplex = b & 0x10 == 0x10
+                hasattributes = b & 0x20 == 0x20
                 last_alternative = b & 0x80 == 0
                 c = {}
                 c['method'] = file.read(methodsize)
-                if not issimple:
+                if iscomplex:
                     c['numinstreams'] = read_uint64(file)
                     c['numoutstreams'] = read_uint64(file)
                     # FIXME: only a simple compression method is supported
@@ -140,7 +140,7 @@ class Folder:
                     c['numoutstreams'] = 1
                 self.totalin += c['numinstreams']
                 self.totalout += c['numoutstreams']
-                if not noattributes:
+                if hasattributes:
                     proplen = read_uint64(file)
                     c['properties'] = file.read(proplen)
                 self.coders.append(c)
@@ -160,6 +160,29 @@ class Folder:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
         self.queue = bRingBuf(QUEUELEN)
+
+    def write(self, file):
+        assert self.num_coders is not None
+        write_uint64(file, self.num_coders)
+        for c in self.coders:
+            method = c['method']
+            method_size = len(method_size)
+            numinstreams = c['numinstreams']
+            numoutstreams = c['numoutstreams']
+            iscomplex = 0x00 if numinstreams == 1 and numoutstreams == 1 else 0x10
+            if c['properties'] is not None:
+                hasattributes = 0x20
+                properties = c['properties']
+                proplen = len(properties)
+            else:
+                hasattributes = 0x00
+            write_byte(file, method_size & 0xf | iscomplex | hasattributes)
+            write_bytes(file, method)
+            if iscomplex:
+                write_uint64(file, numinstreams)
+                write_uint64(file, numoutstreams)
+
+
 
     def get_decompressor(self, size):
         if hasattr(self, 'decompressor'):
@@ -205,6 +228,10 @@ class Digests:
         self.defined = read_boolean(file, count, checkall=1)
         self.crcs = read_crc(file, count)
 
+    def write(self, file, count):
+        write_boolean(file, self.defined, all_defined=True)
+        write_crc(file, self.crcs)
+
 
 UnpackDigests = Digests
 
@@ -221,10 +248,10 @@ class UnpackInfo:
             raise Bad7zFile('folder id expected but %s found' % repr(pid))
         self.numfolders = read_uint64(file)
         self.folders = []
-        external = file.read(1)
-        if external == Property.END:
+        external = read_byte(file)
+        if external == 0x00:
             self.folders = [Folder(file) for x in range(self.numfolders)]
-        elif external == binascii.unhexlify('01'):
+        elif external == 0x01:
             self.datastreamidx = read_uint64(file)
         else:
             raise Bad7zFile('0x00 or 0x01 expected but %s found' % repr(external))
@@ -242,6 +269,25 @@ class UnpackInfo:
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
+
+    def write(self, file):
+        file.write(Property.FOLDER)
+        write_uint64(file, self.numfolders)
+        external = False
+        if external:
+            write_byte(file, 0x00)
+            for i in range(self.numfolders):
+                for f in self.folders:
+                    f.write(file)
+        else:
+            write_byte(file, 0x01)
+            assert self.datastreamidx is not None
+            write_uint64(file, self.datastreamidx)
+        write_byte(file, Property.CODERS_UNPACK_SIZE)
+        for folder in self.folders:
+            for i in range(folder.totalout):
+                write_uint64(file, folder.unpacksizes[i])
+
 
 
 class SubstreamsInfo:

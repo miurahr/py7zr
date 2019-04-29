@@ -26,6 +26,7 @@ from array import array
 from binascii import unhexlify
 from functools import reduce
 from struct import pack, unpack
+from operator import and_
 
 
 NEED_BYTESWAP = sys.byteorder != 'little'
@@ -45,13 +46,26 @@ def read_crc(file, count):
     return crcs
 
 
+def write_crc(file, crcs):
+    for crc in crcs:
+        write_uint32(file, crc)
+
 def read_bytes(file, length):
     return unpack(b'B' * length, file.read(length))
+
+
+def read_byte(file):
+    return ord(file.read(1))
 
 
 def write_bytes(file, data):
     assert len(data) > 0
     file.write(pack(b'B' * len(data), data))
+
+
+def write_byte(file, data):
+    assert len(data) == 1
+    file.write(pack('B', data))
 
 
 def read_real_uint64(file):
@@ -64,6 +78,11 @@ def read_uint32(file):
     res = file.read(4)
     a = unpack('<L', res)[0]
     return a, res
+
+
+def write_uint32(file, value):
+    b = pack('<L', value)
+    file.write(b)
 
 
 def read_uint64(file):
@@ -139,3 +158,23 @@ def read_boolean(file, count, checkall=0):
         result.append(b & mask != 0)
         mask >>= 1
     return result
+
+
+def write_boolean(file, booleans, all_defined=True):
+    if all_defined and reduce(booleans, and_):
+        file.write(b'\xff')
+        return
+    elif all_defined:
+        file.write(b'\x00')
+    mask = 0x80
+    o = 0x00
+    for b in booleans:
+        if mask == 0:
+            file.write(o)
+            mask = 0x80
+            o = 0x00
+        else:
+            o |= mask if b else 0x00
+            mask >>= 1
+    if mask != 0x80:
+        file.write(o)
