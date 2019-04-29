@@ -25,7 +25,7 @@ import sys
 from array import array
 from binascii import unhexlify
 from functools import reduce
-from struct import unpack
+from struct import pack, unpack
 
 
 NEED_BYTESWAP = sys.byteorder != 'little'
@@ -37,11 +37,21 @@ else:
     assert array('I').itemsize == 4
     ARRAY_TYPE_UINT32 = 'I'
 
+
 def read_crc(file, count):
     crcs = array(ARRAY_TYPE_UINT32, file.read(4 * count))
     if NEED_BYTESWAP:
         crcs.byteswap()
     return crcs
+
+
+def read_bytes(file, length):
+    return unpack(b'B' * length, file.read(length))
+
+
+def write_bytes(file, data):
+    assert len(data) > 0
+    file.write(pack(b'B' * len(data), data))
 
 
 def read_real_uint64(file):

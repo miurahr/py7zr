@@ -4,7 +4,7 @@ from io import StringIO
 import lzma
 import py7zr
 from py7zr import archiveinfo, is_7zfile
-from py7zr.archiveio import encode_uint64
+from py7zr.io import encode_uint64
 from py7zr.properties import Property
 from py7zr.tests import decode_all
 import pytest

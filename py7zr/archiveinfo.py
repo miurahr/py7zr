@@ -36,7 +36,8 @@ from io import BytesIO, StringIO
 
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
-from py7zr.archiveio import read_crc, read_real_uint64, read_uint32, read_uint64, write_uint64, write_real_uint64, read_boolean
+from py7zr.io import read_bytes, read_crc, read_real_uint64, read_uint32, read_uint64, read_boolean
+from py7zr.io import write_bytes, write_uint64
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
@@ -52,24 +53,21 @@ class ArchiveProperties:
         pid = file.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
             while True:
-                type = ord(file.read(1))
-                if type == 0x0:
+                type = file.read(1)
+                if type == Property.END:
                     break
-                # retrieve property
                 size = read_uint64(file)
-                property = []
-                for i in range(size):
-                    b = ord(file.read(1))
-                    property.append(b)
+                property = read_bytes(file, size)
                 self.property_data.append(property)
 
     def write(self, file):
         if len(self.property_data) > 0:
             file.write(Property.ARCHIVE_PROPERTIES)
             for data in self.property_data:
-                file.write_uint64(len(data))
-                file.write(data)
-            file.write(b'\x00')
+                write_uint64(file, len(data))
+                write_bytes(file, data)
+            file.write(Property.END)
+
 
 class PackInfo:
     """ information about packed streams """
@@ -92,7 +90,19 @@ class PackInfo:
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
 
     def write(self, file):
+        assert self.packpos is not None
+        assert self.numstreams is not None
+        assert len(self.packsizes) == self.numstreams
         write_uint64(file, self.packpos)
+        write_uint64(file, self.numstreams)
+        write_bytes(file, Property.SIZE)
+        for i in range(self.numstreams):
+            write_uint64(file, self.packsizes[i])
+        if self.crcs is not None:
+            write_bytes(file, Property.CRC)
+            for i in range(self.numstreams):
+                write_uint64(file, self.crcs[i])
+        write_bytes(file, Property.END)
 
 
 class Folder:
@@ -498,7 +508,7 @@ class SignatureHeader:
 
     def read(self, file):
         file.seek(len(MAGIC_7Z), 0)
-        self.version = struct.unpack('BB', file.read(2))
+        self.version = read_bytes(file, 2)
         self._startheadercrc, _ = read_uint32(file)
         self.nextheaderofs, data = read_real_uint64(file)
         crc = calculate_crc32(data)
