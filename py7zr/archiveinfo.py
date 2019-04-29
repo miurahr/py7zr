@@ -23,6 +23,7 @@
 #
 import binascii
 import bz2
+import functools
 import lzma
 import struct
 import zlib
@@ -181,7 +182,7 @@ class Folder:
             if iscomplex:
                 write_uint64(file, numinstreams)
                 write_uint64(file, numoutstreams)
-
+            # Todo: implement me.
 
 
     def get_decompressor(self, size):
@@ -287,7 +288,7 @@ class UnpackInfo:
         for folder in self.folders:
             for i in range(folder.totalout):
                 write_uint64(file, folder.unpacksizes[i])
-
+        write_byte(file, Property.END)
 
 
 class SubstreamsInfo:
@@ -343,12 +344,41 @@ class SubstreamsInfo:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
 
+    def write(self, file, folders):
+        if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
+            return
+        if not functools.reduce(lambda x, y: x & y == 1, self.num_unpackstreams_folders, True):
+            for n in self.num_unpackstreams_folders:
+                write_uint64(file, n)
+        write_byte(file, Property.SIZE)
+        for size in self.num_unpacksizes:
+            write_uint64(file, size)  # FIXME: corrent number of sizes?
+        num_digests = 0
+        num_digests_total = 0
+        for i in range(len(folders)):
+            numsubstreams = self.num_unpackstreams_folders[i]
+            if numsubstreams != 1 or not folders[i].digestdefined:
+                num_digests += numsubstreams
+            num_digests_total += numsubstreams
+        write_byte(file, Property.CRC)
+        didx = 0
+        digests = Digests(num_digests)
+        for i in range(len(folders)):
+            folder = folders[i]
+            if self.num_unpackstreams_folders[i] == 1 and folder.digestdefined:
+                pass
+            else:
+                for j in range(self.num_unpackstreams_folders[i]):
+                    # TODO: implement me.
+                    pass
+
 
 class StreamsInfo:
     """ information about compressed streams """
 
-    def __init__(self, file):
-        self.read(file)
+    @classmethod
+    def retrieve(cls, file):
+        return cls().read(file)
 
     def read(self, file):
         pid = file.read(1)
@@ -363,25 +393,29 @@ class StreamsInfo:
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
+        return self
+
+    def write(self, file):
+        if self.packinfo is not None:
+            write_byte(file, Property.PACK_INFO)
+            self.packinfo.write(file)
+        if self.unpackinfo is not None:
+            write_byte(file, Property.UNPACK_INFO)
+            self.unpackinfo.write(file)
+        if self.substreamsinfo is not None:
+            write_byte(file, Property.SUBSTREAMS_INFO)
+            self.substreamsinfo.write(file)
+        write_byte(file, Property.END)
 
 
 class FilesInfo:
     """ holds file properties """
 
-    def _readTimes(self, fp, files, name):
-        defined = read_boolean(fp, len(files), checkall=1)
-        # NOTE: the "external" flag is currently ignored, should be 0x00
-        self.external = fp.read(1)
-        for i in range(len(files)):
-            if defined[i]:
-                files[i][name] = ArchiveTimestamp(read_real_uint64(fp)[0])
-            else:
-                files[i][name] = None
+    @classmethod
+    def retrieve(cls, file):
+        return cls()._read(file)
 
-    def __init__(self, file):
-        self.read(file)
-
-    def read(self, fp):
+    def _read(self, fp):
         self.numfiles = read_uint64(fp)
         self.files = [{'emptystream': False} for x in range(self.numfiles)]
         numemptystreams = 0
@@ -449,6 +483,17 @@ class FilesInfo:
                         f['attributes'] = None
             else:
                 raise Bad7zFile('invalid type %r' % (typ))
+        return self
+
+    def _readTimes(self, fp, files, name):
+        defined = read_boolean(fp, len(files), checkall=1)
+        # NOTE: the "external" flag is currently ignored, should be 0x00
+        self.external = fp.read(1)
+        for i in range(len(files)):
+            if defined[i]:
+                files[i][name] = ArchiveTimestamp(read_real_uint64(fp)[0])
+            else:
+                files[i][name] = None
 
 
 class Header:
@@ -457,32 +502,15 @@ class Header:
     __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
                 '_start_pos']
 
-    def __init__(self, fp, buffer, start_pos):
-        self.read(fp, buffer, start_pos)
+    @classmethod
+    def retrieve(cls, fp, buffer, start_pos):
+        return cls()._read(fp, buffer, start_pos)
 
-    def read(self, fp, buffer, start_pos):
+    def _read(self, fp, buffer, start_pos):
         self._start_pos = start_pos
         fp.seek(self._start_pos)
         self._decode_header(fp, buffer)
-
-    # proxy functions
-    def get_files(self):
-        return self.files_info.files
-
-    def get_decompress_info(self):
-        decompress_info = []
-        packsizes = self.main_streams.packinfo.packsizes
-        for i in range(self.main_streams.unpackinfo.numfolders):
-            coders = self.main_streams.unpackinfo.folders[i].coders
-            unpacksize = self.main_streams.unpackinfo.folders[i].get_unpack_size()
-            packsize = 0
-            for j in range(self.main_streams.unpackinfo.folders[i].totalin):
-                packsize += packsizes[j]
-            decompress_info.append((coders, unpacksize, packsize))
-        return decompress_info
-
-    def get_packpositions(self):
-        return self.main_streams.packinfo.packpositions
+        return self
 
     def _decode_header(self, fp, buffer):
         """
@@ -499,7 +527,7 @@ class Header:
         elif pid != Property.ENCODED_HEADER:
             raise TypeError('Unknown field: %r' % (id))
         # get from encoded header
-        streams = StreamsInfo(buffer)
+        streams = StreamsInfo.retrieve(buffer)
         return self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
 
     def _get_headerdata_from_streams(self, fp, streams):
@@ -534,25 +562,45 @@ class Header:
             self.properties = ArchiveProperties(fp)
             pid = fp.read(1)
         if pid == Property.ADDITIONAL_STREAMS_INFO:
-            self.additional_streams = StreamsInfo(fp)
+            self.additional_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)
         if pid == Property.MAIN_STREAMS_INFO:
-            self.main_streams = StreamsInfo(fp)
+            self.main_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)
         if pid == Property.FILES_INFO:
-            self.files_info = FilesInfo(fp)
+            self.files_info = FilesInfo.retrieve(fp)
             pid = fp.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
+
+    # proxy functions
+    def get_files(self):
+        return self.files_info.files
+
+    def get_decompress_info(self):
+        decompress_info = []
+        packsizes = self.main_streams.packinfo.packsizes
+        for i in range(self.main_streams.unpackinfo.numfolders):
+            coders = self.main_streams.unpackinfo.folders[i].coders
+            unpacksize = self.main_streams.unpackinfo.folders[i].get_unpack_size()
+            packsize = 0
+            for j in range(self.main_streams.unpackinfo.folders[i].totalin):
+                packsize += packsizes[j]
+            decompress_info.append((coders, unpacksize, packsize))
+        return decompress_info
+
+    def get_packpositions(self):
+        return self.main_streams.packinfo.packpositions
 
 
 class SignatureHeader:
     """The SignatureHeader class hold information of a signature header of archive."""
 
-    def __init__(self, file):
-        self.read(file)
+    @classmethod
+    def retrieve(cls, file):
+        return cls()._read(file)
 
-    def read(self, file):
+    def _read(self, file):
         file.seek(len(MAGIC_7Z), 0)
         self.version = read_bytes(file, 2)
         self._startheadercrc, _ = read_uint32(file)
@@ -564,6 +612,7 @@ class SignatureHeader:
         crc = calculate_crc32(data, crc)
         if crc != self._startheadercrc:
             raise Bad7zFile('invalid header data')
+        return self
 
 
 FILTER_BZIP2 = 1
@@ -643,3 +692,10 @@ def get_decompressor(coders, size):
         decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
         can_partial_decompress = True
     return WrappedDecompressor(decompressor, size), can_partial_decompress
+
+
+def get_compressor_and_properties():
+    filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},]
+    compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters)
+    properties  = lzma._encode_filter_properties(filters[0])
+    return compressor, properties

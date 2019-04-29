@@ -98,10 +98,10 @@ class SevenZipFile:
     def _real_get_contents(self, fp):
         if not self._check_7zfile(fp):
             raise Bad7zFile('not a 7z file')
-        self.sig_header = SignatureHeader(self.fp)
+        self.sig_header = SignatureHeader.retrieve(self.fp)
         self.afterheader = self.fp.tell()
         buffer = self._read_header_data()
-        header = Header(self.fp, buffer, self.afterheader)
+        header = Header.retrieve(self.fp, buffer, self.afterheader)
         if header is None:
             return
         self.header = header

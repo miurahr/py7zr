@@ -152,7 +152,7 @@ def test_basic_decode_3():
 def test_py7zr_signatureheader():
     header_data = io.BytesIO(b'\x37\x7a\xbc\xaf\x27\x1c\x00\x02\x70\x2a\xb7\x37\xa0\x00\x00\x00\x00\x00\x00\x00\x21'
                              b'\x00\x00\x00\x00\x00\x00\x00\xb9\xb8\xe4\xbf')
-    header = archiveinfo.SignatureHeader(header_data)
+    header = archiveinfo.SignatureHeader.retrieve(header_data)
     assert header is not None
     assert header.version == (0, 2)
     assert header.nextheaderofs == 160
@@ -164,7 +164,7 @@ def test_py7zr_mainstreams():
                              b'\x08\r\x02\t!\n\x01>jb\x08\xce\x9a\xb7\x88\x00\x00')
     pid = header_data.read(1)
     assert pid == Property.MAIN_STREAMS_INFO
-    streams = archiveinfo.StreamsInfo(header_data)
+    streams = archiveinfo.StreamsInfo.retrieve(header_data)
     assert streams is not None
 
 
@@ -178,7 +178,7 @@ def test_py7zr_header():
                              b'\x00t\x00x\x00t\x00\x00\x00t\x00e\x00s\x00t\x00/\x00t\x00e\x00s\x00t\x002\x00.\x00t\x00x'
                              b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
                              b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
-    header = archiveinfo.Header(fp, header_data, start_pos=32)
+    header = archiveinfo.Header.retrieve(fp, header_data, start_pos=32)
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
@@ -192,7 +192,7 @@ def test_py7zr_encoded_header():
     # set test data to buffer that start with Property.ENCODED_HEADER
     buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
                         b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
-    header = archiveinfo.Header(fp, buffer, start_pos=32)
+    header = archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
@@ -208,7 +208,7 @@ def test_py7zr_files_info():
                              b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
     pid = header_data.read(1)
     assert pid == Property.FILES_INFO
-    files_info = archiveinfo.FilesInfo(header_data)
+    files_info = archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert files_info.files[0].get('filename') == 'test'
     assert files_info.files[1].get('filename') == 'test1.txt'
@@ -225,7 +225,7 @@ def test_py7zr_files_info2():
                              b'\x00  \x00\x00  \x00\x00\x00\x00')
     pid = header_data.read(1)
     assert pid == Property.FILES_INFO
-    files_info = archiveinfo.FilesInfo(header_data)
+    files_info = archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert files_info.numfiles == 4
     assert files_info.files[0].get('filename') == 'copying.txt'
@@ -279,3 +279,18 @@ def test_lzma_lzma2bcj_compressor():
                           (0xcf1234567890abcd, b'\xff\xcf\x12\x34\x56\x78\x90\xab\xcd')])
 def test_encode_uint64(testinput, expected):
     assert encode_uint64(testinput) == expected
+
+
+@pytest.mark.unit
+def test_simple_compress_and_properties():
+    lzc, properties = archiveinfo.get_compressor_and_properties()
+    out1 = lzc.compress(b"Some data\n")
+    out2 = lzc.compress(b"Another piece of data\n")
+    out3 = lzc.compress(b"Even more data\n")
+    out4 = lzc.flush()
+    result = b"".join([out1, out2, out3, out4])
+    assert len(result) > 0
+    filters = [lzma._decode_filter_properties(lzma.FILTER_LZMA2, properties),]
+    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+    out5 = decompressor.decompress(result)
+    assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
