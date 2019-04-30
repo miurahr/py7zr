@@ -30,6 +30,7 @@ Changed
 * get_decompressor() method now become SevenZipDecompressor class.
 * Each header classes initializes members to None in constructor.
 * Method definitions map become an internal member of SevenZipDecompressor or SevenZipCompressor class.
+* Add test package compress
 
 
 Fixed
