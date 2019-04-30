@@ -283,14 +283,21 @@ def test_encode_uint64(testinput, expected):
 
 @pytest.mark.unit
 def test_simple_compress_and_properties():
-    lzc, properties = archiveinfo.get_compressor_and_properties()
+    sevenzip_compressor = archiveinfo.SevenZipCompressor()
+    lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
     out3 = lzc.compress(b"Even more data\n")
     out4 = lzc.flush()
     result = b"".join([out1, out2, out3, out4])
-    assert len(result) > 0
-    filters = [lzma._decode_filter_properties(lzma.FILTER_LZMA2, properties),]
+    size = len(result)
+    #
+    filters = sevenzip_compressor.filters
     decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
     out5 = decompressor.decompress(result)
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
+    #
+    coders = sevenzip_compressor.coders
+    decompressor, _ = archiveinfo.get_decompressor(coders, size)
+    out6 = decompressor.decompress(result)
+    assert out6 == b'Some data\nAnother piece of data\nEven more data\n'

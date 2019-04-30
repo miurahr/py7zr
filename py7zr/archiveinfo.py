@@ -628,6 +628,11 @@ lzma_methods_map = {
     CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
     CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
 }
+lzma_methods_map_r = {
+    lzma.FILTER_LZMA2: CompressionMethod.LZMA2,
+    lzma.FILTER_DELTA: CompressionMethod.DELTA,
+    lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
+}
 alt_methods_map = {
     CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
     CompressionMethod.MISC_ZIP: FILTER_ZIP,
@@ -694,8 +699,18 @@ def get_decompressor(coders, size):
     return WrappedDecompressor(decompressor, size), can_partial_decompress
 
 
-def get_compressor_and_properties():
-    filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},]
-    compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters)
-    properties  = lzma._encode_filter_properties(filters[0])
-    return compressor, properties
+class SevenZipCompressor():
+
+    __slots__ = ['filters', 'compressor', 'coders']
+
+    def __init__(self, filters=None):
+        if filters is None:
+            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},]
+        else:
+            self.filters = filters
+        self.compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=self.filters)
+        self.coders = []
+        for filter in self.filters:
+            method = lzma_methods_map_r[filter['id']]
+            properties  = lzma._encode_filter_properties(filter)
+            self.coders.append({'method': method, 'properties': properties })
