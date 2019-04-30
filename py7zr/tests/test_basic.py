@@ -1,3 +1,4 @@
+import binascii
 import io
 import os
 import lzma
@@ -7,6 +8,8 @@ import shutil
 import tempfile
 import time
 
+import py7zr.archiveinfo
+import py7zr.compression
 from py7zr.tests import decode_all
 
 
@@ -298,3 +301,35 @@ def test_simple_compress_and_properties():
     decompressor = py7zr.compression.SevenZipDecompressor(coders, size)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
+
+
+@pytest.mark.unit
+def test_write_archive_properties():
+    """
+    test write function of ArchiveProperties class.
+    Structure is as follows:
+    BYTE Property.ARCHIVE_PROPERTIES (0x02)
+       UINT64 PropertySize   (7 for test)
+       BYTE PropertyData(PropertySize) b'0123456789abcd' for test
+    BYTE Property.END (0x00)
+    """
+    archiveproperties = py7zr.archiveinfo.ArchiveProperties()
+    archiveproperties.property_data = [binascii.unhexlify('0123456789abcd')]
+    buf = io.BytesIO()
+    archiveproperties.write(buf)
+    assert buf.getvalue() == binascii.unhexlify('02070123456789abcd00')
+
+
+@pytest.mark.unit
+def test_startheader_calccrc():
+    startheader = py7zr.archiveinfo.SignatureHeader()
+    startheader.version = (0, 4)
+    startheader.nextheaderofs = 1024
+    startheader.nextheadersize = 32
+    # set test data to buffer that start with Property.ENCODED_HEADER
+    fp = open(os.path.join(testdata_path, 'test_5.7z'), 'rb')
+    buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
+                        b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
+    header = py7zr.archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
+    # FIXME:
+    # startheader.calccrc(header)

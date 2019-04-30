@@ -39,14 +39,14 @@ else:
     ARRAY_TYPE_UINT32 = 'I'
 
 
-def read_crc(file, count):
+def read_crcs(file, count):
     crcs = array(ARRAY_TYPE_UINT32, file.read(4 * count))
     if NEED_BYTESWAP:
         crcs.byteswap()
     return crcs
 
 
-def write_crc(file, crcs):
+def write_crcs(file, crcs):
     for crc in crcs:
         write_uint32(file, crc)
 
@@ -60,7 +60,12 @@ def read_byte(file):
 
 def write_bytes(file, data):
     assert len(data) > 0
-    file.write(pack(b'B' * len(data), data))
+    if isinstance(data, bytes):
+        file.write(data)
+    elif isinstance(data, bytearray):
+        file.write(pack(b'B' * len(data), data))
+    else:
+        raise
 
 
 def write_byte(file, data):

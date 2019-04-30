@@ -33,8 +33,8 @@ from bringbuf.bringbuf import bRingBuf
 from py7zr.compression import SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
-from py7zr.io import read_byte, read_bytes, read_crc, read_real_uint64, read_uint32, read_uint64, read_boolean
-from py7zr.io import write_byte, write_bytes, write_uint64, write_boolean, write_crc
+from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean
+from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
 
 
@@ -42,20 +42,23 @@ class ArchiveProperties:
 
     __slots__ = ['property_data']
 
-    def __init__(self, file):
+    def __init__(self):
         self.property_data = []
-        self.read(file)
 
-    def read(self, file):
+    @classmethod
+    def retrieve(cls, file):
+        return cls()._read(file)
+
+    def _read(self, file):
         pid = file.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
             while True:
-                type = file.read(1)
-                if type == Property.END:
+                ptype = file.read(1)
+                if ptype == Property.END:
                     break
                 size = read_uint64(file)
-                property = read_bytes(file, size)
-                self.property_data.append(property)
+                self.property_data.append(read_bytes(file, size))
+        return self
 
     def write(self, file):
         if len(self.property_data) > 0:
@@ -69,22 +72,32 @@ class ArchiveProperties:
 class PackInfo:
     """ information about packed streams """
 
-    def __init__(self, file):
-        self.read(file)
+    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs']
 
-    def read(self, file):
+    def __init__(self):
+        self.packpos = None
+        self.numstreams = None
+        self.packsizes = []
+        self.crcs = None
+
+    @classmethod
+    def retrieve(cls, file):
+        return cls()._read(file)
+
+    def _read(self, file):
         self.packpos = read_uint64(file)
         self.numstreams = read_uint64(file)
         pid = file.read(1)
         if pid == Property.SIZE:
-            self.packsizes = [read_uint64(file) for x in range(self.numstreams)]
+            self.packsizes = [read_uint64(file) for x in range(self.numstreams)]  # nopa
             pid = file.read(1)
             if pid == Property.CRC:
-                self.crcs = [read_uint64(file) for x in range(self.numstreams)]
+                self.crcs = [read_uint64(file) for x in range(self.numstreams)]  # noqa
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]
+        return self
 
     def write(self, file):
         assert self.packpos is not None
@@ -105,19 +118,30 @@ class PackInfo:
 class Folder:
     """ a "Folder" represents a stream of compressed data """
 
-    def __init__(self, file):
-        self.read(file)
+    __slots__ = ['unpacksizes', 'solid', 'consumed', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
+                 'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor']
 
-    def read(self, file):
+    def __init__(self):
         self.unpacksizes = None
         self.solid = False
-        self._file = file
         self.consumed = 0
-        self.num_coders = read_uint64(file)
+        self.num_coders = None
         self.coders = []
         self.digestdefined = False
         self.totalin = 0
         self.totalout = 0
+        self.crc = None
+        self.decompressor = None
+        self.compressor = None
+
+    @classmethod
+    def retrieve(cls, file):
+        obj = cls()
+        obj._read(file)
+        return obj
+
+    def _read(self, file):
+        self.num_coders = read_uint64(file)
         for i in range(self.num_coders):
             while True:
                 b = read_byte(file)
@@ -125,8 +149,7 @@ class Folder:
                 iscomplex = b & 0x10 == 0x10
                 hasattributes = b & 0x20 == 0x20
                 last_alternative = b & 0x80 == 0
-                c = {}
-                c['method'] = file.read(methodsize)
+                c = {'method': file.read(methodsize)}
                 if iscomplex:
                     c['numinstreams'] = read_uint64(file)
                     c['numoutstreams'] = read_uint64(file)
@@ -161,28 +184,40 @@ class Folder:
     def write(self, file):
         assert self.num_coders is not None
         write_uint64(file, self.num_coders)
-        for c in self.coders:
+        for i, c in enumerate(self.coders):
             method = c['method']
-            method_size = len(method_size)
+            method_size = len(method)
             numinstreams = c['numinstreams']
             numoutstreams = c['numoutstreams']
             iscomplex = 0x00 if numinstreams == 1 and numoutstreams == 1 else 0x10
+            last_alternative = 0x80 if i < self.num_coders else 0x00
             if c['properties'] is not None:
                 hasattributes = 0x20
                 properties = c['properties']
-                proplen = len(properties)
             else:
+                properties = None
                 hasattributes = 0x00
-            write_byte(file, method_size & 0xf | iscomplex | hasattributes)
+            write_byte(file, method_size & 0xf | iscomplex | hasattributes | last_alternative)
             write_bytes(file, method)
             if iscomplex:
                 write_uint64(file, numinstreams)
                 write_uint64(file, numoutstreams)
-            # Todo: implement me.
+            if properties is not None:
+                write_uint64(file, len(properties))
+                write_uint64(file, properties)
+        num_bindpairs = self.totalout - 1
+        assert len(self.bindpairs) == num_bindpairs
+        num_packedstreams = self.totalin - num_bindpairs
+        for bp in self.bindpairs:
+            write_uint64(file, bp[0])
+            write_uint64(file, bp[1])
+        if num_packedstreams > 1:
+            for pi in self.packed_indices:
+                write_uint64(file, pi)
 
 
     def get_decompressor(self, size):
-        if hasattr(self, 'decompressor'):
+        if self.decompressor is not None:
             return self.decompressor
         else:
             try:
@@ -192,7 +227,7 @@ class Folder:
             return self.decompressor
 
     def get_unpack_size(self):
-        if not hasattr(self, 'unpacksizes'):
+        if self.unpacksizes is None:
             return 0
         for i in range(len(self.unpacksizes) - 1, -1, -1):
             if self._find_out_bin_pair(i):
@@ -218,16 +253,19 @@ class Folder:
 class Digests:
     """ holds a list of checksums """
 
-    def __init__(self, file, count):
-        self.read(file, count)
+    @classmethod
+    def retrieve(cls, file, count):
+        obj = cls()
+        obj._read(file, count)
+        return obj
 
-    def read(self, file, count):
+    def _read(self, file, count):
         self.defined = read_boolean(file, count, checkall=1)
-        self.crcs = read_crc(file, count)
+        self.crcs = read_crcs(file, count)
 
     def write(self, file, count):
         write_boolean(file, self.defined, all_defined=True)
-        write_crc(file, self.crcs)
+        write_crcs(file, self.crcs)
 
 
 UnpackDigests = Digests
@@ -236,10 +274,20 @@ UnpackDigests = Digests
 class UnpackInfo:
     """ combines multiple folders """
 
-    def __init__(self, file):
-        self.read(file)
+    __slots__ = ['numfolders', 'folders', 'datastreamidx']
 
-    def read(self, file):
+    @classmethod
+    def retrieve(cls, file):
+        obj = cls()
+        obj._read(file)
+        return obj
+
+    def __init__(self):
+        self.numfolders = None
+        self.folders = []
+        self.datastreamidx = None
+
+    def _read(self, file):
         pid = file.read(1)
         if pid != Property.FOLDER:
             raise Bad7zFile('folder id expected but %s found' % repr(pid))
@@ -247,7 +295,7 @@ class UnpackInfo:
         self.folders = []
         external = read_byte(file)
         if external == 0x00:
-            self.folders = [Folder(file) for x in range(self.numfolders)]
+            self.folders = [Folder.retrieve(file) for x in range(self.numfolders)]
         elif external == 0x01:
             self.datastreamidx = read_uint64(file)
         else:
@@ -259,7 +307,7 @@ class UnpackInfo:
             folder.unpacksizes = [read_uint64(file) for x in range(folder.totalout)]
         pid = file.read(1)
         if pid == Property.CRC:
-            digests = UnpackDigests(file, self.numfolders)
+            digests = UnpackDigests.retrieve(file, self.numfolders)
             for idx, folder in enumerate(self.folders):
                 folder.digestdefined = digests.defined[idx]
                 folder.crc = digests.crcs[idx]
@@ -290,10 +338,13 @@ class UnpackInfo:
 class SubstreamsInfo:
     """ defines the substreams of a folder """
 
-    def __init__(self, file, numfolders, folders):
-        self.read(file, numfolders, folders)
+    @classmethod
+    def retrieve(cls, file, numfolders, folders):
+        obj = cls()
+        obj._read(file, numfolders, folders)
+        return obj
 
-    def read(self, file, numfolders, folders):
+    def _read(self, file, numfolders, folders):
         self.digests = []
         self.digestsdefined = []
         pid = file.read(1)
@@ -320,7 +371,7 @@ class SubstreamsInfo:
                 num_digests += numsubstreams
             num_digests_total += numsubstreams
         if pid == Property.CRC:
-            digests = Digests(file, num_digests)
+            digests = Digests.retrieve(file, num_digests)
             didx = 0
             for i in range(numfolders):
                 folder = folders[i]
@@ -368,28 +419,30 @@ class SubstreamsInfo:
                     # TODO: implement me.
                     pass
 
-
 class StreamsInfo:
     """ information about compressed streams """
 
+    __slots__ = ['packinfo', 'unpackinfo', 'substreamsinfo']
+
     @classmethod
     def retrieve(cls, file):
-        return cls().read(file)
+        obj = cls()
+        obj.read(file)
+        return obj
 
     def read(self, file):
         pid = file.read(1)
         if pid == Property.PACK_INFO:
-            self.packinfo = PackInfo(file)
+            self.packinfo = PackInfo.retrieve(file)
             pid = file.read(1)
         if pid == Property.UNPACK_INFO:
-            self.unpackinfo = UnpackInfo(file)
+            self.unpackinfo = UnpackInfo.retrieve(file)
             pid = file.read(1)
         if pid == Property.SUBSTREAMS_INFO:
-            self.substreamsinfo = SubstreamsInfo(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
+            self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
-        return self
 
     def write(self, file):
         if self.packinfo is not None:
@@ -409,7 +462,9 @@ class FilesInfo:
 
     @classmethod
     def retrieve(cls, file):
-        return cls()._read(file)
+        obj = cls()
+        obj._read(file)
+        return obj
 
     def _read(self, fp):
         self.numfiles = read_uint64(fp)
@@ -479,7 +534,6 @@ class FilesInfo:
                         f['attributes'] = None
             else:
                 raise Bad7zFile('invalid type %r' % (typ))
-        return self
 
     def _readTimes(self, fp, files, name):
         defined = read_boolean(fp, len(files), checkall=1)
@@ -500,13 +554,31 @@ class Header:
 
     @classmethod
     def retrieve(cls, fp, buffer, start_pos):
-        return cls()._read(fp, buffer, start_pos)
+        obj = cls()
+        obj._read(fp, buffer, start_pos)
+        return obj
 
     def _read(self, fp, buffer, start_pos):
         self._start_pos = start_pos
         fp.seek(self._start_pos)
         self._decode_header(fp, buffer)
-        return self
+
+    def write(self, file, encoded=True):
+        if encoded:
+            buf = io.BytesIO()
+            self._encode_header(buf)
+            write_byte(file, Property.ENCODED_HEADER)
+            file.write(buf.getvalue())
+        else:
+            write_byte(file, Property.HEADER)
+            # TODO: implement me.
+
+    def _encode_header(self, buffer):
+        encoded_header = StreamsInfo()
+        encoded_header.packinfo = PackInfo()
+        encoded_header.packinfo.packpos = 0 # fixme
+        encoded_header.packinfo.packsizes = []  # fixme
+        encoded_header.write(buffer)
 
     def _decode_header(self, fp, buffer):
         """
@@ -543,7 +615,8 @@ class Header:
 
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
-            folder_data = folder.get_decompressor(compressed_size).decompress(fp.read(compressed_size))[:uncompressed_size]
+            decompressor = folder.get_decompressor(compressed_size)
+            folder_data = decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
             src_start += uncompressed_size
             if folder.digestdefined:
                 if folder.crc != calculate_crc32(folder_data):
@@ -555,7 +628,7 @@ class Header:
     def _extract_header_info(self, fp):
         pid = fp.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
-            self.properties = ArchiveProperties(fp)
+            self.properties = ArchiveProperties.retrieve(fp)
             pid = fp.read(1)
         if pid == Property.ADDITIONAL_STREAMS_INFO:
             self.additional_streams = StreamsInfo.retrieve(fp)
@@ -592,20 +665,55 @@ class Header:
 class SignatureHeader:
     """The SignatureHeader class hold information of a signature header of archive."""
 
+    __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
+
+    def __init__(self):
+        self.version = (0, 4)
+        self.startheadercrc = None
+        self.nextheaderofs = None
+        self.nextheadersize = None
+        self.nextheadercrc = None
+
     @classmethod
     def retrieve(cls, file):
-        return cls()._read(file)
+        obj = cls()
+        obj._read(file)
+        return obj
 
     def _read(self, file):
         file.seek(len(MAGIC_7Z), 0)
         self.version = read_bytes(file, 2)
-        self._startheadercrc, _ = read_uint32(file)
+        self.startheadercrc, _ = read_uint32(file)
         self.nextheaderofs, data = read_real_uint64(file)
         crc = calculate_crc32(data)
         self.nextheadersize, data = read_real_uint64(file)
         crc = calculate_crc32(data, crc)
         self.nextheadercrc, data = read_uint32(file)
         crc = calculate_crc32(data, crc)
-        if crc != self._startheadercrc:
+        if crc != self.startheadercrc:
             raise Bad7zFile('invalid header data')
-        return self
+
+    def calccrc(self, header):
+        buf = io.BytesIO()
+        header.write(buf)
+        data = buf.getvalue()
+        self.nextheadersize = len(data)
+        self.nextheadercrc = calculate_crc32(data)
+        assert self.nextheaderofs is not None
+        buf = io.BytesIO()
+        write_uint64(buf, self.nextheaderofs)
+        write_uint64(buf, self.nextheadersize)
+        write_uint32(buf, self.nextheadercrc)
+        data = buf.getvalue()
+        self.startheadercrc = calculate_crc32(data)
+
+    def write(self, file):
+        assert self.startheadercrc is not None
+        assert self.nextheadercrc is not None
+        file.seek(0, 0)
+        write_bytes(file, MAGIC_7Z)
+        write_bytes(file, self.version)
+        write_uint32(file, self.startheadercrc)
+        write_uint64(file, self.nextheaderofs)
+        write_uint64(file, self.nextheadersize)
+        write_uint32(file, self.nextheadercrc)
