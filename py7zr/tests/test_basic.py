@@ -1,16 +1,13 @@
 import io
 import os
-from io import StringIO
 import lzma
 import py7zr
-from py7zr import archiveinfo, is_7zfile
-from py7zr.io import encode_uint64
-from py7zr.properties import Property
-from py7zr.tests import decode_all
 import pytest
 import shutil
 import tempfile
 import time
+
+from py7zr.tests import decode_all
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -29,7 +26,7 @@ def test_basic_initinfo():
 @pytest.mark.basic
 def test_basic_list_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    output = StringIO()
+    output = io.StringIO()
     archive.list(file=output)
     contents = output.getvalue()
     expected = """total 4 files and directories in solid archive
@@ -47,7 +44,7 @@ def test_basic_list_1():
 @pytest.mark.basic
 def test_basic_list_2():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_3.7z'), 'rb'))
-    output = StringIO()
+    output = io.StringIO()
     archive.list(file=output)
     contents = output.getvalue()
     expected = """total 28 files and directories in solid archive
@@ -152,7 +149,7 @@ def test_basic_decode_3():
 def test_py7zr_signatureheader():
     header_data = io.BytesIO(b'\x37\x7a\xbc\xaf\x27\x1c\x00\x02\x70\x2a\xb7\x37\xa0\x00\x00\x00\x00\x00\x00\x00\x21'
                              b'\x00\x00\x00\x00\x00\x00\x00\xb9\xb8\xe4\xbf')
-    header = archiveinfo.SignatureHeader.retrieve(header_data)
+    header = py7zr.archiveinfo.SignatureHeader.retrieve(header_data)
     assert header is not None
     assert header.version == (0, 2)
     assert header.nextheaderofs == 160
@@ -163,8 +160,8 @@ def test_py7zr_mainstreams():
     header_data = io.BytesIO(b'\x04\x06\x00\x01\t0\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00\x00\x00\x02\x0cB\x00'
                              b'\x08\r\x02\t!\n\x01>jb\x08\xce\x9a\xb7\x88\x00\x00')
     pid = header_data.read(1)
-    assert pid == Property.MAIN_STREAMS_INFO
-    streams = archiveinfo.StreamsInfo.retrieve(header_data)
+    assert pid == py7zr.properties.Property.MAIN_STREAMS_INFO
+    streams = py7zr.archiveinfo.StreamsInfo.retrieve(header_data)
     assert streams is not None
 
 
@@ -178,7 +175,7 @@ def test_py7zr_header():
                              b'\x00t\x00x\x00t\x00\x00\x00t\x00e\x00s\x00t\x00/\x00t\x00e\x00s\x00t\x002\x00.\x00t\x00x'
                              b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
                              b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
-    header = archiveinfo.Header.retrieve(fp, header_data, start_pos=32)
+    header = py7zr.archiveinfo.Header.retrieve(fp, header_data, start_pos=32)
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
@@ -192,7 +189,7 @@ def test_py7zr_encoded_header():
     # set test data to buffer that start with Property.ENCODED_HEADER
     buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
                         b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
-    header = archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
+    header = py7zr.archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
@@ -207,8 +204,8 @@ def test_py7zr_files_info():
                              b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
                              b'\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00')
     pid = header_data.read(1)
-    assert pid == Property.FILES_INFO
-    files_info = archiveinfo.FilesInfo.retrieve(header_data)
+    assert pid == py7zr.properties.Property.FILES_INFO
+    files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert files_info.files[0].get('filename') == 'test'
     assert files_info.files[1].get('filename') == 'test1.txt'
@@ -224,8 +221,8 @@ def test_py7zr_files_info2():
                              b'\xf9\x07\xf7\xc4\x01\x00gK\xa8\xda\xf8\xc5\x01\x15\x12\x01\x00  \x00\x00  \x00'
                              b'\x00  \x00\x00  \x00\x00\x00\x00')
     pid = header_data.read(1)
-    assert pid == Property.FILES_INFO
-    files_info = archiveinfo.FilesInfo.retrieve(header_data)
+    assert pid == py7zr.properties.Property.FILES_INFO
+    files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert files_info.numfiles == 4
     assert files_info.files[0].get('filename') == 'copying.txt'
@@ -240,12 +237,12 @@ def test_py7zr_files_info2():
 
 @pytest.mark.unit
 def test_py7zr_is_7zfile():
-    assert is_7zfile(os.path.join(testdata_path, 'test_1.7z'))
+    assert py7zr.is_7zfile(os.path.join(testdata_path, 'test_1.7z'))
 
 
 @pytest.mark.unit
 def test_py7zr_is_7zfile_fileish():
-    assert is_7zfile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    assert py7zr.is_7zfile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
 
 
 @pytest.mark.unit
@@ -254,7 +251,7 @@ def test_py7zr_is_not_7zfile():
     target = os.path.join(tmpdir, 'test_not.7z')
     with open(target, 'wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
-    assert not is_7zfile(target)
+    assert not py7zr.is_7zfile(target)
     shutil.rmtree(tmpdir)
 
 
@@ -278,12 +275,12 @@ def test_lzma_lzma2bcj_compressor():
                           (0x1234567890abcd, b'\xfe\x12\x34\x56\x78\x90\xab\xcd'),
                           (0xcf1234567890abcd, b'\xff\xcf\x12\x34\x56\x78\x90\xab\xcd')])
 def test_encode_uint64(testinput, expected):
-    assert encode_uint64(testinput) == expected
+    assert py7zr.io.encode_uint64(testinput) == expected
 
 
 @pytest.mark.unit
 def test_simple_compress_and_properties():
-    sevenzip_compressor = archiveinfo.SevenZipCompressor()
+    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -298,6 +295,6 @@ def test_simple_compress_and_properties():
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
     #
     coders = sevenzip_compressor.coders
-    decompressor = archiveinfo.SevenZipDecompressor(coders, size)
+    decompressor = py7zr.compression.SevenZipDecompressor(coders, size)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'

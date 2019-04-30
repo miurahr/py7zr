@@ -22,19 +22,15 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import binascii
-import bz2
 import functools
-import lzma
-import struct
-import zlib
-
-
+import io
 import logging
 import os
+import struct
 import traceback
 from bringbuf.bringbuf import bRingBuf
-from io import BytesIO, StringIO
 
+from py7zr.compression import SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
 from py7zr.io import read_byte, read_bytes, read_crc, read_real_uint64, read_uint32, read_uint64, read_boolean
@@ -431,7 +427,7 @@ class FilesInfo:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
                 continue
-            buffer = BytesIO(fp.read(size))
+            buffer = io.BytesIO(fp.read(size))
             if typ == Property.EMPTY_STREAM:
                 isempty = read_boolean(buffer, self.numfiles)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))
@@ -472,7 +468,7 @@ class FilesInfo:
                     self.dataindex = read_uint64(buffer)
                     # FIXME: evaluate external
                     print("Ignore external: %s" % self.external)
-                    exc_buffer = StringIO()
+                    exc_buffer = io.StringIO()
                     traceback.print_exc(file=exc_buffer)
                     logging.error('Ignore external:\n%s', exc_buffer.getvalue())
                     raise NotImplementedError
@@ -533,7 +529,7 @@ class Header:
     def _get_headerdata_from_streams(self, fp, streams):
         """get header data from given streams.unpackinfo and packinfo.
         folder data are stored in raw data positioned in afterheader."""
-        buffer = BytesIO()
+        buffer = io.BytesIO()
         src_start = self._start_pos
         for folder in streams.unpackinfo.folders:
             if folder.is_encrypted():
@@ -613,105 +609,3 @@ class SignatureHeader:
         if crc != self._startheadercrc:
             raise Bad7zFile('invalid header data')
         return self
-
-
-
-
-
-class SevenZipDecompressor:
-
-    lzma_methods_map = {
-        CompressionMethod.LZMA: lzma.FILTER_LZMA1,
-        CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
-        CompressionMethod.DELTA: lzma.FILTER_DELTA,
-        CompressionMethod.P7Z_BCJ: lzma.FILTER_X86,
-        CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
-        CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
-        CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
-        CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
-        CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
-    }
-
-    FILTER_BZIP2 = 0x31
-    FILTER_ZIP = 0x32
-    alt_methods_map = {
-        CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
-        CompressionMethod.MISC_ZIP: FILTER_ZIP,
-    }
-
-    @property
-    def needs_input(self):
-        return self.decompressor.needs_input
-
-    @property
-    def eof(self):
-        return self.decompressor.eof
-
-    def decompress(self, data, max_length=None):
-        self.consumed += len(data)
-        if max_length is not None:
-            return self.decompressor.decompress(data, max_length=max_length)
-        else:
-            return self.decompressor.decompress(data)
-
-    @property
-    def unused_data(self):
-        return self.decompressor.unused_data
-
-    @property
-    def remaining_size(self):
-        return self.input_size - self.consumed
-
-    def __init__(self, coders, size):
-        self.decompressor = None
-        filters = []
-        try:
-            for coder in coders:
-                filter = self.lzma_methods_map.get(coder['method'], None)
-                if filter is not None:
-                    properties = coder.get('properties', None)
-                    if properties is not None:
-                        filters[:0] = [lzma._decode_filter_properties(filter, properties)]
-                    else:
-                        filters[:0] = [{'id': filter}]
-                else:
-                    raise UnsupportedCompressionMethodError
-        except UnsupportedCompressionMethodError as e:
-            filter = self.alt_methods_map.get(coders[0]['method'], None)
-            if len(coders) == 1 and filter is not None:
-                if filter == self.FILTER_BZIP2:
-                    self.decompressor = bz2.BZ2Decompressor()
-                elif filter == self.FILTER_ZIP:
-                    self.decompressor = zlib.decompressobj(-15)
-                self.can_partial_decompress = False
-            else:
-                raise e
-        else:
-            self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-            self.can_partial_decompress = True
-        self.input_size = size
-        self.filters = filters
-        self.consumed = 0
-
-
-class SevenZipCompressor():
-
-    __slots__ = ['filters', 'compressor', 'coders']
-
-    lzma_methods_map_r = {
-        lzma.FILTER_LZMA2: CompressionMethod.LZMA2,
-        lzma.FILTER_DELTA: CompressionMethod.DELTA,
-        lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
-    }
-
-    def __init__(self, filters=None):
-        if filters is None:
-            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},]
-        else:
-            self.filters = filters
-        self.compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=self.filters)
-        self.coders = []
-        for filter in self.filters:
-            method = self.lzma_methods_map_r[filter['id']]
-            properties  = lzma._encode_filter_properties(filter)
-            self.coders.append({'method': method, 'properties': properties })

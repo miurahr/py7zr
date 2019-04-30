@@ -33,197 +33,10 @@ import sys
 import threading
 
 from py7zr.archiveinfo import Header, SignatureHeader
+from py7zr.compression import Worker
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import filetime_to_dt, Local, ArchiveTimestamp, calculate_crc32
-from py7zr.properties import FileAttribute, MAGIC_7Z, QUEUELEN, READ_BLOCKSIZE
-
-
-# ------------------
-# Exported Classes
-# ------------------
-class SevenZipFile:
-    """The SevenZipFile Class provides an interface to 7z archives."""
-
-    def __init__(self, file, mode='r'):
-        # Check if we were passed a file-like object or not
-        self.files = []
-        self.files_map = {}
-        if isinstance(file, str):
-            self._filePassed = False
-            self.filename = file
-            modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
-                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
-            try:
-                filemode = modeDict[mode]
-            except KeyError:
-                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
-            while True:
-                try:
-                    self.fp = io.open(file, filemode)
-                except OSError:
-                    if filemode in modeDict:
-                        filemode = modeDict[filemode]
-                        continue
-                    raise
-                break
-        else:
-            self._filePassed = True
-            self.fp = file
-            self.filename = getattr(file, 'name', None)
-        self._fileRefCnt = 1
-        self._lock = threading.RLock()
-        self.solid = False
-        try:
-            if mode == "r":
-                self._real_get_contents(self.fp)
-            elif mode in ('w', 'x'):
-                raise NotImplementedError
-            elif mode == 'a':
-                raise NotImplementedError
-            else:
-                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
-        except Exception as e:
-            fp = self.fp
-            self.fp = None
-            self._fpclose(fp)
-            raise e
-        self.reset()
-
-    def _fpclose(self, fp):
-        assert self._fileRefCnt > 0
-        self._fileRefCnt -= 1
-        if not self._fileRefCnt and not self._filePassed:
-            fp.close()
-
-    def _real_get_contents(self, fp):
-        if not self._check_7zfile(fp):
-            raise Bad7zFile('not a 7z file')
-        self.sig_header = SignatureHeader.retrieve(self.fp)
-        self.afterheader = self.fp.tell()
-        buffer = self._read_header_data()
-        header = Header.retrieve(self.fp, buffer, self.afterheader)
-        if header is None:
-            return
-        self.header = header
-        buffer.close()
-        self.files = ArchiveFilesList(self, header, self.afterheader)
-        self.solid = self.files.solid
-
-    def _read_header_data(self):
-        self.fp.seek(self.sig_header.nextheaderofs, 1)
-        buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
-            raise Bad7zFile('invalid header data')
-        return buffer
-
-    def reset(self):
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.fp, self.afterheader)
-
-    @classmethod
-    def _check_7zfile(cls, fp):
-        return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
-
-    # --------------------------------------------------------------------------
-    # The public methods which SevenZipFile provides:
-    def getnames(self):
-        """Return the members of the archive as a list of their names. It has
-           the same order as the list returned by getmembers().
-        """
-        return list(map(lambda x: x.filename, self.files))
-
-    def list(self, file=sys.stdout):
-        """Print a table of contents to sys.stdout. If `verbose' is False, only
-           the names of the members are printed. If it is True, an `ls -l'-like
-           output is produced.
-        """
-        file.write('total %d files and directories in %sarchive\n' % (self.files.len, (self.solid and 'solid ') or ''))
-        file.write('   Date      Time    Attr         Size   Compressed  Name\n')
-        file.write('------------------- ----- ------------ ------------  ------------------------\n')
-        for f in self.files:
-            if f.lastwritetime is not None:
-                creationdate = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%Y-%m-%d")
-                creationtime = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%H:%M:%S")
-            else:
-                creationdate = '         '
-                creationtime = '         '
-            if f.is_directory:
-                attrib = 'D...'
-            else:
-                attrib = '....'
-            if f.archivable:
-                attrib += 'A'
-            else:
-                attrib += '.'
-            extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
-            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
-                                                  f.uncompressed_size, extra, f.filename))
-        file.write('------------------- ----- ------------ ------------  ------------------------\n')
-
-    def _set_file_property(self, outfilename, properties):
-        # creation time
-        creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
-        if creationtime is not None:
-            os.utime(outfilename, times=(creationtime, creationtime))
-        if os.name == 'posix':
-            st_mode = properties['posix_mode']
-            if st_mode is not None:
-                os.chmod(outfilename, st_mode)
-                return
-        # fallback: only set readonly if specified
-        if properties['readonly'] and not properties['is_directory']:
-            ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-            os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
-
-    def extractall(self, path=None, crc=False):
-        """Extract all members from the archive to the current working
-           directory and set owner, modification time and permissions on
-           directories afterwards. `path' specifies a different directory
-           to extract to.
-        """
-        target_sym = []
-        target_files = []
-        target_dirs = []
-        self.reset()
-        if path is not None and not os.path.exists(path):
-            os.mkdir(path)
-        for f in self.files:
-            if path is not None:
-                outfilename = os.path.join(path, f.filename)
-            else:
-                outfilename = f.filename
-            if f.is_directory:
-                if not os.path.exists(outfilename):
-                    target_dirs.append(outfilename)
-                    target_files.append((outfilename, f.get_properties()))
-                else:
-                    pass
-            elif f.is_socket:
-                pass
-            elif f.is_symlink:
-                buf = io.BytesIO()
-                pair = (buf, f.filename)
-                target_sym.append(pair)
-                self.worker.register_filelike(f.id, buf)
-            else:
-                self.worker.register_filelike(f.id, outfilename)
-                target_files.append((outfilename, f.get_properties()))
-        for target_dir in sorted(target_dirs):
-            os.mkdir(target_dir)
-        self.worker.extract(self.fp)
-        for b, t in target_sym:
-            b.seek(0)
-            sym_src = b.read().decode(encoding='utf-8')
-            dirname = os.path.dirname(t)
-            if path:
-                sym_src = os.path.join(path, dirname, sym_src)
-                sym_dst = os.path.join(path, t)
-            else:
-                sym_src = os.path.join(dirname, sym_src)
-                sym_dst = t
-            os.symlink(sym_src, sym_dst)
-        for o, p in target_files:
-            self._set_file_property(o, p)
+from py7zr.properties import FileAttribute, MAGIC_7Z
 
 
 class ArchiveFile:
@@ -461,6 +274,194 @@ class ArchiveFilesList:
         return 0
 
 
+# ------------------
+# Exported Classes
+# ------------------
+class SevenZipFile:
+    """The SevenZipFile Class provides an interface to 7z archives."""
+
+    def __init__(self, file, mode='r'):
+        # Check if we were passed a file-like object or not
+        self.files = []
+        self.files_map = {}
+        if isinstance(file, str):
+            self._filePassed = False
+            self.filename = file
+            modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            try:
+                filemode = modeDict[mode]
+            except KeyError:
+                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = True
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        self.solid = False
+        try:
+            if mode == "r":
+                self._real_get_contents(self.fp)
+            elif mode in ('w', 'x'):
+                raise NotImplementedError
+            elif mode == 'a':
+                raise NotImplementedError
+            else:
+                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
+        except Exception as e:
+            fp = self.fp
+            self.fp = None
+            self._fpclose(fp)
+            raise e
+        self.reset()
+
+    def _fpclose(self, fp):
+        assert self._fileRefCnt > 0
+        self._fileRefCnt -= 1
+        if not self._fileRefCnt and not self._filePassed:
+            fp.close()
+
+    def _real_get_contents(self, fp):
+        if not self._check_7zfile(fp):
+            raise Bad7zFile('not a 7z file')
+        self.sig_header = SignatureHeader.retrieve(self.fp)
+        self.afterheader = self.fp.tell()
+        buffer = self._read_header_data()
+        header = Header.retrieve(self.fp, buffer, self.afterheader)
+        if header is None:
+            return
+        self.header = header
+        buffer.close()
+        self.files = ArchiveFilesList(self, header, self.afterheader)
+        self.solid = self.files.solid
+
+    def _read_header_data(self):
+        self.fp.seek(self.sig_header.nextheaderofs, 1)
+        buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
+        if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
+            raise Bad7zFile('invalid header data')
+        return buffer
+
+    def reset(self):
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.fp, self.afterheader)
+
+    @classmethod
+    def _check_7zfile(cls, fp):
+        return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+
+    # --------------------------------------------------------------------------
+    # The public methods which SevenZipFile provides:
+    def getnames(self):
+        """Return the members of the archive as a list of their names. It has
+           the same order as the list returned by getmembers().
+        """
+        return list(map(lambda x: x.filename, self.files))
+
+    def list(self, file=sys.stdout):
+        """Print a table of contents to sys.stdout. If `verbose' is False, only
+           the names of the members are printed. If it is True, an `ls -l'-like
+           output is produced.
+        """
+        file.write('total %d files and directories in %sarchive\n' % (self.files.len, (self.solid and 'solid ') or ''))
+        file.write('   Date      Time    Attr         Size   Compressed  Name\n')
+        file.write('------------------- ----- ------------ ------------  ------------------------\n')
+        for f in self.files:
+            if f.lastwritetime is not None:
+                creationdate = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%Y-%m-%d")
+                creationtime = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%H:%M:%S")
+            else:
+                creationdate = '         '
+                creationtime = '         '
+            if f.is_directory:
+                attrib = 'D...'
+            else:
+                attrib = '....'
+            if f.archivable:
+                attrib += 'A'
+            else:
+                attrib += '.'
+            extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
+            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
+                                                  f.uncompressed_size, extra, f.filename))
+        file.write('------------------- ----- ------------ ------------  ------------------------\n')
+
+    def _set_file_property(self, outfilename, properties):
+        # creation time
+        creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+        if creationtime is not None:
+            os.utime(outfilename, times=(creationtime, creationtime))
+        if os.name == 'posix':
+            st_mode = properties['posix_mode']
+            if st_mode is not None:
+                os.chmod(outfilename, st_mode)
+                return
+        # fallback: only set readonly if specified
+        if properties['readonly'] and not properties['is_directory']:
+            ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+            os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
+
+    def extractall(self, path=None, crc=False):
+        """Extract all members from the archive to the current working
+           directory and set owner, modification time and permissions on
+           directories afterwards. `path' specifies a different directory
+           to extract to.
+        """
+        target_sym = []
+        target_files = []
+        target_dirs = []
+        self.reset()
+        if path is not None and not os.path.exists(path):
+            os.mkdir(path)
+        for f in self.files:
+            if path is not None:
+                outfilename = os.path.join(path, f.filename)
+            else:
+                outfilename = f.filename
+            if f.is_directory:
+                if not os.path.exists(outfilename):
+                    target_dirs.append(outfilename)
+                    target_files.append((outfilename, f.get_properties()))
+                else:
+                    pass
+            elif f.is_socket:
+                pass
+            elif f.is_symlink:
+                buf = io.BytesIO()
+                pair = (buf, f.filename)
+                target_sym.append(pair)
+                self.worker.register_filelike(f.id, buf)
+            else:
+                self.worker.register_filelike(f.id, outfilename)
+                target_files.append((outfilename, f.get_properties()))
+        for target_dir in sorted(target_dirs):
+            os.mkdir(target_dir)
+        self.worker.extract(self.fp)
+        for b, t in target_sym:
+            b.seek(0)
+            sym_src = b.read().decode(encoding='utf-8')
+            dirname = os.path.dirname(t)
+            if path:
+                sym_src = os.path.join(path, dirname, sym_src)
+                sym_dst = os.path.join(path, t)
+            else:
+                sym_src = os.path.join(dirname, sym_src)
+                sym_dst = t
+            os.symlink(sym_src, sym_dst)
+        for o, p in target_files:
+            self._set_file_property(o, p)
+
+
 # --------------------
 # exported functions
 # --------------------
@@ -485,112 +486,3 @@ def unpack_7zarchive(archive, path, extra=None):
     """Function for registering with shutil.register_unpack_archive()"""
     arc = SevenZipFile(archive)
     arc.extractall(path)
-
-
-class BufferWriter():
-
-    def __init__(self, target):
-        self.buf = target
-
-    def open(self):
-        pass
-
-    def write(self, data):
-        self.buf.write(data)
-
-    def close(self):
-        pass
-
-
-class FileWriter():
-
-    def __init__(self, target):
-        self.target = target
-
-    def open(self):
-        self.fp = open(self.target, 'wb')
-
-    def write(self, data):
-        self.fp.write(data)
-
-    def close(self):
-        self.fp.close()
-
-
-class Worker():
-    """Extract worker class to invoke handler"""
-
-    def __init__(self, files, fp, src_start):
-        self.output_filepath = {}
-        self.files = files
-        self.fp = fp
-        self.src_start = src_start
-
-    def set_output_filepath(self, index, func):
-        self.output_filepath[index] = func
-
-    def extract(self, fp):
-        fp.seek(self.src_start)
-        for f in self.files:
-            # Skip empty file read
-            if f.emptystream:
-                continue
-            # Does target path detected?
-            fileish = self.output_filepath.get(f.id, None)
-            if fileish is None:
-                fileish = io.BytesIO()
-                for s in f.uncompressed:
-                    self.decompress(fp, f.folder, fileish, s, f.compressed)
-                fileish.close()
-                continue
-            # retrieve contents
-            fileish.open()
-            for s in f.uncompressed:
-                self.decompress(fp, f.folder, fileish, s, f.compressed)
-            fileish.close()
-
-    def decompress(self, fp, folder, fileish, size, compressed_size):
-        if folder is None:
-            fileish.write(b'')
-            return
-        out_remaining = size
-        decompressor = folder.get_decompressor(compressed_size)
-        queue = folder.queue
-        queue_maxlength = QUEUELEN
-        if queue.len > 0:
-            if out_remaining > queue.len:
-                out_remaining -= queue.len
-                fileish.write(queue.dequeue(queue.len))
-            else:
-                fileish.write(queue.dequeue(out_remaining))
-                return
-
-        while out_remaining > 0:
-            if not decompressor.eof:
-                if decompressor.needs_input:
-                    read_size = min(READ_BLOCKSIZE, decompressor.remaining_size)
-                    inp = fp.read(read_size)
-                else:
-                    inp = b''
-                max_length = min(out_remaining, queue_maxlength - queue.len)
-                tmp = decompressor.decompress(inp, max_length)
-                if out_remaining >= len(tmp):
-                    out_remaining -= len(tmp)
-                    fileish.write(tmp)
-                    if out_remaining <= 0:
-                        break
-                else:
-                    queue.enqueue(tmp)
-                    fileish.write(queue.dequeue(out_remaining))
-                    break
-            else:
-                if queue.len >= 0:
-                    fileish.write(queue.dequeue(out_remaining))
-                break
-        return
-
-    def register_filelike(self, id, fileish):
-        if isinstance(fileish, io.BytesIO):
-            self.set_output_filepath(id, BufferWriter(fileish))
-        else:
-            self.set_output_filepath(id, FileWriter(fileish))
