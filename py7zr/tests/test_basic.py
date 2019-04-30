@@ -298,6 +298,6 @@ def test_simple_compress_and_properties():
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
     #
     coders = sevenzip_compressor.coders
-    decompressor, _ = archiveinfo.get_decompressor(coders, size)
+    decompressor = archiveinfo.SevenZipDecompressor(coders, size)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
