@@ -14,8 +14,23 @@ Current changes
 Added
 -----
 
+* Introduce compression package.
+* Introduce SevenZipCompressor class.
+* Add write() method for each header class.
+* Add tests for write methods.
+* Add method for registering shutil.
+
 Changed
 -------
+
+* Each header classes has __slots__ definitions for speed and memory optimization.
+* Rename to 'io' package from 'archiveio'
+* Each header classes has classmethod 'retrieve' and constructor does not reading a archive file anymore.
+* Change to internalize _read() method for each header classes.
+* get_decompressor() method now become SevenZipDecompressor class.
+* Each header classes initializes members to None in constructor.
+* Method definitions map become an internal member of SevenZipDecompressor or SevenZipCompressor class.
+
 
 Fixed
 -----
