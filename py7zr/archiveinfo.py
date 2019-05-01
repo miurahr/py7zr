@@ -116,23 +116,33 @@ class PackInfo:
 
 
 class Folder:
-    """ a "Folder" represents a stream of compressed data """
+    """ a "Folder" represents a stream of compressed data.
+    coders: list of coder
+    num_coders: length of coders
+    coder: hash list
+        keys:  method, numinstreams, numoutstreams, properties
+    unpacksizes: uncompressed sizes of outstreams
+    """
 
-    __slots__ = ['unpacksizes', 'solid', 'consumed', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
+    __slots__ = ['unpacksizes', 'solid', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
                  'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor']
 
     def __init__(self):
         self.unpacksizes = None
-        self.solid = False
-        self.consumed = 0
-        self.num_coders = None
         self.coders = []
-        self.digestdefined = False
+        self.bindpairs = []
+        self.packed_indices = []
+        # calculated values
         self.totalin = 0
         self.totalout = 0
+        # internal values
+        self.solid = False
+        self.digestdefined = False
         self.crc = None
+        # compress/decompress objects
         self.decompressor = None
         self.compressor = None
+        self.queue = bRingBuf(QUEUELEN)
 
     @classmethod
     def retrieve(cls, file):
@@ -141,8 +151,8 @@ class Folder:
         return obj
 
     def _read(self, file):
-        self.num_coders = read_uint64(file)
-        for i in range(self.num_coders):
+        num_coders = read_uint64(file)
+        for i in range(num_coders):
             while True:
                 b = read_byte(file)
                 methodsize = b & 0xf
@@ -153,8 +163,6 @@ class Folder:
                 if iscomplex:
                     c['numinstreams'] = read_uint64(file)
                     c['numoutstreams'] = read_uint64(file)
-                    # FIXME: only a simple compression method is supported
-                    raise UnsupportedCompressionMethodError
                 else:
                     c['numinstreams'] = 1
                     c['numoutstreams'] = 1
@@ -167,11 +175,9 @@ class Folder:
                 if last_alternative:
                     break
         num_bindpairs = self.totalout - 1
-        self.bindpairs = []
         for i in range(num_bindpairs):
             self.bindpairs.append((read_uint64(file), read_uint64(file),))
         num_packedstreams = self.totalin - num_bindpairs
-        self.packed_indices = []
         if num_packedstreams == 1:
             for i in range(self.totalin):
                 if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
@@ -179,11 +185,10 @@ class Folder:
         elif num_packedstreams > 1:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
-        self.queue = bRingBuf(QUEUELEN)
 
     def write(self, file):
-        assert self.num_coders is not None
-        write_uint64(file, self.num_coders)
+        num_coders = len(self.coders)
+        write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
             method = c['method']
             method_size = len(method)
@@ -195,8 +200,8 @@ class Folder:
                 hasattributes = 0x20
                 properties = c['properties']
             else:
-                properties = None
                 hasattributes = 0x00
+                properties = None
             write_byte(file, method_size & 0xf | iscomplex | hasattributes | last_alternative)
             write_bytes(file, method)
             if iscomplex:
@@ -214,7 +219,6 @@ class Folder:
         if num_packedstreams > 1:
             for pi in self.packed_indices:
                 write_uint64(file, pi)
-
 
     def get_decompressor(self, size):
         if self.decompressor is not None:
@@ -263,7 +267,7 @@ class Digests:
         self.defined = read_boolean(file, count, checkall=1)
         self.crcs = read_crcs(file, count)
 
-    def write(self, file, count):
+    def write(self, file):
         write_boolean(file, self.defined, all_defined=True)
         write_crcs(file, self.crcs)
 
@@ -293,18 +297,23 @@ class UnpackInfo:
             raise Bad7zFile('folder id expected but %s found' % repr(pid))
         self.numfolders = read_uint64(file)
         self.folders = []
-        external = read_byte(file)
-        if external == 0x00:
-            self.folders = [Folder.retrieve(file) for x in range(self.numfolders)]
-        elif external == 0x01:
-            self.datastreamidx = read_uint64(file)
+        b = read_byte(file)
+        if b == 0x00:
+            self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
         else:
-            raise Bad7zFile('0x00 or 0x01 expected but %s found' % repr(external))
+            datastreamidx = read_uint64(file)
+            current_pos = file.tell()
+            file.seek(datastreamidx, 0)
+            self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
+            file.seek(current_pos, 0)
+        self._retrieve_coders_info(file)
+
+    def _retrieve_coders_info(self, file):
         pid = file.read(1)
         if pid != Property.CODERS_UNPACK_SIZE:
             raise Bad7zFile('coders unpack size id expected but %s found' % repr(pid))
         for folder in self.folders:
-            folder.unpacksizes = [read_uint64(file) for x in range(folder.totalout)]
+            folder.unpacksizes = [read_uint64(file) for _ in range(folder.totalout)]
         pid = file.read(1)
         if pid == Property.CRC:
             digests = UnpackDigests.retrieve(file, self.numfolders)
@@ -349,19 +358,19 @@ class SubstreamsInfo:
         self.digestsdefined = []
         pid = file.read(1)
         if pid == Property.NUM_UNPACK_STREAM:
-            self.num_unpackstreams_folders = [read_uint64(file) for x in range(numfolders)]
+            self.num_unpackstreams_folders = [read_uint64(file) for _ in range(numfolders)]
             pid = file.read(1)
         else:
             self.num_unpackstreams_folders = [1] * numfolders
         if pid == Property.SIZE:
             self.unpacksizes = []
             for i in range(len(self.num_unpackstreams_folders)):
-                sum = 0
+                totalsize = 0
                 for j in range(1, self.num_unpackstreams_folders[i]):
                     size = read_uint64(file)
                     self.unpacksizes.append(size)
-                    sum += size
-                self.unpacksizes.append(folders[i].get_unpack_size() - sum)
+                    totalsize += size
+                self.unpacksizes.append(folders[i].get_unpack_size() - totalsize)
             pid = file.read(1)
         num_digests = 0
         num_digests_total = 0
@@ -391,38 +400,58 @@ class SubstreamsInfo:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
 
-    def write(self, file, folders):
+    def set_digests(self, folders):
+        digests = Digests()
+        fidx = 0
+        for crc in self.digests:
+            numsubstreams = self.num_unpackstreams_folders[fidx]
+            if numsubstreams != 1 or not folders[fidx].digestdefined:
+                # only when folders don't define digests
+                digests.crcs.append(crc)
+            else:
+                pass
+
+    def write(self, file):
         if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
+            # nothing to write
             return
+        #   BYTE NID::kSubStreamsInfo; (0x08)
+        write_byte(file, Property.SUBSTREAMS_INFO)
+        #   []
+        #   BYTE NID::kNumUnPackStream; (0x0D)
+        #   UINT64 NumUnPackStreamsInFolders[NumFolders];
+        #   []
         if not functools.reduce(lambda x, y: x & y == 1, self.num_unpackstreams_folders, True):
+            write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
+        #   []
+        #   BYTE NID::kSize  (0x09)
+        #   UINT64 UnPackSizes[]
+        #   []
         write_byte(file, Property.SIZE)
-        for size in self.num_unpacksizes:
-            write_uint64(file, size)  # FIXME: corrent number of sizes?
-        num_digests = 0
-        num_digests_total = 0
-        for i in range(len(folders)):
-            numsubstreams = self.num_unpackstreams_folders[i]
-            if numsubstreams != 1 or not folders[i].digestdefined:
-                num_digests += numsubstreams
-            num_digests_total += numsubstreams
+        for size in self.unpacksizes:
+            write_uint64(file, size)
+        #   []
+        #   BYTE NID::kCRC  (0x0A)
+        #   Digests[Number of streams with unknown CRC]
+        #   []
         write_byte(file, Property.CRC)
-        didx = 0
-        digests = Digests(num_digests)
-        for i in range(len(folders)):
-            folder = folders[i]
-            if self.num_unpackstreams_folders[i] == 1 and folder.digestdefined:
-                pass
-            else:
-                for j in range(self.num_unpackstreams_folders[i]):
-                    # TODO: implement me.
-                    pass
+        # TODO: impelemnt me.
+
+        #   BYTE NID::kEnd
+        write_byte(file, Property.END)
+
 
 class StreamsInfo:
     """ information about compressed streams """
 
     __slots__ = ['packinfo', 'unpackinfo', 'substreamsinfo']
+
+    def __init__(self):
+        self.packinfo = None
+        self.unpackinfo = None
+        self.substreamsinfo = None
 
     @classmethod
     def retrieve(cls, file):
@@ -460,6 +489,13 @@ class StreamsInfo:
 class FilesInfo:
     """ holds file properties """
 
+    def __init__(self):
+        self.numfiles = None
+        self.files = None
+        self.emptyfiles = None
+        self.antifiles = None
+        self.dataindex = None
+
     @classmethod
     def retrieve(cls, file):
         obj = cls()
@@ -468,7 +504,7 @@ class FilesInfo:
 
     def _read(self, fp):
         self.numfiles = read_uint64(fp)
-        self.files = [{'emptystream': False} for x in range(self.numfiles)]
+        self.files = [{'emptystream': False} for _ in range(self.numfiles)]
         numemptystreams = 0
         while True:
             typ = read_uint64(fp)
@@ -489,27 +525,22 @@ class FilesInfo:
                 for x in isempty:
                     if x:
                         numemptystreams += 1
-                emptyfiles = [False] * numemptystreams
-                antifiles = [False] * numemptystreams
+                self.emptyfiles = [False] * numemptystreams
+                self.antifiles = [False] * numemptystreams
             elif typ == Property.EMPTY_FILE:
-                emptyfiles = read_boolean(buffer, numemptystreams)
+                self.emptyfiles = read_boolean(buffer, numemptystreams)
             elif typ == Property.ANTI:
-                antifiles = read_boolean(buffer, numemptystreams)
+                self.antifiles = read_boolean(buffer, numemptystreams)
             elif typ == Property.NAME:
                 external = buffer.read(1)
-                if external != Property.END:
+                if external != b'\x00':
                     self.dataindex = read_uint64(buffer)
-                    # FIXME: evaluate external
-                    raise NotImplementedError
-
-                for f in self.files:
-                    name = ''
-                    while True:
-                        ch = buffer.read(2)
-                        if ch == binascii.unhexlify('0000'):
-                            f['filename'] = name
-                            break
-                        name += ch.decode('utf-16')
+                    current_pos = fp.tell()
+                    fp.seek(self.dataindex, 0)
+                    f['filename'] = self._read_name(fp)
+                    fp.seek(current_pos, 0)
+                else:
+                    f['filename'] = self._read_name(buffer)
             elif typ == Property.CREATION_TIME:
                 self._readTimes(buffer, self.files, 'creationtime')
             elif typ == Property.LAST_ACCESS_TIME:
@@ -519,21 +550,33 @@ class FilesInfo:
             elif typ == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, self.numfiles, checkall=1)
                 external = buffer.read(1)
-                if external != Property.END:
+                if external != b'\x00':
                     self.dataindex = read_uint64(buffer)
-                    # FIXME: evaluate external
-                    print("Ignore external: %s" % self.external)
-                    exc_buffer = io.StringIO()
-                    traceback.print_exc(file=exc_buffer)
-                    logging.error('Ignore external:\n%s', exc_buffer.getvalue())
-                    raise NotImplementedError
-                for idx, f in enumerate(self.files):
-                    if defined[idx]:
-                        f['attributes'], _ = read_uint32(buffer)
-                    else:
-                        f['attributes'] = None
+                    current_pos = fp.tell()
+                    fp.seek(self.dataindex, 0)
+                    self._read_attributes(fp, defined)
+                    fp.seek(current_pos, 0)
+                else:
+                    self._read_attributes(buffer, defined)
             else:
                 raise Bad7zFile('invalid type %r' % (typ))
+
+    def _read_name(self, buffer):
+        for f in self.files:
+            name = ''
+            while True:
+                ch = buffer.read(2)
+                if ch == binascii.unhexlify('0000'):
+                    break
+                name += ch.decode('utf-16')
+        return name
+
+    def _read_attributes(self, buffer, defined):
+        for idx, f in enumerate(self.files):
+            if defined[idx]:
+                f['attributes'], _ = read_uint32(buffer)
+            else:
+                f['attributes'] = None
 
     def _readTimes(self, fp, files, name):
         defined = read_boolean(fp, len(files), checkall=1)

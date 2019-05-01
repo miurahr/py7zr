@@ -185,9 +185,13 @@ class SevenZipDecompressor:
 
     def __init__(self, coders, size):
         self.decompressor = None
+        self.input_size = size
+        self.consumed = 0
         filters = []
         try:
             for coder in coders:
+                if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
+                    raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
                 filter = self.lzma_methods_map.get(coder['method'], None)
                 if filter is not None:
                     properties = coder.get('properties', None)
@@ -210,9 +214,7 @@ class SevenZipDecompressor:
         else:
             self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
             self.can_partial_decompress = True
-        self.input_size = size
         self.filters = filters
-        self.consumed = 0
 
 
 class SevenZipCompressor():

@@ -4,6 +4,7 @@ import lzma
 import os
 import py7zr.archiveinfo
 import py7zr.compression
+import py7zr.helpers
 import py7zr.io
 import pytest
 
@@ -61,6 +62,15 @@ def test_write_archive_properties():
 
 
 @pytest.mark.unit
+def test_write_packinfo():
+    pi = py7zr.archiveinfo.PackInfo()
+    pi.packpos = 0
+    pi.numstreams = 1
+    pi.packsizes = [64]
+    pi.crcs = [py7zr.helpers.calculate_crc32(b'abcd')]
+
+
+@pytest.mark.unit
 def test_startheader_calccrc():
     startheader = py7zr.archiveinfo.SignatureHeader()
     startheader.version = (0, 4)
@@ -73,3 +83,24 @@ def test_startheader_calccrc():
     header = py7zr.archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
     # FIXME:
     # startheader.calccrc(header)
+
+
+@pytest.mark.unit
+def test_write_digests():
+    digests = py7zr.archiveinfo.Digests()
+    digests.crcs = [0x12345, 0x12345, 0x12345]
+    digests.defined = [True, True, True]
+    buf = io.BytesIO()
+    digests.write(buf)
+    assert buf.getvalue() == b'\xff\x00\x05\x34\x12'
+
+
+@pytest.mark.unit
+def test_write_substreamsinfo():
+    substreamsinfo = py7zr.archiveinfo.SubstreamsInfo()
+    substreamsinfo.digests = py7zr.archiveinfo.Digests()
+    substreamsinfo.digests.crcs = [0x12345, 0x12345, 0x12345]
+    substreamsinfo.digests.defined = [True, True, True]
+    substreamsinfo.digestsdefined = substreamsinfo.digests.defined
+    substreamsinfo.num_unpackstreams_folders = [1]
+    substreamsinfo.unpacksizes = [34]
