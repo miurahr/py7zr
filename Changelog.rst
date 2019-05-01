@@ -14,6 +14,8 @@ Current changes
 Added
 -----
 
+* Add write(), close() and testzip() dummy methods which raises NotImplementedError.
+
 Changed
 -------
 
