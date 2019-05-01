@@ -56,6 +56,17 @@ Here is a code snippet how to decompress some file in your applicaiton.
         archive.extractall(path="/tmp")
 
 
+py7zr also support `shutil` unpack interface.
+
+.. code-block::
+
+    frpm py7zr import unpack_7zarchive
+    import shutil
+
+    shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
+    shutil.unpack_archive('test.7z', '/tmp')
+
+
 License
 =======
 
