@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Fix Sphinx error in documentation.
+
 Deprecated
 ----------
 

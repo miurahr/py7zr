@@ -11,7 +11,7 @@
 The 7z file format is a popular archive and compression format in recent days.
 This module provides tools to read and list 7z file. Features is not implemented
 to create, write and append a 7z file.  Any advanced use of this module will
- require an understanding of the format, as defined in `7z_format`_.
+require an understanding of the format, as defined in `7z_format`_.
 
 The module is built upon awesome development effort and knowledge of `pylzma` module
 and its `py7zlib.py` program by Joachim Bauch. Great appreciation for Joachim!
@@ -33,7 +33,7 @@ The module defines the following items:
 .. class:: ArchiveFile
 
    Class used to represent information about a member of an archive. Instances
-   of this class are returned by iteration of :attribute:`files_list` of :class:`SevenZipFile` objects.
+   of this class are returned by iteration of :attr:`files_list` of :class:`SevenZipFile` objects.
    Most users of the :mod:`py7zr` module should not create these, but only use those created by this
    module.
    :ref:`archivefile-objects`.
@@ -45,17 +45,31 @@ The module defines the following items:
    otherwise returns ``False``.  *filename* may be a file or file-like object too.
 
 
+.. function:: unpack_7zarchive(archive, path, extra=None)
+
+   Helper function to use with :mod:`shutil` module which offers a number of high-level operations on files
+   and collections of files. Since :mod:`shutil` has a function to register decompressor of archive, you can register
+   an helper function and then you can extract archive by calling :meth:`shutil.unpack_archive`
+
+.. code-block:: python
+
+    shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
+    shutil.unpack_archive(filename, [, extract_dir])
+
+
 .. seealso::
 
-   `7z_format`_
-      Documentation on the 7z file format by Igor Pavlov who craete algorithms
-      and 7z archive format.
+   `7z_format`_ Documentation on the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
+
+.. seealso::
+
+    `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
 
 .. _sevenzipfile-objects:
 
 SevenZipFile Objects
----------------
+--------------------
 
 
 .. class:: SevenZipFile(file, mode='r', compressionlevel=None)
@@ -68,21 +82,16 @@ SevenZipFile Objects
    existing file, or ``'x'`` to exclusively create and write a new file.
    If *mode* is ``'x'`` and *file* refers to an existing file,
    a :exc:`FileExistsError` will be raised.
-   If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#]_
+   If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#f1]_
 
    The *compresslevel* parameter controls the compression level to use when
-   writing files to the archive. Integers ``0`` through ``9`` are accepted. [#]_
+   writing files to the archive. Integers ``0`` through ``9`` are accepted. [#f2]_
 
-.. [#]: Modes other than ```'r'``` has not implemented yet. If given other than 'r',
-        it will generate :exc:`NotImplementedError`
-.. [#]: *compresslevel* is always ignored in current version.
 
 .. method:: SevenZipFile.close()
 
    Close the archive file.  You must call :meth:`close` before exiting your program
-   or essential records will not be written. [#]_
-
-.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
+   or essential records will not be written. [#f3]_
 
 
 .. method:: SevenZipFile.getnames()
@@ -104,9 +113,7 @@ SevenZipFile Objects
 .. method:: ZipFile.testzip()
 
    Read all the files in the archive and check their CRC's and file headers.
-   Return the name of the first bad file, or else return ``None``. [#]_
-
-.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
+   Return the name of the first bad file, or else return ``None``. [#f4]_
 
 
 .. method:: SevenZipFile.write(filename, arcname=None)
@@ -114,9 +121,7 @@ SevenZipFile Objects
    Write the file named *filename* to the archive, giving it the archive name
    *arcname* (by default, this will be the same as *filename*, but without a drive
    letter and with leading path separators removed).
-   The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``. [#]_
-
-.. [#]: Not implemented yet, the method will generate :exc:`NotImplementedError`
+   The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``. [#f5]_
 
 
 .. _archivefile-objects:
@@ -124,10 +129,8 @@ SevenZipFile Objects
 ArchiveFile Objects
 -------------------
 
-Instances of the :class:`ArchiveFile` class are returned by iterating :attribute:`files_list`
- of :class:`SevenZipFile` objects.
-Each object stores information about a single member of the 7z archive.
-Most of users don't use those directory, but use :method:`extractall()` instead.
+Instances of the :class:`ArchiveFile` class are returned by iterating :attr:`files_list` of :class:`SevenZipFile` objects.
+Each object stores information about a single member of the 7z archive. Most of users use :meth:`extractall()`.
 
 Instances have the following methods and attributes:
 
@@ -239,3 +242,20 @@ Command-line options
 
 
 .. _7z_format: https://www.7-zip.org/7z.html
+
+.. _shutil: https://docs.python.org/3/library/shutil.html
+
+
+.. rubric:: Footnotes
+
+.. [#f1] Modes other than ```'r'``` has not implemented yet. If given other than 'r',
+        it will generate :exc:`NotImplementedError`
+
+.. [#f2] *compresslevel* is always ignored in current version.
+
+.. [#f3] Not implemented yet, the method will generate :exc:`NotImplementedError`
+
+.. [#f4] Not implemented yet, the method will generate :exc:`NotImplementedError`
+
+.. [#f5] Not implemented yet, the method will generate :exc:`NotImplementedError`
+
