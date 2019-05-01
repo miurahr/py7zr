@@ -3,12 +3,10 @@ py7zr
 =====
 
 .. image:: https://readthedocs.org/projects/py7zr/badge/?version=latest
-   :target: https://py7zr.readthedocs.io/en/latest/?badge=latest
-      :alt: Documentation Status
+  :target: https://py7zr.readthedocs.io/en/latest/?badge=latest
 
-.. image:: https://badge.fury.io/py/py7zr.png
-   :target: http://badge.fury.io/py/Py7zr
-      :alt: PyPI version
+.. image:: https://badge.fury.io/py/py7zr.svg
+  :target: https://badge.fury.io/py/py7zr
 
 .. image:: https://travis-ci.org/miurahr/py7zr.svg?branch=master
   :target: https://travis-ci.org/miurahr/py7zr
