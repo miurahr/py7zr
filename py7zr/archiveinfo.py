@@ -297,8 +297,8 @@ class UnpackInfo:
             raise Bad7zFile('folder id expected but %s found' % repr(pid))
         self.numfolders = read_uint64(file)
         self.folders = []
-        b = read_byte(file)
-        if b == 0x00:
+        external = read_byte(file)
+        if external == 0x00:
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
         else:
             datastreamidx = read_uint64(file)
@@ -537,10 +537,10 @@ class FilesInfo:
                     self.dataindex = read_uint64(buffer)
                     current_pos = fp.tell()
                     fp.seek(self.dataindex, 0)
-                    f['filename'] = self._read_name(fp)
+                    self._read_name(buffer)
                     fp.seek(current_pos, 0)
                 else:
-                    f['filename'] = self._read_name(buffer)
+                    self._read_name(buffer)
             elif typ == Property.CREATION_TIME:
                 self._readTimes(buffer, self.files, 'creationtime')
             elif typ == Property.LAST_ACCESS_TIME:
@@ -567,9 +567,9 @@ class FilesInfo:
             while True:
                 ch = buffer.read(2)
                 if ch == binascii.unhexlify('0000'):
+                    f['filename'] = name
                     break
                 name += ch.decode('utf-16')
-        return name
 
     def _read_attributes(self, buffer, defined):
         for idx, f in enumerate(self.files):
