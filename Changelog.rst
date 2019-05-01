@@ -24,6 +24,7 @@ Fixed
 
 * Fix Sphinx error in documentation.
 * SevenZipFile: Check mode before touch file.
+* Fix write_boolean() when array size is over 8.
 
 Deprecated
 ----------

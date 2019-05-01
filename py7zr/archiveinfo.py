@@ -607,20 +607,22 @@ class Header:
 
     def write(self, file, encoded=True):
         if encoded:
-            buf = io.BytesIO()
-            self._encode_header(buf)
+            self._encode_header()
             write_byte(file, Property.ENCODED_HEADER)
-            file.write(buf.getvalue())
         else:
             write_byte(file, Property.HEADER)
-            # TODO: implement me.
 
-    def _encode_header(self, buffer):
-        encoded_header = StreamsInfo()
-        encoded_header.packinfo = PackInfo()
-        encoded_header.packinfo.packpos = 0 # fixme
-        encoded_header.packinfo.packsizes = []  # fixme
-        encoded_header.write(buffer)
+    def _encode_header(self):
+        streams = self._build_encoded_header()
+        buffer = io.BytesIO()
+        self.write(buffer, encoded=False)
+
+    def _build_encoded_header(self):
+        header = StreamsInfo()
+        header.packinfo = PackInfo()
+        header.packinfo.packpos = 0 # fixme
+        header.packinfo.packsizes = []  # fixme
+        return header
 
     def _decode_header(self, fp, buffer):
         """

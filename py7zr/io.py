@@ -175,11 +175,11 @@ def write_boolean(file, booleans, all_defined=True):
     o = 0x00
     for b in booleans:
         if mask == 0:
-            file.write(o)
+            file.write(pack('B', o))
             mask = 0x80
-            o = 0x00
+            o = 0x80 if b else 0x00
         else:
             o |= mask if b else 0x00
             mask >>= 1
-    if mask != 0x80:
-        file.write(o)
+    if mask != 0x00:
+        file.write(pack('B', o))
