@@ -14,6 +14,28 @@ Current changes
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+
+`v0.1.0`_
+=============
+
+Added
+-----
+
 * Introduce compression package.
 * Introduce SevenZipCompressor class.
 * Add write() method for each header class.
@@ -31,19 +53,6 @@ Changed
 * Each header classes initializes members to None in constructor.
 * Method definitions map become an internal member of SevenZipDecompressor or SevenZipCompressor class.
 * Add test package compress
-
-
-Fixed
------
-
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 
 `v0.0.8`_
@@ -151,8 +160,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.0.8...HEAD
-.. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.7...v0.0.8
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.0...HEAD
+.. _v0.1.0: https://github.com/miurahr/py7zr/compare/v0.0.8...v0.1.0
+.. _v0.0.8: https://github.com/miurahr/py7zr/compare/v0.0.7...v0.0.8
 .. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.6...v0.0.7
 .. _v0.0.6: https://github.com/miurahr/py7zr/compare/v0.0.5...v0.0.6
 .. _v0.0.5: https://github.com/miurahr/py7zr/compare/v0.0.4...v0.0.5
