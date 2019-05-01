@@ -23,6 +23,7 @@ Fixed
 -----
 
 * Fix Sphinx error in documentation.
+* SevenZipFile: Check mode before touch file.
 
 Deprecated
 ----------

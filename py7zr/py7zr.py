@@ -281,9 +281,11 @@ class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file, mode='r'):
-        # Check if we were passed a file-like object or not
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.files = []
         self.files_map = {}
+        # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False
             self.filename = file
