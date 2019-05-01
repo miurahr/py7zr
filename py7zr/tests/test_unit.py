@@ -122,6 +122,7 @@ def test_read_archive_properties():
     assert ap.property_data[0] == (0x23, )  # FIXME: what should be?
 
 
+
 @pytest.mark.unit
 def test_write_booleans():
     booleans = [True, False, True, True, False, True, False, False, True]
@@ -129,3 +130,12 @@ def test_write_booleans():
     py7zr.io.write_boolean(buffer, booleans, all_defined=False)
     actual = buffer.getvalue()
     assert actual == b'\xb4\x80'
+
+
+@pytest.mark.unit
+def test_write_booleans2():
+    booleans = [True, False, True, True, False, True, False, False, True]
+    buffer = io.BytesIO()
+    py7zr.io.write_boolean(buffer, booleans, all_defined=True)
+    actual = buffer.getvalue()
+    assert actual == b'\x00\xb4\x80'
