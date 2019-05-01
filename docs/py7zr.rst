@@ -110,7 +110,7 @@ SevenZipFile Objects
    Print a table of contents for the archive to ``sys.stdout``.
 
 
-.. method:: ZipFile.testzip()
+.. method:: SevenZipFile.testzip()
 
    Read all the files in the archive and check their CRC's and file headers.
    Return the name of the first bad file, or else return ``None``. [#f4]_

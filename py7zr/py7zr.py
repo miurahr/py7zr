@@ -461,6 +461,15 @@ class SevenZipFile:
         for o, p in target_files:
             self._set_file_property(o, p)
 
+    def testzip(self):
+        raise NotImplementedError
+
+    def write(self):
+        raise NotImplementedError
+
+    def close(self):
+        raise NotImplementedError
+
 
 # --------------------
 # exported functions
