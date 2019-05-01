@@ -237,4 +237,4 @@ class SevenZipCompressor():
         for filter in self.filters:
             method = self.lzma_methods_map_r[filter['id']]
             properties  = lzma._encode_filter_properties(filter)
-            self.coders.append({'method': method, 'properties': properties })
+            self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1 })

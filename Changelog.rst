@@ -54,6 +54,11 @@ Changed
 * Method definitions map become an internal member of SevenZipDecompressor or SevenZipCompressor class.
 * Add test package compress
 
+Fixed
+-----
+
+* Fix ArchiveProperties read function.
+
 
 `v0.0.8`_
 =============

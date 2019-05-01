@@ -92,7 +92,8 @@ def test_write_digests():
     digests.defined = [True, True, True]
     buf = io.BytesIO()
     digests.write(buf)
-    assert buf.getvalue() == b'\xff\x00\x05\x34\x12'
+    actual = buf.getvalue()
+    assert actual == b'\xffE#\x01\x00E#\x01\x00E#\x01\x00'
 
 
 @pytest.mark.unit

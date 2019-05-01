@@ -166,7 +166,7 @@ def read_boolean(file, count, checkall=0):
 
 
 def write_boolean(file, booleans, all_defined=True):
-    if all_defined and reduce(booleans, and_):
+    if all_defined and reduce(and_, booleans):
         file.write(b'\xff')
         return
     elif all_defined:

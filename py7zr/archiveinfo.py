@@ -24,10 +24,8 @@
 import binascii
 import functools
 import io
-import logging
 import os
 import struct
-import traceback
 from bringbuf.bringbuf import bRingBuf
 
 from py7zr.compression import SevenZipDecompressor
@@ -57,7 +55,8 @@ class ArchiveProperties:
                 if ptype == Property.END:
                     break
                 size = read_uint64(file)
-                self.property_data.append(read_bytes(file, size))
+                props = read_bytes(file, size)
+                self.property_data.append(props)
         return self
 
     def write(self, file):
