@@ -128,15 +128,16 @@ def write_real_uint64(file, value):
 def encode_uint64(value):
     mask = 0x80
     ba = bytearray(value.to_bytes(bytelen(value), 'big'))
-    for i in range(len(ba) - 1):
+    for i in range(len(ba) - 2):
         mask |= mask >> 1
-    if ba[0] >= 2 ** (8 - len(ba)):
+    if ba[0] >= 2 ** (7 - len(ba)):
+        mask |= mask >> 1
         return ba.rjust(len(ba) + 1, mask.to_bytes(1, 'big'))
-    elif len(ba) > 1:
+    if len(ba) > 1:
         ba[0] |= mask
     else:
         pass
-    return ba
+    return bytes(ba)
 
 
 def bytelen(value):

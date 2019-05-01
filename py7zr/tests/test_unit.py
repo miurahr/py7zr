@@ -139,3 +139,14 @@ def test_write_booleans2():
     py7zr.io.write_boolean(buffer, booleans, all_defined=True)
     actual = buffer.getvalue()
     assert actual == b'\x00\xb4\x80'
+
+
+@pytest.mark.unit
+def test_write_packinfo():
+    packinfo = py7zr.archiveinfo.PackInfo()
+    packinfo.packpos = 0x02345678
+    packinfo.packsizes = [0x1234, 0x3456, 0x5678]
+    buffer = io.BytesIO()
+    packinfo.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\xe2\x34\x56\x78\x03\x09\x92\x34\xb4\x56\xc0\x56\x78\x00'

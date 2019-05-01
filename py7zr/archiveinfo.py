@@ -100,17 +100,17 @@ class PackInfo:
 
     def write(self, file):
         assert self.packpos is not None
-        assert self.numstreams is not None
-        assert len(self.packsizes) == self.numstreams
+        numstreams = len(self.packsizes)
+        assert self.crcs is None or len(self.crcs) == numstreams
         write_uint64(file, self.packpos)
-        write_uint64(file, self.numstreams)
+        write_uint64(file, numstreams)
         write_bytes(file, Property.SIZE)
-        for i in range(self.numstreams):
-            write_uint64(file, self.packsizes[i])
+        for size in self.packsizes:
+            write_uint64(file, size)
         if self.crcs is not None:
             write_bytes(file, Property.CRC)
-            for i in range(self.numstreams):
-                write_uint64(file, self.crcs[i])
+            for crc in self.crcs:
+                write_uint64(file, crc)
         write_bytes(file, Property.END)
 
 
