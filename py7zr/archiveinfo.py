@@ -61,11 +61,11 @@ class ArchiveProperties:
 
     def write(self, file):
         if len(self.property_data) > 0:
-            file.write(Property.ARCHIVE_PROPERTIES)
+            write_byte(file, Property.ARCHIVE_PROPERTIES)
             for data in self.property_data:
                 write_uint64(file, len(data))
                 write_bytes(file, data)
-            file.write(Property.END)
+            write_byte(file, Property.END)
 
 
 class PackInfo:
@@ -88,10 +88,10 @@ class PackInfo:
         self.numstreams = read_uint64(file)
         pid = file.read(1)
         if pid == Property.SIZE:
-            self.packsizes = [read_uint64(file) for x in range(self.numstreams)]  # nopa
+            self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
             pid = file.read(1)
             if pid == Property.CRC:
-                self.crcs = [read_uint64(file) for x in range(self.numstreams)]  # noqa
+                self.crcs = [read_uint64(file) for _ in range(self.numstreams)]
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
@@ -102,16 +102,17 @@ class PackInfo:
         assert self.packpos is not None
         numstreams = len(self.packsizes)
         assert self.crcs is None or len(self.crcs) == numstreams
+        write_byte(file, Property.PACK_INFO)
         write_uint64(file, self.packpos)
         write_uint64(file, numstreams)
-        write_bytes(file, Property.SIZE)
+        write_byte(file, Property.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
         if self.crcs is not None:
             write_bytes(file, Property.CRC)
             for crc in self.crcs:
                 write_uint64(file, crc)
-        write_bytes(file, Property.END)
+        write_byte(file, Property.END)
 
 
 class Folder:

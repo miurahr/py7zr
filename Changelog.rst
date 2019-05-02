@@ -25,6 +25,7 @@ Fixed
 * Fix Sphinx error in documentation.
 * SevenZipFile: Check mode before touch file.
 * Fix write_boolean() when array size is over 8.
+* Fix write_uint64() and read_uint64().
 
 Deprecated
 ----------

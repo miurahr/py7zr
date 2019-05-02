@@ -142,11 +142,26 @@ def test_write_booleans2():
 
 
 @pytest.mark.unit
-def test_write_packinfo():
-    packinfo = py7zr.archiveinfo.PackInfo()
-    packinfo.packpos = 0x02345678
-    packinfo.packsizes = [0x1234, 0x3456, 0x5678]
-    buffer = io.BytesIO()
-    packinfo.write(buffer)
-    actual = buffer.getvalue()
-    assert actual == b'\xe2\x34\x56\x78\x03\x09\x92\x34\xb4\x56\xc0\x56\x78\x00'
+@pytest.mark.parametrize("testinput, expected",
+                         [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
+                          (0xffff7f, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff'),
+                          (0x7f1234567f, b'\xf8\x7f\x56\x34\x12\x7f'),
+                          (0x1234567890abcd, b'\xfe\xcd\xab\x90\x78\x56\x34\x12'),
+                          (0xcf1234567890abcd, b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf')])
+def test_write_uint64(testinput, expected):
+    buf = io.BytesIO()
+    py7zr.io.write_uint64(buf, testinput)
+    actual = buf.getvalue()
+    assert actual == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("testinput, expected",
+                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xff\xff', 65535),
+                          (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xf0\xff\xff\xff\xff', 0xffffffff),
+                          (b'\xf8\x7f\x56\x34\x12\x7f', 0x7f1234567f),
+                          (b'\xfe\xcd\xab\x90\x78\x56\x34\x12',0x1234567890abcd),
+                          (b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf', 0xcf1234567890abcd)])
+def test_read_uint64(testinput, expected):
+    buf = io.BytesIO(testinput)
+    assert py7zr.io.read_uint64(buf) == expected

@@ -12,17 +12,6 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("testinput, expected",
-                         [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
-                          (0x7fffff, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff'),
-                          (0x7f1234567f, b'\xf8\x7f\x12\x34\x56\x7f'),
-                          (0x1234567890abcd, b'\xfe\x12\x34\x56\x78\x90\xab\xcd'),
-                          (0xcf1234567890abcd, b'\xff\xcf\x12\x34\x56\x78\x90\xab\xcd')])
-def test_encode_uint64(testinput, expected):
-    assert py7zr.io.encode_uint64(testinput) == expected
-
-
-@pytest.mark.unit
 def test_simple_compress_and_properties():
     sevenzip_compressor = py7zr.compression.SevenZipCompressor()
     lzc = sevenzip_compressor.compressor
@@ -105,3 +94,14 @@ def test_write_substreamsinfo():
     substreamsinfo.digestsdefined = substreamsinfo.digests.defined
     substreamsinfo.num_unpackstreams_folders = [1]
     substreamsinfo.unpacksizes = [34]
+
+
+@pytest.mark.unit
+def test_write_packinfo():
+    packinfo = py7zr.archiveinfo.PackInfo()
+    packinfo.packpos = 0
+    packinfo.packsizes = [48]
+    buffer = io.BytesIO()
+    packinfo.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\x06\x00\x01\t0\x00'

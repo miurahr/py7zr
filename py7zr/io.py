@@ -70,7 +70,12 @@ def write_bytes(file, data):
 
 def write_byte(file, data):
     assert len(data) == 1
-    file.write(pack('B', data))
+    if isinstance(data, bytes):
+        file.write(data)
+    elif isinstance(data, bytearray):
+        file.write(pack('B', data))
+    else:
+        raise
 
 
 def read_real_uint64(file):
@@ -91,6 +96,25 @@ def write_uint32(file, value):
 
 
 def read_uint64(file):
+    b = ord(file.read(1))
+    mask = 0x80
+    if b == 255:
+        return read_real_uint64(file)[0]
+    for i in range(8):
+        if b & mask == 0:
+            bytes = array('B', file.read(i))
+            bytes.reverse()
+            value = (bytes and reduce(lambda x, y: x << 8 | y, bytes)) or 0
+            highpart = b & (mask - 1)
+            return value + (highpart << (i * 8))
+        mask >>= 1
+
+
+def write_real_uint64(file, value):
+    file.write(value.to_bytes(8, 'little'))
+
+
+def write_uint64(file, value):
     """
     UINT64 means real UINT64 encoded with the following scheme:
 
@@ -105,48 +129,26 @@ def read_uint64(file):
       11111110    BYTE y[7]  :                         y
       11111111    BYTE y[8]  :                         y
     """
-    b = ord(file.read(1))
     mask = 0x80
-    for i in range(8):
-        if b & mask == 0:
-            bytes = array('B', file.read(i))
-            bytes.reverse()
-            value = (bytes and reduce(lambda x, y: x << 8 | y, bytes)) or 0
-            highpart = b & (mask - 1)
-            return value + (highpart << (i * 8))
-        mask >>= 1
-
-
-def write_uint64(file, value):
-    file.write(encode_uint64(value))
-
-
-def write_real_uint64(file, value):
-    file.write(encode_real_uint64(value))
-
-
-def encode_uint64(value):
-    mask = 0x80
-    ba = bytearray(value.to_bytes(bytelen(value), 'big'))
-    for i in range(len(ba) - 2):
+    ba = bytearray(value.to_bytes(bytelen(value), 'little'))
+    for _ in range(len(ba) - 1):
         mask |= mask >> 1
-    if ba[0] >= 2 ** (7 - len(ba)):
-        mask |= mask >> 1
-        return ba.rjust(len(ba) + 1, mask.to_bytes(1, 'big'))
+    if ba[0] >= 2 ** (8 - len(ba)):
+        file.write(ba.rjust(len(ba) + 1, mask.to_bytes(1, 'little')))
+        return
     if len(ba) > 1:
         ba[0] |= mask
     else:
         pass
-    return bytes(ba)
+    file.write(ba)
 
 
 def bytelen(value):
-    bitwidth = value.bit_length()
-    return bitwidth // 8 + (0 if bitwidth % 8 == 0 else 1)
-
-
-def encode_real_uint64(value):
-    return value.to_bytes(8, 'big')
+    if value == 0:
+        return 1
+    else:
+        bitwidth = value.bit_length()
+        return bitwidth // 8 + (0 if bitwidth % 8 == 0 else 1)
 
 
 def read_boolean(file, count, checkall=0):
