@@ -255,27 +255,6 @@ class Folder:
         return CompressionMethod.CRYPT_AES256_SHA256 in [x['method'] for x in self.coders]
 
 
-class Digests:
-    """ holds a list of checksums """
-
-    @classmethod
-    def retrieve(cls, file, count):
-        obj = cls()
-        obj._read(file, count)
-        return obj
-
-    def _read(self, file, count):
-        self.defined = read_boolean(file, count, checkall=1)
-        self.crcs = read_crcs(file, count)
-
-    def write(self, file):
-        write_boolean(file, self.defined, all_defined=True)
-        write_crcs(file, self.crcs)
-
-
-UnpackDigests = Digests
-
-
 class UnpackInfo:
     """ combines multiple folders """
 
@@ -317,10 +296,11 @@ class UnpackInfo:
             folder.unpacksizes = [read_uint64(file) for _ in range(folder.totalout)]
         pid = file.read(1)
         if pid == Property.CRC:
-            digests = UnpackDigests.retrieve(file, self.numfolders)
+            defined = read_boolean(file, self.numfolders, checkall=1)
+            crcs = read_crcs(file, self.numfolders)
             for idx, folder in enumerate(self.folders):
-                folder.digestdefined = digests.defined[idx]
-                folder.crc = digests.crcs[idx]
+                folder.digestdefined = defined[idx]
+                folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
@@ -382,7 +362,8 @@ class SubstreamsInfo:
                 num_digests += numsubstreams
             num_digests_total += numsubstreams
         if pid == Property.CRC:
-            digests = Digests.retrieve(file, num_digests)
+            defined = read_boolean(file, num_digests, checkall=1)
+            crcs = read_crcs(file, num_digests)
             didx = 0
             for i in range(numfolders):
                 folder = folders[i]
@@ -392,8 +373,8 @@ class SubstreamsInfo:
                     self.digests.append(folder.crc)
                 else:
                     for j in range(numsubstreams):
-                        self.digestsdefined.append(digests.defined[didx])
-                        self.digests.append(digests.crcs[didx])
+                        self.digestsdefined.append(defined[didx])
+                        self.digests.append(crcs[didx])
                         didx += 1
             pid = file.read(1)
         if pid != Property.END:
@@ -401,17 +382,6 @@ class SubstreamsInfo:
         if not self.digestsdefined:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
-
-    def set_digests(self, folders):
-        digests = Digests()
-        fidx = 0
-        for crc in self.digests:
-            numsubstreams = self.num_unpackstreams_folders[fidx]
-            if numsubstreams != 1 or not folders[fidx].digestdefined:
-                # only when folders don't define digests
-                digests.crcs.append(crc)
-            else:
-                pass
 
     def write(self, file, numfolders):
         if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
@@ -719,25 +689,6 @@ class Header:
             pid = fp.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
-
-    # proxy functions
-    def get_files(self):
-        return self.files_info.files
-
-    def get_decompress_info(self):
-        decompress_info = []
-        packsizes = self.main_streams.packinfo.packsizes
-        for i in range(self.main_streams.unpackinfo.numfolders):
-            coders = self.main_streams.unpackinfo.folders[i].coders
-            unpacksize = self.main_streams.unpackinfo.folders[i].get_unpack_size()
-            packsize = 0
-            for j in range(self.main_streams.unpackinfo.folders[i].totalin):
-                packsize += packsizes[j]
-            decompress_info.append((coders, unpacksize, packsize))
-        return decompress_info
-
-    def get_packpositions(self):
-        return self.main_streams.packinfo.packpositions
 
 
 class SignatureHeader:

@@ -338,13 +338,3 @@ def test_startheader_calccrc():
     assert startheader.startheadercrc == 3257288896
     assert startheader.nextheadercrc == 1372678730
 
-
-@pytest.mark.unit
-def test_write_digests():
-    digests = py7zr.archiveinfo.Digests()
-    digests.crcs = [0x12345, 0x12345, 0x12345]
-    digests.defined = [True, True, True]
-    buf = io.BytesIO()
-    digests.write(buf)
-    actual = buf.getvalue()
-    assert actual == b'\x01E#\x01\x00E#\x01\x00E#\x01\x00'
