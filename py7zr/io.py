@@ -171,7 +171,7 @@ def read_boolean(file, count, checkall=False):
 
 def write_boolean(file, booleans, all_defined=False):
     if all_defined and reduce(and_, booleans):
-        file.write(b'\xff')
+        file.write(b'\x01')
         return
     elif all_defined:
         file.write(b'\x00')

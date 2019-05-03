@@ -413,35 +413,27 @@ class SubstreamsInfo:
             else:
                 pass
 
-    def write(self, file):
+    def write(self, file, numfolders):
         if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
             # nothing to write
             return
-        #   BYTE NID::kSubStreamsInfo; (0x08)
         write_byte(file, Property.SUBSTREAMS_INFO)
-        #   []
-        #   BYTE NID::kNumUnPackStream; (0x0D)
-        #   UINT64 NumUnPackStreamsInFolders[NumFolders];
-        #   []
-        if not functools.reduce(lambda x, y: x & y == 1, self.num_unpackstreams_folders, True):
+        if not functools.reduce(lambda x, y: x and (y == 1), self.num_unpackstreams_folders, True):
             write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
-        #   []
-        #   BYTE NID::kSize  (0x09)
-        #   UINT64 UnPackSizes[]
-        #   []
         write_byte(file, Property.SIZE)
-        for size in self.unpacksizes:
-            write_uint64(file, size)
-        #   []
-        #   BYTE NID::kCRC  (0x0A)
-        #   Digests[Number of streams with unknown CRC]
-        #   []
-        write_byte(file, Property.CRC)
-        # TODO: impelemnt me.
-
-        #   BYTE NID::kEnd
+        idx = 0
+        for i in range(numfolders):
+            for j in range(1, self.num_unpackstreams_folders[i]):
+                size = self.unpacksizes[idx]
+                write_uint64(file, size)
+                idx += 1
+            idx += 1
+        if functools.reduce(lambda x, y: x or y, self.digestsdefined, False):
+            write_byte(file, Property.CRC)
+            write_boolean(file, self.digestsdefined, all_defined=True)
+            write_crcs(file, self.digests)
         write_byte(file, Property.END)
 
 
@@ -484,7 +476,7 @@ class StreamsInfo:
             self.unpackinfo.write(file)
         if self.substreamsinfo is not None:
             write_byte(file, Property.SUBSTREAMS_INFO)
-            self.substreamsinfo.write(file)
+            self.substreamsinfo.write(file, self.unpackinfo.numfolders)
         write_byte(file, Property.END)
 
 
@@ -690,8 +682,9 @@ class Header:
         header_data = buf.getvalue()
         streams = StreamsInfo()
         streams.packinfo = PackInfo()
-        streams.packinfo.packpos = 0 # fixme
-        streams.packinfo.packsizes = []  # fixme
+        streams.packinfo.packpos = 0
+        streams.packinfo.packsizes = []  # TODO: fixme
+        streams.unpackinfo = UnpackInfo()
         streams.unpackinfo.folders = []  # fixme
 
     def write(self, file, encoded=True):

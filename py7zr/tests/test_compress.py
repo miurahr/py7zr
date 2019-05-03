@@ -60,7 +60,6 @@ def test_write_packinfo():
 
 
 @pytest.mark.unit
-@pytest.mark.xfail(reason='Incomplete implementation')
 def test_startheader_calccrc():
     startheader = py7zr.archiveinfo.SignatureHeader()
     startheader.version = (0, 4)
@@ -73,7 +72,7 @@ def test_startheader_calccrc():
     header = py7zr.archiveinfo.Header.retrieve(fp, header_buf, start_pos=32)
     startheader.calccrc(header)
     assert startheader.startheadercrc == 3257288896
-    assert startheader.nextheadercrc == 0
+    assert startheader.nextheadercrc == 1372678730
 
 
 @pytest.mark.unit
@@ -84,7 +83,7 @@ def test_write_digests():
     buf = io.BytesIO()
     digests.write(buf)
     actual = buf.getvalue()
-    assert actual == b'\xffE#\x01\x00E#\x01\x00E#\x01\x00'
+    assert actual == b'\x01E#\x01\x00E#\x01\x00E#\x01\x00'
 
 
 @pytest.mark.unit

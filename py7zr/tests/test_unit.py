@@ -107,12 +107,13 @@ def test_py7zr_unpack_info():
 @pytest.mark.unit
 def test_py7zr_substreamsinfo():
     header_data = io.BytesIO(b'\x08'
-                  b'\r\x03\to:\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00\x00\x05\x04\x0e\x01\x80\x19\n\x00')
+                  b'\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00')
     pid = header_data.read(1)
     assert pid == py7zr.properties.Property.SUBSTREAMS_INFO
     folders = [py7zr.archiveinfo.Folder()]
     folders[0].unpacksizes = [728]
-    ss = py7zr.archiveinfo.SubstreamsInfo.retrieve(header_data, 1, folders)
+    numfolders = 1
+    ss = py7zr.archiveinfo.SubstreamsInfo.retrieve(header_data, numfolders, folders)
     pos = header_data.tell()
     print(pos)
     assert ss.digestsdefined == [True, True, True]
@@ -133,10 +134,10 @@ def test_py7zr_substreamsinfo_write():
     ss.digests = [3010113243,  3703540999, 2164028094]
     ss.num_unpackstreams_folders = [3]
     ss.unpacksizes = [111, 58, 559]
-    ss.write(buffer)
+    numfolders = len(folders)
+    ss.write(buffer, numfolders)
     actual = buffer.getvalue()
-    assert actual == b'\x00'
-
+    assert actual == b'\x08\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00'
 
 @pytest.mark.unit
 def test_py7zr_header():
@@ -227,8 +228,7 @@ def test_read_archive_properties():
     buf.write(inp)
     buf.seek(0, 0)
     ap =  py7zr.archiveinfo.ArchiveProperties.retrieve(buf)
-    assert ap.property_data[0] == (0x23, )  # FIXME: what should be?
-
+    assert ap.property_data[0] == (0x23, )  # FIXME: what it should be?
 
 
 @pytest.mark.unit
