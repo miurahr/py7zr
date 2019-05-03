@@ -28,6 +28,8 @@ from enum import Enum, IntEnum
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 READ_BLOCKSIZE = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
+P7ZIP_MAJOR_VERSION = 0
+P7ZIP_MINOR_VERSION = 4
 
 
 class ByteEnum(bytes, Enum):

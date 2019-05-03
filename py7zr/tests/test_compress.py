@@ -60,6 +60,7 @@ def test_write_packinfo():
 
 
 @pytest.mark.unit
+@pytest.mark.xfail(reason='Incomplete implementation')
 def test_startheader_calccrc():
     startheader = py7zr.archiveinfo.SignatureHeader()
     startheader.version = (0, 4)
@@ -67,11 +68,12 @@ def test_startheader_calccrc():
     startheader.nextheadersize = 32
     # set test data to buffer that start with Property.ENCODED_HEADER
     fp = open(os.path.join(testdata_path, 'test_5.7z'), 'rb')
-    buffer = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
-                        b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
-    header = py7zr.archiveinfo.Header.retrieve(fp, buffer, start_pos=32)
-    # FIXME:
-    # startheader.calccrc(header)
+    header_buf = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
+                             b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
+    header = py7zr.archiveinfo.Header.retrieve(fp, header_buf, start_pos=32)
+    startheader.calccrc(header)
+    assert startheader.startheadercrc == 3257288896
+    assert startheader.nextheadercrc == 0
 
 
 @pytest.mark.unit

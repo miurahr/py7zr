@@ -29,6 +29,7 @@ from struct import pack, unpack
 from operator import and_
 
 
+MAX_LENGTH = 65536
 NEED_BYTESWAP = sys.byteorder != 'little'
 
 if array('L').itemsize == 4:
@@ -151,7 +152,7 @@ def bytelen(value):
         return bitwidth // 8 + (0 if bitwidth % 8 == 0 else 1)
 
 
-def read_boolean(file, count, checkall=0):
+def read_boolean(file, count, checkall=False):
     if checkall:
         all_defined = file.read(1)
         if all_defined != unhexlify('00'):
@@ -168,7 +169,7 @@ def read_boolean(file, count, checkall=0):
     return result
 
 
-def write_boolean(file, booleans, all_defined=True):
+def write_boolean(file, booleans, all_defined=False):
     if all_defined and reduce(and_, booleans):
         file.write(b'\xff')
         return
@@ -186,3 +187,20 @@ def write_boolean(file, booleans, all_defined=True):
             mask >>= 1
     if mask != 0x00:
         file.write(pack('B', o))
+
+
+def read_utf16(file):
+    """read a utf-16 string from file"""
+    val = ''
+    for _ in range(MAX_LENGTH):
+        ch = file.read(2)
+        if ch == unhexlify('0000'):
+            break
+        val += ch.decode('utf-16')
+    return val
+
+
+def write_utf16(file, val):
+    """write a utf-16 string to file"""
+    file.write(val.encode('utf-16'))
+    file.write(unhexlify(('0000')))

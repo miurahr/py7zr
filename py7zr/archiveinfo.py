@@ -24,6 +24,7 @@
 import binascii
 import functools
 import io
+from operator import or_
 import os
 import struct
 from bringbuf.bringbuf import bRingBuf
@@ -31,9 +32,9 @@ from bringbuf.bringbuf import bRingBuf
 from py7zr.compression import SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
-from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean
+from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean, read_utf16
 from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs
-from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN
+from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN, P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION
 
 
 class ArchiveProperties:
@@ -563,13 +564,7 @@ class FilesInfo:
 
     def _read_name(self, buffer):
         for f in self.files:
-            name = ''
-            while True:
-                ch = buffer.read(2)
-                if ch == binascii.unhexlify('0000'):
-                    f['filename'] = name
-                    break
-                name += ch.decode('utf-16')
+            f['filename'] = read_utf16(buffer)
 
     def _read_attributes(self, buffer, defined):
         for idx, f in enumerate(self.files):
@@ -588,6 +583,37 @@ class FilesInfo:
             else:
                 files[i][name] = None
 
+    def write(self, file):
+        assert self.files is not None
+        numfiles = len(self.files)
+        numemptystreams = 0
+        emptystreams = []
+        for f in self.files:
+            if f['emptystream']:
+                numemptystreams += 1
+            emptystreams.append(f['emptystream'])
+        assert numfiles == len(emptystreams)
+        write_byte(file, Property.FILES_INFO)
+        write_uint64(file, numfiles)
+        write_byte(file, Property.EMPTY_STREAM)
+        write_boolean(file, emptystreams, all_defined=False)
+        if self.emptyfiles is not None:
+            if functools.reduce(or_, self.emptyfiles):  # there are some emptyfile
+                write_byte(Property.EMPTY_FILE)
+                write_boolean(file, self.emptyfiles)
+        if self.antifiles is not None:
+            if functools.reduce(or_, self.antifiles):  # there are some antifiles
+                write_byte(file, Property.ANTI)
+                write_boolean(file, self.antifiles)
+        write_byte(file, Property.NAME)
+        no_external = b'\x00'
+        write_byte(file, no_external)
+        for f in self.files:
+            if f.get('filename', None) is not None:
+            write_(file, f['filename'])
+
+
+
 
 class Header:
     """ the archive header """
@@ -605,25 +631,6 @@ class Header:
         self._start_pos = start_pos
         fp.seek(self._start_pos)
         self._decode_header(fp, buffer)
-
-    def write(self, file, encoded=True):
-        if encoded:
-            self._encode_header()
-            write_byte(file, Property.ENCODED_HEADER)
-        else:
-            write_byte(file, Property.HEADER)
-
-    def _encode_header(self):
-        streams = self._build_encoded_header()
-        buffer = io.BytesIO()
-        self.write(buffer, encoded=False)
-
-    def _build_encoded_header(self):
-        header = StreamsInfo()
-        header.packinfo = PackInfo()
-        header.packinfo.packpos = 0 # fixme
-        header.packinfo.packsizes = []  # fixme
-        return header
 
     def _decode_header(self, fp, buffer):
         """
@@ -670,6 +677,32 @@ class Header:
         buffer.seek(0, 0)
         return buffer
 
+    def _build_encoded_header(self):
+        buf = io.BytesIO()
+        self.write(buf, encoded=False)
+        header_data = buf.getvalue()
+        streams = StreamsInfo()
+        streams.packinfo = PackInfo()
+        streams.packinfo.packpos = 0 # fixme
+        streams.packinfo.packsizes = []  # fixme
+        streams.unpackinfo.folders = []  # fixme
+
+     def write(self, file, encoded=True):
+        if encoded:
+            self._build_encoded_header()
+            write_byte(file, Property.ENCODED_HEADER)
+        else:
+            write_byte(file, Property.HEADER)
+            if self.properties is not None:
+                self.properties.write(file)
+            if self.additional_streams is not None:
+                self.additional_streams.write(file)
+            if self.main_streams is not None:
+                self.main_streams.write(file)
+            if self.files_info is not None:
+                self.files_info.write(file)
+            write_byte(file, Property.END)
+
     def _extract_header_info(self, fp):
         pid = fp.read(1)
         if pid == Property.ARCHIVE_PROPERTIES:
@@ -713,7 +746,7 @@ class SignatureHeader:
     __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
 
     def __init__(self):
-        self.version = (0, 4)
+        self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)
         self.startheadercrc = None
         self.nextheaderofs = None
         self.nextheadersize = None
