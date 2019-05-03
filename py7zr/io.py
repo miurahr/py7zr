@@ -51,6 +51,7 @@ def write_crcs(file, crcs):
     for crc in crcs:
         write_uint32(file, crc)
 
+
 def read_bytes(file, length):
     return unpack(b'B' * length, file.read(length))
 

@@ -164,5 +164,3 @@ def test_py7zr_is_not_7zfile():
         f.write(b'12345dahodjg98adfjfak;')
     assert not py7zr.is_7zfile(target)
     shutil.rmtree(tmpdir)
-
-

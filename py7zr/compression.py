@@ -229,12 +229,12 @@ class SevenZipCompressor():
 
     def __init__(self, filters=None):
         if filters is None:
-            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},]
+            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}, ]
         else:
             self.filters = filters
         self.compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=self.filters)
         self.coders = []
         for filter in self.filters:
             method = self.lzma_methods_map_r[filter['id']]
-            properties  = lzma._encode_filter_properties(filter)
-            self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1 })
+            properties = lzma._encode_filter_properties(filter)
+            self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})

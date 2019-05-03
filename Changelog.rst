@@ -14,18 +14,11 @@ Current changes
 Added
 -----
 
-* Add write(), close() and testzip() dummy methods which raises NotImplementedError.
-
 Changed
 -------
 
 Fixed
 -----
-
-* Fix Sphinx error in documentation.
-* SevenZipFile: Check mode before touch file.
-* Fix write_boolean() when array size is over 8.
-* Fix write_uint64() and read_uint64().
 
 Deprecated
 ----------
@@ -36,9 +29,26 @@ Removed
 Security
 --------
 
+`v0.1.1`_
+=========
+
+Added
+-----
+
+* Add write(), close() and testzip() dummy methods which raises NotImplementedError.
+* Add more unit tests for write functions.
+
+Fixed
+-----
+
+* Fix Sphinx error in documentation.
+* SevenZipFile: Check mode before touch file.
+* Fix write_boolean() when array size is over 8.
+* Fix write_uint64() and read_uint64().
+
 
 `v0.1.0`_
-=============
+=========
 
 Added
 -----
@@ -68,7 +78,7 @@ Fixed
 
 
 `v0.0.8`_
-=============
+=========
 
 Added
 -----
@@ -172,7 +182,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.1...HEAD
+.. _v0.1.1: https://github.com/miurahr/py7zr/compare/v0.1.0...v0.1.1
 .. _v0.1.0: https://github.com/miurahr/py7zr/compare/v0.0.8...v0.1.0
 .. _v0.0.8: https://github.com/miurahr/py7zr/compare/v0.0.7...v0.0.8
 .. _v0.0.7: https://github.com/miurahr/py7zr/compare/v0.0.6...v0.0.7

@@ -4,6 +4,8 @@ import lzma
 import os
 import pytest
 import py7zr.archiveinfo
+import py7zr.compression
+import py7zr.helpers
 import py7zr.properties
 import py7zr.io
 
@@ -44,7 +46,7 @@ def test_py7zr_folder_retrive():
     assert folder.packed_indices == [0]
     assert folder.totalin == 1
     assert folder.totalout == 1
-    assert folder.digestdefined == False
+    assert folder.digestdefined is False
     coder = folder.coders[0]
     assert coder['method'] == b'\x03\x01\x01'
     assert coder['properties'] == b']\x00\x10\x00\x00'
@@ -58,7 +60,8 @@ def test_py7zr_folder_write():
     for _ in range(1):
         folder = py7zr.archiveinfo.Folder()
         folder.bindpairs = []
-        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1, 'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
+        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1,
+                          'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
         folder.crc = None
         folder.digestdefined = False
         folder.packed_indices = [0]
@@ -87,7 +90,8 @@ def test_py7zr_unpack_info():
     for _ in range(1):
         folder = py7zr.archiveinfo.Folder()
         folder.bindpairs = []
-        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1, 'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
+        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1,
+                          'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
         folder.crc = None
         folder.digestdefined = False
         folder.packed_indices = [0]
@@ -106,8 +110,7 @@ def test_py7zr_unpack_info():
 
 @pytest.mark.unit
 def test_py7zr_substreamsinfo():
-    header_data = io.BytesIO(b'\x08'
-                  b'\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00')
+    header_data = io.BytesIO(b'\x08\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00')
     pid = header_data.read(1)
     assert pid == py7zr.properties.Property.SUBSTREAMS_INFO
     folders = [py7zr.archiveinfo.Folder()]
@@ -131,13 +134,14 @@ def test_py7zr_substreamsinfo_write():
     ss = py7zr.archiveinfo.SubstreamsInfo()
     buffer = io.BytesIO()
     ss.digestsdefined = [True, True, True]
-    ss.digests = [3010113243,  3703540999, 2164028094]
+    ss.digests = [3010113243, 3703540999, 2164028094]
     ss.num_unpackstreams_folders = [3]
     ss.unpacksizes = [111, 58, 559]
     numfolders = len(folders)
     ss.write(buffer, numfolders)
     actual = buffer.getvalue()
     assert actual == b'\x08\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00'
+
 
 @pytest.mark.unit
 def test_py7zr_header():
@@ -172,7 +176,7 @@ def test_py7zr_encoded_header():
 
 
 @pytest.mark.unit
-def test_py7zr_files_info():
+def test_py7zr_files_info_1():
     header_data = io.BytesIO(b'\x05\x03\x0e\x01\x80\x11=\x00t\x00e\x00s\x00t\x00\x00\x00t\x00e\x00s\x00t\x001\x00.'
                              b'\x00t\x00x\x00t\x00\x00\x00t\x00e\x00s\x00t\x00/\x00t\x00e\x00s\x00t\x002\x00.\x00t\x00x'
                              b'\x00t\x00\x00\x00\x14\x1a\x01\x00\x04>\xe6\x0f{H\xc6\x01d\xca \x8byH\xc6\x01\x8c\xfa\xb6'
@@ -187,7 +191,7 @@ def test_py7zr_files_info():
 
 
 @pytest.mark.unit
-def test_py7zr_files_info2():
+def test_py7zr_files_info_2():
     header_data = io.BytesIO(b'\x05\x04\x11_\x00c\x00o\x00p\x00y\x00i\x00n\x00g\x00.\x00t\x00x\x00t\x00\x00\x00H\x00'
                              b'i\x00s\x00t\x00o\x00r\x00y\x00.\x00t\x00x\x00t\x00\x00\x00L\x00i\x00c\x00e\x00n\x00s'
                              b'\x00e\x00.\x00t\x00x\x00t\x00\x00\x00r\x00e\x00a\x00d\x00m\x00e\x00.\x00t\x00x\x00t\x00'
@@ -227,26 +231,19 @@ def test_read_archive_properties():
     inp = binascii.unhexlify('0207012300')
     buf.write(inp)
     buf.seek(0, 0)
-    ap =  py7zr.archiveinfo.ArchiveProperties.retrieve(buf)
+    ap = py7zr.archiveinfo.ArchiveProperties.retrieve(buf)
     assert ap.property_data[0] == (0x23, )  # FIXME: what it should be?
 
 
 @pytest.mark.unit
-def test_write_booleans():
-    booleans = [True, False, True, True, False, True, False, False, True]
+@pytest.mark.parametrize("booleans, all_defined, expected",
+                         [([True, False, True, True, False, True, False, False, True], False, b'\xb4\x80'),
+                          ([True, False, True, True, False, True, False, False, True], True, b'\x00\xb4\x80')])
+def test_write_booleans(booleans, all_defined, expected):
     buffer = io.BytesIO()
-    py7zr.io.write_boolean(buffer, booleans, all_defined=False)
+    py7zr.io.write_boolean(buffer, booleans, all_defined=all_defined)
     actual = buffer.getvalue()
-    assert actual == b'\xb4\x80'
-
-
-@pytest.mark.unit
-def test_write_booleans2():
-    booleans = [True, False, True, True, False, True, False, False, True]
-    buffer = io.BytesIO()
-    py7zr.io.write_boolean(buffer, booleans, all_defined=True)
-    actual = buffer.getvalue()
-    assert actual == b'\x00\xb4\x80'
+    assert actual == expected
 
 
 @pytest.mark.unit
@@ -268,8 +265,86 @@ def test_write_uint64(testinput, expected):
                          [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xff\xff', 65535),
                           (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xf0\xff\xff\xff\xff', 0xffffffff),
                           (b'\xf8\x7f\x56\x34\x12\x7f', 0x7f1234567f),
-                          (b'\xfe\xcd\xab\x90\x78\x56\x34\x12',0x1234567890abcd),
+                          (b'\xfe\xcd\xab\x90\x78\x56\x34\x12', 0x1234567890abcd),
                           (b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf', 0xcf1234567890abcd)])
 def test_read_uint64(testinput, expected):
     buf = io.BytesIO(testinput)
     assert py7zr.io.read_uint64(buf) == expected
+
+
+@pytest.mark.unit
+def test_simple_compress_and_properties():
+    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
+    lzc = sevenzip_compressor.compressor
+    out1 = lzc.compress(b"Some data\n")
+    out2 = lzc.compress(b"Another piece of data\n")
+    out3 = lzc.compress(b"Even more data\n")
+    out4 = lzc.flush()
+    result = b"".join([out1, out2, out3, out4])
+    size = len(result)
+    #
+    filters = sevenzip_compressor.filters
+    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+    out5 = decompressor.decompress(result)
+    assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
+    #
+    coders = sevenzip_compressor.coders
+    decompressor = py7zr.compression.SevenZipDecompressor(coders, size)
+    out6 = decompressor.decompress(result)
+    assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
+
+
+@pytest.mark.unit
+def test_write_archive_properties():
+    """
+    test write function of ArchiveProperties class.
+    Structure is as follows:
+    BYTE Property.ARCHIVE_PROPERTIES (0x02)
+       UINT64 PropertySize   (7 for test)
+       BYTE PropertyData(PropertySize) b'0123456789abcd' for test
+    BYTE Property.END (0x00)
+    """
+    archiveproperties = py7zr.archiveinfo.ArchiveProperties()
+    archiveproperties.property_data = [binascii.unhexlify('0123456789abcd')]
+    buf = io.BytesIO()
+    archiveproperties.write(buf)
+    assert buf.getvalue() == binascii.unhexlify('02070123456789abcd00')
+
+
+@pytest.mark.unit
+def test_write_packinfo():
+    packinfo = py7zr.archiveinfo.PackInfo()
+    packinfo.packpos = 0
+    packinfo.packsizes = [48]
+    packinfo.crcs = [py7zr.helpers.calculate_crc32(b'abcd')]
+    buffer = io.BytesIO()
+    packinfo.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\x06\x00\x01\t0\n\xf0\x11\xcd\x82\xed\x00'
+
+
+@pytest.mark.unit
+def test_startheader_calccrc():
+    startheader = py7zr.archiveinfo.SignatureHeader()
+    startheader.version = (0, 4)
+    startheader.nextheaderofs = 1024
+    startheader.nextheadersize = 32
+    # set test data to buffer that start with Property.ENCODED_HEADER
+    fp = open(os.path.join(testdata_path, 'test_5.7z'), 'rb')
+    header_buf = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
+                            b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
+    header = py7zr.archiveinfo.Header.retrieve(fp, header_buf, start_pos=32)
+    startheader.calccrc(header)
+    assert startheader.startheadercrc == 3257288896
+    assert startheader.nextheadercrc == 1372678730
+
+
+@pytest.mark.unit
+def test_write_digests():
+    digests = py7zr.archiveinfo.Digests()
+    digests.crcs = [0x12345, 0x12345, 0x12345]
+    digests.defined = [True, True, True]
+    buf = io.BytesIO()
+    digests.write(buf)
+    actual = buf.getvalue()
+    assert actual == b'\x01E#\x01\x00E#\x01\x00E#\x01\x00'
