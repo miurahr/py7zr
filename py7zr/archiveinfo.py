@@ -21,7 +21,6 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-import binascii
 import functools
 import io
 from operator import or_
@@ -33,7 +32,7 @@ from py7zr.compression import SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
 from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean, read_utf16
-from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs
+from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs, write_utf16
 from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN, P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION
 
 
@@ -189,6 +188,7 @@ class Folder:
 
     def write(self, file):
         num_coders = len(self.coders)
+        assert num_coders > 0
         write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
             method = c['method']
@@ -196,21 +196,21 @@ class Folder:
             numinstreams = c['numinstreams']
             numoutstreams = c['numoutstreams']
             iscomplex = 0x00 if numinstreams == 1 and numoutstreams == 1 else 0x10
-            last_alternative = 0x80 if i < self.num_coders else 0x00
+            last_alternative = 0x80 if i < num_coders - 1 else 0x00
             if c['properties'] is not None:
                 hasattributes = 0x20
                 properties = c['properties']
             else:
                 hasattributes = 0x00
                 properties = None
-            write_byte(file, method_size & 0xf | iscomplex | hasattributes | last_alternative)
+            write_byte(file, struct.pack('B', method_size & 0xf | iscomplex | hasattributes | last_alternative))
             write_bytes(file, method)
             if iscomplex:
                 write_uint64(file, numinstreams)
                 write_uint64(file, numoutstreams)
             if properties is not None:
                 write_uint64(file, len(properties))
-                write_uint64(file, properties)
+                write_bytes(file, properties)
         num_bindpairs = self.totalout - 1
         assert len(self.bindpairs) == num_bindpairs
         num_packedstreams = self.totalin - num_bindpairs
@@ -326,16 +326,17 @@ class UnpackInfo:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
 
     def write(self, file):
+        file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
         write_uint64(file, self.numfolders)
         external = False
-        if external:
-            write_byte(file, 0x00)
+        if not external:
+            write_byte(file, b'\x00')
             for i in range(self.numfolders):
                 for f in self.folders:
                     f.write(file)
         else:
-            write_byte(file, 0x01)
+            write_byte(file, b'\x01')
             assert self.datastreamidx is not None
             write_uint64(file, self.datastreamidx)
         write_byte(file, Property.CODERS_UNPACK_SIZE)
@@ -610,9 +611,7 @@ class FilesInfo:
         write_byte(file, no_external)
         for f in self.files:
             if f.get('filename', None) is not None:
-            write_(file, f['filename'])
-
-
+                write_utf16(file, f['filename'])
 
 
 class Header:
@@ -620,6 +619,14 @@ class Header:
 
     __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
                 '_start_pos']
+
+    def __init__(self):
+        self.solid = False
+        self.properties = None
+        self.additional_streams = None
+        self.main_streams = None
+        self.files_info = None
+        self._start_pos = 0
 
     @classmethod
     def retrieve(cls, fp, buffer, start_pos):
@@ -687,7 +694,7 @@ class Header:
         streams.packinfo.packsizes = []  # fixme
         streams.unpackinfo.folders = []  # fixme
 
-     def write(self, file, encoded=True):
+    def write(self, file, encoded=True):
         if encoded:
             self._build_encoded_header()
             write_byte(file, Property.ENCODED_HEADER)

@@ -31,6 +31,114 @@ def test_py7zr_mainstreams():
 
 
 @pytest.mark.unit
+def test_py7zr_folder_retrive():
+    header_data = io.BytesIO(b'\x0b'
+                             b'\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00')
+    pid = header_data.read(1)
+    assert pid == py7zr.properties.Property.FOLDER
+    num_folders = py7zr.io.read_byte(header_data)
+    assert num_folders == 1
+    external = py7zr.io.read_byte(header_data)
+    assert external == 0x00
+    folder = py7zr.archiveinfo.Folder.retrieve(header_data)
+    assert folder.packed_indices == [0]
+    assert folder.totalin == 1
+    assert folder.totalout == 1
+    assert folder.digestdefined == False
+    coder = folder.coders[0]
+    assert coder['method'] == b'\x03\x01\x01'
+    assert coder['properties'] == b']\x00\x10\x00\x00'
+    assert coder['numinstreams'] == 1
+    assert coder['numoutstreams'] == 1
+
+
+@pytest.mark.unit
+def test_py7zr_folder_write():
+    folders = []
+    for _ in range(1):
+        folder = py7zr.archiveinfo.Folder()
+        folder.bindpairs = []
+        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1, 'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
+        folder.crc = None
+        folder.digestdefined = False
+        folder.packed_indices = [0]
+        folder.solid = True
+        folder.totalin = 1
+        folder.totalout = 1
+        folders.append(folder)
+    #
+    buffer = io.BytesIO()
+    # following should be run in StreamsInfo class.
+    py7zr.io.write_byte(buffer, py7zr.properties.Property.FOLDER)
+    py7zr.io.write_uint64(buffer, len(folders))
+    external = b'\x00'
+    py7zr.io.write_byte(buffer, external)
+    for folder in folders:
+        folder.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00'
+
+
+@pytest.mark.unit
+def test_py7zr_unpack_info():
+    # prepare for unpack_info values
+    unpack_info = py7zr.archiveinfo.UnpackInfo()
+    unpack_info.folders = []
+    for _ in range(1):
+        folder = py7zr.archiveinfo.Folder()
+        folder.bindpairs = []
+        folder.coders = [{'method': b"\x03\x01\x01", 'numinstreams': 1, 'numoutstreams': 1, 'properties': b']\x00\x10\x00\x00'}]
+        folder.crc = None
+        folder.digestdefined = False
+        folder.packed_indices = [0]
+        folder.solid = True
+        folder.totalin = 1
+        folder.totalout = 1
+        folder.unpacksizes = [0x22]
+        unpack_info.folders.append(folder)
+    unpack_info.numfolders = len(unpack_info.folders)
+    #
+    buffer = io.BytesIO()
+    unpack_info.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00\x0c\x22\x00'
+
+
+@pytest.mark.unit
+def test_py7zr_substreamsinfo():
+    header_data = io.BytesIO(b'\x08'
+                  b'\r\x03\to:\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00\x00\x05\x04\x0e\x01\x80\x19\n\x00')
+    pid = header_data.read(1)
+    assert pid == py7zr.properties.Property.SUBSTREAMS_INFO
+    folders = [py7zr.archiveinfo.Folder()]
+    folders[0].unpacksizes = [728]
+    ss = py7zr.archiveinfo.SubstreamsInfo.retrieve(header_data, 1, folders)
+    pos = header_data.tell()
+    print(pos)
+    assert ss.digestsdefined == [True, True, True]
+    assert ss.digests[0] == 3010113243
+    assert ss.digests[1] == 3703540999
+    assert ss.digests[2] == 2164028094
+    assert ss.num_unpackstreams_folders[0] == 3
+    assert ss.unpacksizes == [111, 58, 559]
+
+
+@pytest.mark.unit
+def test_py7zr_substreamsinfo_write():
+    folders = [py7zr.archiveinfo.Folder()]
+    folders[0].unpacksizes = [728]
+    ss = py7zr.archiveinfo.SubstreamsInfo()
+    buffer = io.BytesIO()
+    ss.digestsdefined = [True, True, True]
+    ss.digests = [3010113243,  3703540999, 2164028094]
+    ss.num_unpackstreams_folders = [3]
+    ss.unpacksizes = [111, 58, 559]
+    ss.write(buffer)
+    actual = buffer.getvalue()
+    assert actual == b'\x00'
+
+
+@pytest.mark.unit
 def test_py7zr_header():
     fp = open(os.path.join(testdata_path, 'solid.7z'), 'rb')
     header_data = io.BytesIO(b'\x01'
