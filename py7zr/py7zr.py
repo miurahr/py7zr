@@ -58,15 +58,14 @@ class ArchiveFile:
             raise RuntimeError
         return self.iteration_count - 1
 
-    def get_properties(self):
-        if self.files_list[self.id] is not None:
+    def file_properties(self):
+        property = self.files_list[self.id]
+        if property is not None:
             property = self.files_list[self.id]
             property['readonly'] = self.readonly
             property['posix_mode'] = self.posix_mode
             property['archivable'] = self.archivable
             property['is_directory'] = self.is_directory
-        else:
-            property = None
         return property
 
     def _get_property(self, key):
@@ -289,18 +288,18 @@ class SevenZipFile:
         if isinstance(file, str):
             self._filePassed = False
             self.filename = file
-            modeDict = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
-                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            modes = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
+                     'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
             try:
-                filemode = modeDict[mode]
+                filemode = modes[mode]
             except KeyError:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
             while True:
                 try:
                     self.fp = io.open(file, filemode)
                 except OSError:
-                    if filemode in modeDict:
-                        filemode = modeDict[filemode]
+                    if filemode in modes:
+                        filemode = modes[filemode]
                         continue
                     raise
                 break
@@ -433,7 +432,7 @@ class SevenZipFile:
             if f.is_directory:
                 if not os.path.exists(outfilename):
                     target_dirs.append(outfilename)
-                    target_files.append((outfilename, f.get_properties()))
+                    target_files.append((outfilename, f.file_properties()))
                 else:
                     pass
             elif f.is_socket:
@@ -445,7 +444,7 @@ class SevenZipFile:
                 self.worker.register_filelike(f.id, buf)
             else:
                 self.worker.register_filelike(f.id, outfilename)
-                target_files.append((outfilename, f.get_properties()))
+                target_files.append((outfilename, f.file_properties()))
         for target_dir in sorted(target_dirs):
             os.mkdir(target_dir)
         self.worker.extract(self.fp)
@@ -466,7 +465,7 @@ class SevenZipFile:
     def testzip(self):
         raise NotImplementedError
 
-    def write(self):
+    def write(self, filename, arcname=None):
         raise NotImplementedError
 
     def close(self):

@@ -17,6 +17,8 @@ Added
 Changed
 -------
 
+* Refactoring CLI with cli package and class.
+
 Fixed
 -----
 

@@ -337,4 +337,3 @@ def test_startheader_calccrc():
     startheader.calccrc(header)
     assert startheader.startheadercrc == 3257288896
     assert startheader.nextheadercrc == 1372678730
-

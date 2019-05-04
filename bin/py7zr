@@ -18,9 +18,8 @@
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import sys
+import py7zr.cli
 
-from py7zr import __main__
 
 if __name__ == '__main__':
-        sys.exit(__main__.main())
-
+        sys.exit(py7zr.cli.main())
