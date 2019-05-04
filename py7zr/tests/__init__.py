@@ -7,12 +7,7 @@ from datetime import datetime
 from py7zr.helpers import UTC
 
 
-def decode_all(archive, expected):
-    tmpdir = tempfile.mkdtemp()
-    for i, file_info in enumerate(archive.files):
-        assert file_info.lastwritetime is not None
-        assert file_info.filename is not None
-    archive.extractall(path=tmpdir)
+def check_output(expected, tmpdir):
     for exp in expected:
         target = os.path.join(tmpdir, exp['filename'])
         if os.name == 'posix':
@@ -25,6 +20,15 @@ def decode_all(archive, expected):
         m = hashlib.sha256()
         m.update(open(target, 'rb').read())
         assert m.digest() == binascii.unhexlify(exp['digest']), "Fails digest for %s" % exp['filename']
+
+
+def decode_all(archive, expected):
+    tmpdir = tempfile.mkdtemp()
+    for i, file_info in enumerate(archive.files):
+        assert file_info.lastwritetime is not None
+        assert file_info.filename is not None
+    archive.extractall(path=tmpdir)
+    check_output(expected, tmpdir)
     shutil.rmtree(tmpdir)
 
 

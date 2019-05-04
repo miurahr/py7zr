@@ -7,8 +7,10 @@ import tempfile
 import time
 
 import py7zr.archiveinfo
+import py7zr.cli
 import py7zr.compression
-from py7zr.tests import decode_all
+
+from py7zr.tests import decode_all, check_output
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -163,4 +165,49 @@ def test_py7zr_is_not_7zfile():
     with open(target, 'wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
     assert not py7zr.is_7zfile(target)
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.cli
+@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c}")])
+def test_cli_ops(capsys, ops, expected):
+    cli = py7zr.cli.Cli()
+    with pytest.raises(SystemExit):
+        cli.run(ops)
+    out, err = capsys.readouterr()
+    assert out.startswith(expected)
+
+
+@pytest.mark.cli
+def test_cli_list(capsys):
+    arcfile = os.path.join(testdata_path, "test_1.7z")
+    expected = """total 4 files and directories in solid archive
+   Date      Time    Attr         Size   Compressed  Name
+------------------- ----- ------------ ------------  ------------------------
+2019-03-14 00:10:08 D....            0            0  scripts
+2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
+2019-03-14 00:07:13 ....A           58          441  setup.cfg
+2019-03-14 00:09:01 ....A          559          441  setup.py
+------------------- ----- ------------ ------------  ------------------------
+"""
+    cli = py7zr.cli.Cli()
+    cli.run(["l", arcfile])
+    out, err = capsys.readouterr()
+    assert out == expected
+
+
+@pytest.mark.cli
+def test_cli_extract():
+    arcfile = os.path.join(testdata_path, "test_1.7z")
+    tmpdir = tempfile.mkdtemp()
+    cli = py7zr.cli.Cli()
+    cli.run(["x", arcfile, tmpdir])
+    expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
+             'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
+            {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
+             'digest': 'b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49'},
+            {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
+            'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
+            ]
+    check_output(expected, tmpdir)
     shutil.rmtree(tmpdir)

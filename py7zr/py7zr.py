@@ -369,11 +369,13 @@ class SevenZipFile:
         """
         return list(map(lambda x: x.filename, self.files))
 
-    def list(self, file=sys.stdout):
+    def list(self, file=None):
         """Print a table of contents to sys.stdout. If `verbose' is False, only
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
+        if file is None:
+            file = sys.stdout
         file.write('total %d files and directories in %sarchive\n' % (self.files.len, (self.solid and 'solid ') or ''))
         file.write('   Date      Time    Attr         Size   Compressed  Name\n')
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
