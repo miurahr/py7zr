@@ -59,14 +59,14 @@ class ArchiveFile:
         return self.iteration_count - 1
 
     def file_properties(self):
-        property = self.files_list[self.id]
-        if property is not None:
-            property = self.files_list[self.id]
-            property['readonly'] = self.readonly
-            property['posix_mode'] = self.posix_mode
-            property['archivable'] = self.archivable
-            property['is_directory'] = self.is_directory
-        return property
+        properties = self.files_list[self.id]
+        if properties is not None:
+            properties = self.files_list[self.id]
+            properties['readonly'] = self.readonly
+            properties['posix_mode'] = self.posix_mode
+            properties['archivable'] = self.archivable
+            properties['is_directory'] = self.is_directory
+        return properties
 
     def _get_property(self, key):
         try:
