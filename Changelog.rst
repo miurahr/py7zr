@@ -26,6 +26,9 @@ Deprecated
 Removed
 -------
 
+* Drop unused code chunks.
+* Drop Digests class and related unit test.
+
 Security
 --------
 
