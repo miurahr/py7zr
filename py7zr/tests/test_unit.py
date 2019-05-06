@@ -273,28 +273,6 @@ def test_read_uint64(testinput, expected):
 
 
 @pytest.mark.unit
-def test_simple_compress_and_properties():
-    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
-    lzc = sevenzip_compressor.compressor
-    out1 = lzc.compress(b"Some data\n")
-    out2 = lzc.compress(b"Another piece of data\n")
-    out3 = lzc.compress(b"Even more data\n")
-    out4 = lzc.flush()
-    result = b"".join([out1, out2, out3, out4])
-    size = len(result)
-    #
-    filters = sevenzip_compressor.filters
-    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-    out5 = decompressor.decompress(result)
-    assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
-    #
-    coders = sevenzip_compressor.coders
-    decompressor = py7zr.compression.SevenZipDecompressor(coders, size)
-    out6 = decompressor.decompress(result)
-    assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
-
-
-@pytest.mark.unit
 def test_write_archive_properties():
     """
     test write function of ArchiveProperties class.

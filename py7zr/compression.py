@@ -24,13 +24,16 @@
 import bz2
 import io
 import lzma
+import os
+import stat
 import zlib
 
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod
+from py7zr.helpers import calculate_crc32
+from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod, FileAttribute
 
 
-class BufferWriter():
+class BufferHandler():
 
     def __init__(self, target):
         self.buf = target
@@ -41,11 +44,20 @@ class BufferWriter():
     def write(self, data):
         self.buf.write(data)
 
+    def read(self, size=None):
+        if size is not None:
+            return self.buf.read(size)
+        else:
+            return self.buf.read()
+
+    def seek(self, offset, whence=1):
+        self.buf.seek(offset, whence)
+
     def close(self):
         pass
 
 
-class FileWriter():
+class FileHandler():
 
     def __init__(self, target):
         self.target = target
@@ -56,6 +68,15 @@ class FileWriter():
     def write(self, data):
         self.fp.write(data)
 
+    def read(self, size=None):
+        if size is not None:
+            return self.fp.read(size)
+        else:
+            return self.fp.read()
+
+    def seek(self, offset, whence=1):
+        self.fp.seek(offset, whence)
+
     def close(self):
         self.fp.close()
 
@@ -64,13 +85,13 @@ class Worker():
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, fp, src_start):
-        self.output_filepath = {}
+        self.target_filepath = {}
         self.files = files
         self.fp = fp
         self.src_start = src_start
 
     def set_output_filepath(self, index, func):
-        self.output_filepath[index] = func
+        self.target_filepath[index] = func
 
     def extract(self, fp):
         fp.seek(self.src_start)
@@ -79,7 +100,7 @@ class Worker():
             if f.emptystream:
                 continue
             # Does target path detected?
-            fileish = self.output_filepath.get(f.id, None)
+            fileish = self.target_filepath.get(f.id, None)
             if fileish is None:
                 fileish = io.BytesIO()
                 for s in f.uncompressed:
@@ -132,11 +153,37 @@ class Worker():
                 break
         return
 
+    def archive(self, fp, folder):
+        fp.seek(self.src_start)
+        for f in self.files:
+            if not f['emptystream']:
+                target = self.target_filepath.get(f.id, None)
+                target.open()
+                length= self.compress(fp, folder, target)
+                target.close()
+                f['compressed'] = length
+            self.files.append(f)
+        fp.flush()
+
+    def compress(self, fp, folder, f):
+        compressor = folder.get_compressor()
+        length = 0
+        for indata in f.read(READ_BLOCKSIZE):
+            arcdata = compressor.compress(indata)
+            folder.crc = calculate_crc32(arcdata, folder.crc)
+            length += len(arcdata)
+            fp.write(arcdata)
+        arcdata = compressor.flush()
+        folder.crc = calculate_crc32(arcdata, folder.crc)
+        length += len(arcdata)
+        fp.write(arcdata)
+        return length
+
     def register_filelike(self, id, fileish):
         if isinstance(fileish, io.BytesIO):
-            self.set_output_filepath(id, BufferWriter(fileish))
+            self.set_output_filepath(id, BufferHandler(fileish))
         else:
-            self.set_output_filepath(id, FileWriter(fileish))
+            self.set_output_filepath(id, FileHandler(fileish))
 
 
 class SevenZipDecompressor:
@@ -238,3 +285,9 @@ class SevenZipCompressor():
             method = self.lzma_methods_map_r[filter['id']]
             properties = lzma._encode_filter_properties(filter)
             self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
+
+    def compress(self, data):
+        return self.compressor.compress(data)
+
+    def flush(self):
+        return self.compressor.flush()

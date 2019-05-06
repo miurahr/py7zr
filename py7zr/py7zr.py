@@ -470,6 +470,25 @@ class SevenZipFile:
     def write(self, filename, arcname=None):
         raise NotImplementedError
 
+    def _make_file_info(self, target):
+        f = {}
+        f['filename'] = target
+        if os.path.isdir(target):
+            f['emptystream'] = True
+            f['attributes'] = FileAttribute.DIRECTORY
+            if os.name == 'posix':
+                f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
+        elif os.path.islink(target):
+            f['emptystream'] = True
+            if os.name == 'posix':
+                f['attributes'] = FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16)
+            else:
+                f['attributes'] = 0x0  # FIXME
+        elif os.path.isfile(target):
+            f['emptystream'] = False
+            f['attributes'] = 0x0
+        return f
+
     def close(self):
         raise NotImplementedError
 

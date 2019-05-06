@@ -28,7 +28,7 @@ import os
 import struct
 from bringbuf.bringbuf import bRingBuf
 
-from py7zr.compression import SevenZipDecompressor
+from py7zr.compression import SevenZipDecompressor, SevenZipCompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
 from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean, read_utf16
@@ -230,6 +230,17 @@ class Folder:
             except Exception as e:
                 raise e
             return self.decompressor
+
+    def get_compressor(self):
+        if self.compressor is not None:
+            return self.compressor
+        else:
+            try:
+                self.compressor = SevenZipCompressor()  # FIXME: set filters
+                self.coders = self.compressor.coders
+            except Exception as e:
+                raise e
+            return self.compressor
 
     def get_unpack_size(self):
         if self.unpacksizes is None:
