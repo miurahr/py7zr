@@ -22,6 +22,8 @@ Changed
 Fixed
 -----
 
+* Archive with zero size file cause exception with file not found error(#4).
+
 Deprecated
 ----------
 
