@@ -17,12 +17,8 @@ Added
 Changed
 -------
 
-* Refactoring CLI with cli package and class.
-
 Fixed
 -----
-
-* Archive with zero size file cause exception with file not found error(#4).
 
 Deprecated
 ----------
@@ -30,11 +26,29 @@ Deprecated
 Removed
 -------
 
+Security
+--------
+
+
+`v0.1.2`_
+=========
+
+Changed
+-------
+
+* Refactoring CLI with cli package and class.
+
+Fixed
+-----
+
+* Archive with zero size file cause exception with file not found error(#4).
+
+Removed
+-------
+
 * Drop unused code chunks.
 * Drop Digests class and related unit test.
 
-Security
---------
 
 `v0.1.1`_
 =========
@@ -189,7 +203,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.2...HEAD
+.. _v0.1.2: https://github.com/miurahr/py7zr/compare/v0.1.1...v0.1.2
 .. _v0.1.1: https://github.com/miurahr/py7zr/compare/v0.1.0...v0.1.1
 .. _v0.1.0: https://github.com/miurahr/py7zr/compare/v0.0.8...v0.1.0
 .. _v0.0.8: https://github.com/miurahr/py7zr/compare/v0.0.7...v0.0.8
