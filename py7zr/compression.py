@@ -98,6 +98,11 @@ class Worker():
         for f in self.files:
             # Skip empty file read
             if f.emptystream:
+                fileish = self.target_filepath.get(f.id, None)
+                if fileish is not None:
+                    fileish.open()
+                    fileish.write(b'')
+                    fileish.close()
                 continue
             # Does target path detected?
             fileish = self.target_filepath.get(f.id, None)
