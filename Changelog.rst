@@ -17,6 +17,8 @@ Added
 Changed
 -------
 
+* When a directory exist for target, do not raise error, and when out of it raise exception
+
 Fixed
 -----
 
