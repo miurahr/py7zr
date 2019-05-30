@@ -203,11 +203,11 @@ def test_cli_extract():
     cli = py7zr.cli.Cli()
     cli.run(["x", arcfile, tmpdir])
     expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
-             'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
-            {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
-             'digest': 'b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49'},
-            {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
-            'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
-            ]
+                 'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
+                {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
+                 'digest': 'b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49'},
+                {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
+                 'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
+                ]
     check_output(expected, tmpdir)
     shutil.rmtree(tmpdir)

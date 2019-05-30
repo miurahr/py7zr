@@ -24,13 +24,11 @@
 import bz2
 import io
 import lzma
-import os
-import stat
 import zlib
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
-from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod, FileAttribute
+from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod
 
 
 class BufferHandler():
@@ -164,7 +162,7 @@ class Worker():
             if not f['emptystream']:
                 target = self.target_filepath.get(f.id, None)
                 target.open()
-                length= self.compress(fp, folder, target)
+                length = self.compress(fp, folder, target)
                 target.close()
                 f['compressed'] = length
             self.files.append(f)

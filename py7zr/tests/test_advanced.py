@@ -133,11 +133,13 @@ def test_lzma2bcj():
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
     shutil.rmtree(tmpdir)
 
+
 @pytest.mark.files
 def test_zerosize():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
+
 
 @pytest.mark.api
 def test_register_unpack_archive():
