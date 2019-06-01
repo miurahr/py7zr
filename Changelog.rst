@@ -20,8 +20,6 @@ Changed
 Fixed
 -----
 
-* Suppress warning: not dequeue from queue length 0
-
 Deprecated
 ----------
 
@@ -30,6 +28,14 @@ Removed
 
 Security
 --------
+
+`v0.1.5`_
+=============
+
+Fixed
+-----
+
+* Suppress warning: not dequeue from queue length 0
 
 `v0.1.4`_
 =============
@@ -222,7 +228,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.5...HEAD
+.. _v0.1.5: https://github.com/miurahr/py7zr/compare/v0.1.4...v0.1.5
 .. _v0.1.4: https://github.com/miurahr/py7zr/compare/v0.1.3...v0.1.4
 .. _v0.1.3: https://github.com/miurahr/py7zr/compare/v0.1.2...v0.1.3
 .. _v0.1.2: https://github.com/miurahr/py7zr/compare/v0.1.1...v0.1.2
