@@ -17,8 +17,6 @@ Added
 Changed
 -------
 
-* When a directory exist for target, do not raise error, and when out of it raise exception
-
 Fixed
 -----
 
@@ -30,6 +28,15 @@ Removed
 
 Security
 --------
+
+`v0.1.4`_
+=============
+
+Changed
+-------
+
+* When a directory exist for target, do not raise error, and when out of it raise exception
+* Refactoring FileArchivesList and FileArchive classes.
 
 `v0.1.3`_
 =========
@@ -213,7 +220,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.4...HEAD
+.. _v0.1.4: https://github.com/miurahr/py7zr/compare/v0.1.3...v0.1.4
 .. _v0.1.3: https://github.com/miurahr/py7zr/compare/v0.1.2...v0.1.3
 .. _v0.1.2: https://github.com/miurahr/py7zr/compare/v0.1.1...v0.1.2
 .. _v0.1.1: https://github.com/miurahr/py7zr/compare/v0.1.0...v0.1.1
