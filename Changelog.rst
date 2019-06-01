@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Suppress warning: not dequeue from queue length 0
+
 Deprecated
 ----------
 

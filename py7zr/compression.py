@@ -151,7 +151,7 @@ class Worker():
                     fileish.write(queue.dequeue(out_remaining))
                     break
             else:
-                if queue.len >= 0:
+                if queue.len > 0:
                     fileish.write(queue.dequeue(out_remaining))
                 break
         return
