@@ -42,10 +42,10 @@ from py7zr.properties import FileAttribute, MAGIC_7Z
 class ArchiveFile:
     def __init__(self, id, file_info):
         self.id = id
-        self.file_info = file_info
+        self._file_info = file_info
 
     def file_properties(self):
-        properties = self.file_info
+        properties = self._file_info
         if properties is not None:
             properties['readonly'] = self.readonly
             properties['posix_mode'] = self.posix_mode
@@ -55,7 +55,7 @@ class ArchiveFile:
 
     def _get_property(self, key):
         try:
-            return self.file_info[key]
+            return self._file_info[key]
         except KeyError:
             return None
 
@@ -154,6 +154,10 @@ class ArchiveFileList:
 
     def append(self, file_info):
         self.files_list.append(file_info)
+
+    @property
+    def len(self):
+        return len(self.files_list)
 
     def __iter__(self):
         self.index = 0
