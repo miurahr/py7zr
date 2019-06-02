@@ -139,6 +139,18 @@ def test_zerosize():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
+def test_multiblock():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock.7z'), 'rb'))
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, 'bin/7zdec.exe'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.api

@@ -35,6 +35,7 @@ class BufferHandler():
 
     def __init__(self, target):
         self.buf = target
+        self.target = "memory buffer"
 
     def open(self):
         pass
@@ -151,6 +152,9 @@ class Worker():
                     fileish.write(queue.dequeue(out_remaining))
                     break
             else:
+                if queue.len < out_remaining:
+                    print('\nAbort: Something become wrong!')
+                    raise
                 if queue.len > 0:
                     fileish.write(queue.dequeue(out_remaining))
                 break
