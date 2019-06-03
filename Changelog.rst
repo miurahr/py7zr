@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Wrong file size when lzma+bcj compression.
+
 Deprecated
 ----------
 
