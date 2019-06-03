@@ -20,8 +20,6 @@ Changed
 Fixed
 -----
 
-* Detect race condition on os.mkdir
-
 Deprecated
 ----------
 
@@ -30,6 +28,14 @@ Removed
 
 Security
 --------
+
+`v0.2.0`_
+=============
+
+Fixed
+-----
+
+* Detect race condition on os.mkdir
 
 `v0.1.6`_
 =============
@@ -238,7 +244,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.1.5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.2.0...HEAD
+.. _v0.1.5: https://github.com/miurahr/py7zr/compare/v0.1.6...v0.2.0
+.. _v0.1.6: https://github.com/miurahr/py7zr/compare/v0.1.5...v0.1.6
 .. _v0.1.5: https://github.com/miurahr/py7zr/compare/v0.1.4...v0.1.5
 .. _v0.1.4: https://github.com/miurahr/py7zr/compare/v0.1.3...v0.1.4
 .. _v0.1.3: https://github.com/miurahr/py7zr/compare/v0.1.2...v0.1.3

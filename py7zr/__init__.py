@@ -21,7 +21,7 @@ from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, Decom
 from py7zr.py7zr import SevenZipFile, is_7zfile, unpack_7zarchive
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
-__version__ = '0.1.6'
+__version__ = '0.2.0'
 __license__ = 'LGPL-2.1+'
 __author__ = 'Hiroshi Miura'
 __author_email__ = 'miurahr@linux.com'
