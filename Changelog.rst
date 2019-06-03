@@ -20,8 +20,6 @@ Changed
 Fixed
 -----
 
-* Wrong file size when lzma+bcj compression.
-
 Deprecated
 ----------
 
@@ -30,6 +28,14 @@ Removed
 
 Security
 --------
+
+`v0.1.6`_
+=============
+
+Fixed
+-----
+
+* Wrong file size when lzma+bcj compression.
 
 `v0.1.5`_
 =============
