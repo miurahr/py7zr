@@ -113,8 +113,7 @@ class Worker():
                 continue
             # retrieve contents
             fileish.open()
-            for s in f.uncompressed:
-                self.decompress(fp, f.folder, fileish, s, f.compressed)
+            self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
             fileish.close()
 
     def decompress(self, fp, folder, fileish, size, compressed_size):
