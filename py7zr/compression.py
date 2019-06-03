@@ -35,6 +35,7 @@ class BufferHandler():
 
     def __init__(self, target):
         self.buf = target
+        self.target = "memory buffer"
 
     def open(self):
         pass
@@ -112,8 +113,7 @@ class Worker():
                 continue
             # retrieve contents
             fileish.open()
-            for s in f.uncompressed:
-                self.decompress(fp, f.folder, fileish, s, f.compressed)
+            self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
             fileish.close()
 
     def decompress(self, fp, folder, fileish, size, compressed_size):
@@ -151,6 +151,9 @@ class Worker():
                     fileish.write(queue.dequeue(out_remaining))
                     break
             else:
+                if queue.len < out_remaining:
+                    print('\nAbort: Something become wrong!')
+                    raise
                 if queue.len > 0:
                     fileish.write(queue.dequeue(out_remaining))
                 break
