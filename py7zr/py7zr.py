@@ -24,6 +24,7 @@
 #
 """Read 7zip format archives."""
 
+import errno
 import functools
 import io
 import operator
@@ -425,7 +426,13 @@ class SevenZipFile:
         target_dirs = []
         self.reset()
         if path is not None and not os.path.exists(path):
-            os.mkdir(path)
+            try:
+                os.makedirs(path)
+            except OSError as e:
+                if e.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    raise
         for f in self.files:
             if path is not None:
                 outfilename = os.path.join(path, f.filename)

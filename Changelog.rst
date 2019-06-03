@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Detect race condition on os.mkdir
+
 Deprecated
 ----------
 
