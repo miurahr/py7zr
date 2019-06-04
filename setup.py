@@ -30,7 +30,7 @@ assert url
 
 setup(name=package_name,
       version=version,
-      description='Pure python 7zr implementation',
+      description='Pure python 7-zip decompression(restricted) library',
       url='http://github.com/miurahr/py7zr',
       license=license,
       long_description=readme(),
