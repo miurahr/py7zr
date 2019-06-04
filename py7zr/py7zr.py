@@ -34,7 +34,7 @@ import sys
 import threading
 
 from py7zr.archiveinfo import Header, SignatureHeader
-from py7zr.compression import Worker
+from py7zr.compression import Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import filetime_to_dt, Local, ArchiveTimestamp, calculate_crc32
 from py7zr.properties import FileAttribute, MAGIC_7Z
@@ -377,6 +377,28 @@ class SevenZipFile:
     def _check_7zfile(cls, fp):
         return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
 
+    def _print_archiveinfo(self, file=None):
+        if file is None:
+            file = sys.stdout
+        file.write("--\n")
+        file.write("Path = {}\n".format(self.filename))
+        file.write("Type = 7z\n")
+        fstat = os.stat(self.filename)
+        file.write("Phisical Size = {}\n".format(fstat.st_size))
+        file.write("Headers Size = {}\n".format(self.header.size))  # fixme.
+        file.write("Method = {}\n".format(self._print_methods()))
+        if self.solid:
+            file.write("Solid = {}\n".format('+'))
+        else:
+            file.write("Solid = {}\n".format('-'))
+        file.write("Blocks = {}\n".format(len(self.header.main_streams.unpackinfo.folders)))
+
+    def _print_methods(self):
+        methods_names = []
+        for folder in self.header.main_streams.unpackinfo.folders:
+            methods_names += get_methods_names(folder.coders)
+        return ', '.join(str(x) for x in methods_names)
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self):
@@ -385,13 +407,17 @@ class SevenZipFile:
         """
         return list(map(lambda x: x.filename, self.files))
 
-    def list(self, file=None):
+    def list(self, file=None, verbose=False):
         """Print a table of contents to sys.stdout. If `verbose' is False, only
            the names of the members are printed. If it is True, an `ls -l'-like
            output is produced.
         """
         if file is None:
             file = sys.stdout
+        if verbose:
+            file.write("Listing archive: {}\n".format(self.filename))
+            self._print_archiveinfo(file=file)
+            file.write('\n')
         file.write('total %d files and directories in %sarchive\n' % (self._num_files(), (self.solid and 'solid ') or ''))
         file.write('   Date      Time    Attr         Size   Compressed  Name\n')
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
@@ -415,7 +441,25 @@ class SevenZipFile:
                                                   f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
-    def extractall(self, path=None, crc=False):
+    def test(self, file=None):
+        if file is None:
+            file = sys.stdout
+        file.write("Testing archive: {}\n".format(self.filename))
+        self._print_archiveinfo(file=file)
+        file.write('\n')
+        self.reset()
+        for f in self.files:
+            self.worker.register_filelike(f.id, None)
+        try:
+            self.worker.extract(self.fp)  # TODO: print progress
+        except Bad7zFile:
+            file.write('Bad 7zip file\n')
+            return(1)
+        else:
+            file.write('Everything is Ok\n')
+        # TODO: print number of folders, files and sizes
+
+    def extractall(self, path=None):
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
@@ -434,6 +478,10 @@ class SevenZipFile:
                 else:
                     raise
         for f in self.files:
+            # TODO: sanity check
+            # check whether f.filename with invalid characters: '../'
+            if f.filename.startswith('../'):
+                raise Bad7zFile
             if path is not None:
                 outfilename = os.path.join(path, f.filename)
             else:
@@ -477,9 +525,6 @@ class SevenZipFile:
             os.symlink(sym_src, sym_dst)
         for o, p in target_files:
             self._set_file_property(o, p)
-
-    def testzip(self):
-        raise NotImplementedError
 
     def write(self, filename, arcname=None):
         raise NotImplementedError

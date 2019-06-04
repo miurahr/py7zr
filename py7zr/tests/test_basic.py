@@ -169,7 +169,7 @@ def test_py7zr_is_not_7zfile():
 
 
 @pytest.mark.cli
-@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c}")])
+@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c,t}")])
 def test_cli_ops(capsys, ops, expected):
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
@@ -194,6 +194,56 @@ def test_cli_list(capsys):
     cli.run(["l", arcfile])
     out, err = capsys.readouterr()
     assert out == expected
+
+
+@pytest.mark.api
+def test_api_list_verbose(capsys):
+    arcfile = os.path.join(testdata_path, "test_1.7z")
+    archive = py7zr.SevenZipFile(open(arcfile, 'rb'))
+    expected = """Listing archive: {}
+--
+Path = {}
+Type = 7z
+Phisical Size = 657
+Headers Size = 0
+Method = LZMA2
+Solid = +
+Blocks = 1
+
+total 4 files and directories in solid archive
+   Date      Time    Attr         Size   Compressed  Name
+------------------- ----- ------------ ------------  ------------------------
+2019-03-14 00:10:08 D....            0            0  scripts
+2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
+2019-03-14 00:07:13 ....A           58          441  setup.cfg
+2019-03-14 00:09:01 ....A          559          441  setup.py
+------------------- ----- ------------ ------------  ------------------------
+""".format(arcfile, arcfile)
+    output = io.StringIO()
+    archive.list(file=output, verbose=True)
+    out = output.getvalue()
+    assert out == expected
+
+
+@pytest.mark.cli
+def test_cli_test(capsys):
+    arcfile = os.path.join(testdata_path, 'test_2.7z')
+    expected = """Testing archive: {}
+--
+Path = {}
+Type = 7z
+Phisical Size = 1663
+Headers Size = 0
+Method = LZMA2
+Solid = +
+Blocks = 1
+
+Everything is Ok
+""".format(arcfile, arcfile)
+    cli = py7zr.cli.Cli()
+    cli.run(["t", arcfile])
+    out, err = capsys.readouterr()
+    assert expected == out
 
 
 @pytest.mark.cli

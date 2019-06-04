@@ -591,7 +591,7 @@ class Header:
     """ the archive header """
 
     __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
-                '_start_pos']
+                'size', '_start_pos']
 
     def __init__(self):
         self.solid = False
@@ -599,6 +599,7 @@ class Header:
         self.additional_streams = None
         self.main_streams = None
         self.files_info = None
+        self.size = 0  # fixme. Not implemented yet
         self._start_pos = 0
 
     @classmethod

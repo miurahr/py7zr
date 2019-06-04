@@ -37,32 +37,45 @@ class Cli():
         create_parser.set_defaults(func=self.run_create)
         create_parser.add_argument("arcfile", help="7z archive file")
         create_parser.add_argument("filenames", nargs="*", help="filenames to archive")
+        test_parser = subparsers.add_parser('t')
+        test_parser.set_defaults(func=self.run_test)
+        test_parser.add_argument("arcfile", help="7z archive file")
         parser.set_defaults(func=self.show_help)
         self.parser = parser
 
     def show_help(self, args):
         self.parser.print_help()
+        return 0
 
     def run(self, arg=None):
         args = self.parser.parse_args(arg)
-        args.func(args)
+        return args.func(args)
 
     def run_list(self, args):
         target = args.arcfile
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
             return(1)
-
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
             a.list()
-        return(0)
+        return 0
+
+    def run_test(self, args):
+        target = args.arcfile
+        if not py7zr.is_7zfile(target):
+            print('not a 7z file')
+            return(1)
+        with open(target, 'rb') as f:
+            a = py7zr.SevenZipFile(f)
+            res = a.test()
+        return res
 
     def run_extract(self, args):
         target = args.arcfile
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
-            return(1)
+            return 1
 
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
@@ -70,7 +83,7 @@ class Cli():
                 a.extractall(path=args.odir)
             else:
                 a.extractall()
-        return(0)
+        return 0
 
     def run_create(self, args):
         sztarget = args.arcfile

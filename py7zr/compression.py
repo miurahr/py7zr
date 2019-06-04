@@ -31,7 +31,30 @@ from py7zr.helpers import calculate_crc32
 from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod
 
 
-class BufferHandler():
+class NullHandler:
+    '''Null handler pass to null the data.'''
+
+    def __init__(self):
+        pass
+
+    def open(self):
+        pass
+
+    def write(self, t):
+        pass
+
+    def read(self, size):
+        return b''
+
+    def seek(self, offset, whence=1):
+        pass
+
+    def close(self):
+        pass
+
+
+class BufferHandler:
+    '''Buffer handler handles BytesIO/StringIO buffers.'''
 
     def __init__(self, target):
         self.buf = target
@@ -56,7 +79,8 @@ class BufferHandler():
         pass
 
 
-class FileHandler():
+class FileHandler:
+    '''File handler treat fileish object'''
 
     def __init__(self, target):
         self.target = target
@@ -80,7 +104,7 @@ class FileHandler():
         self.fp.close()
 
 
-class Worker():
+class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, fp, src_start):
@@ -189,7 +213,9 @@ class Worker():
         return length
 
     def register_filelike(self, id, fileish):
-        if isinstance(fileish, io.BytesIO):
+        if fileish is None:
+            self.set_output_filepath(id, NullHandler())
+        elif isinstance(fileish, io.BytesIO):
             self.set_output_filepath(id, BufferHandler(fileish))
         else:
             self.set_output_filepath(id, FileHandler(fileish))
@@ -308,3 +334,15 @@ class SevenZipCompressor():
 
     def flush(self):
         return self.compressor.flush()
+
+
+def get_methods_names(coders):
+    methods_name_map = {
+        CompressionMethod.LZMA2: "LZMA2",
+        CompressionMethod.LZMA: "LZMA",
+        CompressionMethod.DELTA: "delta",
+    }
+    methods_names = []
+    for coder in coders:
+        methods_names.append(methods_name_map[coder['method']])
+    return methods_names
