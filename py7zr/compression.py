@@ -157,6 +157,9 @@ class Worker():
                 if queue.len > 0:
                     fileish.write(queue.dequeue(out_remaining))
                 break
+        if decompressor.eof:
+            if decompressor.crc is not None and not decompressor.check_crc():
+                print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
         return
 
     def archive(self, fp, folder):
@@ -224,9 +227,12 @@ class SevenZipDecompressor:
     def decompress(self, data, max_length=None):
         self.consumed += len(data)
         if max_length is not None:
-            return self.decompressor.decompress(data, max_length=max_length)
+            folder_data = self.decompressor.decompress(data, max_length=max_length)
+            self.digest = calculate_crc32(folder_data, self.digest)
         else:
-            return self.decompressor.decompress(data)
+            folder_data = self.decompressor.decompress(data)
+            self.digest = calculate_crc32(folder_data, self.digest)
+        return folder_data
 
     @property
     def unused_data(self):
@@ -236,10 +242,15 @@ class SevenZipDecompressor:
     def remaining_size(self):
         return self.input_size - self.consumed
 
-    def __init__(self, coders, size):
+    def check_crc(self):
+        return self.crc == self.digest
+
+    def __init__(self, coders, size, crc):
         self.decompressor = None
         self.input_size = size
         self.consumed = 0
+        self.crc = crc
+        self.digest = None
         filters = []
         try:
             for coder in coders:
