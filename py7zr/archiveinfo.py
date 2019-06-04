@@ -226,7 +226,7 @@ class Folder:
             return self.decompressor
         else:
             try:
-                self.decompressor = SevenZipDecompressor(self.coders, size)
+                self.decompressor = SevenZipDecompressor(self.coders, size, self.crc)
             except Exception as e:
                 raise e
             return self.decompressor
