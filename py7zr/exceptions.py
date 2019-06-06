@@ -36,3 +36,7 @@ class UnsupportedCompressionMethodError(ArchiveError):
 
 class DecompressionError(ArchiveError):
     pass
+
+
+class InternalError(ArchiveError):
+    pass

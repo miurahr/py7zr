@@ -23,13 +23,35 @@
 
 import binascii
 from enum import Enum, IntEnum
+from py7zr.exceptions import InternalError
 
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
-READ_BLOCKSIZE = 32248
-QUEUELEN = READ_BLOCKSIZE * 2
-P7ZIP_MAJOR_VERSION = 0
-P7ZIP_MINOR_VERSION = 4
+
+
+class Configuration:
+    '''Singleton global configuration holder'''
+
+    P7ZIP_MAJOR_VERSION = 0
+    P7ZIP_MINOR_VERSION = 4
+    read_blocksize = 32248
+    queuelen = read_blocksize * 2
+    _instance = None
+
+    @classmethod
+    def get(cls, key):
+        if cls._instance is None:
+            cls._instance = cls()
+        return getattr(cls._instance, key)
+
+    @classmethod
+    def set(cls, size):
+        if cls._instance is None:
+            cls._instance = cls()
+            setattr(cls._instance, 'read_blocksize', size)
+            setattr(cls._instance, 'queuelen', size * 2)
+        else:
+            raise InternalError("Try to set buffer size after instanced.")
 
 
 class ByteEnum(bytes, Enum):

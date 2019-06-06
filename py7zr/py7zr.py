@@ -195,7 +195,7 @@ class SevenZipFile:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
             while True:
                 try:
-                    self.fp = io.open(file, filemode)
+                    self.fp = open(file, filemode)
                 except OSError:
                     if filemode in modes:
                         filemode = modes[filemode]

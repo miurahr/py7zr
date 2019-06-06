@@ -33,7 +33,7 @@ from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, ArchiveTimestamp
 from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean, read_utf16
 from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs, write_utf16
-from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, QUEUELEN, P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION
+from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, Configuration
 
 
 class ArchiveProperties:
@@ -142,7 +142,7 @@ class Folder:
         # compress/decompress objects
         self.decompressor = None
         self.compressor = None
-        self.queue = bRingBuf(QUEUELEN)
+        self.queue = bRingBuf(Configuration.get('queuelen'))
 
     @classmethod
     def retrieve(cls, file):
@@ -709,7 +709,7 @@ class SignatureHeader:
     __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
 
     def __init__(self):
-        self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)
+        self.version = (Configuration.P7ZIP_MAJOR_VERSION, Configuration.P7ZIP_MINOR_VERSION)
         self.startheadercrc = None
         self.nextheaderofs = None
         self.nextheadersize = None

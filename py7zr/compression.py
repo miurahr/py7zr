@@ -28,7 +28,7 @@ import zlib
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
-from py7zr.properties import QUEUELEN, READ_BLOCKSIZE, CompressionMethod
+from py7zr.properties import Configuration, CompressionMethod
 
 
 class NullHandler:
@@ -147,7 +147,7 @@ class Worker:
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         queue = folder.queue
-        queue_maxlength = QUEUELEN
+        queue_maxlength = Configuration.get('queuelen')
         if queue.len > 0:
             if out_remaining > queue.len:
                 out_remaining -= queue.len
@@ -159,7 +159,7 @@ class Worker:
         while out_remaining > 0:
             if not decompressor.eof:
                 if decompressor.needs_input:
-                    read_size = min(READ_BLOCKSIZE, decompressor.remaining_size)
+                    read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
                     inp = fp.read(read_size)
                 else:
                     inp = b''
@@ -201,7 +201,7 @@ class Worker:
     def compress(self, fp, folder, f):
         compressor = folder.get_compressor()
         length = 0
-        for indata in f.read(READ_BLOCKSIZE):
+        for indata in f.read(Configuration.get('read_blocksize')):
             arcdata = compressor.compress(indata)
             folder.crc = calculate_crc32(arcdata, folder.crc)
             length += len(arcdata)
