@@ -37,7 +37,7 @@ from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.compression import Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import filetime_to_dt, Local, ArchiveTimestamp, calculate_crc32
-from py7zr.properties import FileAttribute, MAGIC_7Z
+from py7zr.properties import FileAttribute, MAGIC_7Z, Configuration
 
 
 class ArchiveFile:
@@ -399,6 +399,62 @@ class SevenZipFile:
             methods_names += get_methods_names(folder.coders)
         return ', '.join(str(x) for x in methods_names)
 
+    def _test_digest_raw(self, pos, size, crc):
+        self.fp.seek(pos)
+        remaining_size = size
+        digest = None
+        while remaining_size >0:
+            block = min(Configuration.read_blocksize, remaining_size)
+            digest = calculate_crc32(self.fp.read(block), digest)
+            remaining_size -= block
+        return digest == crc
+
+    def _test_pack_digest(self):
+        self.reset()
+        crcs = self.header.main_streams.packinfo.crcs
+        if crcs is not None and len(crcs) > 0:
+            # check packed stream's crc
+            for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
+                if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
+                    return False
+        return True
+
+    def _test_unpack_digest(self):
+        self.reset()
+        for f in self.files:
+            self.worker.register_filelike(f.id, None)
+        try:
+            self.worker.extract(self.fp)  # TODO: print progress
+        except Bad7zFile:
+            return False
+        else:
+            return True
+
+    def _test_digests(self):
+        if self._test_pack_digest():
+            if self._test_unpack_digest():
+                return True
+        return False
+
+    def _make_file_info(self, target):
+        f = {}
+        f['filename'] = target
+        if os.path.isdir(target):
+            f['emptystream'] = True
+            f['attributes'] = FileAttribute.DIRECTORY
+            if os.name == 'posix':
+                f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
+        elif os.path.islink(target):
+            f['emptystream'] = True
+            if os.name == 'posix':
+                f['attributes'] = FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16)
+            else:
+                f['attributes'] = 0x0  # FIXME
+        elif os.path.isfile(target):
+            f['emptystream'] = False
+            f['attributes'] = 0x0
+        return f
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self):
@@ -447,16 +503,12 @@ class SevenZipFile:
         file.write("Testing archive: {}\n".format(self.filename))
         self._print_archiveinfo(file=file)
         file.write('\n')
-        self.reset()
-        for f in self.files:
-            self.worker.register_filelike(f.id, None)
-        try:
-            self.worker.extract(self.fp)  # TODO: print progress
-        except Bad7zFile:
+        if self._test_digests():
+            file.write('Everything is Ok\n')
+            return(0)
+        else:
             file.write('Bad 7zip file\n')
             return(1)
-        else:
-            file.write('Everything is Ok\n')
         # TODO: print number of folders, files and sizes
 
     def extractall(self, path=None):
@@ -528,25 +580,6 @@ class SevenZipFile:
 
     def write(self, filename, arcname=None):
         raise NotImplementedError
-
-    def _make_file_info(self, target):
-        f = {}
-        f['filename'] = target
-        if os.path.isdir(target):
-            f['emptystream'] = True
-            f['attributes'] = FileAttribute.DIRECTORY
-            if os.name == 'posix':
-                f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
-        elif os.path.islink(target):
-            f['emptystream'] = True
-            if os.name == 'posix':
-                f['attributes'] = FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16)
-            else:
-                f['attributes'] = 0x0  # FIXME
-        elif os.path.isfile(target):
-            f['emptystream'] = False
-            f['attributes'] = 0x0
-        return f
 
     def close(self):
         raise NotImplementedError

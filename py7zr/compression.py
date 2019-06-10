@@ -254,9 +254,10 @@ class SevenZipDecompressor:
         self.consumed += len(data)
         if max_length is not None:
             folder_data = self.decompressor.decompress(data, max_length=max_length)
-            self.digest = calculate_crc32(folder_data, self.digest)
         else:
             folder_data = self.decompressor.decompress(data)
+        # calculate CRC with uncompressed data
+        if self.crc is not None:
             self.digest = calculate_crc32(folder_data, self.digest)
         return folder_data
 

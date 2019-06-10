@@ -261,3 +261,10 @@ def test_cli_extract():
                 ]
     check_output(expected, tmpdir)
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.basic
+def test_digests():
+    arcfile = os.path.join(testdata_path, "test_2.7z")
+    archive = py7zr.SevenZipFile(arcfile)
+    assert archive._test_digests()
