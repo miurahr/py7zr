@@ -505,10 +505,10 @@ class SevenZipFile:
         file.write('\n')
         if self._test_digests():
             file.write('Everything is Ok\n')
-            return(0)
+            return True
         else:
             file.write('Bad 7zip file\n')
-            return(1)
+            return False
         # TODO: print number of folders, files and sizes
 
     def extractall(self, path=None):
@@ -577,6 +577,15 @@ class SevenZipFile:
             os.symlink(sym_src, sym_dst)
         for o, p in target_files:
             self._set_file_property(o, p)
+
+    def writeall(self, path, arcname=None):
+        if os.path.isfile(path):
+            self.write(path, arcname)
+        elif os.path.isdir(path):
+            if arcname:
+                self.write(path, arcname)
+            for nm in sorted(os.listdir(path)):
+                self.writeall(os.path.join(path, nm), os.path.join(arcname, nm))
 
     def write(self, filename, arcname=None):
         raise NotImplementedError

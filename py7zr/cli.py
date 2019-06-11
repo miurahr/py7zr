@@ -45,7 +45,7 @@ class Cli():
 
     def show_help(self, args):
         self.parser.print_help()
-        return 0
+        return(0)
 
     def run(self, arg=None):
         args = self.parser.parse_args(arg)
@@ -59,7 +59,7 @@ class Cli():
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
             a.list()
-        return 0
+        return(0)
 
     def run_test(self, args):
         target = args.arcfile
@@ -69,13 +69,16 @@ class Cli():
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
             res = a.test()
-        return res
+        if res:
+            return(0)
+        else:
+            return(1)
 
     def run_extract(self, args):
         target = args.arcfile
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
-            return 1
+            return(1)
 
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
@@ -83,19 +86,10 @@ class Cli():
                 a.extractall(path=args.odir)
             else:
                 a.extractall()
-        return 0
+        return(0)
 
     def run_create(self, args):
         sztarget = args.arcfile
-
-        def _add_to_sevenzip(szf, path, szpath):
-            if os.path.isfile(path):
-                szf.write(path, szpath)
-            elif os.path.isdir(path):
-                if szpath:
-                    szf.write(path, szpath)
-                for nm in sorted(os.listdir(path)):
-                    _add_to_sevenzip(szf, os.path.join(path, nm), os.path.join(szpath, nm))
         with py7zr.SevenZipFile(sztarget, 'w') as szf:
             for path in args.filenames:
                 zippath = os.path.basename(path)
@@ -103,7 +97,8 @@ class Cli():
                     zippath = os.path.basename(os.path.dirname(path))
                 if zippath in ('', os.curdir, os.pardir):
                     zippath = ''
-                _add_to_sevenzip(szf, path, zippath)
+                szf.writeall(path, zippath)
+        return(0)
 
 
 def main():
