@@ -182,7 +182,6 @@ class SevenZipFile:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.files = []
-        self.files_map = {}
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False
@@ -212,7 +211,10 @@ class SevenZipFile:
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
-            elif mode in ('w', 'x'):
+                self.reset()
+            elif mode in 'w':
+                self.files = ArchiveFileList()
+            elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
                 raise NotImplementedError
@@ -223,7 +225,6 @@ class SevenZipFile:
             self.fp = None
             self._fpclose(fp)
             raise e
-        self.reset()
 
     def _fpclose(self, fp):
         assert self._fileRefCnt > 0
@@ -587,8 +588,13 @@ class SevenZipFile:
             for nm in sorted(os.listdir(path)):
                 self.writeall(os.path.join(path, nm), os.path.join(arcname, nm))
 
-    def write(self, filename, arcname=None):
-        raise NotImplementedError
+    def write(self, file, arcname=None):
+        file_info = {}
+        if os.path.isfile(file):
+            file_info['filename'] = arcname
+            fstat = os.stat(file)
+            file_info['uncompressed'] = fstat.st_size
+        self.files.append(file_info)
 
     def close(self):
         raise NotImplementedError

@@ -95,10 +95,9 @@ def test_basic_not_implemented_yet1():
 
 
 @pytest.mark.api
-def test_basic_not_implemented_yet2():
+def test_write_mode():
     tmpdir = tempfile.mkdtemp()
-    with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_w.7z'), mode='w')
+    py7zr.SevenZipFile(os.path.join(tmpdir, 'test_w.7z'), mode='w')
     shutil.rmtree(tmpdir)
 
 
