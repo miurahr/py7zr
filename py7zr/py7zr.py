@@ -404,7 +404,7 @@ class SevenZipFile:
         self.fp.seek(pos)
         remaining_size = size
         digest = None
-        while remaining_size >0:
+        while remaining_size > 0:
             block = min(Configuration.read_blocksize, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
@@ -594,7 +594,7 @@ class SevenZipFile:
             file_info['filename'] = arcname
             fstat = os.stat(file)
             file_info['uncompressed'] = fstat.st_size
-        #self.files.append(file_info)
+        # self.files.append(file_info)
         raise NotImplementedError
 
     def close(self):
