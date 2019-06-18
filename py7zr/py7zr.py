@@ -377,7 +377,7 @@ class SevenZipFile:
 
     def reset(self):
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.fp, self.afterheader, self.header)
+        self.worker = Worker(self.files, self.afterheader, self.header)
 
     @classmethod
     def _check_7zfile(cls, fp):
