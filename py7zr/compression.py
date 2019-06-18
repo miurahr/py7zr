@@ -121,13 +121,14 @@ class Worker:
         if self.header.files_info.numfiles > 10 and \
                 self.header.main_streams.unpackinfo.numfolders > 1 and \
                 self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
-                num_threads = self.header.main_streams.unpackinfo.numfolders
-                positions = self.header.main_streams.packinfo.packpositions
-                folders = self.header.main_streams.unpackinfo.folders
-                filename = getattr(fp, 'name', None)
-                with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-                    for i in range(num_threads):
-                        executor.submit(self.extract_single, open(filename, 'rb'), folders[i].files, self.src_start + positions[i])
+            num_threads = self.header.main_streams.unpackinfo.numfolders
+            positions = self.header.main_streams.packinfo.packpositions
+            folders = self.header.main_streams.unpackinfo.folders
+            filename = getattr(fp, 'name', None)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+                for i in range(num_threads):
+                    executor.submit(self.extract_single, open(filename, 'rb'),
+                                    folders[i].files, self.src_start + positions[i])
         else:
             self.extract_single(fp, self.files, self.src_start)
 
