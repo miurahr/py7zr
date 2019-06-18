@@ -22,6 +22,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
+import concurrent.futures
 import io
 import lzma
 import zlib
@@ -107,18 +108,33 @@ class FileHandler:
 class Worker:
     """Extract worker class to invoke handler"""
 
-    def __init__(self, files, fp, src_start):
+    def __init__(self, files, src_start, header):
         self.target_filepath = {}
         self.files = files
-        self.fp = fp
         self.src_start = src_start
+        self.header = header
 
     def set_output_filepath(self, index, func):
         self.target_filepath[index] = func
 
     def extract(self, fp):
-        fp.seek(self.src_start)
-        for f in self.files:
+        if self.header.files_info.numfiles > 10 and \
+                self.header.main_streams.unpackinfo.numfolders > 1 and \
+                self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
+            num_threads = self.header.main_streams.unpackinfo.numfolders
+            positions = self.header.main_streams.packinfo.packpositions
+            folders = self.header.main_streams.unpackinfo.folders
+            filename = getattr(fp, 'name', None)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+                for i in range(num_threads):
+                    executor.submit(self.extract_single, open(filename, 'rb'),
+                                    folders[i].files, self.src_start + positions[i])
+        else:
+            self.extract_single(fp, self.files, self.src_start)
+
+    def extract_single(self, fp, files, src_start):
+        fp.seek(src_start)
+        for f in files:
             # Skip empty file read
             if f.emptystream:
                 fileish = self.target_filepath.get(f.id, None)

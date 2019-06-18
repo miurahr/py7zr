@@ -125,7 +125,7 @@ class Folder:
     """
 
     __slots__ = ['unpacksizes', 'solid', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
-                 'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor']
+                 'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor', 'files']
 
     def __init__(self):
         self.unpacksizes = None
@@ -143,6 +143,7 @@ class Folder:
         self.decompressor = None
         self.compressor = None
         self.queue = bRingBuf(Configuration.get('queuelen'))
+        self.files = None
 
     @classmethod
     def retrieve(cls, file):
