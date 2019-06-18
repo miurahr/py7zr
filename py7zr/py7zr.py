@@ -149,9 +149,10 @@ class ArchiveFile:
 
 class ArchiveFileList:
 
-    def __init__(self):
+    def __init__(self, offset=0):
         self.files_list = []
         self.index = 0
+        self.offset = offset
 
     def append(self, file_info):
         self.files_list.append(file_info)
@@ -167,9 +168,9 @@ class ArchiveFileList:
     def __next__(self):
         if self.index == len(self.files_list):
             raise StopIteration
-        id = self.index
+        res = ArchiveFile(self.index + self.offset, self.files_list[self.index])
         self.index += 1
-        return ArchiveFile(id, self.files_list[id])
+        return res
 
 
 # ------------------
@@ -283,7 +284,7 @@ class SevenZipFile:
         instreamindex = 0
         folder_pos = src_pos
 
-        for file_info in self.header.files_info.files:
+        for file_id, file_info in enumerate(self.header.files_info.files):
 
             if not file_info['emptystream'] and folders is not None:
                 folder = folders[folder_index]
@@ -341,6 +342,10 @@ class SevenZipFile:
                 output_binary_index += 1
             else:
                 src_pos += file_info['compressed']
+            if folder is not None:
+                if folder.files is None:
+                    folder.files = ArchiveFileList(offset=file_id)
+                folder.files.append(file_info)
             if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
                 pos = 0
                 for x in range(numinstreams):
@@ -372,7 +377,7 @@ class SevenZipFile:
 
     def reset(self):
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.fp, self.afterheader)
+        self.worker = Worker(self.files, self.fp, self.afterheader, self.header)
 
     @classmethod
     def _check_7zfile(cls, fp):

@@ -107,18 +107,30 @@ class FileHandler:
 class Worker:
     """Extract worker class to invoke handler"""
 
-    def __init__(self, files, fp, src_start):
+    def __init__(self, files, fp, src_start, header):
         self.target_filepath = {}
         self.files = files
         self.fp = fp
         self.src_start = src_start
+        self.header = header
 
     def set_output_filepath(self, index, func):
         self.target_filepath[index] = func
 
     def extract(self, fp):
-        fp.seek(self.src_start)
-        for f in self.files:
+        if self.header.main_streams.unpackinfo.numfolders > 1 and \
+           self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
+                positions = self.header.main_streams.packinfo.packpositions
+                folders = self.header.main_streams.unpackinfo.folders
+                for i, offset in enumerate(positions):
+                    folder = folders[i]
+                    self.extract_single(fp, folder.files, self.src_start + offset)
+        else:
+            self.extract_single(fp, self.files, self.src_start)
+
+    def extract_single(self, fp, files, src_start):
+        fp.seek(src_start)
+        for f in files:
             # Skip empty file read
             if f.emptystream:
                 fileish = self.target_filepath.get(f.id, None)
