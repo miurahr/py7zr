@@ -594,7 +594,8 @@ class SevenZipFile:
             file_info['filename'] = arcname
             fstat = os.stat(file)
             file_info['uncompressed'] = fstat.st_size
-        self.files.append(file_info)
+        #self.files.append(file_info)
+        raise NotImplementedError
 
     def close(self):
         raise NotImplementedError
