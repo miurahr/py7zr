@@ -2,12 +2,13 @@ import binascii
 import io
 import lzma
 import os
-import pytest
+
 import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
-import py7zr.properties
 import py7zr.io
+import py7zr.properties
+import pytest
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 

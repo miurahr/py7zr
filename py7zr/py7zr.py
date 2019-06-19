@@ -36,9 +36,9 @@ import threading
 from py7zr.archiveinfo import Header, SignatureHeader
 from py7zr.compression import Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import filetime_to_dt, Local, ArchiveTimestamp, calculate_crc32
-from py7zr.properties import FileAttribute, MAGIC_7Z, Configuration
-
+from py7zr.helpers import (ArchiveTimestamp, Local, calculate_crc32,
+                           filetime_to_dt)
+from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
 
 class ArchiveFile:
     def __init__(self, id, file_info):

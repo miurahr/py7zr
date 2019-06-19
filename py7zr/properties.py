@@ -23,8 +23,8 @@
 
 import binascii
 from enum import Enum, IntEnum
-from py7zr.exceptions import InternalError
 
+from py7zr.exceptions import InternalError
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 

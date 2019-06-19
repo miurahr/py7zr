@@ -25,9 +25,8 @@ import sys
 from array import array
 from binascii import unhexlify
 from functools import reduce
-from struct import pack, unpack
 from operator import and_
-
+from struct import pack, unpack
 
 MAX_LENGTH = 65536
 NEED_BYTESWAP = sys.byteorder != 'little'
