@@ -117,10 +117,8 @@ class Worker:
     def set_output_filepath(self, index, func):
         self.target_filepath[index] = func
 
-    def extract(self, fp):
-        if self.header.main_streams.unpackinfo.numfolders == 1:
-            self.extract_single(fp, self.files, self.src_start)
-        elif self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
+    def extract(self, fp, multithread=False):
+        if multithread:
             numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
             folders = self.header.main_streams.unpackinfo.folders

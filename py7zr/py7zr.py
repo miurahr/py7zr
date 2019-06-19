@@ -536,11 +536,22 @@ class SevenZipFile:
                     pass
                 else:
                     raise
+
+        multi_thread = self.header.main_streams.unpackinfo.numfolders > 1 and \
+            self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
+        fnames = []
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
             if f.filename.startswith('../'):
                 raise Bad7zFile
+            # When archive has a multiple files which have same name.
+            # To guarantee order of archive, multi-thread decompression becomes off.
+            # Currently always overwrite by latter archives.
+            # TODO: provide option to select overwrite or skip.
+            if f.filename in fnames:
+                multi_thread = False
+            fnames.append(f.filename)
             if path is not None:
                 outfilename = os.path.join(path, f.filename)
             else:
@@ -570,7 +581,7 @@ class SevenZipFile:
                 raise("Directory name is existed as a normal file.")
             else:
                 raise
-        self.worker.extract(self.fp)
+        self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
             sym_src = b.read().decode(encoding='utf-8')
