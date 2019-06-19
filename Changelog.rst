@@ -14,6 +14,27 @@ Current changes
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.3`_
+=======
+
+Added
+-----
+
 * Add some code related to support write feature(wip).
 * Static check for import order in python sources and MANIFEST.in
 
@@ -28,17 +49,9 @@ Fixed
 
 * Package now has test code and data.
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.2.0`_
-=============
+=========
 
 Fixed
 -----
@@ -46,7 +59,7 @@ Fixed
 * Detect race condition on os.mkdir
 
 `v0.1.6`_
-=============
+=========
 
 Fixed
 -----
@@ -54,7 +67,7 @@ Fixed
 * Wrong file size when lzma+bcj compression.
 
 `v0.1.5`_
-=============
+=========
 
 Fixed
 -----
@@ -62,7 +75,7 @@ Fixed
 * Suppress warning: not dequeue from queue length 0
 
 `v0.1.4`_
-=============
+=========
 
 Changed
 -------
@@ -252,8 +265,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.2.0...HEAD
-.. _v0.1.5: https://github.com/miurahr/py7zr/compare/v0.1.6...v0.2.0
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3...HEAD
+.. _v0.3: https://github.com/miurahr/py7zr/compare/v0.2.0...v0.3
+.. _v0.2.0: https://github.com/miurahr/py7zr/compare/v0.1.6...v0.2.0
 .. _v0.1.6: https://github.com/miurahr/py7zr/compare/v0.1.5...v0.1.6
 .. _v0.1.5: https://github.com/miurahr/py7zr/compare/v0.1.4...v0.1.5
 .. _v0.1.4: https://github.com/miurahr/py7zr/compare/v0.1.3...v0.1.4
