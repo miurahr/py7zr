@@ -8,7 +8,7 @@ import stat
 import tempfile
 
 import binascii
-from py7zr.tests import decode_all, check_archive
+from . import decode_all, check_archive
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
 

@@ -10,7 +10,7 @@ import py7zr.archiveinfo
 import py7zr.cli
 import py7zr.compression
 
-from py7zr.tests import decode_all, check_output
+from . import decode_all, check_output
 
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
