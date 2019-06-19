@@ -1,7 +1,6 @@
-include Changelog.rst
-include README.rst
+include *.rst
+include *.txt
+include *.yml
 include LICENSE
-exclude appveyor.yml
-exclude .travis.yml
-recursive-exclude py7zr/tests *.py
-recursive-include py7zr/tests/data *.7z
+recursive-include tests *.py
+recursive-include tests/data *.7z

@@ -15,6 +15,7 @@ Added
 -----
 
 * Add some code related to support write feature(wip).
+* Static check for import order in python sources and MANIFEST.in
 
 Changed
 -------
@@ -24,6 +25,8 @@ Changed
 
 Fixed
 -----
+
+* Package now has test code and data.
 
 Deprecated
 ----------
