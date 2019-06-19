@@ -23,17 +23,20 @@
 #
 import functools
 import io
-from operator import or_
 import os
 import struct
-from bringbuf.bringbuf import bRingBuf
+from operator import or_
 
-from py7zr.compression import SevenZipDecompressor, SevenZipCompressor
+from bringbuf.bringbuf import bRingBuf
+from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
-from py7zr.helpers import calculate_crc32, ArchiveTimestamp
-from py7zr.io import read_byte, read_bytes, read_crcs, read_real_uint64, read_uint32, read_uint64, read_boolean, read_utf16
-from py7zr.io import write_byte, write_bytes, write_uint32, write_uint64, write_boolean, write_crcs, write_utf16
-from py7zr.properties import Property, CompressionMethod, MAGIC_7Z, Configuration
+from py7zr.helpers import ArchiveTimestamp, calculate_crc32
+from py7zr.io import (read_boolean, read_byte, read_bytes, read_crcs,
+                      read_real_uint64, read_uint32, read_uint64, read_utf16,
+                      write_boolean, write_byte, write_bytes, write_crcs,
+                      write_uint32, write_uint64, write_utf16)
+from py7zr.properties import (MAGIC_7Z, CompressionMethod, Configuration,
+                              Property)
 
 
 class ArchiveProperties:

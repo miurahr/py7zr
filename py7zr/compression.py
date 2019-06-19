@@ -29,7 +29,7 @@ import zlib
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
-from py7zr.properties import Configuration, CompressionMethod
+from py7zr.properties import CompressionMethod, Configuration
 
 
 class NullHandler:

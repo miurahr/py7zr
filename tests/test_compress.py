@@ -1,8 +1,7 @@
 import lzma
 
-import pytest
-
 import py7zr.compression
+import pytest
 from py7zr.helpers import calculate_crc32
 
 

@@ -1,16 +1,16 @@
-import py7zr
+import binascii
 import hashlib
 import io
 import os
-import pytest
 import shutil
 import stat
 import tempfile
 
-import binascii
-from . import decode_all, check_archive
+import py7zr
+import pytest
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
+from . import check_archive, decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)

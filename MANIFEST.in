@@ -1,7 +1,15 @@
-include Changelog.rst
-include README.rst
+include *.rst
+include *.txt
+include *.yml
 include LICENSE
-exclude appveyor.yml
-exclude .travis.yml
-recursive-exclude py7zr/tests *.py
-recursive-include py7zr/tests/data *.7z
+recursive-include tests *.py
+recursive-include tests/data *.7z
+include .coveragerc
+include tox.ini
+recursive-include docs *.bat
+recursive-include docs *.dia
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs *.yml
+recursive-include docs Makefile
+recursive-include reference *.txt

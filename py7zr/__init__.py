@@ -17,7 +17,8 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-from py7zr.exceptions import UnsupportedCompressionMethodError, Bad7zFile, DecompressionError
+from py7zr.exceptions import (Bad7zFile, DecompressionError,
+                              UnsupportedCompressionMethodError)
 from py7zr.py7zr import SevenZipFile, is_7zfile, unpack_7zarchive
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
