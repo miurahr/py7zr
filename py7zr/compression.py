@@ -118,17 +118,23 @@ class Worker:
         self.target_filepath[index] = func
 
     def extract(self, fp):
-        if self.header.files_info.numfiles > 10 and \
-                self.header.main_streams.unpackinfo.numfolders > 1 and \
-                self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
-            num_threads = self.header.main_streams.unpackinfo.numfolders
+        if self.header.main_streams.unpackinfo.numfolders == 1:
+            self.extract_single(fp, self.files, self.src_start)
+        elif self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders:
+            numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
             folders = self.header.main_streams.unpackinfo.folders
             filename = getattr(fp, 'name', None)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-                for i in range(num_threads):
-                    executor.submit(self.extract_single, open(filename, 'rb'),
-                                    folders[i].files, self.src_start + positions[i])
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                threads = []
+                for i in range(numfolders):
+                    threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
+                                                  folders[i].files, self.src_start + positions[i]))
+                for future in concurrent.futures.as_completed(threads):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        raise e
         else:
             self.extract_single(fp, self.files, self.src_start)
 
@@ -315,6 +321,8 @@ class SevenZipDecompressor:
                     self.decompressor = bz2.BZ2Decompressor()
                 elif filter == self.FILTER_ZIP:
                     self.decompressor = zlib.decompressobj(-15)
+                else:
+                    raise e
                 self.can_partial_decompress = False
             else:
                 raise e

@@ -32,10 +32,10 @@ def test_solid():
 
 
 @pytest.mark.files
+@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
 def test_copy():
     """ test loading of copy compressed files.(help wanted)"""
-    with pytest.raises(UnsupportedCompressionMethodError):
-        check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
+    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
 
 
 @pytest.mark.files
