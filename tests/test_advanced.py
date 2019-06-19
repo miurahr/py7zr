@@ -8,10 +8,9 @@ import tempfile
 
 import py7zr
 import pytest
-
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
-from . import decode_all, check_archive
+from . import check_archive, decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)

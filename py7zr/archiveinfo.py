@@ -28,7 +28,6 @@ import struct
 from operator import or_
 
 from bringbuf.bringbuf import bRingBuf
-
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32

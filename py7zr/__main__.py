@@ -19,8 +19,7 @@
 
 import sys
 
-import py7zr # noqa
-
+import py7zr  # noqa
 
 if __name__ == "__main__":
     sys.exit(py7zr.cli.main())

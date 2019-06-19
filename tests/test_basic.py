@@ -10,7 +10,7 @@ import py7zr.cli
 import py7zr.compression
 import pytest
 
-from . import decode_all, check_output
+from . import check_output, decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.environ['TZ'] = 'UTC'
