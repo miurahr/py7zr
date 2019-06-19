@@ -14,8 +14,13 @@ Current changes
 Added
 -----
 
+* Add some code related to support write feature(wip).
+
 Changed
 -------
+
+* Concurrent decompression with threading when an archive is in multi folder compression.
+* Pytest configurations are set in tox.ini
 
 Fixed
 -----
