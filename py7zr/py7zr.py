@@ -40,6 +40,7 @@ from py7zr.helpers import (ArchiveTimestamp, Local, calculate_crc32,
                            filetime_to_dt)
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
 
+
 class ArchiveFile:
     def __init__(self, id, file_info):
         self.id = id
