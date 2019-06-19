@@ -129,7 +129,7 @@ class Worker:
                 threads = []
                 for i in range(numfolders):
                     threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
-                                                  folders[i].files, self.src_start + positions[i]))
+                                                   folders[i].files, self.src_start + positions[i]))
                 for future in concurrent.futures.as_completed(threads):
                     try:
                         future.result()
