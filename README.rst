@@ -17,7 +17,7 @@ py7zr
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
-Pure python 7zr implementation
+Pure python 7-zip implementation
 
 
 Dependency
