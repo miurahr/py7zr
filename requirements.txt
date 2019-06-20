@@ -1,0 +1,11 @@
+bringbuf
+texttable
+pytest
+coverage
+coveralls
+flake8
+pytest-cov
+tox
+twine
+wheel
+
