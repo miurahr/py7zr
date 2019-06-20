@@ -20,6 +20,8 @@ Changed
 Fixed
 -----
 
+* Always overwrite when archive has multiple file with same name.
+
 Deprecated
 ----------
 
