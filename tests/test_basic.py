@@ -1,4 +1,5 @@
 import io
+import lzma
 import os
 import shutil
 import tempfile
@@ -167,7 +168,7 @@ def test_py7zr_is_not_7zfile():
 
 
 @pytest.mark.cli
-@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c,t}")])
+@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c,t,i}")])
 def test_cli_ops(capsys, ops, expected):
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
@@ -240,6 +241,42 @@ Everything is Ok
 """.format(arcfile, arcfile)
     cli = py7zr.cli.Cli()
     cli.run(["t", arcfile])
+    out, err = capsys.readouterr()
+    assert expected == out
+
+
+@pytest.mark.cli
+def test_cli_info(capsys):
+    if lzma.is_check_supported(lzma.CHECK_CRC64):
+        check0 = "\nCHECK_CRC64"
+    else:
+        check0 = ""
+    if lzma.is_check_supported(lzma.CHECK_SHA256):
+        check1 = "\nCHECK_SHA256"
+    else:
+        check1 = ""
+    expected_checks = """Checks:
+CHECK_NONE
+CHECK_CRC32{}{}""".format(check0, check1)
+    expected = """py7zr version {} {}
+Formats:
+7z    37 7a bc af 27 1c
+
+Codecs:
+030101      LZMA
+21         LZMA2
+03         DELTA
+03030103     BCJ
+03030205     PPC
+03030401    IA64
+03030501     ARM
+03030701    ARMT
+03030805   SPARC
+
+{}
+""".format(py7zr.__version__, py7zr.__copyright__, expected_checks)
+    cli = py7zr.cli.Cli()
+    cli.run(["i"])
     out, err = capsys.readouterr()
     assert expected == out
 

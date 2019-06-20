@@ -14,6 +14,8 @@ Current changes
 Added
 -----
 
+* CLI i subcommand: show codec information.
+
 Changed
 -------
 

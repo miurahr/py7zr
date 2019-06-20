@@ -17,16 +17,20 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 import argparse
+import lzma
 import os
 
 import py7zr
+import texttable
+from py7zr.properties import SupportedMethods
 
 
 class Cli():
     def __init__(self):
         parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
                                          formatter_class=argparse.RawTextHelpFormatter, add_help=True)
-        subparsers = parser.add_subparsers(title='subcommands', help='subcommand for py7zr')
+        subparsers = parser.add_subparsers(title='subcommands', help='subcommand for py7zr l .. list, x .. extract,'
+                                                                     ' t .. check integrity, i .. information')
         list_parser = subparsers.add_parser('l')
         list_parser.set_defaults(func=self.run_list)
         list_parser.add_argument("arcfile", help="7z archive file")
@@ -41,6 +45,8 @@ class Cli():
         test_parser = subparsers.add_parser('t')
         test_parser.set_defaults(func=self.run_test)
         test_parser.add_argument("arcfile", help="7z archive file")
+        info_parser = subparsers.add_parser("i")
+        info_parser.set_defaults(func=self.run_info)
         parser.set_defaults(func=self.show_help)
         self.parser = parser
 
@@ -51,6 +57,34 @@ class Cli():
     def run(self, arg=None):
         args = self.parser.parse_args(arg)
         return args.func(args)
+
+    def run_info(self, args):
+        print("py7zr version {} {}".format(py7zr.__version__, py7zr.__copyright__))
+        print("Formats:")
+        table = texttable.Texttable()
+        table.set_deco(texttable.Texttable.HEADER)
+        table.set_cols_dtype(['t', 't'])
+        table.set_cols_align(["l", "r"])
+        for f in SupportedMethods.formats:
+            m = ''.join(' {:02x}'.format(x) for x in f['magic'])
+            table.add_row([f['name'], m])
+        print(table.draw())
+        print("\nCodecs:")
+        table = texttable.Texttable()
+        table.set_deco(texttable.Texttable.HEADER)
+        table.set_cols_dtype(['t', 't'])
+        table.set_cols_align(["l", "r"])
+        for c in SupportedMethods.codecs:
+            m = ''.join('{:02x}'.format(x) for x in c['id'])
+            table.add_row([m, c['name']])
+        print(table.draw())
+        print("\nChecks:")
+        print("CHECK_NONE")
+        print("CHECK_CRC32")
+        if lzma.is_check_supported(lzma.CHECK_CRC64):
+            print("CHECK_CRC64")
+        if lzma.is_check_supported(lzma.CHECK_SHA256):
+            print("CHECK_SHA256")
 
     def run_list(self, args):
         target = args.arcfile

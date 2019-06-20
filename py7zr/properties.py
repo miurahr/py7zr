@@ -137,3 +137,17 @@ class FileAttribute(IntEnum):
     OFFLINE = 0x1000
     ENCRYPTED = 0x4000
     UNIX_EXTENSION = 0x8000
+
+
+class SupportedMethods:
+    formats = [{'name': "7z", 'magic': MAGIC_7Z}]
+    codecs = [{'id': CompressionMethod.LZMA, 'name': "LZMA"},
+              {'id': CompressionMethod.LZMA2, 'name': "LZMA2"},
+              {'id': CompressionMethod.DELTA, 'name': "DELTA"},
+              {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ"},
+              {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC'},
+              {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64'},
+              {'id': CompressionMethod.BCJ_ARM, 'name': "ARM"},
+              {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT"},
+              {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC'}
+              ]
