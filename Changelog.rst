@@ -15,9 +15,13 @@ Added
 -----
 
 * CLI i subcommand: show codec information.
+* Performance test for integer_to_bytes()
 
 Changed
 -------
+
+* Merge io.py into archiveinfo.py
+* Introduce integer_to_bytes() helper function.
 
 Fixed
 -----

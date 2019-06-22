@@ -6,7 +6,6 @@ import os
 import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
-import py7zr.io
 import py7zr.properties
 import pytest
 
@@ -39,9 +38,9 @@ def test_py7zr_folder_retrive():
                              b'\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00')
     pid = header_data.read(1)
     assert pid == py7zr.properties.Property.FOLDER
-    num_folders = py7zr.io.read_byte(header_data)
+    num_folders = py7zr.archiveinfo.read_byte(header_data)
     assert num_folders == 1
-    external = py7zr.io.read_byte(header_data)
+    external = py7zr.archiveinfo.read_byte(header_data)
     assert external == 0x00
     folder = py7zr.archiveinfo.Folder.retrieve(header_data)
     assert folder.packed_indices == [0]
@@ -73,10 +72,10 @@ def test_py7zr_folder_write():
     #
     buffer = io.BytesIO()
     # following should be run in StreamsInfo class.
-    py7zr.io.write_byte(buffer, py7zr.properties.Property.FOLDER)
-    py7zr.io.write_uint64(buffer, len(folders))
+    py7zr.archiveinfo.write_byte(buffer, py7zr.properties.Property.FOLDER)
+    py7zr.archiveinfo.write_uint64(buffer, len(folders))
     external = b'\x00'
-    py7zr.io.write_byte(buffer, external)
+    py7zr.archiveinfo.write_byte(buffer, external)
     for folder in folders:
         folder.write(buffer)
     actual = buffer.getvalue()
@@ -242,7 +241,7 @@ def test_read_archive_properties():
                           ([True, False, True, True, False, True, False, False, True], True, b'\x00\xb4\x80')])
 def test_write_booleans(booleans, all_defined, expected):
     buffer = io.BytesIO()
-    py7zr.io.write_boolean(buffer, booleans, all_defined=all_defined)
+    py7zr.archiveinfo.write_boolean(buffer, booleans, all_defined=all_defined)
     actual = buffer.getvalue()
     assert actual == expected
 
@@ -256,7 +255,7 @@ def test_write_booleans(booleans, all_defined, expected):
                           (0xcf1234567890abcd, b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf')])
 def test_write_uint64(testinput, expected):
     buf = io.BytesIO()
-    py7zr.io.write_uint64(buf, testinput)
+    py7zr.archiveinfo.write_uint64(buf, testinput)
     actual = buf.getvalue()
     assert actual == expected
 
@@ -270,7 +269,7 @@ def test_write_uint64(testinput, expected):
                           (b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf', 0xcf1234567890abcd)])
 def test_read_uint64(testinput, expected):
     buf = io.BytesIO(testinput)
-    assert py7zr.io.read_uint64(buf) == expected
+    assert py7zr.archiveinfo.read_uint64(buf) == expected
 
 
 @pytest.mark.unit
@@ -316,3 +315,9 @@ def test_startheader_calccrc():
     startheader.calccrc(header)
     assert startheader.startheadercrc == 3257288896
     assert startheader.nextheadercrc == 1372678730
+
+
+def test_integer_to_bytes(benchmark):
+    val = 0xcf1234567890abcd
+    res = benchmark(py7zr.archiveinfo.integer_to_bytes, val)
+    assert res ==  b'\xcd\xab\x90\x78\x56\x34\x12\xcf'

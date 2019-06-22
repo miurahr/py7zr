@@ -1,11 +1,11 @@
 bringbuf
 texttable
 pytest
+pytest-benchmark
+pytest-cov
 coverage
 coveralls
 flake8
-pytest-cov
 tox
 twine
 wheel
-

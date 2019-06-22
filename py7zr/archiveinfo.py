@@ -21,22 +21,208 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+import binascii
 import functools
 import io
 import os
 import struct
-from operator import or_
+import sys
+from array import array
+from binascii import unhexlify
+from functools import reduce
+from operator import and_, or_
+from struct import pack, unpack
 
 from bringbuf.bringbuf import bRingBuf
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.io import (read_boolean, read_byte, read_bytes, read_crcs,
-                      read_real_uint64, read_uint32, read_uint64, read_utf16,
-                      write_boolean, write_byte, write_bytes, write_crcs,
-                      write_uint32, write_uint64, write_utf16)
 from py7zr.properties import (MAGIC_7Z, CompressionMethod, Configuration,
                               Property)
+
+MAX_LENGTH = 65536
+NEED_BYTESWAP = sys.byteorder != 'little'
+
+if array('L').itemsize == 4:
+    ARRAY_TYPE_UINT32 = 'L'
+    pass
+else:
+    assert array('I').itemsize == 4
+    ARRAY_TYPE_UINT32 = 'I'
+
+
+def read_crcs(file, count):
+    crcs = array(ARRAY_TYPE_UINT32, file.read(4 * count))
+    if NEED_BYTESWAP:
+        crcs.byteswap()
+    return crcs
+
+
+def write_crcs(file, crcs):
+    for crc in crcs:
+        write_uint32(file, crc)
+
+
+def read_bytes(file, length):
+    return unpack(b'B' * length, file.read(length))
+
+
+def read_byte(file):
+    return ord(file.read(1))
+
+
+def write_bytes(file, data):
+    assert len(data) > 0
+    if isinstance(data, bytes):
+        file.write(data)
+    elif isinstance(data, bytearray):
+        file.write(pack(b'B' * len(data), data))
+    else:
+        raise
+
+
+def write_byte(file, data):
+    assert len(data) == 1
+    if isinstance(data, bytes):
+        file.write(data)
+    elif isinstance(data, bytearray):
+        file.write(pack('B', data))
+    else:
+        raise
+
+
+def read_real_uint64(file):
+    res = file.read(8)
+    a, b = unpack('<LL', res)
+    return b << 32 | a, res
+
+
+def read_uint32(file):
+    res = file.read(4)
+    a = unpack('<L', res)[0]
+    return a, res
+
+
+def write_uint32(file, value):
+    b = pack('<L', value)
+    file.write(b)
+
+
+def read_uint64(file):
+    b = ord(file.read(1))
+    mask = 0x80
+    if b == 255:
+        return read_real_uint64(file)[0]
+    for i in range(8):
+        if b & mask == 0:
+            bytes = array('B', file.read(i))
+            bytes.reverse()
+            value = (bytes and reduce(lambda x, y: x << 8 | y, bytes)) or 0
+            highpart = b & (mask - 1)
+            return value + (highpart << (i * 8))
+        mask >>= 1
+
+
+def write_real_uint64(file, value):
+    file.write(pack('<Q', value))
+
+
+if hasattr(int, "to_bytes"):
+    def integer_to_bytes(integer, length=None):
+        return integer.to_bytes(
+            length or (integer.bit_length() + 7) // 8 or 1, 'little'
+        )
+else:
+    def integer_to_bytes(integer, length=None):
+        hex_string = '%x' % integer
+        if length is None:
+            n = len(hex_string)
+        else:
+            n = length * 2
+        return binascii.unhexlify(hex_string.zfill(n + (n & 1)))
+
+
+def write_uint64(file, value):
+    """
+    UINT64 means real UINT64 encoded with the following scheme:
+
+      Size of encoding sequence depends from first byte:
+      First_Byte  Extra_Bytes        Value
+      (binary)
+      0xxxxxxx               : ( xxxxxxx           )
+      10xxxxxx    BYTE y[1]  : (  xxxxxx << (8 * 1)) + y
+      110xxxxx    BYTE y[2]  : (   xxxxx << (8 * 2)) + y
+      ...
+      1111110x    BYTE y[6]  : (       x << (8 * 6)) + y
+      11111110    BYTE y[7]  :                         y
+      11111111    BYTE y[8]  :                         y
+    """
+    mask = 0x80
+    length = (value.bit_length() + 7) // 8 or 1
+    ba = bytearray(integer_to_bytes(value, length=length))
+    for _ in range(length - 1):
+        mask |= mask >> 1
+    if ba[0] >= 2 ** (8 - length):
+        file.write(pack('B', mask))
+    elif length > 1:
+        ba[0] |= mask
+    else:
+        pass
+    file.write(ba)
+
+
+def read_boolean(file, count, checkall=False):
+    if checkall:
+        all_defined = file.read(1)
+        if all_defined != unhexlify('00'):
+            return [True] * count
+    result = []
+    b = 0
+    mask = 0
+    for i in range(count):
+        if mask == 0:
+            b = ord(file.read(1))
+            mask = 0x80
+        result.append(b & mask != 0)
+        mask >>= 1
+    return result
+
+
+def write_boolean(file, booleans, all_defined=False):
+    if all_defined and reduce(and_, booleans):
+        file.write(b'\x01')
+        return
+    elif all_defined:
+        file.write(b'\x00')
+    mask = 0x80
+    o = 0x00
+    for b in booleans:
+        if mask == 0:
+            file.write(pack('B', o))
+            mask = 0x80
+            o = 0x80 if b else 0x00
+        else:
+            o |= mask if b else 0x00
+            mask >>= 1
+    if mask != 0x00:
+        file.write(pack('B', o))
+
+
+def read_utf16(file):
+    """read a utf-16 string from file"""
+    val = ''
+    for _ in range(MAX_LENGTH):
+        ch = file.read(2)
+        if ch == unhexlify('0000'):
+            break
+        val += ch.decode('utf-16')
+    return val
+
+
+def write_utf16(file, val):
+    """write a utf-16 string to file"""
+    file.write(val.encode('utf-16'))
+    file.write(unhexlify(('0000')))
 
 
 class ArchiveProperties:
