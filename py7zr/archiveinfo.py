@@ -60,8 +60,6 @@ def read_crcs(file, count):
 
 def write_crcs(file, crcs):
     for crc in crcs:
-        if NEED_BYTESWAP:
-            crc.byteswap()
         write_uint32(file, crc)
 
 
@@ -95,8 +93,6 @@ def write_byte(file, data):
 
 def read_real_uint64(file):
     res = file.read(8)
-    if NEED_BYTESWAP:
-        res.byteswap()
     a = unpack('<Q', res)[0]
     return a, res
 
@@ -143,7 +139,19 @@ else:
             n = len(hex_string)
         else:
             n = length * 2
-        return binascii.unhexlify(hex_string.zfill(n + (n & 1)))
+        return binascii.unhexlify(hex_string.zfill(n + (n & 1)))[::-1]
+
+
+if hasattr(int, "bit_length"):
+    def bytelen(value):
+        return (value.bit_length() + 7) // 8 or 1
+else:
+    def bytelen(value):
+        length = 0
+        while(value):
+            value >> 8
+            length += 1
+        return length
 
 
 def write_uint64(file, value):
@@ -162,7 +170,7 @@ def write_uint64(file, value):
       11111111    BYTE y[8]  :                         y
     """
     mask = 0x80
-    length = (value.bit_length() + 7) // 8 or 1
+    length = bytelen(value)
     ba = bytearray(integer_to_bytes(value, length=length))
     for _ in range(length - 1):
         mask |= mask >> 1
