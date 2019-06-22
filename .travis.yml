@@ -7,10 +7,11 @@ matrix:
       env: TOXENV=py36
     - python: 3.7
       env: TOXENV=py37
-    - env: TOXENV=check
+    - python: 3.7
+      env: TOXENV=check
 
 install:
-  - pip install tox-travis coveralls bringbuf flake8
+  - pip install tox-travis coveralls
 
 script: tox
 
