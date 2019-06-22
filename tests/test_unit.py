@@ -320,4 +320,4 @@ def test_startheader_calccrc():
 def test_integer_to_bytes(benchmark):
     val = 0xcf1234567890abcd
     res = benchmark(py7zr.archiveinfo.integer_to_bytes, val)
-    assert res ==  b'\xcd\xab\x90\x78\x56\x34\x12\xcf'
+    assert res == b'\xcd\xab\x90\x78\x56\x34\x12\xcf'

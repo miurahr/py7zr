@@ -60,6 +60,8 @@ def read_crcs(file, count):
 
 def write_crcs(file, crcs):
     for crc in crcs:
+        if NEED_BYTESWAP:
+            crc.byteswap()
         write_uint32(file, crc)
 
 
@@ -93,8 +95,10 @@ def write_byte(file, data):
 
 def read_real_uint64(file):
     res = file.read(8)
-    a, b = unpack('<LL', res)
-    return b << 32 | a, res
+    if NEED_BYTESWAP:
+        res.byteswap()
+    a = unpack('<Q', res)[0]
+    return a, res
 
 
 def read_uint32(file):
