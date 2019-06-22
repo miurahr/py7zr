@@ -127,33 +127,6 @@ def write_real_uint64(file, value):
     file.write(pack('<Q', value))
 
 
-if hasattr(int, "to_bytes"):
-    def integer_to_bytes(integer, length=None):
-        return integer.to_bytes(
-            length or (integer.bit_length() + 7) // 8 or 1, 'little'
-        )
-else:
-    def integer_to_bytes(integer, length=None):
-        hex_string = '%x' % integer
-        if length is None:
-            n = len(hex_string)
-        else:
-            n = length * 2
-        return binascii.unhexlify(hex_string.zfill(n + (n & 1)))[::-1]
-
-
-if hasattr(int, "bit_length"):
-    def bytelen(value):
-        return (value.bit_length() + 7) // 8 or 1
-else:
-    def bytelen(value):
-        length = 0
-        while(value):
-            value >> 8
-            length += 1
-        return length
-
-
 def write_uint64(file, value):
     """
     UINT64 means real UINT64 encoded with the following scheme:
@@ -170,8 +143,8 @@ def write_uint64(file, value):
       11111111    BYTE y[8]  :                         y
     """
     mask = 0x80
-    length = bytelen(value)
-    ba = bytearray(integer_to_bytes(value, length=length))
+    length = (value.bit_length() + 7) // 8 or 1
+    ba = bytearray( value.to_bytes(length, 'little'))
     for _ in range(length - 1):
         mask |= mask >> 1
     if ba[0] >= 2 ** (8 - length):
