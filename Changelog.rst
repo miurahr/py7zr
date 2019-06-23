@@ -16,6 +16,7 @@ Added
 
 * CLI i subcommand: show codec information.
 * Decompression performance test as regression test.
+* Add more unit test for helper functions.
 
 Changed
 -------
