@@ -315,9 +315,3 @@ def test_startheader_calccrc():
     startheader.calccrc(header)
     assert startheader.startheadercrc == 3257288896
     assert startheader.nextheadercrc == 1372678730
-
-
-def test_integer_to_bytes(benchmark):
-    val = 0xcf1234567890abcd
-    res = benchmark(py7zr.archiveinfo.integer_to_bytes, val)
-    assert res == b'\xcd\xab\x90\x78\x56\x34\x12\xcf'
