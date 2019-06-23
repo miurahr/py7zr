@@ -1,4 +1,5 @@
 import binascii
+import datetime
 import io
 import lzma
 import os
@@ -319,10 +320,11 @@ def test_startheader_calccrc():
 
 @pytest.mark.unit
 def test_utc():
-    utc = py7zr.helpers.UTC()
-    assert utc.tzname == 'UTC'
+    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0, tzinfo=py7zr.helpers.UTC)
+    assert dt.tzname() == 'UTC'
 
 
 @pytest.mark.unit
 def test_localtime_tzname():
-    assert py7zr.helpers.Local.tzname() is not None
+    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0)
+    assert py7zr.helpers.Local.tzname(dt) is not None

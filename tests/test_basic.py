@@ -168,11 +168,20 @@ def test_py7zr_is_not_7zfile():
 
 
 @pytest.mark.cli
-@pytest.mark.parametrize("ops, expected", [(["-h"], "usage: py7zr [-h] {l,x,c,t,i}")])
-def test_cli_ops(capsys, ops, expected):
+def test_cli_help(capsys):
+    expected = "usage: py7zr [-h] {l,x,c,t,i}"
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
-        cli.run(ops)
+        cli.run(["-h"])
+    out, err = capsys.readouterr()
+    assert out.startswith(expected)
+
+
+@pytest.mark.cli
+def test_cli_no_subcommand(capsys):
+    expected = "usage: py7zr [-h] {l,x,c,t,i}"
+    cli = py7zr.cli.Cli()
+    cli.run([])
     out, err = capsys.readouterr()
     assert out.startswith(expected)
 
