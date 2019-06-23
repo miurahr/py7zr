@@ -1,4 +1,3 @@
-bringbuf
 texttable
 pytest
 pytest-benchmark[histogram]

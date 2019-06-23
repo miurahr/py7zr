@@ -35,7 +35,6 @@ class Configuration:
     P7ZIP_MAJOR_VERSION = 0
     P7ZIP_MINOR_VERSION = 4
     read_blocksize = 32248
-    queuelen = read_blocksize * 2
     _instance = None
 
     @classmethod
@@ -49,7 +48,6 @@ class Configuration:
         if cls._instance is None:
             cls._instance = cls()
             setattr(cls._instance, 'read_blocksize', size)
-            setattr(cls._instance, 'queuelen', size)
         else:
             raise InternalError("Try to set buffer size after instanced.")
 
