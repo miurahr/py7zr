@@ -14,6 +14,27 @@ Current changes
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.3.1`_
+=======
+
+Added
+-----
+
 * CLI i subcommand: show codec information.
 * Decompression performance test as regression test.
 * Add more unit test for helper functions.
@@ -24,21 +45,13 @@ Changed
 * List subcommand now do not show compressed file size in solid compression.
   This is as same behavior as p7zip command.
 * Merge io.py into archiveinfo.py
-* Internal queue size now is same as read block size.
+* Drop internal intermediate queue, which is not used.
 
 Fixed
 -----
 
 * Always overwrite when archive has multiple file with same name.
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.3`_
 =======
@@ -276,7 +289,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.1...HEAD
+.. _v0.3.1: https://github.com/miurahr/py7zr/compare/v0.3...v0.3.1
 .. _v0.3: https://github.com/miurahr/py7zr/compare/v0.2.0...v0.3
 .. _v0.2.0: https://github.com/miurahr/py7zr/compare/v0.1.6...v0.2.0
 .. _v0.1.6: https://github.com/miurahr/py7zr/compare/v0.1.5...v0.1.6
