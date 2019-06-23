@@ -7,6 +7,7 @@ recursive-include tests *.sh
 recursive-include tests/data *.7z
 include .coveragerc
 include tox.ini
+include docs/requirements.txt
 recursive-include docs *.bat
 recursive-include docs *.dia
 recursive-include docs *.py
