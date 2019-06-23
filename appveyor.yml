@@ -4,10 +4,12 @@ environment:
     secure: dZWaKkr6xvP+aDksWLreF0p0L7LLiybUY2bUgGAqc3m/uVWHszncQcsXe5X1+rrf
   matrix:
     - PYTHON: "C:\\Python36-x64"
+      TOXENV: py36
     - PYTHON: "C:\\Python37-x64"
+      TOXENV: py37
 
 install:
-  - "%PYTHON%\\python.exe -m pip install wheel tox coveralls"
+  - "%PYTHON%\\python.exe -m pip install wheel tox"
 
 build: off
 
