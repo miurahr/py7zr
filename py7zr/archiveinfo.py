@@ -33,7 +33,6 @@ from functools import reduce
 from operator import and_, or_
 from struct import pack, unpack
 
-from bringbuf.bringbuf import bRingBuf
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
@@ -316,7 +315,6 @@ class Folder:
         # compress/decompress objects
         self.decompressor = None
         self.compressor = None
-        self.queue = bRingBuf(Configuration.get('queuelen'))
         self.files = None
 
     @classmethod

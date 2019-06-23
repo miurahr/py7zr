@@ -156,40 +156,21 @@ class Worker:
         assert folder is not None
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
-        queue = folder.queue
-        queue_maxlength = Configuration.get('queuelen')
-        if queue.len > 0:
-            if out_remaining > queue.len:
-                out_remaining -= queue.len
-                fileish.write(queue.dequeue(queue.len))
-            else:
-                fileish.write(queue.dequeue(out_remaining))
-                return
-
         while out_remaining > 0:
             if not decompressor.eof:
+                max_length = min(out_remaining, Configuration.get('read_blocksize'))
                 if decompressor.needs_input:
                     read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
                     inp = fp.read(read_size)
+                    tmp = decompressor.decompress(inp, max_length)
                 else:
-                    inp = b''
-                max_length = min(out_remaining, queue_maxlength - queue.len)
-                tmp = decompressor.decompress(inp, max_length)
+                    tmp = decompressor.decompress(b'', max_length)
                 if out_remaining >= len(tmp):
                     out_remaining -= len(tmp)
                     fileish.write(tmp)
                     if out_remaining <= 0:
                         break
-                else:
-                    queue.enqueue(tmp)
-                    fileish.write(queue.dequeue(out_remaining))
-                    break
             else:
-                if queue.len < out_remaining:
-                    print('\nAbort: Something become wrong!')
-                    raise
-                if queue.len > 0:
-                    fileish.write(queue.dequeue(out_remaining))
                 break
         if decompressor.eof:
             if decompressor.crc is not None and not decompressor.check_crc():
