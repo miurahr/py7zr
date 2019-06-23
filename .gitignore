@@ -7,6 +7,7 @@ tmp
 *.egg-info
 .idea
 __pycache__
+.benchmarks
 .coverage
 *.egg-info
 .tox
