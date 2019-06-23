@@ -315,3 +315,14 @@ def test_startheader_calccrc():
     startheader.calccrc(header)
     assert startheader.startheadercrc == 3257288896
     assert startheader.nextheadercrc == 1372678730
+
+
+@pytest.mark.unit
+def test_utc():
+    utc = py7zr.helpers.UTC()
+    assert utc.tzname == 'UTC'
+
+
+@pytest.mark.unit
+def test_localtime_tzname():
+    assert py7zr.helpers.Local.tzname() is not None
