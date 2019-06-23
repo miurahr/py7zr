@@ -5,7 +5,11 @@ import shutil
 import tempfile
 from datetime import datetime
 
+import py7zr
 from py7zr.helpers import UTC
+
+testdata_path = os.path.join(os.path.dirname(__file__), 'data')
+os.umask(0o022)
 
 
 def check_output(expected, tmpdir):
@@ -50,4 +54,11 @@ def check_archive(archive):
     archive.extractall(path=tmpdir)
     assert open(os.path.join(tmpdir, 'test/test2.txt'), 'rb').read() == bytes('This file is located in a folder.', 'ascii')
     assert open(os.path.join(tmpdir, 'test1.txt'), 'rb').read() == bytes('This file is located in the root.', 'ascii')
+    shutil.rmtree(tmpdir)
+
+
+def extract_files(f):
+    tmpdir = tempfile.mkdtemp()
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, '%s' % f), 'rb'))
+    archive.extractall(tmpdir)
     shutil.rmtree(tmpdir)

@@ -281,7 +281,7 @@ class SevenZipFile:
         folder_index = 0
         output_binary_index = 0
         streamidx = 0
-        pos = 0
+        file_in_solid = 0
         instreamindex = 0
         folder_pos = src_pos
 
@@ -296,10 +296,11 @@ class SevenZipFile:
                 uncompressed = unpacksizes[output_binary_index]
                 if not isinstance(uncompressed, (list, tuple)):
                     uncompressed = [uncompressed] * len(folder.coders)
-                if pos > 0:
+                if file_in_solid > 0:
                     # file is part of solid archive
-                    assert instreamindex < len(packsizes), 'Folder outside index for solid archive'
-                    file_info['compressed'] = packsizes[instreamindex]
+                    # assert instreamindex < len(packsizes), 'Folder outside index for solid archive'
+                    # file_info['compressed'] = packsizes[instreamindex]
+                    file_info['compressed'] = None
                 elif instreamindex < len(packsizes):
                     # file is compressed
                     file_info['compressed'] = packsizes[instreamindex]
@@ -321,7 +322,6 @@ class SevenZipFile:
                 numinstreams = 1
 
             file_info['folder'] = folder
-            file_info['offset'] = pos
             if folder is not None and subinfo.digestsdefined[output_binary_index]:
                 file_info['digest'] = subinfo.digests[output_binary_index]
 
@@ -339,7 +339,8 @@ class SevenZipFile:
 
             if folder is not None:
                 if folder.solid:
-                    pos += unpacksizes[output_binary_index]
+                    # file_in_solid += unpacksizes[output_binary_index]
+                    file_in_solid = 1
                 output_binary_index += 1
             else:
                 src_pos += file_info['compressed']
@@ -348,7 +349,7 @@ class SevenZipFile:
                     folder.files = ArchiveFileList(offset=file_id)
                 folder.files.append(file_info)
             if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
-                pos = 0
+                file_in_solid = 0
                 for x in range(numinstreams):
                     folder_pos += packinfo.packsizes[instreamindex + x]
                 src_pos = folder_pos
@@ -499,7 +500,12 @@ class SevenZipFile:
                 attrib += 'A'
             else:
                 attrib += '.'
-            extra = (f.compressed and '%12d ' % (f.compressed)) or '           0 '
+            if f.is_directory:
+                extra = '           0 '
+            elif f.compressed is None:
+                extra = '             '
+            else:
+                extra = '%12d ' % (f.compressed)
             file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
                                                   f.uncompressed_size, extra, f.filename))
         file.write('------------------- ----- ------------ ------------  ------------------------\n')

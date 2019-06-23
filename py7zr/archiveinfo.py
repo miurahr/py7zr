@@ -21,7 +21,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-import binascii
+
 import functools
 import io
 import os
@@ -144,7 +144,7 @@ def write_uint64(file, value):
     """
     mask = 0x80
     length = (value.bit_length() + 7) // 8 or 1
-    ba = bytearray( value.to_bytes(length, 'little'))
+    ba = bytearray(value.to_bytes(length, 'little'))
     for _ in range(length - 1):
         mask |= mask >> 1
     if ba[0] >= 2 ** (8 - length):

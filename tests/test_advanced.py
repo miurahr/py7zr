@@ -10,7 +10,7 @@ import py7zr
 import pytest
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
-from . import check_archive, decode_all
+from . import check_archive, decode_all, extract_files
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
@@ -183,3 +183,9 @@ def test_register_unpack_archive():
     m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
+def test_performance_decompress(benchmark):
+    f = 'test_3.7z'
+    benchmark(extract_files, f)

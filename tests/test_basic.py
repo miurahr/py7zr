@@ -37,8 +37,8 @@ def test_basic_list_1():
 ------------------- ----- ------------ ------------  ------------------------
 2019-03-14 00:10:08 D....            0            0  scripts
 2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58          441  setup.cfg
-2019-03-14 00:09:01 ....A          559          441  setup.py
+2019-03-14 00:07:13 ....A           58               setup.cfg
+2019-03-14 00:09:01 ....A          559               setup.py
 ------------------- ----- ------------ ------------  ------------------------
 """
     assert expected == contents
@@ -64,23 +64,23 @@ def test_basic_list_2():
 2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/mkspecs
 2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/mkspecs/modules
 2018-10-16 10:26:21 ....A           26         8472  5.9.7/gcc_64/include/QtX11Extras/QX11Info
-2018-10-16 10:26:24 ....A          176         8472  5.9.7/gcc_64/include/QtX11Extras/QtX11Extras
-2018-10-16 10:26:24 ....A          201         8472  5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasDepends
-2018-10-16 10:26:24 ....A           32         8472  5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasVersion
-2018-10-16 10:26:27 ....A          722         8472  5.9.7/gcc_64/lib/libQt5X11Extras.la
-2018-10-16 10:26:21 ....A         2280         8472  5.9.7/gcc_64/include/QtX11Extras/qtx11extrasglobal.h
-2018-10-16 10:26:24 ....A          222         8472  5.9.7/gcc_64/include/QtX11Extras/qtx11extrasversion.h
-2018-10-16 10:26:21 ....A         2890         8472  5.9.7/gcc_64/include/QtX11Extras/qx11info_x11.h
-2018-10-18 14:52:42 ....A           24         8472  5.9.7/gcc_64/lib/libQt5X11Extras.so
-2018-10-18 14:52:42 ....A           24         8472  5.9.7/gcc_64/lib/libQt5X11Extras.so.5
-2018-10-16 10:26:27 ....A        14568         8472  5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9.7
-2018-10-18 14:52:42 ....A           24         8472  5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9
-2018-10-16 10:26:24 ....A         6704         8472  5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfig.cmake
-2018-10-16 10:26:24 ....A          287         8472  5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfigVersion.cmake
-2018-10-16 10:26:27 ....A          283         8472  5.9.7/gcc_64/lib/pkgconfig/Qt5X11Extras.pc
-2018-10-16 10:26:24 ....A          555         8472  5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras.pri
-2018-10-16 10:26:24 ....A          526         8472  5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras_private.pri
-2018-10-18 10:28:16 ....A         1064         8472  5.9.7/gcc_64/lib/libQt5X11Extras.prl
+2018-10-16 10:26:24 ....A          176               5.9.7/gcc_64/include/QtX11Extras/QtX11Extras
+2018-10-16 10:26:24 ....A          201               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasDepends
+2018-10-16 10:26:24 ....A           32               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasVersion
+2018-10-16 10:26:27 ....A          722               5.9.7/gcc_64/lib/libQt5X11Extras.la
+2018-10-16 10:26:21 ....A         2280               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasglobal.h
+2018-10-16 10:26:24 ....A          222               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasversion.h
+2018-10-16 10:26:21 ....A         2890               5.9.7/gcc_64/include/QtX11Extras/qx11info_x11.h
+2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so
+2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5
+2018-10-16 10:26:27 ....A        14568               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9.7
+2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9
+2018-10-16 10:26:24 ....A         6704               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfig.cmake
+2018-10-16 10:26:24 ....A          287               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfigVersion.cmake
+2018-10-16 10:26:27 ....A          283               5.9.7/gcc_64/lib/pkgconfig/Qt5X11Extras.pc
+2018-10-16 10:26:24 ....A          555               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras.pri
+2018-10-16 10:26:24 ....A          526               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras_private.pri
+2018-10-18 10:28:16 ....A         1064               5.9.7/gcc_64/lib/libQt5X11Extras.prl
 ------------------- ----- ------------ ------------  ------------------------
 """
     assert expected == contents
@@ -185,8 +185,8 @@ def test_cli_list(capsys):
 ------------------- ----- ------------ ------------  ------------------------
 2019-03-14 00:10:08 D....            0            0  scripts
 2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58          441  setup.cfg
-2019-03-14 00:09:01 ....A          559          441  setup.py
+2019-03-14 00:07:13 ....A           58               setup.cfg
+2019-03-14 00:09:01 ....A          559               setup.py
 ------------------- ----- ------------ ------------  ------------------------
 """
     cli = py7zr.cli.Cli()
@@ -214,8 +214,8 @@ total 4 files and directories in solid archive
 ------------------- ----- ------------ ------------  ------------------------
 2019-03-14 00:10:08 D....            0            0  scripts
 2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58          441  setup.cfg
-2019-03-14 00:09:01 ....A          559          441  setup.py
+2019-03-14 00:07:13 ....A           58               setup.cfg
+2019-03-14 00:09:01 ....A          559               setup.py
 ------------------- ----- ------------ ------------  ------------------------
 """.format(arcfile, arcfile)
     output = io.StringIO()

@@ -15,13 +15,14 @@ Added
 -----
 
 * CLI i subcommand: show codec information.
-* Performance test for integer_to_bytes()
+* Decompression performance test as regression test.
 
 Changed
 -------
 
+* List subcommand now do not show compressed file size in solid compression.
+  This is as same behavior as p7zip command.
 * Merge io.py into archiveinfo.py
-* Introduce integer_to_bytes() helper function.
 
 Fixed
 -----
