@@ -315,11 +315,31 @@ def test_digests():
 
 
 @pytest.mark.cli
-def test_non7z(capsys):
+def test_non7z_ext(capsys):
     expected = "not a 7z file\n"
     arcfile = os.path.join(testdata_path, "test_1.txt")
     tmpdir = tempfile.mkdtemp()
     cli = py7zr.cli.Cli()
     cli.run(["x", arcfile, tmpdir])
+    out, err = capsys.readouterr()
+    assert expected == out
+
+
+@pytest.mark.cli
+def test_non7z_test(capsys):
+    expected = "not a 7z file\n"
+    arcfile = os.path.join(testdata_path, "test_1.txt")
+    cli = py7zr.cli.Cli()
+    cli.run(["t", arcfile])
+    out, err = capsys.readouterr()
+    assert expected == out
+
+
+@pytest.mark.cli
+def test_non7z_list(capsys):
+    expected = "not a 7z file\n"
+    arcfile = os.path.join(testdata_path, "test_1.txt")
+    cli = py7zr.cli.Cli()
+    cli.run(["l", arcfile])
     out, err = capsys.readouterr()
     assert expected == out
