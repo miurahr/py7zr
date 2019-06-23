@@ -11,11 +11,12 @@ matrix:
       env: TOXENV=check
 
 install:
-  - pip install tox-travis coveralls
+  - pip install tox-travis coveralls pytest pytest-benchmark
 
 script: tox
 
 after_success:
+  - tests/bench_compare.sh
   - python setup.py sdist bdist_wheel
   - coveralls
 
