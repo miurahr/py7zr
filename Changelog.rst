@@ -24,6 +24,7 @@ Changed
 * List subcommand now do not show compressed file size in solid compression.
   This is as same behavior as p7zip command.
 * Merge io.py into archiveinfo.py
+* Internal queue size now is same as read block size.
 
 Fixed
 -----

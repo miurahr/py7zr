@@ -183,3 +183,12 @@ def test_register_unpack_archive():
     m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
+def test_skip():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    for i, cf in enumerate(archive.files):
+        assert cf is not None
+        archive.worker.register_filelike(cf.id, None)
+    archive.worker.extract(archive.fp)

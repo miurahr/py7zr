@@ -147,23 +147,13 @@ class Worker:
                     fileish.write(b'')
                     fileish.close()
                 continue
-            # Does target path detected?
-            fileish = self.target_filepath.get(f.id, None)
-            if fileish is None:
-                fileish = io.BytesIO()
-                for s in f.uncompressed:
-                    self.decompress(fp, f.folder, fileish, s, f.compressed)
-                fileish.close()
-                continue
-            # retrieve contents
+            fileish = self.target_filepath.get(f.id, NullHandler)
             fileish.open()
             self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
             fileish.close()
 
     def decompress(self, fp, folder, fileish, size, compressed_size):
-        if folder is None:
-            fileish.write(b'')
-            return
+        assert folder is not None
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         queue = folder.queue

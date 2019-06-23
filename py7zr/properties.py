@@ -49,7 +49,7 @@ class Configuration:
         if cls._instance is None:
             cls._instance = cls()
             setattr(cls._instance, 'read_blocksize', size)
-            setattr(cls._instance, 'queuelen', size * 2)
+            setattr(cls._instance, 'queuelen', size)
         else:
             raise InternalError("Try to set buffer size after instanced.")
 
