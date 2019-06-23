@@ -4,6 +4,7 @@ include *.yml
 include LICENSE
 recursive-include tests *.py
 recursive-include tests *.sh
+recursive-include tests *.txt
 recursive-include tests/data *.7z
 include .coveragerc
 include tox.ini

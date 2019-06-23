@@ -312,3 +312,14 @@ def test_digests():
     arcfile = os.path.join(testdata_path, "test_2.7z")
     archive = py7zr.SevenZipFile(arcfile)
     assert archive._test_digests()
+
+
+@pytest.mark.cli
+def test_non7z(capsys):
+    expected = "not a 7z file\n"
+    arcfile = os.path.join(testdata_path, "test_1.txt")
+    tmpdir = tempfile.mkdtemp()
+    cli = py7zr.cli.Cli()
+    cli.run(["x", arcfile, tmpdir])
+    out, err = capsys.readouterr()
+    assert expected == out
