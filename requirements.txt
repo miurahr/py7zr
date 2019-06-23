@@ -1,7 +1,7 @@
 bringbuf
 texttable
 pytest
-pytest-benchmark
+pytest-benchmark[histogram]
 pytest-cov
 coverage
 coveralls
