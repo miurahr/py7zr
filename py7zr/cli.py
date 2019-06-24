@@ -133,9 +133,5 @@ class Cli():
                 if zippath in ('', os.curdir, os.pardir):
                     zippath = ''
                 szf.writeall(path, zippath)
+            szf.close()
         return(0)
-
-
-def main():
-    cli = Cli()
-    return cli.run()

@@ -20,4 +20,4 @@
 if __name__ == "__main__":
     import sys
     import py7zr.cli
-    sys.exit(py7zr.cli.main())
+    sys.exit(py7zr.cli.Cli().run())
