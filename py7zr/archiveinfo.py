@@ -481,16 +481,16 @@ class UnpackInfo:
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
         write_uint64(file, self.numfolders)
-        external = False
-        if not external:
-            write_byte(file, b'\x00')
-            for i in range(self.numfolders):
-                for f in self.folders:
-                    f.write(file)
-        else:
-            write_byte(file, b'\x01')
-            assert self.datastreamidx is not None
-            write_uint64(file, self.datastreamidx)
+        write_byte(file, b'\x00')
+        for i in range(self.numfolders):
+            for f in self.folders:
+                f.write(file)
+        # If support external entity, we may write
+        # self.datastreamidx here.
+        # folder data will be written in another place.
+        #   write_byte(file, b'\x01')
+        #   assert self.datastreamidx is not None
+        #   write_uint64(file, self.datastreamidx)
         write_byte(file, Property.CODERS_UNPACK_SIZE)
         for folder in self.folders:
             for i in range(folder.totalout):
@@ -669,14 +669,15 @@ class FilesInfo:
                 self.antifiles = read_boolean(buffer, numemptystreams)
             elif typ == Property.NAME:
                 external = buffer.read(1)
-                if external != b'\x00':
+                if external == b'\x00':
+                    self._read_name(buffer)
+                else:
                     self.dataindex = read_uint64(buffer)
+                    # try to read external data
                     current_pos = fp.tell()
                     fp.seek(self.dataindex, 0)
                     self._read_name(buffer)
                     fp.seek(current_pos, 0)
-                else:
-                    self._read_name(buffer)
             elif typ == Property.CREATION_TIME:
                 self._readTimes(buffer, self.files, 'creationtime')
             elif typ == Property.LAST_ACCESS_TIME:
@@ -686,14 +687,15 @@ class FilesInfo:
             elif typ == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, self.numfiles, checkall=1)
                 external = buffer.read(1)
-                if external != b'\x00':
+                if external == b'\x00':
+                    self._read_attributes(buffer, defined)
+                else:
                     self.dataindex = read_uint64(buffer)
+                    # try to read external data
                     current_pos = fp.tell()
                     fp.seek(self.dataindex, 0)
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
-                else:
-                    self._read_attributes(buffer, defined)
             else:
                 raise Bad7zFile('invalid type %r' % (typ))
 
@@ -914,7 +916,8 @@ class SignatureHeader:
         assert self.nextheadercrc is not None
         file.seek(0, 0)
         write_bytes(file, MAGIC_7Z)
-        write_bytes(file, self.version)
+        write_byte(file, self.version[0].to_bytes(1, 'little'))
+        write_byte(file, self.version[1].to_bytes(1, 'little'))
         write_uint32(file, self.startheadercrc)
         write_uint64(file, self.nextheaderofs)
         write_uint64(file, self.nextheadersize)

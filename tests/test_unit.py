@@ -365,3 +365,30 @@ def test_fileinfo_st_fmt():
     file_info['attributes'] = 0
     file = py7zr.py7zr.ArchiveFile(0, file_info)
     assert file.st_fmt is None
+
+
+@pytest.mark.unit
+def test_wrong_mode():
+    with pytest.raises(ValueError):
+        py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'), 'z')
+
+
+@pytest.mark.unit
+def test_write_signature_header():
+
+    class header_mock:
+        def __init__(self, data):
+            self.data = data
+
+        def write(self, buf):
+            buf.write(self.data)
+
+    sh = py7zr.archiveinfo.SignatureHeader()
+    sh.nextheaderofs = 1024
+    header = header_mock(b'\x01\x01\x01\x01')
+    sh.calccrc(header)
+    file = io.BytesIO()
+    sh.write(file)
+    val = file.getvalue()
+    assert val.startswith(py7zr.properties.MAGIC_7Z)
+    assert val == py7zr.properties.MAGIC_7Z + b"\x00\x04" + b"iU\xe7\xe7\xc0\x04\x04\x99\xd3&\xf6"
