@@ -3,6 +3,7 @@ import datetime
 import io
 import lzma
 import os
+import struct
 
 import py7zr.archiveinfo
 import py7zr.compression
@@ -328,3 +329,39 @@ def test_utc():
 def test_localtime_tzname():
     dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0)
     assert py7zr.helpers.Local.tzname(dt) is not None
+
+
+@pytest.mark.unit
+def test_read_crcs():
+    """Unit test for read_crcs()"""
+    buf = io.BytesIO()
+    data0 = 1024
+    data1 = 32
+    data2 = 1372678730
+    buf.write(struct.pack('<L', data0))
+    buf.write(struct.pack('<L', data1))
+    buf.write(struct.pack('<L', data2))
+    buf.seek(0)
+    crcs = py7zr.archiveinfo.read_crcs(buf, 3)
+    assert crcs[0] == data0
+    assert crcs[1] == data1
+    assert crcs[2] == data2
+
+
+@pytest.mark.unit
+def test_file_list_length():
+    file_list = py7zr.py7zr.ArchiveFileList()
+    file = py7zr.py7zr.ArchiveFile(0, None)
+    file_list.append(file)
+    assert file_list.len == 1
+
+
+@pytest.mark.unit
+def test_fileinfo_st_fmt():
+    file_info = {}
+    file_info['attributes'] = py7zr.properties.FileAttribute.UNIX_EXTENSION
+    file = py7zr.py7zr.ArchiveFile(0, file_info)
+    assert file.st_fmt == 0
+    file_info['attributes'] = 0
+    file = py7zr.py7zr.ArchiveFile(0, file_info)
+    assert file.st_fmt is None

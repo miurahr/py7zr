@@ -40,21 +40,11 @@ from py7zr.properties import (MAGIC_7Z, CompressionMethod, Configuration,
                               Property)
 
 MAX_LENGTH = 65536
-NEED_BYTESWAP = sys.byteorder != 'little'
-
-if array('L').itemsize == 4:
-    ARRAY_TYPE_UINT32 = 'L'
-    pass
-else:
-    assert array('I').itemsize == 4
-    ARRAY_TYPE_UINT32 = 'I'
 
 
 def read_crcs(file, count):
-    crcs = array(ARRAY_TYPE_UINT32, file.read(4 * count))
-    if NEED_BYTESWAP:
-        crcs.byteswap()
-    return crcs
+    data = file.read(4 * count)
+    return [ unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(count) ]
 
 
 def write_crcs(file, crcs):
@@ -71,38 +61,36 @@ def read_byte(file):
 
 
 def write_bytes(file, data):
-    assert len(data) > 0
     if isinstance(data, bytes):
-        file.write(data)
+        return file.write(data)
     elif isinstance(data, bytearray):
-        file.write(pack(b'B' * len(data), data))
+        assert len(data) > 0
+        return file.write(pack(b'B' * len(data), data))
     else:
         raise
 
 
 def write_byte(file, data):
     assert len(data) == 1
-    if isinstance(data, bytes):
-        file.write(data)
-    elif isinstance(data, bytearray):
-        file.write(pack('B', data))
-    else:
-        raise
+    return write_bytes(file, data)
 
 
 def read_real_uint64(file):
+    """read 8 bytes, return unpacked value as a little endian unsigned long long, and raw data."""
     res = file.read(8)
     a = unpack('<Q', res)[0]
     return a, res
 
 
 def read_uint32(file):
+    """read 4 bytes, return unpacked value as a little endian unsigned long, and raw data."""
     res = file.read(4)
     a = unpack('<L', res)[0]
     return a, res
 
 
 def write_uint32(file, value):
+    """write uint32 value in 4 bytes."""
     b = pack('<L', value)
     file.write(b)
 
@@ -123,6 +111,7 @@ def read_uint64(file):
 
 
 def write_real_uint64(file, value):
+    """write 8 bytes, as an unsigned long long."""
     file.write(pack('<Q', value))
 
 

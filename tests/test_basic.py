@@ -343,3 +343,13 @@ def test_non7z_list(capsys):
     cli.run(["l", arcfile])
     out, err = capsys.readouterr()
     assert expected == out
+
+
+@pytest.mark.api
+@pytest.mark.xfail(raises=NotImplementedError, reason="Not implemented yet")
+def test_write_mode(capsys):
+    tmpdir = tempfile.mkdtemp()
+    target = os.path.join(tmpdir, 'target.7z')
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    archive.close()
