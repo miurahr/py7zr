@@ -26,7 +26,6 @@ import functools
 import io
 import os
 import struct
-import sys
 from array import array
 from binascii import unhexlify
 from functools import reduce
@@ -44,7 +43,7 @@ MAX_LENGTH = 65536
 
 def read_crcs(file, count):
     data = file.read(4 * count)
-    return [ unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(count) ]
+    return [unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(count)]
 
 
 def write_crcs(file, crcs):

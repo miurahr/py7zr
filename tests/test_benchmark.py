@@ -1,9 +1,8 @@
 import array
 import io
-import pytest
 import struct
 
-import py7zr.archiveinfo
+import pytest
 
 from . import extract_files
 
@@ -27,9 +26,11 @@ def test_read_crcs_perf_array(benchmark):
         buf.write(struct.pack('<L', data2))
         buf.seek(0)
         return (buf, 3), {}
+
     def target(file, c):
         res = array.array('I', file.read(4 * c))
         return res
+
     result = benchmark.pedantic(target, setup=setup)
     assert result[0] == data0
     assert result[1] == data1
@@ -41,16 +42,19 @@ def test_read_crcs_perf_closure(benchmark):
     data0 = 1024
     data1 = 32
     data2 = 1372678730
+
     def setup():
         buf = io.BytesIO()
         buf.write(struct.pack('<L', data0))
         buf.write(struct.pack('<L', data1))
         buf.write(struct.pack('<L', data2))
         buf.seek(0)
-        return (buf, 3),{}
+        return (buf, 3), {}
+
     def target(file, c):
         data = file.read(4 * c)
-        return [ struct.unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(c) ]
+        return [struct.unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(c)]
+
     result = benchmark.pedantic(target, setup=setup)
     assert result[0] == data0
     assert result[1] == data1

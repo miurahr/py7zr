@@ -347,7 +347,7 @@ def test_non7z_list(capsys):
 
 @pytest.mark.api
 @pytest.mark.xfail(raises=NotImplementedError, reason="Not implemented yet")
-def test_write_mode(capsys):
+def test_py7zr_write(capsys):
     tmpdir = tempfile.mkdtemp()
     target = os.path.join(tmpdir, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
