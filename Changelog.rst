@@ -14,11 +14,19 @@ Current changes
 Added
 -----
 
+* Unit test: SignatureHeader.write() method.
+* Unit test: unknown mode for SevenZipFile constructor.
+* Unit test: SevenZipFile.write() method.
+
 Changed
 -------
 
+* Conditional priority not likely to be external in header.
+
 Fixed
 -----
+
+* SignatureHeader.write(): fix exception to write 7zip version.
 
 Deprecated
 ----------
