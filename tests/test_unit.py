@@ -321,7 +321,7 @@ def test_startheader_calccrc():
 
 @pytest.mark.unit
 def test_utc():
-    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0, tzinfo=py7zr.helpers.UTC)
+    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0, tzinfo=py7zr.helpers.UTC())
     assert dt.tzname() == 'UTC'
 
 

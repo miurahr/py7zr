@@ -122,9 +122,6 @@ class UTC(tzinfo):
         return self
 
 
-UTC = UTC()
-
-
 class ArchiveTimestamp(int):
     """Windows FILETIME timestamp."""
 
@@ -138,4 +135,4 @@ class ArchiveTimestamp(int):
 
     def as_datetime(self):
         """Convert FILETIME to Python datetime object."""
-        return datetime.fromtimestamp(self.totimestamp(), UTC)
+        return datetime.fromtimestamp(self.totimestamp(), UTC())

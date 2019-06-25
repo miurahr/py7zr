@@ -41,9 +41,9 @@ def check_archive(archive):
     assert sorted(archive.getnames()) == ['test', 'test/test2.txt', 'test1.txt']
     expected = []
     expected.append({'filename': 'test'})
-    expected.append({'lastwritetime': 12786932616, 'as_datetime': datetime(2006, 3, 15, 21, 43, 36, 0, UTC),
+    expected.append({'lastwritetime': 12786932616, 'as_datetime': datetime(2006, 3, 15, 21, 43, 36, 0, UTC()),
                      'filename': 'test/test2.txt'})
-    expected.append({'lastwritetime': 12786932628, 'as_datetime': datetime(2006, 3, 15, 21, 43, 48, 0, UTC),
+    expected.append({'lastwritetime': 12786932628, 'as_datetime': datetime(2006, 3, 15, 21, 43, 48, 0, UTC()),
                      'filename': 'test1.txt'})
     for i, cf in enumerate(archive.files):
         assert cf.filename == expected[i]['filename']

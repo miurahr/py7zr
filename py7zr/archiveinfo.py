@@ -358,20 +358,15 @@ class Folder:
             numoutstreams = c['numoutstreams']
             iscomplex = 0x00 if numinstreams == 1 and numoutstreams == 1 else 0x10
             last_alternative = 0x80 if i < num_coders - 1 else 0x00
-            if c['properties'] is not None:
-                hasattributes = 0x20
-                properties = c['properties']
-            else:
-                hasattributes = 0x00
-                properties = None
+            hasattributes = 0x20 if c['properties'] is not None else 0x00# so
             write_byte(file, struct.pack('B', method_size & 0xf | iscomplex | hasattributes | last_alternative))
             write_bytes(file, method)
-            if iscomplex:
+            if iscomplex == 0x10:
                 write_uint64(file, numinstreams)
                 write_uint64(file, numoutstreams)
-            if properties is not None:
-                write_uint64(file, len(properties))
-                write_bytes(file, properties)
+            if c['properties'] is not None:
+                write_uint64(file, len(c['properties']))
+                write_bytes(file, c['properties'])
         num_bindpairs = self.totalout - 1
         assert len(self.bindpairs) == num_bindpairs
         num_packedstreams = self.totalin - num_bindpairs
@@ -468,7 +463,7 @@ class UnpackInfo:
             folder.unpacksizes = [read_uint64(file) for _ in range(folder.totalout)]
         pid = file.read(1)
         if pid == Property.CRC:
-            defined = read_boolean(file, self.numfolders, checkall=1)
+            defined = read_boolean(file, self.numfolders, checkall=True)
             crcs = read_crcs(file, self.numfolders)
             for idx, folder in enumerate(self.folders):
                 folder.digestdefined = defined[idx]
