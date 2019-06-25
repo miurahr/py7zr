@@ -5,6 +5,7 @@ pytest-cov
 coverage
 coveralls
 flake8
+pyannotate
 tox
 twine
 wheel
