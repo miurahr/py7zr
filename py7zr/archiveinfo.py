@@ -26,7 +26,6 @@ import functools
 import io
 import os
 import struct
-from array import array
 from binascii import unhexlify
 from functools import reduce
 from io import BytesIO
