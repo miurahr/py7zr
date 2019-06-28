@@ -1,7 +1,6 @@
 # Configuration for pytest to automatically collect types.
 # Thanks to Guilherme Salgado.
 import pytest
-
 from pyannotate_runtime import collect_types
 
 

@@ -98,20 +98,24 @@ def write_uint32(file: BinaryIO, value):
 
 def read_uint64(file: BinaryIO) -> int:
     """read UINT64, definition show in write_uint64()"""
-    # FIXME: typing error
     b = ord(file.read(1))
-    mask = 0x80
     if b == 255:
         return read_real_uint64(file)[0]
-    for i in range(8):
-        if b & mask == 0:
-            bytes = array('B', file.read(i))
-            bytes.reverse()
-            value = (bytes and reduce(lambda x, y: x << 8 | y, bytes)) or 0
-            highpart = b & (mask - 1)
-            return value + (highpart << (i * 8))
+    blen = [(0b01111111, 0), (0b10111111, 1), (0b11011111, 2), (0b11101111, 3),
+            (0b11110111, 4), (0b11111011, 5), (0b11111101, 6), (0b11111110, 7)]
+    mask = 0x80
+    vlen = 8
+    for v, l in blen:
+        if b <= v:
+            vlen = l
+            break
         mask >>= 1
-    return 0
+    if vlen == 0:
+        return b & (mask - 1)
+    val = file.read(vlen)
+    value = int.from_bytes(val, byteorder='little')
+    highpart = b & (mask - 1)
+    return value + (highpart << (vlen * 8))
 
 
 def write_real_uint64(file: BinaryIO, value: int):
