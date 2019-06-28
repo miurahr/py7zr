@@ -32,8 +32,10 @@ import os
 import stat
 import sys
 import threading
+from io import BytesIO
+from typing import Any, BinaryIO, Dict, List, Optional, Union
 
-from py7zr.archiveinfo import Header, SignatureHeader
+from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import (ArchiveTimestamp, Local, calculate_crc32,
@@ -42,11 +44,11 @@ from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
 
 
 class ArchiveFile:
-    def __init__(self, id, file_info):
+    def __init__(self, id: int, file_info: Dict[str, Any]) -> None:
         self.id = id
         self._file_info = file_info
 
-    def file_properties(self):
+    def file_properties(self) -> Dict[str, Any]:
         properties = self._file_info
         if properties is not None:
             properties['readonly'] = self.readonly
@@ -55,26 +57,26 @@ class ArchiveFile:
             properties['is_directory'] = self.is_directory
         return properties
 
-    def _get_property(self, key):
+    def _get_property(self, key: str) -> Any:
         try:
             return self._file_info[key]
         except KeyError:
             return None
 
     @property
-    def folder(self):
+    def folder(self) -> Folder:
         return self._get_property('folder')
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return self._get_property('filename')
 
     @property
-    def emptystream(self):
+    def emptystream(self) -> bool:
         return self._get_property('emptystream')
 
     @property
-    def uncompressed(self):
+    def uncompressed(self) -> List[int]:
         return self._get_property('uncompressed')
 
     @property
@@ -82,42 +84,42 @@ class ArchiveFile:
         return functools.reduce(operator.add, self.uncompressed)
 
     @property
-    def compressed(self):
+    def compressed(self) -> Optional[int]:
         return self._get_property('compressed')
 
-    def _test_attribute(self, target_bit):
+    def _test_attribute(self, target_bit: FileAttribute) -> bool:
         attributes = self._get_property('attributes')
         if attributes is None:
             return False
         return attributes & target_bit == target_bit
 
     @property
-    def archivable(self):
+    def archivable(self) -> bool:
         return self._test_attribute(FileAttribute.ARCHIVE)
 
     @property
-    def is_directory(self):
+    def is_directory(self) -> bool:
         return self._test_attribute(FileAttribute.DIRECTORY)
 
     @property
-    def readonly(self):
+    def readonly(self) -> bool:
         return self._test_attribute(FileAttribute.READONLY)
 
-    def _get_unix_extension(self):
+    def _get_unix_extension(self) -> Optional[int]:
         attributes = self._get_property('attributes')
         if self._test_attribute(FileAttribute.UNIX_EXTENSION):
             return attributes >> 16
         return None
 
     @property
-    def is_symlink(self):
+    def is_symlink(self) -> bool:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
         return False
 
     @property
-    def is_socket(self):
+    def is_socket(self) -> bool:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISSOCK(e)
@@ -128,7 +130,7 @@ class ArchiveFile:
         return self._get_property('lastwritetime')
 
     @property
-    def posix_mode(self):
+    def posix_mode(self) -> Optional[int]:
         """
         :return: Return file stat mode can be set by os.chmod()
         """
@@ -150,23 +152,23 @@ class ArchiveFile:
 
 class ArchiveFileList:
 
-    def __init__(self, offset=0):
-        self.files_list = []
+    def __init__(self, offset: int = 0):
+        self.files_list = []  # type: List[dict]
         self.index = 0
         self.offset = offset
 
-    def append(self, file_info):
+    def append(self, file_info: Dict[str, Any]) -> None:
         self.files_list.append(file_info)
 
     @property
-    def len(self):
+    def len(self) -> int:
         return len(self.files_list)
 
-    def __iter__(self):
+    def __iter__(self) -> 'ArchiveFileList':
         self.index = 0
         return self
 
-    def __next__(self):
+    def __next__(self) -> ArchiveFile:
         if self.index == len(self.files_list):
             raise StopIteration
         res = ArchiveFile(self.index + self.offset, self.files_list[self.index])
@@ -180,14 +182,13 @@ class ArchiveFileList:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file, mode='r'):
+    def __init__(self, file: BinaryIO, mode: str = 'r') -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        self.files = []
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
-            self._filePassed = False
-            self.filename = file
+            self._filePassed = False  # type: bool
+            self.filename = file  # type: Optional[str]
             modes = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                      'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
             try:
@@ -196,7 +197,7 @@ class SevenZipFile:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
             while True:
                 try:
-                    self.fp = open(file, filemode)
+                    self.fp = open(file, filemode)  # type: BinaryIO
                 except OSError:
                     if filemode in modes:
                         filemode = modes[filemode]
@@ -234,7 +235,7 @@ class SevenZipFile:
         if not self._fileRefCnt and not self._filePassed:
             fp.close()
 
-    def _real_get_contents(self, fp):
+    def _real_get_contents(self, fp: BinaryIO) -> None:
         if not self._check_7zfile(fp):
             raise Bad7zFile('not a 7z file')
         self.sig_header = SignatureHeader.retrieve(self.fp)
@@ -250,14 +251,14 @@ class SevenZipFile:
         if getattr(self.header, 'files_info', None) is not None:
             self._filelist_retrieve()
 
-    def _read_header_data(self):
+    def _read_header_data(self) -> BytesIO:
         self.fp.seek(self.sig_header.nextheaderofs, 1)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
         return buffer
 
-    def _filelist_retrieve(self):
+    def _filelist_retrieve(self) -> None:
         src_pos = self.afterheader
         # Initialize references for convenience
         if hasattr(self.header, 'main_streams'):
@@ -362,7 +363,7 @@ class SevenZipFile:
             return len(self.header.files_info.files)
         return 0
 
-    def _set_file_property(self, outfilename, properties):
+    def _set_file_property(self, outfilename: str, properties: Dict[str, Any]) -> None:
         # creation time
         creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
         if creationtime is not None:
@@ -377,12 +378,12 @@ class SevenZipFile:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
             os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
 
-    def reset(self):
+    def reset(self) -> None:
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
 
     @classmethod
-    def _check_7zfile(cls, fp):
+    def _check_7zfile(cls, fp: BinaryIO) -> bool:
         return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
 
     def _print_archiveinfo(self, file=None):
@@ -524,7 +525,7 @@ class SevenZipFile:
             return False
         # TODO: print number of folders, files and sizes
 
-    def extractall(self, path=None):
+    def extractall(self, path: Optional[Any] = None) -> None:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
@@ -545,7 +546,7 @@ class SevenZipFile:
 
         multi_thread = self.header.main_streams.unpackinfo.numfolders > 1 and \
             self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
-        fnames = []
+        fnames = []  # type: List[str]
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -627,7 +628,7 @@ class SevenZipFile:
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(file):
+def is_7zfile(file: Union[BinaryIO, str]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
     The filename argument may be a file or file-like object too.
     """

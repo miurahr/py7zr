@@ -38,7 +38,7 @@ class Configuration:
     _instance = None
 
     @classmethod
-    def get(cls, key):
+    def get(cls, key: str) -> int:
         if cls._instance is None:
             cls._instance = cls()
         return getattr(cls._instance, key)

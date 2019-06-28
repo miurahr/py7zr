@@ -25,14 +25,15 @@ import bz2
 import concurrent.futures
 import io
 import lzma
-import zlib
+from io import BytesIO
+from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
 from py7zr.properties import CompressionMethod, Configuration
 
 
-class NullHandler:
+class NullHandler():
     '''Null handler pass to null the data.'''
 
     def __init__(self):
@@ -54,17 +55,17 @@ class NullHandler:
         pass
 
 
-class BufferHandler:
+class BufferHandler():
     '''Buffer handler handles BytesIO/StringIO buffers.'''
 
-    def __init__(self, target):
+    def __init__(self, target: BytesIO) -> None:
         self.buf = target
         self.target = "memory buffer"
 
-    def open(self):
+    def open(self) -> None:
         pass
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         self.buf.write(data)
 
     def read(self, size=None):
@@ -76,20 +77,20 @@ class BufferHandler:
     def seek(self, offset, whence=1):
         self.buf.seek(offset, whence)
 
-    def close(self):
+    def close(self) -> None:
         pass
 
 
-class FileHandler:
+class FileHandler():
     '''File handler treat fileish object'''
 
-    def __init__(self, target):
+    def __init__(self, target: str) -> None:
         self.target = target
 
-    def open(self):
+    def open(self) -> None:
         self.fp = open(self.target, 'wb')
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         self.fp.write(data)
 
     def read(self, size=None):
@@ -101,23 +102,26 @@ class FileHandler:
     def seek(self, offset, whence=1):
         self.fp.seek(offset, whence)
 
-    def close(self):
+    def close(self) -> None:
         self.fp.close()
+
+
+Handler = Union[NullHandler, BufferHandler, FileHandler]
 
 
 class Worker:
     """Extract worker class to invoke handler"""
 
-    def __init__(self, files, src_start, header):
-        self.target_filepath = {}
+    def __init__(self, files, src_start: int, header) -> None:
+        self.target_filepath = {}  # type: Dict[int, Handler]
         self.files = files
         self.src_start = src_start
         self.header = header
 
-    def set_output_filepath(self, index, func):
+    def set_output_filepath(self, index: int, func: Handler) -> None:
         self.target_filepath[index] = func
 
-    def extract(self, fp, multithread=False):
+    def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
         if multithread:
             numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
@@ -136,7 +140,7 @@ class Worker:
         else:
             self.extract_single(fp, self.files, self.src_start)
 
-    def extract_single(self, fp, files, src_start):
+    def extract_single(self, fp: BinaryIO, files, src_start: int) -> None:
         fp.seek(src_start)
         for f in files:
             # Skip empty file read
@@ -152,7 +156,8 @@ class Worker:
             self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
             fileish.close()
 
-    def decompress(self, fp, folder, fileish, size, compressed_size):
+    def decompress(self, fp: BinaryIO, folder, fileish: Handler,
+                   size: int, compressed_size: Optional[int]) -> None:
         assert folder is not None
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
@@ -177,7 +182,7 @@ class Worker:
                 print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
         return
 
-    def archive(self, fp, folder):
+    def archive(self, fp: BinaryIO, folder):
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
@@ -189,7 +194,7 @@ class Worker:
             self.files.append(f)
         fp.flush()
 
-    def compress(self, fp, folder, f):
+    def compress(self, fp: BinaryIO, folder, f: Handler):
         compressor = folder.get_compressor()
         length = 0
         for indata in f.read(Configuration.get('read_blocksize')):
@@ -203,7 +208,7 @@ class Worker:
         fp.write(arcdata)
         return length
 
-    def register_filelike(self, id, fileish):
+    def register_filelike(self, id: int, fileish: Union[BinaryIO, str, None]) -> None:
         if fileish is None:
             self.set_output_filepath(id, NullHandler())
         elif isinstance(fileish, io.BytesIO):
@@ -230,46 +235,14 @@ class SevenZipDecompressor:
     FILTER_ZIP = 0x32
     alt_methods_map = {
         CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
-        CompressionMethod.MISC_ZIP: FILTER_ZIP,
     }
 
-    @property
-    def needs_input(self):
-        return self.decompressor.needs_input
-
-    @property
-    def eof(self):
-        return self.decompressor.eof
-
-    def decompress(self, data, max_length=None):
-        self.consumed += len(data)
-        if max_length is not None:
-            folder_data = self.decompressor.decompress(data, max_length=max_length)
-        else:
-            folder_data = self.decompressor.decompress(data)
-        # calculate CRC with uncompressed data
-        if self.crc is not None:
-            self.digest = calculate_crc32(folder_data, self.digest)
-        return folder_data
-
-    @property
-    def unused_data(self):
-        return self.decompressor.unused_data
-
-    @property
-    def remaining_size(self):
-        return self.input_size - self.consumed
-
-    def check_crc(self):
-        return self.crc == self.digest
-
-    def __init__(self, coders, size, crc):
-        self.decompressor = None
+    def __init__(self, coders: List[Dict[str, Any]], size: int, crc: Optional[int]) -> None:
         self.input_size = size
-        self.consumed = 0
+        self.consumed = 0  # type: int
         self.crc = crc
-        self.digest = None
-        filters = []
+        self.digest = None  # type: Optional[int]
+        filters = []  # type: List[Dict[str, Any]]
         try:
             for coder in coders:
                 if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
@@ -278,7 +251,7 @@ class SevenZipDecompressor:
                 if filter is not None:
                     properties = coder.get('properties', None)
                     if properties is not None:
-                        filters[:0] = [lzma._decode_filter_properties(filter, properties)]
+                        filters[:0] = [lzma._decode_filter_properties(filter, properties)]  # type: ignore
                     else:
                         filters[:0] = [{'id': filter}]
                 else:
@@ -299,6 +272,36 @@ class SevenZipDecompressor:
             self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
             self.can_partial_decompress = True
         self.filters = filters
+
+    @property
+    def needs_input(self) -> bool:
+        return self.decompressor.needs_input
+
+    @property
+    def eof(self) -> bool:
+        return self.decompressor.eof
+
+    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
+        self.consumed += len(data)
+        if max_length is not None:
+            folder_data = self.decompressor.decompress(data, max_length=max_length)
+        else:
+            folder_data = self.decompressor.decompress(data)
+        # calculate CRC with uncompressed data
+        if self.crc is not None:
+            self.digest = calculate_crc32(folder_data, self.digest)
+        return folder_data
+
+    @property
+    def unused_data(self):
+        return self.decompressor.unused_data
+
+    @property
+    def remaining_size(self) -> int:
+        return self.input_size - self.consumed
+
+    def check_crc(self):
+        return self.crc == self.digest
 
 
 class SevenZipCompressor():
@@ -330,7 +333,7 @@ class SevenZipCompressor():
         return self.compressor.flush()
 
 
-def get_methods_names(coders):
+def get_methods_names(coders: List[dict]) -> List[str]:
     methods_name_map = {
         CompressionMethod.LZMA2: "LZMA2",
         CompressionMethod.LZMA: "LZMA",

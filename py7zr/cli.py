@@ -19,14 +19,15 @@
 import argparse
 import lzma
 import os
+from typing import Any, Optional
 
 import py7zr
-import texttable
+import texttable  # type: ignore
 from py7zr.properties import SupportedMethods
 
 
 class Cli():
-    def __init__(self):
+    def __init__(self) -> None:
         parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
                                          formatter_class=argparse.RawTextHelpFormatter, add_help=True)
         subparsers = parser.add_subparsers(title='subcommands', help='subcommand for py7zr l .. list, x .. extract,'
@@ -54,7 +55,7 @@ class Cli():
         self.parser.print_help()
         return(0)
 
-    def run(self, arg=None):
+    def run(self, arg: Optional[Any] = None) -> int:
         args = self.parser.parse_args(arg)
         return args.func(args)
 
@@ -109,7 +110,7 @@ class Cli():
         else:
             return(1)
 
-    def run_extract(self, args):
+    def run_extract(self, args: argparse.Namespace) -> int:
         target = args.arcfile
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
