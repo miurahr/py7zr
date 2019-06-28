@@ -225,7 +225,6 @@ class SevenZipFile:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
         except Exception as e:
             fp = self.fp
-            self.fp = None
             self._fpclose(fp)
             raise e
 
@@ -267,7 +266,7 @@ class SevenZipFile:
             subinfo = self.header.main_streams.substreamsinfo
             packsizes = packinfo.packsizes
             self.solid = packinfo.numstreams == 1
-            if hasattr(subinfo, 'unpacksizes'):
+            if subinfo.unpacksizes is not None:
                 unpacksizes = subinfo.unpacksizes
             else:
                 unpacksizes = [x.unpacksizes for x in folders]
@@ -334,7 +333,11 @@ class SevenZipFile:
                     # 7z archive file doesn't have a name
                     file_info['filename'] = 'contents'
                 else:
-                    file_info['filename'] = os.path.splitext(os.path.basename(basefilename))[0]
+                    if basefilename is not None:
+                        fn, ext = os.path.splitext(os.path.basename(basefilename))
+                        file_info['filename'] = fn
+                    else:
+                        file_info['filename'] = 'contents'
 
             self.files.append(file_info)
 
@@ -585,9 +588,9 @@ class SevenZipFile:
             elif os.path.isdir(target_dir):
                 pass
             elif os.path.isfile(target_dir):
-                raise("Directory name is existed as a normal file.")
+                raise Exception("Directory name is existed as a normal file.")
             else:
-                raise
+                raise Exception()
         self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
@@ -634,12 +637,14 @@ def is_7zfile(file: Union[BinaryIO, str]) -> bool:
     """
     result = False
     try:
-        if hasattr(file, "read"):
-            result = SevenZipFile._check_7zfile(fp=file)
+        if isinstance(file, io.IOBase) and hasattr(file, "read"):
+            result = SevenZipFile._check_7zfile(file)
             file.seek(-len(MAGIC_7Z), 1)
-        else:
+        elif isinstance(file, str):
             with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
+        else:
+            raise
     except OSError:
         pass
     return result

@@ -116,12 +116,11 @@ class Cli():
             print('not a 7z file')
             return(1)
 
-        with open(target, 'rb') as f:
-            a = py7zr.SevenZipFile(f)
-            if args.odir:
-                a.extractall(path=args.odir)
-            else:
-                a.extractall()
+        a = py7zr.SevenZipFile(target, 'r')
+        if args.odir:
+            a.extractall(path=args.odir)
+        else:
+            a.extractall()
         return(0)
 
     def run_create(self, args):

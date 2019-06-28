@@ -32,8 +32,8 @@ MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 class Configuration:
     '''Singleton global configuration holder'''
 
-    P7ZIP_MAJOR_VERSION = 0
-    P7ZIP_MINOR_VERSION = 4
+    P7ZIP_MAJOR_VERSION = b'\x00'
+    P7ZIP_MINOR_VERSION = b'\x04'
     read_blocksize = 32248
     _instance = None
 

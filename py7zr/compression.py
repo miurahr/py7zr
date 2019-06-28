@@ -143,17 +143,13 @@ class Worker:
     def extract_single(self, fp: BinaryIO, files, src_start: int) -> None:
         fp.seek(src_start)
         for f in files:
+            fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
+            fileish.open()
             # Skip empty file read
             if f.emptystream:
-                fileish = self.target_filepath.get(f.id, None)
-                if fileish is not None:
-                    fileish.open()
-                    fileish.write(b'')
-                    fileish.close()
-                continue
-            fileish = self.target_filepath.get(f.id, NullHandler)
-            fileish.open()
-            self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
+                fileish.write(b'')
+            else:
+                self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
             fileish.close()
 
     def decompress(self, fp: BinaryIO, folder, fileish: Handler,
@@ -186,7 +182,7 @@ class Worker:
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
-                target = self.target_filepath.get(f.id, None)
+                target = self.target_filepath.get(f.id, NullHandler())  # type: Handler
                 target.open()
                 length = self.compress(fp, folder, target)
                 target.close()
@@ -213,8 +209,10 @@ class Worker:
             self.set_output_filepath(id, NullHandler())
         elif isinstance(fileish, io.BytesIO):
             self.set_output_filepath(id, BufferHandler(fileish))
-        else:
+        elif isinstance(fileish, str):
             self.set_output_filepath(id, FileHandler(fileish))
+        else:
+            raise
 
 
 class SevenZipDecompressor:
@@ -260,9 +258,7 @@ class SevenZipDecompressor:
             filter = self.alt_methods_map.get(coders[0]['method'], None)
             if len(coders) == 1 and filter is not None:
                 if filter == self.FILTER_BZIP2:
-                    self.decompressor = bz2.BZ2Decompressor()
-                elif filter == self.FILTER_ZIP:
-                    self.decompressor = zlib.decompressobj(-15)
+                    self.decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor]
                 else:
                     raise e
                 self.can_partial_decompress = False

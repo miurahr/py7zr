@@ -403,9 +403,9 @@ class Folder:
                 # FIXME: set filters
                 self.compressor = SevenZipCompressor()
                 self.coders = self.compressor.coders
+                return self.compressor
             except Exception as e:
                 raise e
-            return self.compressor
 
     def get_unpack_size(self) -> int:
         if self.unpacksizes is None:
@@ -508,7 +508,7 @@ class SubstreamsInfo:
     def __init__(self):
         self.digests = []  # type: List[int]
         self.digestsdefined = []  # type: List[bool]
-        self.unpacksizes = None  # type: List[int]
+        self.unpacksizes = None  # type: Optional[List[int]]
 
     @classmethod
     def retrieve(cls, file: BinaryIO, numfolders: int, folders: List[Folder]):
@@ -547,7 +547,7 @@ class SubstreamsInfo:
             for i in range(numfolders):
                 folder = folders[i]
                 numsubstreams = self.num_unpackstreams_folders[i]
-                if numsubstreams == 1 and folder.digestdefined:
+                if numsubstreams == 1 and folder.digestdefined and folder.crc is not None:
                     self.digestsdefined.append(True)
                     self.digests.append(folder.crc)
                 else:
@@ -566,6 +566,8 @@ class SubstreamsInfo:
         if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
             # nothing to write
             return
+        if self.unpacksizes is None:
+            raise ValueError
         write_byte(file, Property.SUBSTREAMS_INFO)
         if not functools.reduce(lambda x, y: x and (y == 1), self.num_unpackstreams_folders, True):
             write_byte(file, Property.NUM_UNPACK_STREAM)
@@ -653,16 +655,16 @@ class FilesInfo:
             typ = read_uint64(fp)
             if typ > 255:
                 raise Bad7zFile('invalid type, must be below 256, is %d' % typ)
-            typ = struct.pack('B', typ)
-            if typ == Property.END:
+            prop = struct.pack(b'B', typ)
+            if prop == Property.END:
                 break
             size = read_uint64(fp)
-            if typ == Property.DUMMY:
+            if prop == Property.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
                 continue
             buffer = io.BytesIO(fp.read(size))
-            if typ == Property.EMPTY_STREAM:
+            if prop == Property.EMPTY_STREAM:
                 isempty = read_boolean(buffer, self.numfiles)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))
                 for x in isempty:
@@ -670,11 +672,11 @@ class FilesInfo:
                         numemptystreams += 1
                 self.emptyfiles = [False] * numemptystreams
                 self.antifiles = [False] * numemptystreams
-            elif typ == Property.EMPTY_FILE:
+            elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams)
-            elif typ == Property.ANTI:
+            elif prop == Property.ANTI:
                 self.antifiles = read_boolean(buffer, numemptystreams)
-            elif typ == Property.NAME:
+            elif prop == Property.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_name(buffer)
@@ -685,13 +687,13 @@ class FilesInfo:
                     fp.seek(self.dataindex, 0)
                     self._read_name(buffer)
                     fp.seek(current_pos, 0)
-            elif typ == Property.CREATION_TIME:
+            elif prop == Property.CREATION_TIME:
                 self._readTimes(buffer, self.files, 'creationtime')
-            elif typ == Property.LAST_ACCESS_TIME:
+            elif prop == Property.LAST_ACCESS_TIME:
                 self._readTimes(buffer, self.files, 'lastaccesstime')
-            elif typ == Property.LAST_WRITE_TIME:
+            elif prop == Property.LAST_WRITE_TIME:
                 self._readTimes(buffer, self.files, 'lastwritetime')
-            elif typ == Property.ATTRIBUTES:
+            elif prop == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, self.numfiles, checkall=1)
                 external = buffer.read(1)
                 if external == b'\x00':
@@ -704,7 +706,7 @@ class FilesInfo:
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
             else:
-                raise Bad7zFile('invalid type %r' % (typ))
+                raise Bad7zFile('invalid type %r' % (prop))
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
@@ -743,7 +745,7 @@ class FilesInfo:
         write_boolean(file, emptystreams, all_defined=False)
         if self.emptyfiles is not None:
             if functools.reduce(or_, self.emptyfiles):  # there are some emptyfile
-                write_byte(Property.EMPTY_FILE)
+                write_byte(file, Property.EMPTY_FILE)
                 write_boolean(file, self.emptyfiles)
         if self.antifiles is not None:
             if functools.reduce(or_, self.antifiles):  # there are some antifiles
@@ -792,14 +794,15 @@ class Header:
         pid = buffer.read(1)
         if not pid:
             # empty archive
-            return None
+            return
         elif pid == Property.HEADER:
-            return self._extract_header_info(buffer)
+            self._extract_header_info(buffer)
+            return
         elif pid != Property.ENCODED_HEADER:
             raise TypeError('Unknown field: %r' % (id))
         # get from encoded header
         streams = StreamsInfo.retrieve(buffer)
-        return self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
+        self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
 
     def _get_headerdata_from_streams(self, fp: BinaryIO, streams: StreamsInfo) -> BytesIO:
         """get header data from given streams.unpackinfo and packinfo.
@@ -921,10 +924,12 @@ class SignatureHeader:
     def write(self, file: BinaryIO):
         assert self.startheadercrc is not None
         assert self.nextheadercrc is not None
+        assert self.nextheaderofs is not None
+        assert self.nextheadersize is not None
         file.seek(0, 0)
         write_bytes(file, MAGIC_7Z)
-        write_byte(file, self.version[0].to_bytes(1, 'little'))
-        write_byte(file, self.version[1].to_bytes(1, 'little'))
+        write_byte(file, self.version[0])
+        write_byte(file, self.version[1])
         write_uint32(file, self.startheadercrc)
         write_uint64(file, self.nextheaderofs)
         write_uint64(file, self.nextheadersize)
