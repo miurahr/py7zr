@@ -51,7 +51,8 @@ def test_github_14():
     assert archive.getnames() == ['github_14']
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
-    assert open(os.path.join(tmpdir, 'github_14'), 'rb').read() == bytes('Hello GitHub issue #14.\n', 'ascii')
+    with open(os.path.join(tmpdir, 'github_14'), 'rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
     shutil.rmtree(tmpdir)
 
 
@@ -62,7 +63,8 @@ def test_github_14_multi():
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
-    assert open(os.path.join(tmpdir, 'github_14_multi'), 'rb').read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
+    with open(os.path.join(tmpdir, 'github_14_multi'), 'rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
     shutil.rmtree(tmpdir)
 
 
