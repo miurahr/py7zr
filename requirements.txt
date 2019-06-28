@@ -6,6 +6,7 @@ coverage
 coveralls
 flake8
 pyannotate
+mypy
 tox
 twine
 wheel
