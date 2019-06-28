@@ -14,6 +14,8 @@ Current changes
 Added
 -----
 
+* typing hints
+* CI test with mypy
 * Unit test: SignatureHeader.write() method.
 * Unit test: unknown mode for SevenZipFile constructor.
 * Unit test: SevenZipFile.write() method.
@@ -22,6 +24,7 @@ Changed
 -------
 
 * Conditional priority not likely to be external in header.
+* Refactoring read_uint64().
 
 Fixed
 -----

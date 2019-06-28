@@ -23,10 +23,11 @@
 
 import time as _time
 from datetime import datetime, timedelta, timezone, tzinfo
+from typing import Optional
 from zlib import crc32
 
 
-def calculate_crc32(data, value=None, blocksize=1024 * 1024):
+def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1024 * 1024) -> int:
     """Calculate CRC32 of strings with arbitrary lengths."""
     length = len(data)
     pos = blocksize
@@ -122,20 +123,17 @@ class UTC(tzinfo):
         return self
 
 
-UTC = UTC()
-
-
 class ArchiveTimestamp(int):
     """Windows FILETIME timestamp."""
 
     def __repr__(self):
         return '%s(%d)' % (type(self).__name__, self)
 
-    def totimestamp(self):
+    def totimestamp(self) -> float:
         """Convert 7z FILETIME to Python timestamp."""
         # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
         return (self / 10000000.0) + TIMESTAMP_ADJUST
 
     def as_datetime(self):
         """Convert FILETIME to Python datetime object."""
-        return datetime.fromtimestamp(self.totimestamp(), UTC)
+        return datetime.fromtimestamp(self.totimestamp(), UTC())
