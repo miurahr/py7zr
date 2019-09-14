@@ -127,8 +127,11 @@ class Worker:
             positions = self.header.main_streams.packinfo.packpositions
             folders = self.header.main_streams.unpackinfo.folders
             filename = getattr(fp, 'name', None)
+            empty_files = [f for f in self.files if f.emptystream]
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 threads = []
+                threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
+                                               empty_files, 0))
                 for i in range(numfolders):
                     threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
                                                    folders[i].files, self.src_start + positions[i]))

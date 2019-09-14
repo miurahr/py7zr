@@ -154,6 +154,14 @@ def test_zerosize():
 
 
 @pytest.mark.files
+def test_zerosize2():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_6.7z'), 'rb'))
+    tmpdir = tempfile.mkdtemp()
+    archive.extractall(path=tmpdir)
+    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
 def test_multiblock():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock.7z'), 'rb'))
     tmpdir = tempfile.mkdtemp()
