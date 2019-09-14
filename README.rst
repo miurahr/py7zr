@@ -14,6 +14,9 @@ py7zr
 .. image:: https://ci.appveyor.com/api/projects/status/966k084122lhs3i6?svg=true
   :target: https://ci.appveyor.com/project/miurahr/py7zr/
 
+.. image:: https://dev.azure.com/miurahr/github/_apis/build/status/miurahr.py7zr?branchName=master
+  :target: https://dev.azure.com/miurahr/github/_build/latest?definitionId=14&branchName=master
+
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
