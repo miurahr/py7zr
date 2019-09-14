@@ -1,6 +1,7 @@
 include *.rst
 include *.txt
 include *.yml
+include AUTHORS
 include LICENSE
 recursive-include tests *.py
 recursive-include tests *.sh

@@ -29,6 +29,19 @@ Removed
 Security
 --------
 
+`v0.3.3`_
+=========
+
+Added
+-----
+
+* Add test for zerofile with multi-foler archive.
+
+Fixed
+-----
+
+* Fix zerofile extraction error with multithread mode(#24, thanks @Arten013)
+
 `v0.3.2`_
 =======
 
@@ -313,7 +326,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.3...HEAD
+.. _v0.3.3: https://github.com/miurahr/py7zr/compare/v0.3.2...v0.3.3
 .. _v0.3.2: https://github.com/miurahr/py7zr/compare/v0.3.1...v0.3.2
 .. _v0.3.1: https://github.com/miurahr/py7zr/compare/v0.3...v0.3.1
 .. _v0.3: https://github.com/miurahr/py7zr/compare/v0.2.0...v0.3
