@@ -44,6 +44,12 @@ from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
 
 
 class ArchiveFile:
+    """Represent each files metadata inside archive file.
+    It holds file properties; filename, permissions, and type whether
+    it is directory, link or normal file.
+
+    The class also hold an archive parameter where file is exist in
+    archive file folder(container)."""
     def __init__(self, id: int, file_info: Dict[str, Any]) -> None:
         self.id = id
         self._file_info = file_info
@@ -69,10 +75,12 @@ class ArchiveFile:
 
     @property
     def filename(self) -> str:
+        """return filename of archive file."""
         return self._get_property('filename')
 
     @property
     def emptystream(self) -> bool:
+        """True if file is empty(0-byte file), otherwise False"""
         return self._get_property('emptystream')
 
     @property
@@ -81,10 +89,12 @@ class ArchiveFile:
 
     @property
     def uncompressed_size(self):
+        """Uncompressed file size."""
         return functools.reduce(operator.add, self.uncompressed)
 
     @property
     def compressed(self) -> Optional[int]:
+        """Compressed size"""
         return self._get_property('compressed')
 
     def _test_attribute(self, target_bit: FileAttribute) -> bool:
@@ -95,14 +105,17 @@ class ArchiveFile:
 
     @property
     def archivable(self) -> bool:
+        """File has a Windows `archive` flag."""
         return self._test_attribute(FileAttribute.ARCHIVE)
 
     @property
     def is_directory(self) -> bool:
+        """True if file is a directory, otherwise False."""
         return self._test_attribute(FileAttribute.DIRECTORY)
 
     @property
     def readonly(self) -> bool:
+        """True if file is readonly, otherwise False."""
         return self._test_attribute(FileAttribute.READONLY)
 
     def _get_unix_extension(self) -> Optional[int]:
@@ -113,6 +126,7 @@ class ArchiveFile:
 
     @property
     def is_symlink(self) -> bool:
+        """True if file is a symbolic link, otherwise False."""
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
@@ -120,6 +134,7 @@ class ArchiveFile:
 
     @property
     def is_socket(self) -> bool:
+        """True if file is a socket, otherwise False."""
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISSOCK(e)
@@ -127,6 +142,7 @@ class ArchiveFile:
 
     @property
     def lastwritetime(self):
+        """Return last written timestamp of a file."""
         return self._get_property('lastwritetime')
 
     @property
@@ -151,6 +167,7 @@ class ArchiveFile:
 
 
 class ArchiveFileList:
+    """Iteratable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
         self.files_list = []  # type: List[dict]
@@ -382,6 +399,7 @@ class SevenZipFile:
             os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
 
     def reset(self) -> None:
+        """Seek to where archive data start in archive and recreate new worker."""
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
 
@@ -515,6 +533,7 @@ class SevenZipFile:
         file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
     def test(self, file=None):
+        """Test archive using CRC digests."""
         if file is None:
             file = sys.stdout
         file.write("Testing archive: {}\n".format(self.filename))
@@ -607,6 +626,7 @@ class SevenZipFile:
             self._set_file_property(o, p)
 
     def writeall(self, path, arcname=None):
+        """Write files in target path into archive."""
         if os.path.isfile(path):
             self.write(path, arcname)
         elif os.path.isdir(path):
@@ -616,6 +636,7 @@ class SevenZipFile:
                 self.writeall(os.path.join(path, nm), os.path.join(arcname, nm))
 
     def write(self, file, arcname=None):
+        """Write single target file into archive(Not implemented yet)."""
         file_info = {}
         if os.path.isfile(file):
             file_info['filename'] = arcname
@@ -625,6 +646,9 @@ class SevenZipFile:
         raise NotImplementedError
 
     def close(self):
+        """Flush all the data into archive and close it.
+        When close py7zr start reading target and writing actual archive file.
+        """
         raise NotImplementedError
 
 

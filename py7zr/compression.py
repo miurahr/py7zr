@@ -122,6 +122,7 @@ class Worker:
         self.target_filepath[index] = func
 
     def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
+        """Extract worker method to handle 7zip folder and decompress each files."""
         if multithread:
             numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
@@ -144,6 +145,7 @@ class Worker:
             self.extract_single(fp, self.files, self.src_start)
 
     def extract_single(self, fp: BinaryIO, files, src_start: int) -> None:
+        """Single thread extractor that takes file lists in single 7zip folder."""
         fp.seek(src_start)
         for f in files:
             fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
@@ -157,6 +159,7 @@ class Worker:
 
     def decompress(self, fp: BinaryIO, folder, fileish: Handler,
                    size: int, compressed_size: Optional[int]) -> None:
+        """decompressor wrapper called from extract method."""
         assert folder is not None
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
@@ -182,6 +185,7 @@ class Worker:
         return
 
     def archive(self, fp: BinaryIO, folder):
+        """Run archive task for specified 7zip folder."""
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
@@ -194,6 +198,7 @@ class Worker:
         fp.flush()
 
     def compress(self, fp: BinaryIO, folder, f: Handler):
+        """Compress specified file-ish into folder where fp placed."""
         compressor = folder.get_compressor()
         length = 0
         for indata in f.read(Configuration.get('read_blocksize')):
@@ -208,6 +213,9 @@ class Worker:
         return length
 
     def register_filelike(self, id: int, fileish: Union[BinaryIO, str, None]) -> None:
+        """register file-ish to worker. File-ish can be union of BinaryIO, str and None.
+        When BytesIO specified use BufferHandler. When None use NullHandler, and
+        and str is recognized as a path."""
         if fileish is None:
             self.set_output_filepath(id, NullHandler())
         elif isinstance(fileish, io.BytesIO):
@@ -219,6 +227,8 @@ class Worker:
 
 
 class SevenZipDecompressor:
+    """Main decompressor object which is properly configured and bind to each 7zip folder.
+    because 7zip folder can have a custom compression method"""
 
     lzma_methods_map = {
         CompressionMethod.LZMA: lzma.FILTER_LZMA1,
@@ -304,6 +314,7 @@ class SevenZipDecompressor:
 
 
 class SevenZipCompressor():
+    """Main compressor object to configured for each 7zip folder."""
 
     __slots__ = ['filters', 'compressor', 'coders']
 
@@ -333,6 +344,7 @@ class SevenZipCompressor():
 
 
 def get_methods_names(coders: List[dict]) -> List[str]:
+    """Return human readable method names for specified coders"""
     methods_name_map = {
         CompressionMethod.LZMA2: "LZMA2",
         CompressionMethod.LZMA: "LZMA",

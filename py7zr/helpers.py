@@ -46,6 +46,7 @@ EPOCH_AS_FILETIME = 116444736000000000
 
 
 def filetime_to_dt(ft):
+    """Convert Windows NTFS file time into python datetime object."""
     us = (ft - EPOCH_AS_FILETIME) // 10
     return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=us)
 

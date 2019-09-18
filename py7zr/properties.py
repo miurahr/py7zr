@@ -57,6 +57,7 @@ class ByteEnum(bytes, Enum):
 
 
 class Property(ByteEnum):
+    """Hold 7zip property fixed values."""
     END = binascii.unhexlify('00')
     HEADER = binascii.unhexlify('01')
     ARCHIVE_PROPERTIES = binascii.unhexlify('02')
@@ -86,6 +87,7 @@ class Property(ByteEnum):
 
 
 class CompressionMethod(ByteEnum):
+    """Hold fixed values for method parameter."""
     COPY = binascii.unhexlify('00')
     DELTA = binascii.unhexlify('03')
     BCJ = binascii.unhexlify('04')
@@ -121,6 +123,7 @@ class CompressionMethod(ByteEnum):
 
 
 class FileAttribute(IntEnum):
+    """Flag mask for file attribute."""
     DIRECTORY = 0x10
     READONLY = 0x01
     HIDDEN = 0x02
@@ -138,6 +141,7 @@ class FileAttribute(IntEnum):
 
 
 class SupportedMethods:
+    """Hold list of methods which python3 can support."""
     formats = [{'name': "7z", 'magic': MAGIC_7Z}]
     codecs = [{'id': CompressionMethod.LZMA, 'name': "LZMA"},
               {'id': CompressionMethod.LZMA2, 'name': "LZMA2"},
