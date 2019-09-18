@@ -15,5 +15,7 @@ recursive-include docs *.dia
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.yml
+recursive-include docs *.svg
+recursive-include docs *.html
 recursive-include docs Makefile
 recursive-include reference *.txt

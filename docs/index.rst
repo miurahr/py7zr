@@ -7,7 +7,8 @@ Contents:
    :maxdepth: 2
 
    py7zr
-   authors
+   design
+   AUTHORS
    glossary
 
 
