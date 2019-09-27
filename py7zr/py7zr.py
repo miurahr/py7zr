@@ -34,8 +34,8 @@ import threading
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
-from py7zr.archiveinfo import Folder, Header, SignatureHeader
-from py7zr.compression import Worker, get_methods_names
+from py7zr.archiveinfo import FilesInfo, Folder, Header, SignatureHeader
+from py7zr.compression import FileHandler, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
@@ -229,7 +229,7 @@ class FileInfo:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: BinaryIO, mode: str = 'r'):
+    def __init__(self, file: Union[BinaryIO, str], mode: str = 'r') -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         # Check if we were passed a file-like object or not
@@ -250,11 +250,13 @@ class SevenZipFile:
                         filemode = modes[filemode]
                         continue
                     raise
+                self.mode = filemode
                 break
         else:
             self._filePassed = True
             self.fp = file
             self.filename = getattr(file, 'name', None)
+            self.mode = mode
         self._fileRefCnt = 1
         self._lock = threading.RLock()
         self.solid = False
@@ -264,6 +266,7 @@ class SevenZipFile:
                 self.reset()
             elif mode in 'w':
                 self.files = ArchiveFileList()
+                self.aid = 0
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -611,6 +614,31 @@ class SevenZipFile:
         for o, p in target_files:
             self._set_file_property(o, p)
 
+    def _write_archive(self):
+        self.sig_header = SignatureHeader()
+        self.sig_header._write_skelton(self.fp)
+        self.afterheader = self.fp.tell()
+        pcompressor = None
+        compressor = None
+        self.fp.seek(self.afterheader, 0)
+        for f in self.files:
+            compressor = f.folder.get_compressor()
+            if compressor is not pcompressor:
+                if pcompressor is not None:
+                    pcompressor.flush()
+                pcompressor = compressor
+            with open(f['origin'], 'r') as handler:
+                data = handler.read(Configuration.read_blocksize)
+                while data:
+                    compressor.compress(data)
+                    data = handler.read(Configuration.read_blocksize)
+        if compressor is not None:
+            compressor.flush()
+        self.header.write(self.fp, False)
+        self.fp.seek(0, 0)
+        self.sig_header.write(self.fp)
+        return
+
     def writeall(self, path, arcname=None):
         """Write files in target path into archive."""
         if os.path.isfile(path):
@@ -630,7 +658,12 @@ class SevenZipFile:
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
-        raise NotImplementedError
+        if 'w' in self.mode:
+            self.header = Header()
+            self.header.files_info = FilesInfo()
+            self.header.files_info.files = self.files
+            self._write_archive()
+        self.fp.close()
 
 
 # --------------------

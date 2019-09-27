@@ -25,6 +25,7 @@ import bz2
 import concurrent.futures
 import io
 import lzma
+import os
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
@@ -57,6 +58,9 @@ class NullHandler():
     def close(self):
         pass
 
+    def stat(self):
+        return None
+
 
 class BufferHandler():
     '''Buffer handler handles BytesIO/StringIO buffers.'''
@@ -86,6 +90,9 @@ class BufferHandler():
     def close(self) -> None:
         pass
 
+    def stat(self):
+        return None
+
 
 class FileHandler():
     '''File handler treat fileish object'''
@@ -113,6 +120,9 @@ class FileHandler():
 
     def close(self) -> None:
         self.fp.close()
+
+    def stat(self):
+        return os.stat(self.target)
 
 
 Handler = Union[NullHandler, BufferHandler, FileHandler]

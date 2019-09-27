@@ -937,3 +937,14 @@ class SignatureHeader:
         write_uint64(file, self.nextheaderofs)
         write_uint64(file, self.nextheadersize)
         write_uint32(file, self.nextheadercrc)
+
+    def _write_skelton(self, file: BinaryIO):
+        file.seek(0, 0)
+        write_bytes(file, MAGIC_7Z)
+        write_byte(file, self.version[0])
+        write_byte(file, self.version[1])
+        write_uint32(file, 0)
+        write_uint64(file, 0)
+        write_uint64(file, 0)
+        write_uint32(file, 0)
+
