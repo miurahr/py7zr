@@ -23,17 +23,15 @@
 #
 #
 """Read 7zip format archives."""
-
 import errno
 import functools
 import io
 import operator
 import os
 import stat
-import sys
 import threading
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, TextIO, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import Worker, get_methods_names
@@ -88,7 +86,7 @@ class ArchiveFile:
         return self._get_property('uncompressed')
 
     @property
-    def uncompressed_size(self):
+    def uncompressed_size(self) -> int:
         """Uncompressed file size."""
         return functools.reduce(operator.add, self.uncompressed)
 
@@ -141,7 +139,7 @@ class ArchiveFile:
         return False
 
     @property
-    def lastwritetime(self):
+    def lastwritetime(self) -> Optional[ArchiveTimestamp]:
         """Return last written timestamp of a file."""
         return self._get_property('lastwritetime')
 
@@ -156,7 +154,7 @@ class ArchiveFile:
         return None
 
     @property
-    def st_fmt(self):
+    def st_fmt(self) -> Optional[int]:
         """
         :return: Return the portion of the file mode that describes the file type
         """
@@ -164,6 +162,7 @@ class ArchiveFile:
         if e is not None:
             return stat.S_IFMT(e)
         return None
+
 
 
 class ArchiveFileList:
@@ -177,7 +176,6 @@ class ArchiveFileList:
     def append(self, file_info: Dict[str, Any]) -> None:
         self.files_list.append(file_info)
 
-    @property
     def len(self) -> int:
         return len(self.files_list)
 
@@ -196,10 +194,34 @@ class ArchiveFileList:
 # ------------------
 # Exported Classes
 # ------------------
+class ArchiveInfo:
+    """Hold archive information"""
+
+    def __init__(self, filename, size, header_size, method_names, solid, blocks):
+        self.filename = filename
+        self.size = size
+        self.header_size = header_size
+        self.method_names = method_names
+        self.solid = solid
+        self.blocks = blocks
+
+
+class FileInfo:
+    """Hold archived file information."""
+
+    def __init__(self, filename, compressed, uncompressed, archivable, is_directory, creationtime):
+        self.filename = filename
+        self.compressed = compressed
+        self.uncompressed = uncompressed
+        self.archivable = archivable
+        self.is_directory = is_directory
+        self.creationtime = creationtime
+
+
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: BinaryIO, mode: str = 'r') -> None:
+    def __init__(self, file: BinaryIO, mode: str = 'r'):
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         # Check if we were passed a file-like object or not
@@ -245,7 +267,7 @@ class SevenZipFile:
             self._fpclose(fp)
             raise e
 
-    def _fpclose(self, fp):
+    def _fpclose(self, fp: BinaryIO) -> None:
         assert self._fileRefCnt > 0
         self._fileRefCnt -= 1
         if not self._fileRefCnt and not self._filePassed:
@@ -378,7 +400,7 @@ class SevenZipFile:
                 instreamindex += numinstreams
                 streamidx = 0
 
-    def _num_files(self):
+    def _num_files(self) -> int:
         if getattr(self.header, 'files_info', None) is not None:
             return len(self.header.files_info.files)
         return 0
@@ -403,33 +425,17 @@ class SevenZipFile:
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
 
-    @classmethod
-    def _check_7zfile(cls, fp: BinaryIO) -> bool:
+    @staticmethod
+    def _check_7zfile(fp: BinaryIO) -> bool:
         return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
 
-    def _print_archiveinfo(self, file=None):
-        if file is None:
-            file = sys.stdout
-        file.write("--\n")
-        file.write("Path = {}\n".format(self.filename))
-        file.write("Type = 7z\n")
-        fstat = os.stat(self.filename)
-        file.write("Phisical Size = {}\n".format(fstat.st_size))
-        file.write("Headers Size = {}\n".format(self.header.size))  # fixme.
-        file.write("Method = {}\n".format(self._print_methods()))
-        if self.solid:
-            file.write("Solid = {}\n".format('+'))
-        else:
-            file.write("Solid = {}\n".format('-'))
-        file.write("Blocks = {}\n".format(len(self.header.main_streams.unpackinfo.folders)))
-
-    def _print_methods(self):
+    def _get_method_names(self) -> str:
         methods_names = []
         for folder in self.header.main_streams.unpackinfo.folders:
             methods_names += get_methods_names(folder.coders)
         return ', '.join(str(x) for x in methods_names)
 
-    def _test_digest_raw(self, pos, size, crc):
+    def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
         self.fp.seek(pos)
         remaining_size = size
         digest = None
@@ -439,7 +445,7 @@ class SevenZipFile:
             remaining_size -= block
         return digest == crc
 
-    def _test_pack_digest(self):
+    def _test_pack_digest(self) -> bool:
         self.reset()
         crcs = self.header.main_streams.packinfo.crcs
         if crcs is not None and len(crcs) > 0:
@@ -449,7 +455,7 @@ class SevenZipFile:
                     return False
         return True
 
-    def _test_unpack_digest(self):
+    def _test_unpack_digest(self) -> bool:
         self.reset()
         for f in self.files:
             self.worker.register_filelike(f.id, None)
@@ -460,7 +466,7 @@ class SevenZipFile:
         else:
             return True
 
-    def _test_digests(self):
+    def _test_digests(self) -> bool:
         if self._test_pack_digest():
             if self._test_unpack_digest():
                 return True
@@ -487,65 +493,32 @@ class SevenZipFile:
 
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
-    def getnames(self):
+    def getnames(self) -> List[str]:
         """Return the members of the archive as a list of their names. It has
            the same order as the list returned by getmembers().
         """
         return list(map(lambda x: x.filename, self.files))
 
-    def list(self, file=None, verbose=False):
-        """Print a table of contents to sys.stdout. If `verbose' is False, only
-           the names of the members are printed. If it is True, an `ls -l'-like
-           output is produced.
-        """
-        if file is None:
-            file = sys.stdout
-        if verbose:
-            file.write("Listing archive: {}\n".format(self.filename))
-            self._print_archiveinfo(file=file)
-            file.write('\n')
-        file.write('total %d files and directories in %sarchive\n' % (self._num_files(), (self.solid and 'solid ') or ''))
-        file.write('   Date      Time    Attr         Size   Compressed  Name\n')
-        file.write('------------------- ----- ------------ ------------  ------------------------\n')
+    def archiveinfo(self) -> ArchiveInfo:
+        fstat = os.stat(self.filename)
+        return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
+               self.solid, len(self.header.main_streams.unpackinfo.folders))
+
+    def list(self) -> List[FileInfo]:
+        """Returns contents information """
+        archive_list = []
         for f in self.files:
             if f.lastwritetime is not None:
-                creationdate = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%Y-%m-%d")
-                creationtime = filetime_to_dt(f.lastwritetime).astimezone(Local).strftime("%H:%M:%S")
+                creationtime = filetime_to_dt(f.lastwritetime)
             else:
-                creationdate = '         '
-                creationtime = '         '
-            if f.is_directory:
-                attrib = 'D...'
-            else:
-                attrib = '....'
-            if f.archivable:
-                attrib += 'A'
-            else:
-                attrib += '.'
-            if f.is_directory:
-                extra = '           0 '
-            elif f.compressed is None:
-                extra = '             '
-            else:
-                extra = '%12d ' % (f.compressed)
-            file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
-                                                  f.uncompressed_size, extra, f.filename))
-        file.write('------------------- ----- ------------ ------------  ------------------------\n')
+                creationtime = None
+            f = FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory, creationtime)
+            archive_list.append(f)
+        return archive_list
 
-    def test(self, file=None):
+    def test(self) -> bool:
         """Test archive using CRC digests."""
-        if file is None:
-            file = sys.stdout
-        file.write("Testing archive: {}\n".format(self.filename))
-        self._print_archiveinfo(file=file)
-        file.write('\n')
-        if self._test_digests():
-            file.write('Everything is Ok\n')
-            return True
-        else:
-            file.write('Bad 7zip file\n')
-            return False
-        # TODO: print number of folders, files and sizes
+        return self._test_digests()
 
     def extractall(self, path: Optional[Any] = None) -> None:
         """Extract all members from the archive to the current working
