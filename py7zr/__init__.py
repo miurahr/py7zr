@@ -19,7 +19,8 @@
 
 from py7zr.exceptions import (Bad7zFile, DecompressionError,
                               UnsupportedCompressionMethodError)
-from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, unpack_7zarchive
+from py7zr.py7zr import (ArchiveInfo, FileInfo, SevenZipFile, is_7zfile,
+                         unpack_7zarchive)
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
 __version__ = '0.3.5'
@@ -28,5 +29,5 @@ __author__ = 'Hiroshi Miura'
 __author_email__ = 'miurahr@linux.com'
 __url__ = 'http://github.com/miurahr/py7zr'
 
-__all__ = ['SevenZipFile', 'is_7zfile',
+__all__ = ['ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile',
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError', 'unpack_7zarchive']

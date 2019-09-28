@@ -1,4 +1,3 @@
-import io
 import lzma
 import os
 import shutil
