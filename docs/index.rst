@@ -8,6 +8,7 @@ Contents:
 
    py7zr
    design
+   internal_classes
    AUTHORS
    glossary
 
