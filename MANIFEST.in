@@ -17,5 +17,8 @@ recursive-include docs *.rst
 recursive-include docs *.yml
 recursive-include docs *.svg
 recursive-include docs *.html
+recursive-include docs *.odp
+recursive-include docs *.ods
+recursive-include docs *.pdf
+recursive-include docs *.txt
 recursive-include docs Makefile
-recursive-include reference *.txt
