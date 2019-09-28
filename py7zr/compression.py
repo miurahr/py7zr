@@ -354,7 +354,7 @@ def get_methods_names(coders: List[dict]) -> List[str]:
         CompressionMethod.LZMA: "LZMA",
         CompressionMethod.DELTA: "delta",
     }
-    methods_names = []
+    methods_names = []  # type: List[str]
     for coder in coders:
         methods_names.append(methods_name_map[coder['method']])
     return methods_names

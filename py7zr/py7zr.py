@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+import datetime
 import errno
 import functools
 import io
@@ -31,13 +32,12 @@ import os
 import stat
 import threading
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, TextIO, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import (ArchiveTimestamp, Local, calculate_crc32,
-                           filetime_to_dt)
+from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
 
 
@@ -164,7 +164,6 @@ class ArchiveFile:
         return None
 
 
-
 class ArchiveFileList:
     """Iteratable container of ArchiveFile."""
 
@@ -227,7 +226,7 @@ class SevenZipFile:
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool
-            self.filename = file  # type: Optional[str]
+            self.filename = file  # type: str
             modes = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                      'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
             try:
@@ -430,10 +429,10 @@ class SevenZipFile:
         return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
 
     def _get_method_names(self) -> str:
-        methods_names = []
+        methods_names = []  # type: List[str]
         for folder in self.header.main_streams.unpackinfo.folders:
             methods_names += get_methods_names(folder.coders)
-        return ', '.join(str(x) for x in methods_names)
+        return ', '.join(x for x in methods_names)
 
     def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
         self.fp.seek(pos)
@@ -502,19 +501,18 @@ class SevenZipFile:
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
-               self.solid, len(self.header.main_streams.unpackinfo.folders))
+                           self.solid, len(self.header.main_streams.unpackinfo.folders))
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
-        archive_list = []
+        alist = []  # type: List[FileInfo]
+        creationtime = None  # type: Optional[datetime.datetime]
         for f in self.files:
             if f.lastwritetime is not None:
                 creationtime = filetime_to_dt(f.lastwritetime)
-            else:
-                creationtime = None
-            f = FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory, creationtime)
-            archive_list.append(f)
-        return archive_list
+            alist.append(FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory,
+                                  creationtime))
+        return alist
 
     def test(self) -> bool:
         """Test archive using CRC digests."""

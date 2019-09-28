@@ -22,18 +22,18 @@ import os
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, Optional
+
 import py7zr
 import texttable  # type: ignore
-
 from py7zr.helpers import Local
 from py7zr.properties import SupportedMethods
 
-class Cli():
 
-    parser: argparse.ArgumentParser = None
+class Cli():
+    def __init__(self):
+        self.parser = self._create_parser()
 
     def run(self, arg: Optional[Any] = None) -> int:
-        self.parser = self._create_parser()
         args = self.parser.parse_args(arg)
         return args.func(args)
 
