@@ -17,6 +17,16 @@ Added
 Changed
 -------
 
+* Remove print functions from API and moves CLI
+    - API should not output anything other than error message.
+      * Introduce FileInfo class to represent file attributes inside
+      archive.
+      * Introduce ArchiveInfo class to represent archive attributes.
+      * provide archiveinfo() method to provide ArchiveInfo object.
+      * now list() method returns List[FileInfo]
+    - Every print things moves to Cli class.
+* Update tests according to API change.
+
 Fixed
 -----
 

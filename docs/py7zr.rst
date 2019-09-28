@@ -27,16 +27,19 @@ The module defines the following items:
    :noindex:
 
    The class for reading 7z files.  See section
-   :ref:`sevenzipfile-objects` for constructor details.
+   :ref:`sevenzipfile-object` for constructor details.
 
 
-.. class:: ArchiveFile
+.. class:: ArchiveInfo
 
-   Class used to represent information about a member of an archive. Instances
-   of this class are returned by iteration of :attr:`files_list` of :class:`SevenZipFile` objects.
-   Most users of the :mod:`py7zr` module should not create these, but only use those created by this
-   module.
-   :ref:`archivefile-objects`.
+   Class used to represent information about an information of an archive file.
+   :ref:`archiveinfo-object`.
+
+
+.. class:: FileInfo
+
+    Class used to represent information about a member of an archive file.
+   :ref:`fileinfo-objects`.
 
 
 .. function:: is_7zfile(filename)
@@ -66,10 +69,10 @@ The module defines the following items:
     `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
 
-.. _sevenzipfile-objects:
+.. _sevenzipfile-object:
 
-SevenZipFile Objects
---------------------
+SevenZipFile Object
+-------------------
 
 
 .. class:: SevenZipFile(file, mode='r', compressionlevel=None)
@@ -107,7 +110,12 @@ SevenZipFile Objects
 
 .. method:: SevenZipFile.list()
 
-   Print a table of contents for the archive to ``sys.stdout``.
+    Return a List[FileInfo].
+
+
+.. method:: SevenZipFile.archiveinfo()
+
+    Return a ArchiveInfo object.
 
 
 .. method:: SevenZipFile.testzip()
@@ -124,79 +132,22 @@ SevenZipFile Objects
    The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``. [#f5]_
 
 
-.. _archivefile-objects:
+.. _archiveinfo-object:
 
-ArchiveFile Objects
--------------------
+ArchiveInfo Object
+--------------------
 
-Instances of the :class:`ArchiveFile` class are returned by iterating :attr:`files_list` of :class:`SevenZipFile` objects.
-Each object stores information about a single member of the 7z archive. Most of users use :meth:`extractall()`.
-
-Instances have the following methods and attributes:
-
-.. method:: ArchiveFile.get_properties()
-
-   Return file properties as a hash object. Following keys are included:
-   'readonly', 'is_directory', 'posix_mode', 'archivable',
-   'emptystream', 'filename', 'creationtime', 'lastaccesstime', 'lastwritetime',
-   'attributes'
+ArchiveInfo object represent archive information.
 
 
-.. attribute:: ArchiveFile.posix_mode
 
-   posix mode when a member has a unix extension property, or None
+.. _fileinfo-objects:
 
+FileInfo Objects
+--------------------
 
-.. attribute:: ArchiveFile.id
+FileInfo objects represent a file information of member of archive.
 
-   Reference identifier number of a member.
-
-
-.. attribute:: ArchiveFile.filename
-
-   Name of the file in the archive.
-
-
-.. attribute:: ArchiveFile.lastwritetime
-
-   Value of lastwritetime property of a member
-
-
-.. attribute:: ArchiveFile.is_directory
-
-   ``True`` if this archive member is a directory.
-
-   This uses the entry's name: directories should always end with ``/``.
-
-
-.. attribute:: ArchiveFile.is_symlink
-
-   ``True`` if this archive member is a symbolic link.
-
-
-.. attribute:: ArchiveFile.archivable
-
-   ``True`` if `Archive` property of a member is enabled, otherwise ``False``.
-
-
-.. attribute:: ArchiveFile.readonly
-
-   ``True`` if `Readonly` property of a member is enabled, otherwise ``False``.
-
-
-.. attribute:: ArchiveFile.emptystream
-
-   ``True`` if a member don't have a data stream, otherwise ``False``.
-
-
-.. attribute:: ArchiveFile.uncompressed_size
-
-   Size of the uncompressed file.
-
-
-.. attribute:: ArchiveFile.uncompressed
-
-   Array data of uncompressed property of a member.
 
 
 .. _py7zr-commandline:
