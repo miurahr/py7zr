@@ -29,9 +29,13 @@ def test_basic_initinfo():
 @pytest.mark.basic
 def test_basic_list_1():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    output = io.StringIO()
-    archive.list(file=output)
-    contents = output.getvalue()
+    archive_list = archive.list()
+    # TODO
+
+
+@pytest.mark.cli
+def test_cli_list_1(capsys):
+    arc = os.path.join(testdata_path, 'test_1.7z')
     expected = """total 4 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
@@ -41,15 +45,15 @@ def test_basic_list_1():
 2019-03-14 00:09:01 ....A          559               setup.py
 ------------------- ----- ------------ ------------  ------------------------
 """
-    assert expected == contents
+    cli = py7zr.cli.Cli()
+    cli.run(["l", arc])
+    out, err = capsys.readouterr()
+    assert expected == out
 
 
 @pytest.mark.basic
-def test_basic_list_2():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_3.7z'), 'rb'))
-    output = io.StringIO()
-    archive.list(file=output)
-    contents = output.getvalue()
+def test_cli_list_2(capsys):
+    arc = os.path.join(testdata_path, 'test_3.7z')
     expected = """total 28 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
@@ -83,7 +87,10 @@ def test_basic_list_2():
 2018-10-18 10:28:16 ....A         1064               5.9.7/gcc_64/lib/libQt5X11Extras.prl
 ------------------- ----- ------------ ------------  ------------------------
 """
-    assert expected == contents
+    cli = py7zr.cli.Cli()
+    cli.run(["l", arc])
+    out, err = capsys.readouterr()
+    assert expected == out
 
 
 @pytest.mark.api
@@ -204,10 +211,9 @@ def test_cli_list(capsys):
     assert out == expected
 
 
-@pytest.mark.api
-def test_api_list_verbose(capsys):
+@pytest.mark.cli
+def test_cli_list_verbose(capsys):
     arcfile = os.path.join(testdata_path, "test_1.7z")
-    archive = py7zr.SevenZipFile(open(arcfile, 'rb'))
     expected = """Listing archive: {}
 --
 Path = {}
@@ -227,9 +233,9 @@ total 4 files and directories in solid archive
 2019-03-14 00:09:01 ....A          559               setup.py
 ------------------- ----- ------------ ------------  ------------------------
 """.format(arcfile, arcfile)
-    output = io.StringIO()
-    archive.list(file=output, verbose=True)
-    out = output.getvalue()
+    cli = py7zr.cli.Cli()
+    cli.run(["l", "--verbose", arcfile])
+    out, err = capsys.readouterr()
     assert out == expected
 
 
