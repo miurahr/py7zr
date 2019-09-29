@@ -20,7 +20,6 @@ def rmtree_onerror(func, path, exc_info):
         raise
 
 
-
 @pytest.mark.files
 def test_github_14_multi():
     """ multiple unnamed objects."""
