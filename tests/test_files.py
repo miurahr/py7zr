@@ -32,13 +32,6 @@ def test_solid():
 
 
 @pytest.mark.files
-@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
-def test_copy():
-    """ test loading of copy compressed files.(help wanted)"""
-    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
-
-
-@pytest.mark.files
 def test_empty():
     # decompress empty archive
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
@@ -53,18 +46,6 @@ def test_github_14():
     archive.extractall(path=tmpdir)
     with open(os.path.join(tmpdir, 'github_14'), 'rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
-    shutil.rmtree(tmpdir)
-
-
-@pytest.mark.files
-def test_github_14_multi():
-    """ multiple unnamed objects."""
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
-    assert archive.getnames() == ['github_14_multi', 'github_14_multi']
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    with open(os.path.join(tmpdir, 'github_14_multi'), 'rb') as f:
-        assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
     shutil.rmtree(tmpdir)
 
 
@@ -148,34 +129,6 @@ def test_lzma2bcj():
 @pytest.mark.files
 def test_zerosize():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    shutil.rmtree(tmpdir)
-
-
-@pytest.mark.files
-def test_multiblock():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'bin/7zdec.exe'), 'rb').read())
-    assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
-    shutil.rmtree(tmpdir, onerror=rmtree_onerror)
-
-
-@pytest.mark.files
-def test_multiblock_zerosize():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_2.7z'), 'rb'))
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    shutil.rmtree(tmpdir)
-
-
-@pytest.mark.files
-@pytest.mark.timeout(120)
-def test_multiblock_last_padding():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
     shutil.rmtree(tmpdir)
