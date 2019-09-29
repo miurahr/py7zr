@@ -170,6 +170,10 @@ class Worker:
                     read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
                     inp = fp.read(read_size)
                     tmp = decompressor.decompress(inp, max_length)
+                    if len(tmp) == 0:
+                        for _ in range(out_remaining):
+                            fileish.write(b'\x00')
+                        break
                 else:
                     tmp = decompressor.decompress(b'', max_length)
                 if out_remaining >= len(tmp):

@@ -53,7 +53,7 @@ def test_multiblock_zerosize():
 
 
 @pytest.mark.files
-@pytest.mark.timeout(120)
+@pytest.mark.timeout(5, method='thread')
 @pytest.mark.xfail()
 def test_multiblock_last_padding():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
