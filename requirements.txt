@@ -2,6 +2,7 @@ texttable
 pytest
 pytest-benchmark[histogram]
 pytest-cov
+pytest-timeout
 coverage
 coveralls
 flake8
