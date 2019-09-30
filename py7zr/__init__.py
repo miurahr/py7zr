@@ -22,7 +22,7 @@ from py7zr.exceptions import (Bad7zFile, DecompressionError,
 from py7zr.py7zr import SevenZipFile, is_7zfile, unpack_7zarchive
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 __license__ = 'LGPL-2.1+'
 __author__ = 'Hiroshi Miura'
 __author_email__ = 'miurahr@linux.com'
