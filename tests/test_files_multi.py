@@ -53,9 +53,11 @@ def test_multiblock_zerosize():
 
 @pytest.mark.files
 @pytest.mark.timeout(5, method='thread')
-@pytest.mark.xfail()
 def test_multiblock_last_padding():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     tmpdir = tempfile.mkdtemp()
     archive.extractall(path=tmpdir)
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmpdir, '5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('98985de41ddba789d039bb10d86ea3015bf0d8d9fa86b25a0490044c247233d3')
     shutil.rmtree(tmpdir)
