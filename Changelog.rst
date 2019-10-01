@@ -17,6 +17,8 @@ Added
 Changed
 -------
 
+* Use seek&truncate for padding trailer if needed.
+
 Fixed
 -----
 
