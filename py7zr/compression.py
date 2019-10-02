@@ -51,6 +51,9 @@ class NullHandler():
     def seek(self, offset, whence=1):
         pass
 
+    def truncate(self, size):
+        pass
+
     def close(self):
         pass
 
@@ -77,6 +80,9 @@ class BufferHandler():
     def seek(self, offset, whence=1):
         self.buf.seek(offset, whence)
 
+    def truncate(self, size):
+        pass
+
     def close(self) -> None:
         pass
 
@@ -101,6 +107,9 @@ class FileHandler():
 
     def seek(self, offset, whence=1):
         self.fp.seek(offset, whence)
+
+    def truncate(self, size=None):
+        self.fp.truncate(size)
 
     def close(self) -> None:
         self.fp.close()
@@ -171,8 +180,8 @@ class Worker:
                     inp = fp.read(read_size)
                     tmp = decompressor.decompress(inp, max_length)
                     if len(tmp) == 0:
-                        for _ in range(out_remaining):
-                            fileish.write(b'\x00')
+                        fileish.seek(out_remaining, 2)
+                        fileish.truncate(None)
                         break
                 else:
                     tmp = decompressor.decompress(b'', max_length)
