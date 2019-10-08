@@ -351,9 +351,8 @@ def test_read_crcs():
 @pytest.mark.unit
 def test_file_list_length():
     file_list = py7zr.py7zr.ArchiveFileList()
-    file = py7zr.py7zr.ArchiveFile(0, None)
-    file_list.append(file)
-    assert file_list.len == 1
+    file_list.append(py7zr.py7zr.ArchiveFile(0, None))
+    assert file_list.len() == 1
 
 
 @pytest.mark.unit
