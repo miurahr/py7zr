@@ -26,7 +26,6 @@ Changed
       * now list() method returns List[FileInfo]
     - Every print things moves to Cli class.
 * Update tests according to API change.
-* Use seek&truncate for padding trailer if needed.
 
 Fixed
 -----
@@ -39,6 +38,15 @@ Removed
 
 Security
 --------
+
+`v0.3.5`_
+=========
+
+Changed
+-------
+
+* Use seek&truncate for padding trailer if needed.
+
 
 `v0.3.4`_
 =========
@@ -357,7 +365,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.5...HEAD
+.. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
 .. _v0.3.3: https://github.com/miurahr/py7zr/compare/v0.3.2...v0.3.3
 .. _v0.3.2: https://github.com/miurahr/py7zr/compare/v0.3.1...v0.3.2
