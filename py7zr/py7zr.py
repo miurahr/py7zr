@@ -46,6 +46,10 @@ class ArchiveFile:
     It holds file properties; filename, permissions, and type whether
     it is directory, link or normal file.
 
+    Instances of the :class:`ArchiveFile` class are returned by iterating :attr:`files_list` of
+     :class:`SevenZipFile` objects.
+    Each object stores information about a single member of the 7z archive. Most of users use :meth:`extractall()`.
+
     The class also hold an archive parameter where file is exist in
     archive file folder(container)."""
     def __init__(self, id: int, file_info: Dict[str, Any]) -> None:
@@ -53,6 +57,10 @@ class ArchiveFile:
         self._file_info = file_info
 
     def file_properties(self) -> Dict[str, Any]:
+        """Return file properties as a hash object. Following keys are included: ‘readonly’, ‘is_directory’,
+         ‘posix_mode’, ‘archivable’, ‘emptystream’, ‘filename’, ‘creationtime’, ‘lastaccesstime’,
+          ‘lastwritetime’, ‘attributes’
+        """
         properties = self._file_info
         if properties is not None:
             properties['readonly'] = self.readonly
@@ -146,6 +154,7 @@ class ArchiveFile:
     @property
     def posix_mode(self) -> Optional[int]:
         """
+        posix mode when a member has a unix extension property, or None
         :return: Return file stat mode can be set by os.chmod()
         """
         e = self._get_unix_extension()
