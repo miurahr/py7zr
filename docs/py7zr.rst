@@ -32,14 +32,14 @@ The module defines the following items:
 
 .. class:: ArchiveInfo
 
-   Class used to represent information about an information of an archive file.
-   :ref:`archiveinfo-object`.
+   Class used to represent information about an information of an archive file. See section
+   :ref:`archiveinfo-object` for fields details.
 
 
 .. class:: FileInfo
 
-    Class used to represent information about a member of an archive file.
-   :ref:`fileinfo-objects`.
+    Class used to represent information about a member of an archive file. See section
+   :ref:`fileinfo-objects` for fields details.
 
 
 .. function:: is_7zfile(filename)
@@ -50,7 +50,7 @@ The module defines the following items:
 
 .. function:: unpack_7zarchive(archive, path, extra=None)
 
-   Helper function to use with :mod:`shutil` module which offers a number of high-level operations on files
+   Helper function to intend to use with :mod:`shutil` module which offers a number of high-level operations on files
    and collections of files. Since :mod:`shutil` has a function to register decompressor of archive, you can register
    an helper function and then you can extract archive by calling :meth:`shutil.unpack_archive`
 
@@ -62,11 +62,11 @@ The module defines the following items:
 
 .. seealso::
 
-   `7z_format`_ Documentation on the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
+   (external link) `7z_format`_ Documentation of the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
 
 .. seealso::
 
-    `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
+   (external link) `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
 
 .. _sevenzipfile-object:
