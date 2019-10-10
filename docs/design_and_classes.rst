@@ -13,7 +13,7 @@ class diagram
 -------------
 
 .. image:: class_diagram.svg
-   :target: class_diagram.svg
+   :target: _images/class_diagram.svg
 
 .. _internal_classes:
 
