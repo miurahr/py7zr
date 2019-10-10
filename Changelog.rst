@@ -17,16 +17,6 @@ Added
 Changed
 -------
 
-* Remove print functions from API and moves CLI
-    - API should not output anything other than error message.
-      * Introduce FileInfo class to represent file attributes inside
-      archive.
-      * Introduce ArchiveInfo class to represent archive attributes.
-      * provide archiveinfo() method to provide ArchiveInfo object.
-      * now list() method returns List[FileInfo]
-    - Every print things moves to Cli class.
-* Update tests according to API change.
-
 Fixed
 -----
 
@@ -38,6 +28,29 @@ Removed
 
 Security
 --------
+
+`v0.4a1`_
+=============
+
+Added
+-----
+
+* Update document to add 7zformat descriptions.
+
+Changed
+-------
+
+* Remove print functions from API and moves CLI
+    - API should not output anything other than error message.
+      * Introduce FileInfo class to represent file attributes inside
+      archive.
+      * Introduce ArchiveInfo class to represent archive attributes.
+      * provide archiveinfo() method to provide ArchiveInfo object.
+      * now list() method returns List[FileInfo]
+    - Every print things moves to Cli class.
+* Update tests according to API change.
+* Update documents to refrect API changes.
+
 
 `v0.3.5`_
 =========
@@ -365,8 +378,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.3.5...HEAD
-.. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4a1...HEAD
+.. _v0.4a1: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4a1
+.. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
 .. _v0.3.3: https://github.com/miurahr/py7zr/compare/v0.3.2...v0.3.3
 .. _v0.3.2: https://github.com/miurahr/py7zr/compare/v0.3.1...v0.3.2
