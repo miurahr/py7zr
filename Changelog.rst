@@ -14,8 +14,12 @@ Current changes
 Added
 -----
 
+* unit test for NullHandler, BufferHandler, FileHandler.
+
 Changed
 -------
+
+* NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
 
 Fixed
 -----

@@ -39,7 +39,7 @@ class NullHandler():
     def __init__(self):
         pass
 
-    def open(self):
+    def open(self, mode=None):
         pass
 
     def write(self, t):
@@ -65,7 +65,7 @@ class BufferHandler():
         self.buf = target
         self.target = "memory buffer"
 
-    def open(self) -> None:
+    def open(self, mode=None) -> None:
         pass
 
     def write(self, data: bytes) -> None:
@@ -93,8 +93,8 @@ class FileHandler():
     def __init__(self, target: str) -> None:
         self.target = target
 
-    def open(self) -> None:
-        self.fp = open(self.target, 'wb')
+    def open(self, mode='wb') -> None:
+        self.fp = open(self.target, mode)
 
     def write(self, data: bytes) -> None:
         self.fp.write(data)

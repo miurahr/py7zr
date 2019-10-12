@@ -4,6 +4,7 @@ import io
 import lzma
 import os
 import struct
+import tempfile
 
 import py7zr.archiveinfo
 import py7zr.compression
@@ -391,3 +392,43 @@ def test_write_signature_header():
     val = file.getvalue()
     assert val.startswith(py7zr.properties.MAGIC_7Z)
     assert val == py7zr.properties.MAGIC_7Z + b"\x00\x04" + b"iU\xe7\xe7\xc0\x04\x04\x99\xd3&\xf6"
+
+
+@pytest.mark.unit
+def test_null_handler():
+    handler = py7zr.compression.NullHandler()
+    handler.open()
+    data = handler.read(100)
+    handler.write(data)
+    handler.seek(10)
+    handler.truncate(None)
+    handler.close()
+
+
+@pytest.mark.unit
+def test_buffer_handler():
+    buf = io.BytesIO(b'1234567890')
+    handler = py7zr.compression.BufferHandler(buf)
+    handler.open()
+    data = handler.read(5)
+    handler.write(data)
+    handler.seek(5)
+    handler.truncate(None)
+    handler.close()
+
+
+@pytest.mark.unit
+def test_file_handler():
+    tmpdir = tempfile.mkdtemp()
+    target = os.path.join(tmpdir, 'testfile')
+    handler = py7zr.compression.FileHandler(target)
+    handler.open(mode='wb')
+    data = b'01234567890123456789\0'
+    handler.write(data)
+    handler.close()
+    handler.open(mode='r+b')
+    data = handler.read(5)
+    assert data == b'01234'
+    handler.seek(20)
+    handler.truncate(None)
+    handler.close()
