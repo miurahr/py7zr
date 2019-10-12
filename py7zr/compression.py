@@ -174,7 +174,7 @@ class Worker:
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
             if not decompressor.eof:
-                max_length = min(out_remaining, Configuration.get('read_blocksize'))
+                max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
                 if decompressor.needs_input:
                     read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
                     inp = fp.read(read_size)
