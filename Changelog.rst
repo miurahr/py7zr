@@ -14,17 +14,26 @@ Current changes
 Added
 -----
 
+* Support for pypy3 (pypy3.5-7.0) and later(pypy3.6-7.1 or later).
+
 Changed
 -------
 
+* Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
+
 Fixed
 -----
+
+* Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
 
 Deprecated
 ----------
 
 Removed
 -------
+
+* Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
+  when max_length > io.DEFAULT_BUFFER_SIZE.
 
 Security
 --------
