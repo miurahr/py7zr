@@ -14,12 +14,8 @@ Current changes
 Added
 -----
 
-* unit test for NullHandler, BufferHandler, FileHandler.
-
 Changed
 -------
-
-* NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
 
 Fixed
 -----
@@ -33,6 +29,20 @@ Removed
 Security
 --------
 
+`v0.4b1`_
+=============
+
+Added
+-----
+
+* unit test for NullHandler, BufferHandler, FileHandler.
+
+Changed
+-------
+
+* NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
+
+
 `v0.4a2`_
 =========
 
@@ -45,8 +55,13 @@ Changed
 -------
 
 * Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
+  - PyPy issue: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
 * Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
   when max_length > io.DEFAULT_BUFFER_SIZE.
+  - PyPy Issue: https://bitbucket.org/pypy/pypy/issues/3090/lzma-sometimes-decompresses-data
+  - bpo-21872: https://bugs.python.org/issue21872
+  - Fix: https://github.com/python/cpython/pull/14048
+
 
 Fixed
 -----
