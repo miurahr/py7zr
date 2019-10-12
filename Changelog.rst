@@ -14,17 +14,11 @@ Current changes
 Added
 -----
 
-* Support for pypy3 (pypy3.5-7.0) and later(pypy3.6-7.1 or later).
-
 Changed
 -------
 
-* Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
-
 Fixed
 -----
-
-* Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
 
 Deprecated
 ----------
@@ -32,14 +26,32 @@ Deprecated
 Removed
 -------
 
-* Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
-  when max_length > io.DEFAULT_BUFFER_SIZE.
-
 Security
 --------
 
+`v0.4a2`_
+=========
+
+Added
+-----
+
+* Support for pypy3 (pypy3.5-7.0) and later(pypy3.6-7.1 or later).
+
+Changed
+-------
+
+* Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
+* Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
+  when max_length > io.DEFAULT_BUFFER_SIZE.
+
+Fixed
+-----
+
+* Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
+
+
 `v0.4a1`_
-=============
+=========
 
 Added
 -----
@@ -387,7 +399,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4a1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4a2...HEAD
+.. _v0.4a2: https://github.com/miurahr/py7zr/compare/v0.4a1...v0.4a2
 .. _v0.4a1: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4a1
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
