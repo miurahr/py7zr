@@ -180,8 +180,7 @@ class Worker:
                     inp = fp.read(read_size)
                     tmp = decompressor.decompress(inp, max_length)
                     if len(tmp) == 0:
-                        fileish.seek(out_remaining, 2)
-                        fileish.truncate(None)
+                        # FIXME: there is a bug in python core?
                         break
                 else:
                     tmp = decompressor.decompress(b'', max_length)
@@ -192,6 +191,7 @@ class Worker:
                         break
             else:
                 break
+        assert out_remaining == 0
         if decompressor.eof:
             if decompressor.crc is not None and not decompressor.check_crc():
                 print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))

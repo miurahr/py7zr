@@ -19,6 +19,8 @@ Added
 Changed
 -------
 
+* Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
+
 Fixed
 -----
 
@@ -29,6 +31,9 @@ Deprecated
 
 Removed
 -------
+
+* Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
+  when max_length > io.DEFAULT_BUFFER_SIZE.
 
 Security
 --------
