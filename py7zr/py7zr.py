@@ -480,9 +480,13 @@ class SevenZipFile:
                 return True
         return False
 
-    def _make_file_info(self, target):
+    @staticmethod
+    def _make_file_info(target, arcname=None) -> Dict[str, Any]:
         f = {}
-        f['filename'] = target
+        if arcname is not None:
+            f['filename'] = arcname
+        else:
+            f['filename'] = target
         if os.path.isdir(target):
             f['emptystream'] = True
             f['attributes'] = FileAttribute.DIRECTORY
@@ -497,6 +501,8 @@ class SevenZipFile:
         elif os.path.isfile(target):
             f['emptystream'] = False
             f['attributes'] = 0x0
+            fstat = os.stat(target)
+            f['uncompressed'] = fstat.st_size
         return f
 
     # --------------------------------------------------------------------------
@@ -610,20 +616,15 @@ class SevenZipFile:
         if os.path.isfile(path):
             self.write(path, arcname)
         elif os.path.isdir(path):
-            if arcname:
+            if arcname is not None:
                 self.write(path, arcname)
             for nm in sorted(os.listdir(path)):
                 self.writeall(os.path.join(path, nm), os.path.join(arcname, nm))
 
     def write(self, file, arcname=None):
         """Write single target file into archive(Not implemented yet)."""
-        file_info = {}
-        if os.path.isfile(file):
-            file_info['filename'] = arcname
-            fstat = os.stat(file)
-            file_info['uncompressed'] = fstat.st_size
+        file_info = self._make_file_info(file, arcname)
         self.files.append(file_info)
-        raise NotImplementedError
 
     def close(self):
         """Flush all the data into archive and close it.

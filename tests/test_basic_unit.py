@@ -432,3 +432,20 @@ def test_file_handler():
     handler.seek(20)
     handler.truncate(None)
     handler.close()
+
+
+@pytest.mark.unit
+def test_make_file_info1():
+    file_info = py7zr.py7zr.SevenZipFile._make_file_info(os.path.join(testdata_path, 'src', 'bra.txt'), 'src/bra.txt')
+    assert file_info.get('filename') == os.path.join('src', 'bra.txt')
+    assert file_info.get('emptystream') == False
+    assert file_info.get('uncompressed') == 11
+
+
+@pytest.mark.unit
+def test_make_file_info2():
+    file_info = py7zr.py7zr.SevenZipFile._make_file_info(os.path.join(testdata_path, 'src'))
+    assert file_info.get('filename') == os.path.join(testdata_path, 'src')
+    assert file_info.get('emptystream') == True
+    flag = py7zr.properties.FileAttribute.DIRECTORY
+    assert file_info.get('attributes') & flag == flag
