@@ -29,8 +29,13 @@ Removed
 Security
 --------
 
+`v0.4`_
+=======
+
+* As same as v0.4b1
+
 `v0.4b1`_
-=============
+=========
 
 Added
 -----
@@ -418,7 +423,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4a2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4...HEAD
+.. _v0.4: https://github.com/miurahr/py7zr/compare/v0.4...v0.4b1
+.. _v0.4b1: https://github.com/miurahr/py7zr/compare/v0.4a2...v0.4b1
 .. _v0.4a2: https://github.com/miurahr/py7zr/compare/v0.4a1...v0.4a2
 .. _v0.4a1: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4a1
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
