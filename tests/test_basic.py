@@ -330,6 +330,7 @@ def test_non7z_ext(capsys):
     cli.run(["x", arcfile, tmpdir])
     out, err = capsys.readouterr()
     assert expected == out
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.cli
@@ -359,16 +360,13 @@ def test_py7zr_write():
     archive = py7zr.SevenZipFile(target, 'w')
     archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     archive.close()
+    # shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
 def test_py7zr_write_mode():
-    # prepare
     tmpdir = tempfile.mkdtemp()
     target = os.path.join(tmpdir, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
-    archive.header = py7zr.archiveinfo.Header()
-    archive.header.files_info = py7zr.archiveinfo.FilesInfo()
-    # run
-    archive._write_archive()
+    shutil.rmtree(tmpdir)
