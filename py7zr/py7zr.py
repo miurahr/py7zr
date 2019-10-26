@@ -32,10 +32,10 @@ import os
 import stat
 import threading
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Union, IO
 
 from py7zr.archiveinfo import FilesInfo, Folder, Header, SignatureHeader
-from py7zr.compression import FileHandler, Worker, get_methods_names
+from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
@@ -74,6 +74,10 @@ class ArchiveFile:
             return self._file_info[key]
         except KeyError:
             return None
+
+    @property
+    def origin(self) -> str:
+        return self._get_property('origin')
 
     @property
     def folder(self) -> Folder:
@@ -229,7 +233,7 @@ class FileInfo:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: Union[BinaryIO, str], mode: str = 'r') -> None:
+    def __init__(self, file: Union[BinaryIO, str], mode: str = 'r', filters: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         # Check if we were passed a file-like object or not
@@ -238,19 +242,24 @@ class SevenZipFile:
             self.filename = file  # type: str
             modes = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
                      'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
-            try:
-                filemode = modes[mode]
-            except KeyError:
-                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
             while True:
                 try:
-                    self.fp = open(file, filemode)  # type: BinaryIO
+                    if mode == 'r':
+                        self.fp = open(file, 'rb')  # type: BinaryIO
+                    elif mode == 'w':
+                        self.fp = open(file, 'w+b')  # type: BinaryIO
+                    elif mode == 'x':
+                        self.fp = open(file, 'x+b')  # type: BinaryIO
+                    elif mode == 'a':
+                        self.fp = open(file, 'r+b')  # type: BinaryIO
+                    else:
+                        raise ValueError("File open error.")
                 except OSError:
-                    if filemode in modes:
-                        filemode = modes[filemode]
+                    if mode in modes:
+                        mode = modes[mode]
                         continue
                     raise
-                self.mode = filemode
+                self.mode = mode
                 break
         else:
             self._filePassed = True
@@ -265,8 +274,7 @@ class SevenZipFile:
                 self._real_get_contents(self.fp)
                 self.reset()
             elif mode in 'w':
-                self.files = ArchiveFileList()
-                self.aid = 0
+                self._write_open()
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -277,6 +285,21 @@ class SevenZipFile:
             fp = self.fp
             self._fpclose(fp)
             raise e
+
+    def _write_open(self):
+        self.folder = self._create_folder()
+        self.files = ArchiveFileList()
+
+    def _create_folder(self):
+        folder = Folder()
+        folder.compressor = SevenZipCompressor()
+        folder.coders = folder.compressor.coders
+        folder.solid = True
+        folder.digestdefined = False
+        folder.bindpairs = 0
+        folder.totalin = 1
+        folder.totalout = 1
+        return folder
 
     def _fpclose(self, fp: BinaryIO) -> None:
         assert self._fileRefCnt > 0
@@ -484,8 +507,9 @@ class SevenZipFile:
         return False
 
     @staticmethod
-    def _make_file_info(target, arcname=None) -> Dict[str, Any]:
+    def _make_file_info(target, arcname=None) -> ArchiveFile:
         f = {}
+        f['origin'] = target
         if arcname is not None:
             f['filename'] = arcname
         else:
@@ -618,22 +642,18 @@ class SevenZipFile:
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        pcompressor = None
-        compressor = None
         self.fp.seek(self.afterheader, 0)
+        compressor = self.folder.get_compressor()
         for f in self.files:
-            compressor = f.folder.get_compressor()
-            if compressor is not pcompressor:
-                if pcompressor is not None:
-                    pcompressor.flush()
-                pcompressor = compressor
-            with open(f['origin'], 'r') as handler:
+            origin = getattr(f, 'origin', None)
+            assert origin is not None
+            assert isinstance(origin, str)
+            with open(origin, 'rb') as handler:
                 data = handler.read(Configuration.read_blocksize)
                 while data:
                     compressor.compress(data)
                     data = handler.read(Configuration.read_blocksize)
-        if compressor is not None:
-            compressor.flush()
+        compressor.flush()
         self.header.write(self.fp, False)
         self.fp.seek(0, 0)
         self.sig_header.write(self.fp)

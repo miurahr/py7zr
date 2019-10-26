@@ -947,4 +947,3 @@ class SignatureHeader:
         write_uint64(file, 0)
         write_uint64(file, 0)
         write_uint32(file, 0)
-
