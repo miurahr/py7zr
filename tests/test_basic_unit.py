@@ -3,6 +3,7 @@ import datetime
 import io
 import lzma
 import os
+import shutil
 import struct
 import tempfile
 
@@ -432,6 +433,7 @@ def test_file_handler():
     handler.seek(20)
     handler.truncate(None)
     handler.close()
+    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
