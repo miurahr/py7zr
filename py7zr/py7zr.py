@@ -35,7 +35,7 @@ from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union, IO
 
 from py7zr.archiveinfo import FilesInfo, Folder, Header, SignatureHeader
-from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
+from py7zr.compression import FileHandler, SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
@@ -509,7 +509,7 @@ class SevenZipFile:
     @staticmethod
     def _make_file_info(target, arcname=None) -> ArchiveFile:
         f = {}
-        f['origin'] = target
+        f['origin'] = FileHandler(target)
         if arcname is not None:
             f['filename'] = arcname
         else:
@@ -645,14 +645,12 @@ class SevenZipFile:
         self.fp.seek(self.afterheader, 0)
         compressor = self.folder.get_compressor()
         for f in self.files:
-            origin = getattr(f, 'origin', None)
-            assert origin is not None
-            assert isinstance(origin, str)
-            with open(origin, 'rb') as handler:
+            handler = getattr(f, 'origin', None)
+            handler.open(mode='rb')
+            data = handler.read(Configuration.read_blocksize)
+            while data:
+                compressor.compress(data)
                 data = handler.read(Configuration.read_blocksize)
-                while data:
-                    compressor.compress(data)
-                    data = handler.read(Configuration.read_blocksize)
         compressor.flush()
         self.header.write(self.fp, False)
         self.fp.seek(0, 0)
