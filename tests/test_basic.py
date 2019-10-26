@@ -110,6 +110,8 @@ def test_write_mode():
 @pytest.mark.api
 def test_basic_not_implemented_yet3():
     tmpdir = tempfile.mkdtemp()
+    with open(os.path.join(tmpdir, 'test_a.7z'), 'w') as f:
+        f.write('foo')
     with pytest.raises(NotImplementedError):
         py7zr.SevenZipFile(os.path.join(tmpdir, 'test_a.7z'), mode='a')
     shutil.rmtree(tmpdir)
@@ -351,7 +353,6 @@ def test_non7z_list(capsys):
 
 
 @pytest.mark.api
-#@pytest.mark.xfail(raises=NotImplementedError, reason="Not implemented yet")
 def test_py7zr_write():
     tmpdir = tempfile.mkdtemp()
     target = os.path.join(tmpdir, 'target.7z')
@@ -366,14 +367,8 @@ def test_py7zr_write_mode():
     tmpdir = tempfile.mkdtemp()
     target = os.path.join(tmpdir, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
-    file_info = {}
-    file_info['filename'] = 'test1.txt'
-    file_info['origin'] = py7zr.compression.FileHandler(os.path.join(testdata_path, "test1.txt"))
-    file_info['uncompressed'] = file_info['origin'].stat().st_size
-    archive.files.append(file_info)
     archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     archive.header = py7zr.archiveinfo.Header()
     archive.header.files_info = py7zr.archiveinfo.FilesInfo()
-    archive.header.files_info.files = archive.files
     # run
     archive._write_archive()
