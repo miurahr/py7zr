@@ -639,7 +639,7 @@ class FilesInfo:
 
     def __init__(self):
         self.numfiles = None
-        self.files = None
+        self.files = None  # type: List[Dict[str, Any]]
         self.emptyfiles = None
         self.antifiles = None
         self.dataindex = None
@@ -669,7 +669,7 @@ class FilesInfo:
             buffer = io.BytesIO(fp.read(size))
             if prop == Property.EMPTY_STREAM:
                 isempty = read_boolean(buffer, self.numfiles)
-                list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))
+                list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
                 for x in isempty:
                     if x:
                         numemptystreams += 1

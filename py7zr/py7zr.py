@@ -32,10 +32,11 @@ import os
 import stat
 import threading
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Union, IO
+from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr.archiveinfo import FilesInfo, Folder, Header, SignatureHeader
-from py7zr.compression import FileHandler, SevenZipCompressor, Worker, get_methods_names
+from py7zr.compression import (FileHandler, SevenZipCompressor, Worker,
+                               get_methods_names)
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
@@ -507,8 +508,8 @@ class SevenZipFile:
         return False
 
     @staticmethod
-    def _make_file_info(target, arcname=None) -> ArchiveFile:
-        f = {}
+    def _make_file_info(target, arcname=None) -> Dict[str, Any]:
+        f = {}  # type: Dict[str, Any]
         f['origin'] = FileHandler(target)
         if arcname is not None:
             f['filename'] = arcname
