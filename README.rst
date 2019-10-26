@@ -26,7 +26,23 @@ Pure python 7-zip implementation
 Dependency
 ==========
 
-It uses a standard lzma module that is supported in Python3.3 and later.
+It uses a standard lzma module and its API supported.
+It also uses type definitions introduced in Python3.6.
+
+Minimum required version is Python 3.5.
+
+Version recommendations are:
+
+- CPython 3.7.5, CPython 3.8.0 and later.
+- PyPy3.6-7.2.0 and later.
+
+Following fixes are included in above versions and python3.6 series is not fixed it.
+
+- _`BPO-21872`: LZMA library sometimes fails to decompress a file
+- _`PyPy3-3088`: lzma.LZMADecomporessor.decompress does not respect max_length
+
+.. _`BPO-21872`: https://bugs.python.org/issue21872
+.. _`PyPy3-3088`: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
 
 
 Document
