@@ -29,6 +29,15 @@ Removed
 Security
 --------
 
+`v0.4.1`_
+=======
+
+Fixed
+-----
+
+* Skip rare case when directory already exist, that can happen multiple process working
+  in same working directory.(Backport from master)
+
 `v0.4`_
 =======
 
@@ -423,8 +432,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4...HEAD
-.. _v0.4: https://github.com/miurahr/py7zr/compare/v0.4...v0.4b1
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4.1...HEAD
+.. _v0.4.1: https://github.com/miurahr/py7zr/compare/v0.4...v0.4.1
+.. _v0.4: https://github.com/miurahr/py7zr/compare/v0.4b1...v0.4
 .. _v0.4b1: https://github.com/miurahr/py7zr/compare/v0.4a2...v0.4b1
 .. _v0.4a2: https://github.com/miurahr/py7zr/compare/v0.4a1...v0.4a2
 .. _v0.4a1: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4a1
