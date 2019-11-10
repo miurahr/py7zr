@@ -582,14 +582,16 @@ class SevenZipFile:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
         for target_dir in sorted(target_dirs):
-            if not os.path.exists(target_dir):
+            try:
                 os.mkdir(target_dir)
-            elif os.path.isdir(target_dir):
-                pass
-            elif os.path.isfile(target_dir):
-                raise Exception("Directory name is existed as a normal file.")
-            else:
-                raise Exception()
+            except FileExistsError:
+                if os.path.isdir(target_dir):
+                    # skip rare case
+                    pass
+                elif os.path.isfile(target_dir):
+                    raise Exception("Directory name is existed as a normal file.")
+                else:
+                    raise Exception("Directory making fails on unknown condition.")
         self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
