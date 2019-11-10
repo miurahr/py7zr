@@ -439,7 +439,7 @@ def test_file_handler():
 @pytest.mark.unit
 def test_make_file_info1():
     file_info = py7zr.py7zr.SevenZipFile._make_file_info(os.path.join(testdata_path, 'src', 'bra.txt'), 'src/bra.txt')
-    assert file_info.get('filename') == os.path.join('src', 'bra.txt')
+    assert file_info.get('filename') == 'src/bra.txt'
     assert not file_info.get('emptystream')
     assert file_info.get('uncompressed') == 11
 
