@@ -306,22 +306,6 @@ def test_write_packinfo():
 
 
 @pytest.mark.unit
-def test_startheader_calccrc():
-    startheader = py7zr.archiveinfo.SignatureHeader()
-    startheader.version = (0, 4)
-    startheader.nextheaderofs = 1024
-    startheader.nextheadersize = 32
-    # set test data to buffer that start with Property.ENCODED_HEADER
-    fp = open(os.path.join(testdata_path, 'test_5.7z'), 'rb')
-    header_buf = io.BytesIO(b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00'
-                            b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00')
-    header = py7zr.archiveinfo.Header.retrieve(fp, header_buf, start_pos=32)
-    startheader.calccrc(header)
-    assert startheader.startheadercrc == 3257288896
-    assert startheader.nextheadercrc == 1372678730
-
-
-@pytest.mark.unit
 def test_utc():
     dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0, tzinfo=py7zr.helpers.UTC())
     assert dt.tzname() == 'UTC'
@@ -354,7 +338,7 @@ def test_read_crcs():
 def test_file_list_length():
     file_list = py7zr.py7zr.ArchiveFileList()
     file_list.append(py7zr.py7zr.ArchiveFile(0, None))
-    assert file_list.len() == 1
+    assert len(file_list) == 1
 
 
 @pytest.mark.unit
@@ -375,24 +359,43 @@ def test_wrong_mode():
 
 
 @pytest.mark.unit
+def test_calculate_crc32():
+    test_data = b'\x12\x11\x12\x11'
+    expected = 3572816238
+    assert py7zr.helpers.calculate_crc32(test_data) == expected
+
+
+@pytest.mark.unit
+def test_startheader_calccrc():
+    startheader = py7zr.archiveinfo.SignatureHeader()
+    startheader.version = (0, 4)
+    startheader.nextheaderofs = 0x000000a0
+    startheader.nextheadersize = 0x00000021
+    # set test data to buffer that start with Property.ENCODED_HEADER
+    header_data = b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00' \
+                 b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
+    startheader.calccrc(header_data)
+    assert startheader.nextheadercrc == 0xbfe4b8b9
+    assert startheader.startheadercrc == 0x37b72a70
+
+
+@pytest.mark.unit
 def test_write_signature_header():
-
-    class header_mock:
-        def __init__(self, data):
-            self.data = data
-
-        def write(self, buf):
-            buf.write(self.data)
-
-    sh = py7zr.archiveinfo.SignatureHeader()
-    sh.nextheaderofs = 1024
-    header = header_mock(b'\x01\x01\x01\x01')
-    sh.calccrc(header)
+    startheader = py7zr.archiveinfo.SignatureHeader()
+    startheader.nextheaderofs = 0x000000a0
+    startheader.nextheadersize = 0x00000021
+    header_data = b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00' \
+                  b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
+    startheader.calccrc(header_data)
     file = io.BytesIO()
-    sh.write(file)
+    startheader.write(file)
     val = file.getvalue()
     assert val.startswith(py7zr.properties.MAGIC_7Z)
-    assert val == py7zr.properties.MAGIC_7Z + b"\x00\x04" + b"iU\xe7\xe7\xc0\x04\x04\x99\xd3&\xf6"
+    assert val == py7zr.properties.MAGIC_7Z + b"\x00\x04" + \
+           b"\x70\x2a\xb7\x37" + \
+           b"\xa0\x00\x00\x00\x00\x00\x00\x00" + \
+           b"\x21\x00\x00\x00\x00\x00\x00\x00" + \
+           b"\xb9\xb8\xe4\xbf"
 
 
 @pytest.mark.unit

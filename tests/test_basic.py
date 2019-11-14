@@ -354,14 +354,13 @@ def test_non7z_list(capsys):
 
 
 @pytest.mark.api
-@pytest.mark.xfail(reason="Not implemented yet.")
-def test_py7zr_write():
+def test_py7zr_writeall():
     tmpdir = tempfile.mkdtemp()
     target = os.path.join(tmpdir, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
-    archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     archive.close()
-    shutil.rmtree(tmpdir)
+    # shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
