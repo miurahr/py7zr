@@ -159,8 +159,12 @@ def test_register_unpack_archive():
 
 @pytest.mark.files
 def test_skip():
+    tmpdir = tempfile.mkdtemp()
+    os.chdir(tmpdir)
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     for i, cf in enumerate(archive.files):
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
     archive.worker.extract(archive.fp)
+    os.chdir('..')
+    shutil.rmtree(tmpdir)

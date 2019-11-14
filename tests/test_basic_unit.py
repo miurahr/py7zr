@@ -373,7 +373,7 @@ def test_startheader_calccrc():
     startheader.nextheadersize = 0x00000021
     # set test data to buffer that start with Property.ENCODED_HEADER
     header_data = b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00' \
-                 b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
+                  b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
     startheader.calccrc(header_data)
     assert startheader.nextheadercrc == 0xbfe4b8b9
     assert startheader.startheadercrc == 0x37b72a70
@@ -391,11 +391,12 @@ def test_write_signature_header():
     startheader.write(file)
     val = file.getvalue()
     assert val.startswith(py7zr.properties.MAGIC_7Z)
-    assert val == py7zr.properties.MAGIC_7Z + b"\x00\x04" + \
-           b"\x70\x2a\xb7\x37" + \
-           b"\xa0\x00\x00\x00\x00\x00\x00\x00" + \
-           b"\x21\x00\x00\x00\x00\x00\x00\x00" + \
-           b"\xb9\xb8\xe4\xbf"
+    exp_ver = b"\x00\x04"
+    exp_scrc = b"\x70\x2a\xb7\x37"
+    exp_ofs = b"\xa0\x00\x00\x00\x00\x00\x00\x00"
+    exp_size = b"\x21\x00\x00\x00\x00\x00\x00\x00"
+    exp_hcrc = b"\xb9\xb8\xe4\xbf"
+    assert val == py7zr.properties.MAGIC_7Z + exp_ver + exp_scrc + exp_ofs + exp_size + exp_hcrc
 
 
 @pytest.mark.unit
