@@ -22,6 +22,8 @@ Fixed
 
 * Skip rare case when directory already exist, that can happen multiple process working
   in same working directory.
+* SignatureHeader function: write nextheaderofs and nextheadersize as real_uint64.
+* docs: description of start header structure.
 
 Deprecated
 ----------
