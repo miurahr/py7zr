@@ -189,7 +189,7 @@ class ArchiveFileList:
     def append(self, file_info: Dict[str, Any]) -> None:
         self.files_list.append(file_info)
 
-    def len(self) -> int:
+    def __len__(self) -> int:
         return len(self.files_list)
 
     def __iter__(self) -> 'ArchiveFileList':
@@ -655,7 +655,13 @@ class SevenZipFile:
                 compressor.compress(data)
                 data = handler.read(Configuration.read_blocksize)
         compressor.flush()
-        self.header.write(self.fp, False)
+        pos = self.fp.tell()
+        self.sig_header.nextheaderofs = pos
+        self.header.write(self.fp, encoded=False)
+        buf = io.BytesIO()
+        self.header.write(buf, encoded=False)
+        data = buf.getvalue()
+        self.sig_header.calccrc(data)
         self.fp.seek(0, 0)
         self.sig_header.write(self.fp)
         return
@@ -682,7 +688,9 @@ class SevenZipFile:
         if 'w' in self.mode:
             self.header = Header()
             self.header.files_info = FilesInfo()
-            self.header.files_info.files = self.files
+            for f in self.files:
+                file_info = {'filename': f.filename, 'emptystream': f.emptystream}
+                self.header.files_info.files.append(file_info)
             self._write_archive()
         self.fp.close()
 

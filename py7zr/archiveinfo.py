@@ -485,6 +485,8 @@ class UnpackInfo:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
 
     def write(self, file: BinaryIO):
+        assert self.numfolders is not None
+        assert self.folders is not None
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
         write_uint64(file, self.numfolders)
@@ -639,7 +641,7 @@ class FilesInfo:
 
     def __init__(self):
         self.numfiles = None
-        self.files = None  # type: List[Dict[str, Any]]
+        self.files = []  # type: List[Dict[str, Any]]
         self.emptyfiles = None
         self.antifiles = None
         self.dataindex = None
@@ -844,11 +846,13 @@ class Header:
         streams.packinfo.packsizes = []  # TODO: fixme
         streams.unpackinfo = UnpackInfo()
         streams.unpackinfo.folders = []  # fixme
+        return streams
 
     def write(self, file: BinaryIO, encoded: bool = True):
         if encoded:
-            self._build_encoded_header()
+            stream = self._build_encoded_header()
             write_byte(file, Property.ENCODED_HEADER)
+            stream.write(file)
         else:
             write_byte(file, Property.HEADER)
             if self.properties is not None:
@@ -910,19 +914,16 @@ class SignatureHeader:
         if crc != self.startheadercrc:
             raise Bad7zFile('invalid header data')
 
-    def calccrc(self, header: Header):
-        buf = io.BytesIO()
-        header.write(buf)
-        data = buf.getvalue()
+    def calccrc(self, data: bytes):
         self.nextheadersize = len(data)
         self.nextheadercrc = calculate_crc32(data)
         assert self.nextheaderofs is not None
         buf = io.BytesIO()
-        write_uint64(buf, self.nextheaderofs)
-        write_uint64(buf, self.nextheadersize)
+        write_real_uint64(buf, self.nextheaderofs)
+        write_real_uint64(buf, self.nextheadersize)
         write_uint32(buf, self.nextheadercrc)
-        data = buf.getvalue()
-        self.startheadercrc = calculate_crc32(data)
+        startdata = buf.getvalue()
+        self.startheadercrc = calculate_crc32(startdata)
 
     def write(self, file: BinaryIO):
         assert self.startheadercrc is not None
@@ -934,8 +935,8 @@ class SignatureHeader:
         write_byte(file, self.version[0])
         write_byte(file, self.version[1])
         write_uint32(file, self.startheadercrc)
-        write_uint64(file, self.nextheaderofs)
-        write_uint64(file, self.nextheadersize)
+        write_real_uint64(file, self.nextheaderofs)
+        write_real_uint64(file, self.nextheadersize)
         write_uint32(file, self.nextheadercrc)
 
     def _write_skelton(self, file: BinaryIO):
