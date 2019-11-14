@@ -84,6 +84,8 @@ Headers
                                   : `NextHeaderSize`
                                   : `NextHeaderCRC`
    NextHeaderOffset: REAL_UINT64
+   NextHeaderSize: REAL_UINT64
+   NextHeaderCRC: UINT32
 
 .. productionlist::
    PackedStreamsForHeaders: `Headers Block`
