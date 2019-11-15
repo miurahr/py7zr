@@ -348,7 +348,7 @@ def test_py7zr_write_mode(tmp_path):
     assert len(archive.files) == 1
     for f in archive.files:
         assert f.filename in ('test1.txt')
-        assert f.emptystream == False
+        assert not f.emptystream
 
 
 @pytest.mark.api
@@ -360,7 +360,7 @@ def test_py7zr_writeall_single(tmp_path):
     assert len(archive.files) == 1
     for f in archive.files:
         assert f.filename in ('test1.txt')
-        assert f.emptystream == False
+        assert not f.emptystream
 
 
 def test_py7zr_writeall_dir(tmp_path):

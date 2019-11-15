@@ -506,6 +506,61 @@ class SevenZipFile:
                 return True
         return False
 
+    def _write_archive(self):
+        self.sig_header = SignatureHeader()
+        self.sig_header._write_skelton(self.fp)
+        self.afterheader = self.fp.tell()
+        self.header = Header()
+        self.header.files_info = FilesInfo()
+        self.header.main_streams = StreamsInfo()
+
+        self.header.main_streams.packinfo = PackInfo()
+        self.header.main_streams.packinfo.numstreams = 0
+        self.header.main_streams.packinfo.packpos = 0
+
+        self.header.main_streams.unpackinfo = UnpackInfo()
+        self.header.main_streams.unpackinfo.numfolders = 1
+        self.header.main_streams.unpackinfo.folders = [self.folder]
+
+        self.folder.totalin = 1
+        self.folder.totalout = 1
+        self.folder.bindpairs = []
+        self.folder.unpacksizes = []
+        compressor = self.folder.get_compressor()
+
+        for f in self.files:
+            file_info = {'filename': f.filename, 'emptystream': f.emptystream}
+            self.header.files_info.files.append(file_info)
+            if f.emptystream:
+                pass
+            else:
+                self.header.main_streams.packinfo.numstreams += 1
+                outsize = 0
+                insize = 0
+                with open(f.origin, mode='rb') as fd:
+                    data = fd.read(Configuration.read_blocksize)
+                    insize += len(data)
+                    while data:
+                        out = compressor.compress(data)
+                        outsize += len(out)
+                        self.fp.write(out)
+                        data = fd.read(Configuration.read_blocksize)
+                        insize += len(data)
+                    out = compressor.flush()
+                    outsize += len(out)
+                    self.fp.write(out)
+                self.header.main_streams.packinfo.packsizes.append(outsize)
+                self.folder.unpacksizes.append(insize)
+        pos = self.fp.tell()
+        self.sig_header.nextheaderofs = pos - self.afterheader
+        self.header.write(self.fp, encoded=False)
+        buf = io.BytesIO()
+        self.header.write(buf, encoded=False)
+        data = buf.getvalue()
+        self.sig_header.calccrc(data)
+        self.sig_header.write(self.fp)
+        return
+
     @staticmethod
     def _make_file_info(target, arcname=None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
@@ -639,61 +694,6 @@ class SevenZipFile:
             os.symlink(sym_src, sym_dst)
         for o, p in target_files:
             self._set_file_property(o, p)
-
-    def _write_archive(self):
-        self.sig_header = SignatureHeader()
-        self.sig_header._write_skelton(self.fp)
-        self.afterheader = self.fp.tell()
-        self.header = Header()
-        self.header.files_info = FilesInfo()
-        self.header.main_streams = StreamsInfo()
-
-        self.header.main_streams.packinfo = PackInfo()
-        self.header.main_streams.packinfo.numstreams = 0
-        self.header.main_streams.packinfo.packpos = 0
-
-        self.header.main_streams.unpackinfo = UnpackInfo()
-        self.header.main_streams.unpackinfo.numfolders = 1
-        self.header.main_streams.unpackinfo.folders = [self.folder]
-
-        self.folder.totalin = 1
-        self.folder.totalout = 1
-        self.folder.bindpairs = []
-        self.folder.unpacksizes = []
-        compressor = self.folder.get_compressor()
-
-        for f in self.files:
-            file_info = {'filename': f.filename, 'emptystream': f.emptystream}
-            self.header.files_info.files.append(file_info)
-            if f.emptystream:
-                pass
-            else:
-                self.header.main_streams.packinfo.numstreams += 1
-                outsize = 0
-                insize = 0
-                with open(f.origin, mode='rb') as fd:
-                    data = fd.read(Configuration.read_blocksize)
-                    insize += len(data)
-                    while data:
-                        out = compressor.compress(data)
-                        outsize += len(out)
-                        self.fp.write(out)
-                        data = fd.read(Configuration.read_blocksize)
-                        insize += len(data)
-                    out = compressor.flush()
-                    outsize += len(out)
-                    self.fp.write(out)
-                self.header.main_streams.packinfo.packsizes.append(outsize)
-                self.folder.unpacksizes.append(insize)
-        pos = self.fp.tell()
-        self.sig_header.nextheaderofs = pos - self.afterheader
-        self.header.write(self.fp, encoded=False)
-        buf = io.BytesIO()
-        self.header.write(buf, encoded=False)
-        data = buf.getvalue()
-        self.sig_header.calccrc(data)
-        self.sig_header.write(self.fp)
-        return
 
     def writeall(self, path, arcname=None):
         """Write files in target path into archive."""
