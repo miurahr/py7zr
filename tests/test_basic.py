@@ -105,7 +105,7 @@ def test_write_mode(tmp_path):
 
 @pytest.mark.api
 def test_basic_not_implemented_yet3(tmp_path):
-    with open(tmp_path.joinpath('test_a.7z'), 'w') as f:
+    with tmp_path.joinpath('test_a.7z').open('w') as f:
         f.write('foo')
     with pytest.raises(NotImplementedError):
         py7zr.SevenZipFile(tmp_path.joinpath('test_a.7z'), mode='a')
@@ -160,7 +160,7 @@ def test_py7zr_is_7zfile_fileish():
 @pytest.mark.basic
 def test_py7zr_is_not_7zfile(tmp_path):
     target = tmp_path.joinpath('test_not.7z')
-    with open(target, 'wb') as f:
+    with target.open('wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
     assert not py7zr.is_7zfile(target)
 
@@ -379,6 +379,6 @@ def test_py7zr_write_single_close(tmp_path):
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     assert len(archive.files) == 1
     archive.close()
-    with open(target, 'rb') as target_archive:
+    with target.open('rb') as target_archive:
         val = target_archive.read(1000)
         assert val.startswith(py7zr.properties.MAGIC_7Z)
