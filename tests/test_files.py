@@ -3,23 +3,43 @@ import hashlib
 import io
 import os
 import shutil
+from datetime import datetime
 
 import pytest
 
 import py7zr
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
+from py7zr.helpers import UTC
 
-from . import check_archive, decode_all
+from . import decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
 
 
+def check_archive(archive, tmp_path):
+    assert sorted(archive.getnames()) == ['test', 'test/test2.txt', 'test1.txt']
+    expected = []
+    expected.append({'filename': 'test'})
+    expected.append({'lastwritetime': 12786932616, 'as_datetime': datetime(2006, 3, 15, 21, 43, 36, 0, UTC()),
+                     'filename': 'test/test2.txt'})
+    expected.append({'lastwritetime': 12786932628, 'as_datetime': datetime(2006, 3, 15, 21, 43, 48, 0, UTC()),
+                     'filename': 'test1.txt'})
+    for i, cf in enumerate(archive.files):
+        assert cf.filename == expected[i]['filename']
+        if not cf.is_directory:
+            assert cf.lastwritetime // 10000000 == expected[i]['lastwritetime']
+            assert cf.lastwritetime.as_datetime().replace(microsecond=0) == expected[i]['as_datetime']
+    archive.extractall(path=tmp_path)
+    assert tmp_path.joinpath('test/test2.txt').open('rb').read() == bytes('This file is located in a folder.', 'ascii')
+    assert tmp_path.joinpath('test1.txt').open('rb').read() == bytes('This file is located in the root.', 'ascii')
+
+
 @pytest.mark.files
-def test_solid():
+def test_solid(tmp_path):
     f = 'solid.7z'
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, '%s' % f), 'rb'))
-    check_archive(archive)
+    check_archive(archive, tmp_path)
 
 
 @pytest.mark.files
@@ -184,6 +204,6 @@ def test_multiblock_last_padding(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
-def test_copy():
+def test_copy(tmp_path):
     """ test loading of copy compressed files.(help wanted)"""
-    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))
+    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path)
