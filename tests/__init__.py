@@ -13,10 +13,10 @@ os.umask(0o022)
 
 def check_output(expected, tmpdir):
     for exp in expected:
-        if isinstance(tmpdir, pathlib.Path):
-            target = tmpdir.joinpath(exp['filename'])
-        else:
+        if isinstance(tmpdir, str):
             target = os.path.join(tmpdir, exp['filename'])
+        else:
+            target = tmpdir.joinpath(exp['filename'])
         if os.name == 'posix':
             if exp.get('mode', None):
                 assert os.stat(target).st_mode == exp['mode'],\
@@ -40,5 +40,3 @@ def decode_all(archive, expected):
     archive.extractall(path=tmpdir)
     check_output(expected, tmpdir)
     shutil.rmtree(tmpdir)
-
-
