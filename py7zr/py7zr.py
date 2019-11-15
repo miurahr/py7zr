@@ -34,9 +34,8 @@ import threading
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
-from py7zr.archiveinfo import FilesInfo, Folder, Header, SignatureHeader
-from py7zr.compression import (FileHandler, SevenZipCompressor, Worker,
-                               get_methods_names)
+from py7zr.archiveinfo import FilesInfo, Folder, Header, PackInfo, SignatureHeader, StreamsInfo, UnpackInfo
+from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
@@ -647,18 +646,45 @@ class SevenZipFile:
         self.afterheader = self.fp.tell()
         self.header = Header()
         self.header.files_info = FilesInfo()
+        self.header.main_streams = StreamsInfo()
+
+        self.header.main_streams.packinfo = PackInfo()
+        self.header.main_streams.packinfo.numstreams = 0
+        self.header.main_streams.packinfo.packpos = 0
+
+        self.header.main_streams.unpackinfo = UnpackInfo()
+        self.header.main_streams.unpackinfo.numfolders = 1
+        self.header.main_streams.unpackinfo.folders = [self.folder]
+
+        self.folder.totalin = 1
+        self.folder.totalout = 1
+        self.folder.bindpairs = []
+        self.folder.unpacksizes = []
         compressor = self.folder.get_compressor()
+
         for f in self.files:
             file_info = {'filename': f.filename, 'emptystream': f.emptystream}
             self.header.files_info.files.append(file_info)
-            with open(f.origin, mode='rb') as fd:
-                data = fd.read(Configuration.read_blocksize)
-                while data:
-                    out = compressor.compress(data)
-                    self.fp.write(out)
+            if f.emptystream:
+                pass
+            else:
+                self.header.main_streams.packinfo.numstreams += 1
+                outsize = 0
+                insize = 0
+                with open(f.origin, mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
-                out = compressor.flush()
-                self.fp.write(out)
+                    insize += len(data)
+                    while data:
+                        out = compressor.compress(data)
+                        outsize += len(out)
+                        self.fp.write(out)
+                        data = fd.read(Configuration.read_blocksize)
+                        insize += len(data)
+                    out = compressor.flush()
+                    outsize += len(out)
+                    self.fp.write(out)
+                self.header.main_streams.packinfo.packsizes.append(outsize)
+                self.folder.unpacksizes.append(insize)
         pos = self.fp.tell()
         self.sig_header.nextheaderofs = pos - self.afterheader
         self.header.write(self.fp, encoded=False)
