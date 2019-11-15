@@ -370,7 +370,7 @@ def test_py7zr_writeall_dir(tmp_path):
     assert archive.files is not None
     assert len(archive.files) == 2
     for f in archive.files:
-        assert f.filename in ('src', 'src/bra.txt')
+        assert f.filename in ('src', os.path.join('src', 'bra.txt'))
 
 
 def test_py7zr_write_single_close(tmp_path):
