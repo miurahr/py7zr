@@ -849,6 +849,7 @@ class Header:
         return streams
 
     def write(self, file: BinaryIO, encoded: bool = True):
+        startpos = file.tell()
         if encoded:
             stream = self._build_encoded_header()
             write_byte(file, Property.ENCODED_HEADER)
@@ -864,6 +865,8 @@ class Header:
             if self.files_info is not None:
                 self.files_info.write(file)
             write_byte(file, Property.END)
+        endpos = file.tell()
+        return endpos - startpos
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
@@ -944,7 +947,7 @@ class SignatureHeader:
         write_bytes(file, MAGIC_7Z)
         write_byte(file, self.version[0])
         write_byte(file, self.version[1])
-        write_uint32(file, 0)
-        write_uint64(file, 0)
-        write_uint64(file, 0)
-        write_uint32(file, 0)
+        write_uint32(file, 1)
+        write_real_uint64(file, 2)
+        write_real_uint64(file, 3)
+        write_uint32(file, 4)

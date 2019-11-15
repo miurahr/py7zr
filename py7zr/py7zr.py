@@ -325,7 +325,7 @@ class SevenZipFile:
             self._filelist_retrieve()
 
     def _read_header_data(self) -> BytesIO:
-        self.fp.seek(self.sig_header.nextheaderofs, 1)
+        self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
@@ -510,7 +510,7 @@ class SevenZipFile:
     @staticmethod
     def _make_file_info(target, arcname=None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = FileHandler(target)
+        f['origin'] = target
         if arcname is not None:
             f['filename'] = arcname
         else:
@@ -645,24 +645,27 @@ class SevenZipFile:
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        self.fp.seek(self.afterheader, 0)
+        self.header = Header()
+        self.header.files_info = FilesInfo()
         compressor = self.folder.get_compressor()
         for f in self.files:
-            handler = getattr(f, 'origin', None)
-            handler.open(mode='rb')
-            data = handler.read(Configuration.read_blocksize)
-            while data:
-                compressor.compress(data)
-                data = handler.read(Configuration.read_blocksize)
-        compressor.flush()
+            file_info = {'filename': f.filename, 'emptystream': f.emptystream}
+            self.header.files_info.files.append(file_info)
+            with open(f.origin, mode='rb') as fd:
+                data = fd.read(Configuration.read_blocksize)
+                while data:
+                    out = compressor.compress(data)
+                    self.fp.write(out)
+                    data = fd.read(Configuration.read_blocksize)
+                out = compressor.flush()
+                self.fp.write(out)
         pos = self.fp.tell()
-        self.sig_header.nextheaderofs = pos
+        self.sig_header.nextheaderofs = pos - self.afterheader
         self.header.write(self.fp, encoded=False)
         buf = io.BytesIO()
         self.header.write(buf, encoded=False)
         data = buf.getvalue()
         self.sig_header.calccrc(data)
-        self.fp.seek(0, 0)
         self.sig_header.write(self.fp)
         return
 
@@ -686,11 +689,6 @@ class SevenZipFile:
         When close py7zr start reading target and writing actual archive file.
         """
         if 'w' in self.mode:
-            self.header = Header()
-            self.header.files_info = FilesInfo()
-            for f in self.files:
-                file_info = {'filename': f.filename, 'emptystream': f.emptystream}
-                self.header.files_info.files.append(file_info)
             self._write_archive()
         self.fp.close()
 
