@@ -5,7 +5,6 @@ import pathlib
 import shutil
 import tempfile
 
-import py7zr
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
