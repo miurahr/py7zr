@@ -31,7 +31,7 @@ from functools import reduce
 from io import BytesIO
 from operator import and_, or_
 from struct import pack, unpack
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
@@ -298,9 +298,9 @@ class Folder:
 
     def __init__(self) -> None:
         self.unpacksizes = None  # type: Optional[List[int]]
-        self.coders = []  # type: List[Any]
+        self.coders = []  # type: List[Dict[str, Any]]
         self.bindpairs = []  # type: List[Any]
-        self.packed_indices = []  # type: List[Any]
+        self.packed_indices = []  # type: List[int]
         # calculated values
         self.totalin = 0  # type: int
         self.totalout = 0  # type: int
@@ -360,7 +360,7 @@ class Folder:
         assert num_coders > 0
         write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
-            method = c['method']
+            method = c['method']  # type: bytes
             method_size = len(method)
             numinstreams = c['numinstreams']
             numoutstreams = c['numoutstreams']

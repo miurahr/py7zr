@@ -296,7 +296,7 @@ class SevenZipFile:
         folder.coders = folder.compressor.coders
         folder.solid = True
         folder.digestdefined = False
-        folder.bindpairs = 0
+        folder.bindpairs = []
         folder.totalin = 1
         folder.totalout = 1
         return folder
