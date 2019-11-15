@@ -29,6 +29,7 @@ import functools
 import io
 import operator
 import os
+import pathlib
 import stat
 import threading
 from io import BytesIO
@@ -233,37 +234,41 @@ class FileInfo:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: Union[BinaryIO, str], mode: str = 'r', filters: Optional[str] = None) -> None:
+    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r', filters: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool
             self.filename = file  # type: str
-            modes = {'r': 'rb', 'w': 'w+b', 'x': 'x+b', 'a': 'r+b',
-                     'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
-            while True:
-                try:
-                    if mode == 'r':
-                        self.fp = open(file, 'rb')  # type: BinaryIO
-                    elif mode == 'w':
-                        self.fp = open(file, 'w+b')  # type: BinaryIO
-                    elif mode == 'x':
-                        self.fp = open(file, 'x+b')  # type: BinaryIO
-                    elif mode == 'a':
-                        self.fp = open(file, 'r+b')  # type: BinaryIO
-                    else:
-                        raise ValueError("File open error.")
-                except OSError:
-                    if mode in modes:
-                        mode = modes[mode]
-                        continue
-                    raise
-                self.mode = mode
-                break
+            if mode == 'r':
+                self.fp = open(file, 'rb')  # type: BinaryIO
+            elif mode == 'w':
+                self.fp = open(file, 'w+b')  # type: BinaryIO
+            elif mode == 'x':
+                self.fp = open(file, 'x+b')  # type: BinaryIO
+            elif mode == 'a':
+                self.fp = open(file, 'r+b')  # type: BinaryIO
+            else:
+                raise ValueError("File open error.")
+            self.mode = mode
+        elif isinstance(file, pathlib.Path):
+            self._filePassed = False
+            self.filename = str(file)
+            if mode == 'r':
+                self.fp = file.open(mode='rb')  # type: ignore  # noqa   # typeshed issue: 2911
+            elif mode == 'w':
+                self.fp = file.open(mode='w+b')  # type: ignore  # noqa
+            elif mode == 'x':
+                self.fp = file.open(mode='x+b')  # type: ignore  # noqa
+            elif mode == 'a':
+                self.fp = file.open(mode='r+b')  # type: ignore  # noqa
+            else:
+                raise ValueError("File open error.")
+            self.mode = mode
         else:
             self._filePassed = True
-            self.fp = file
+            self.fp = file  # type: BinaryIO
             self.filename = getattr(file, 'name', None)
             self.mode = mode
         self._fileRefCnt = 1
@@ -713,7 +718,7 @@ class SevenZipFile:
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(file: Union[BinaryIO, str]) -> bool:
+def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
     The filename argument may be a file or file-like object too.
     """
@@ -723,7 +728,10 @@ def is_7zfile(file: Union[BinaryIO, str]) -> bool:
             result = SevenZipFile._check_7zfile(file)
             file.seek(-len(MAGIC_7Z), 1)
         elif isinstance(file, str):
-            with open(file, "rb") as fp:
+            with open(file, 'rb') as fp:
+                result = SevenZipFile._check_7zfile(fp)
+        elif isinstance(file, pathlib.Path):
+            with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
             raise

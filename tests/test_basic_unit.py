@@ -423,7 +423,7 @@ def test_buffer_handler():
 
 @pytest.mark.unit
 def test_file_handler(tmp_path):
-    target = os.path.join(tmp_path, 'testfile')
+    target = tmp_path.joinpath('testfile')
     handler = py7zr.compression.FileHandler(target)
     handler.open(mode='wb')
     data = b'01234567890123456789\0'

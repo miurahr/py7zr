@@ -34,7 +34,7 @@ def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     archive.extractall(path=tmp_path)
-    with open(os.path.join(tmp_path, 'github_14'), 'rb') as f:
+    with open(tmp_path.joinpath('github_14'), 'rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
 
 
@@ -107,7 +107,7 @@ def test_lzma2bcj(tmp_path):
                                   '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmp_path, '5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
+    m.update(open(tmp_path.joinpath('5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
 
 

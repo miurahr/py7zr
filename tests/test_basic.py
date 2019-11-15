@@ -95,12 +95,12 @@ def test_cli_list_2(capsys):
 @pytest.mark.api
 def test_basic_not_implemented_yet1(tmp_path):
     with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_x.7z'), mode='x')
+        py7zr.SevenZipFile(tmp_path.joinpath('test_x.7z'), mode='x')
 
 
 @pytest.mark.api
 def test_write_mode(tmp_path):
-    py7zr.SevenZipFile(os.path.join(tmp_path, 'test_w.7z'), mode='w')
+    py7zr.SevenZipFile(tmp_path.joinpath('test_w.7z'), mode='w')
 
 
 @pytest.mark.api
@@ -108,13 +108,13 @@ def test_basic_not_implemented_yet3(tmp_path):
     with open(os.path.join(tmp_path, 'test_a.7z'), 'w') as f:
         f.write('foo')
     with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_a.7z'), mode='a')
+        py7zr.SevenZipFile(tmp_path.joinpath('test_a.7z'), mode='a')
 
 
 @pytest.mark.api
 def test_basic_wrong_option_value(tmp_path):
     with pytest.raises(ValueError):
-        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_p.7z'), mode='p')
+        py7zr.SevenZipFile(tmp_path.joinpath('test_p.7z'), mode='p')
 
 
 @pytest.mark.basic
@@ -159,7 +159,7 @@ def test_py7zr_is_7zfile_fileish():
 
 @pytest.mark.basic
 def test_py7zr_is_not_7zfile(tmp_path):
-    target = os.path.join(tmp_path, 'test_not.7z')
+    target = tmp_path.joinpath('test_not.7z')
     with open(target, 'wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
     assert not py7zr.is_7zfile(target)
@@ -341,7 +341,7 @@ def test_non7z_list(capsys):
 
 @pytest.mark.unit
 def test_py7zr_write_mode(tmp_path):
-    target = os.path.join(tmp_path, 'target.7z')
+    target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     assert archive.files is not None
@@ -353,7 +353,7 @@ def test_py7zr_write_mode(tmp_path):
 
 @pytest.mark.api
 def test_py7zr_writeall_single(tmp_path):
-    target = os.path.join(tmp_path, 'target.7z')
+    target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     assert archive.files is not None
@@ -364,7 +364,7 @@ def test_py7zr_writeall_single(tmp_path):
 
 
 def test_py7zr_writeall_dir(tmp_path):
-    target = os.path.join(tmp_path, 'target.7z')
+    target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     assert archive.files is not None
@@ -374,7 +374,7 @@ def test_py7zr_writeall_dir(tmp_path):
 
 
 def test_py7zr_write_single_close(tmp_path):
-    target = os.path.join(tmp_path, 'target.7z')
+    target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     assert len(archive.files) == 1

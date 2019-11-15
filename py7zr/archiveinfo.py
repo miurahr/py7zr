@@ -31,7 +31,7 @@ from functools import reduce
 from io import BytesIO
 from operator import and_, or_
 from struct import pack, unpack
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
