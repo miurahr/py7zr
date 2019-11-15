@@ -105,7 +105,7 @@ def test_write_mode(tmp_path):
 
 @pytest.mark.api
 def test_basic_not_implemented_yet3(tmp_path):
-    with open(os.path.join(tmp_path, 'test_a.7z'), 'w') as f:
+    with open(tmp_path.joinpath('test_a.7z'), 'w') as f:
         f.write('foo')
     with pytest.raises(NotImplementedError):
         py7zr.SevenZipFile(tmp_path.joinpath('test_a.7z'), mode='a')

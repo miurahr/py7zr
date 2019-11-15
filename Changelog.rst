@@ -14,6 +14,8 @@ Current changes
 Added
 -----
 
+* SevenZipFile: accept pathlib.Path as a file argument.
+
 Changed
 -------
 
