@@ -5,7 +5,6 @@ import pathlib
 import shutil
 import tempfile
 
-
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
 
