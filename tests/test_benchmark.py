@@ -1,8 +1,5 @@
-import array
-import io
 import os
 import shutil
-import struct
 import tempfile
 
 import pytest
