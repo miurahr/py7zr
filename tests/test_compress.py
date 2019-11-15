@@ -1,8 +1,9 @@
 import lzma
 
-import py7zr.compression
 import pytest
-from py7zr.helpers import calculate_crc32
+
+import py7zr.compression
+import py7zr.helpers
 
 
 @pytest.mark.unit
@@ -22,7 +23,7 @@ def test_simple_compress_and_decompress():
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
     #
     coders = sevenzip_compressor.coders
-    crc = calculate_crc32(result)
+    crc = py7zr.helpers.calculate_crc32(result)
     decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'

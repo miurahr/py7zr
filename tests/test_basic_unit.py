@@ -5,11 +5,12 @@ import lzma
 import os
 import struct
 
+import pytest
+
 import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-import pytest
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 

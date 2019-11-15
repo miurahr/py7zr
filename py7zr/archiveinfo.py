@@ -848,6 +848,16 @@ class Header:
         streams.unpackinfo.folders = []  # fixme
         return streams
 
+    def build_header(self, folders):
+        self.files_info = FilesInfo()
+        self.main_streams = StreamsInfo()
+        self.main_streams.packinfo = PackInfo()
+        self.main_streams.packinfo.numstreams = 0
+        self.main_streams.packinfo.packpos = 0
+        self.main_streams.unpackinfo = UnpackInfo()
+        self.main_streams.unpackinfo.numfolders = len(folders)
+        self.main_streams.unpackinfo.folders = folders
+
     def write(self, file: BinaryIO, encoded: bool = True):
         startpos = file.tell()
         if encoded:
