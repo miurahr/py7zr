@@ -1,6 +1,5 @@
 import lzma
 import os
-import shutil
 import time
 
 import py7zr

@@ -17,6 +17,8 @@ Added
 Changed
 -------
 
+* Test: Use tmp_path fixture which is pytest default one.
+
 Fixed
 -----
 
