@@ -6,7 +6,7 @@ import shutil
 
 import py7zr
 import pytest
-from py7zr import unpack_7zarchive, UnsupportedCompressionMethodError
+from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 
 from . import check_archive, decode_all
 
