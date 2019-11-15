@@ -1,7 +1,6 @@
 import lzma
 import os
 import shutil
-import tempfile
 import time
 
 import py7zr
@@ -93,36 +92,28 @@ def test_cli_list_2(capsys):
 
 
 @pytest.mark.api
-def test_basic_not_implemented_yet1():
-    tmpdir = tempfile.mkdtemp()
+def test_basic_not_implemented_yet1(tmp_path):
     with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_x.7z'), mode='x')
-    shutil.rmtree(tmpdir)
+        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_x.7z'), mode='x')
 
 
 @pytest.mark.api
-def test_write_mode():
-    tmpdir = tempfile.mkdtemp()
-    py7zr.SevenZipFile(os.path.join(tmpdir, 'test_w.7z'), mode='w')
-    shutil.rmtree(tmpdir)
+def test_write_mode(tmp_path):
+    py7zr.SevenZipFile(os.path.join(tmp_path, 'test_w.7z'), mode='w')
 
 
 @pytest.mark.api
-def test_basic_not_implemented_yet3():
-    tmpdir = tempfile.mkdtemp()
-    with open(os.path.join(tmpdir, 'test_a.7z'), 'w') as f:
+def test_basic_not_implemented_yet3(tmp_path):
+    with open(os.path.join(tmp_path, 'test_a.7z'), 'w') as f:
         f.write('foo')
     with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_a.7z'), mode='a')
-    shutil.rmtree(tmpdir)
+        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_a.7z'), mode='a')
 
 
 @pytest.mark.api
-def test_basic_wrong_option_value():
-    tmpdir = tempfile.mkdtemp()
+def test_basic_wrong_option_value(tmp_path):
     with pytest.raises(ValueError):
-        py7zr.SevenZipFile(os.path.join(tmpdir, 'test_p.7z'), mode='p')
-    shutil.rmtree(tmpdir)
+        py7zr.SevenZipFile(os.path.join(tmp_path, 'test_p.7z'), mode='p')
 
 
 @pytest.mark.basic
@@ -166,13 +157,11 @@ def test_py7zr_is_7zfile_fileish():
 
 
 @pytest.mark.basic
-def test_py7zr_is_not_7zfile():
-    tmpdir = tempfile.mkdtemp()
-    target = os.path.join(tmpdir, 'test_not.7z')
+def test_py7zr_is_not_7zfile(tmp_path):
+    target = os.path.join(tmp_path, 'test_not.7z')
     with open(target, 'wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
     assert not py7zr.is_7zfile(target)
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.cli
@@ -298,11 +287,10 @@ Codecs:
 
 
 @pytest.mark.cli
-def test_cli_extract():
+def test_cli_extract(tmp_path):
     arcfile = os.path.join(testdata_path, "test_1.7z")
-    tmpdir = tempfile.mkdtemp()
     cli = py7zr.cli.Cli()
-    cli.run(["x", arcfile, tmpdir])
+    cli.run(["x", arcfile, "{}".format(tmp_path)])
     expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
                 {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
@@ -310,8 +298,7 @@ def test_cli_extract():
                 {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
                  'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
                 ]
-    check_output(expected, tmpdir)
-    shutil.rmtree(tmpdir)
+    check_output(expected, tmp_path)
 
 
 @pytest.mark.basic
@@ -322,15 +309,13 @@ def test_digests():
 
 
 @pytest.mark.cli
-def test_non7z_ext(capsys):
+def test_non7z_ext(capsys, tmp_path):
     expected = "not a 7z file\n"
     arcfile = os.path.join(testdata_path, "test_1.txt")
-    tmpdir = tempfile.mkdtemp()
     cli = py7zr.cli.Cli()
-    cli.run(["x", arcfile, tmpdir])
+    cli.run(["x", arcfile, "{}".format(tmp_path)])
     out, err = capsys.readouterr()
     assert expected == out
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.cli
@@ -354,19 +339,15 @@ def test_non7z_list(capsys):
 
 
 @pytest.mark.api
-def test_py7zr_writeall():
-    tmpdir = tempfile.mkdtemp()
-    target = os.path.join(tmpdir, 'target.7z')
+def test_py7zr_writeall(tmp_path):
+    target = os.path.join(tmp_path, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
     archive.close()
-    # shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
-def test_py7zr_write_mode():
-    tmpdir = tempfile.mkdtemp()
-    target = os.path.join(tmpdir, 'target.7z')
+def test_py7zr_write_mode(tmp_path):
+    target = os.path.join(tmp_path, 'target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
-    shutil.rmtree(tmpdir)

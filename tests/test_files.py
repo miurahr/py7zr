@@ -3,25 +3,15 @@ import hashlib
 import io
 import os
 import shutil
-import stat
-import tempfile
 
 import py7zr
 import pytest
-from py7zr import unpack_7zarchive
+from py7zr import unpack_7zarchive, UnsupportedCompressionMethodError
 
 from . import check_archive, decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
-
-
-def rmtree_onerror(func, path, exc_info):
-    if not os.access(path, os.W_OK):
-        os.chmod(path, stat.S_IWUSR)
-        func(path)
-    else:
-        raise
 
 
 @pytest.mark.files
@@ -39,14 +29,12 @@ def test_empty():
 
 
 @pytest.mark.files
-def test_github_14():
+def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    with open(os.path.join(tmpdir, 'github_14'), 'rb') as f:
+    archive.extractall(path=tmp_path)
+    with open(os.path.join(tmp_path, 'github_14'), 'rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.files
@@ -103,43 +91,36 @@ def test_bugzilla_16():
 
 
 @pytest.mark.files
-def test_symlink():
+def test_symlink(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
                                           'lib/libabc.so.1.2.3', 'lib64']
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    shutil.rmtree(tmpdir)
+    archive.extractall(path=tmp_path)
 
 
 @pytest.mark.files
-def test_lzma2bcj():
+def test_lzma2bcj(tmp_path):
     """Test extract archive compressed with LZMA2 and BCJ methods."""
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'lzma2bcj.7z'), 'rb'))
     assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
                                   '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
+    archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, '5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
+    m.update(open(os.path.join(tmp_path, '5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.files
-def test_zerosize():
+def test_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
-    tmpdir = tempfile.mkdtemp()
-    archive.extractall(path=tmpdir)
-    shutil.rmtree(tmpdir)
+    archive.extractall(path=tmp_path)
 
 
 @pytest.mark.api
-def test_register_unpack_archive():
+def test_register_unpack_archive(tmp_path):
     shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
-    tmpdir = tempfile.mkdtemp()
-    shutil.unpack_archive(os.path.join(testdata_path, 'test_1.7z'), tmpdir)
-    target = os.path.join(tmpdir, "setup.cfg")
+    shutil.unpack_archive(os.path.join(testdata_path, 'test_1.7z'), tmp_path)
+    target = os.path.join(tmp_path, "setup.cfg")
     expected_mode = 33188
     expected_mtime = 1552522033
     if os.name == 'posix':
@@ -149,22 +130,59 @@ def test_register_unpack_archive():
     m.update(open(target, 'rb').read())
     assert m.digest() == binascii.unhexlify('ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240')
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'setup.py'), 'rb').read())
+    m.update(open(os.path.join(tmp_path, 'setup.py'), 'rb').read())
     assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmpdir, 'scripts/py7zr'), 'rb').read())
+    m.update(open(os.path.join(tmp_path, 'scripts/py7zr'), 'rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.files
 def test_skip():
-    tmpdir = tempfile.mkdtemp()
-    os.chdir(tmpdir)
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     for i, cf in enumerate(archive.files):
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
     archive.worker.extract(archive.fp)
-    os.chdir('..')
-    shutil.rmtree(tmpdir)
+
+
+@pytest.mark.files
+def test_github_14_multi(tmp_path):
+    """ multiple unnamed objects."""
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
+    assert archive.getnames() == ['github_14_multi', 'github_14_multi']
+    archive.extractall(path=tmp_path)
+    with open(os.path.join(tmp_path, 'github_14_multi'), 'rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
+
+
+@pytest.mark.files
+def test_multiblock(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmp_path, 'bin/7zdec.exe'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
+
+
+@pytest.mark.files
+def test_multiblock_zerosize(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_2.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.timeout(5, method='thread')
+def test_multiblock_last_padding(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    m = hashlib.sha256()
+    m.update(open(os.path.join(tmp_path, '5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll'), 'rb').read())
+    assert m.digest() == binascii.unhexlify('98985de41ddba789d039bb10d86ea3015bf0d8d9fa86b25a0490044c247233d3')
+
+
+@pytest.mark.files
+@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
+def test_copy():
+    """ test loading of copy compressed files.(help wanted)"""
+    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')))

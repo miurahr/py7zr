@@ -3,9 +3,7 @@ import datetime
 import io
 import lzma
 import os
-import shutil
 import struct
-import tempfile
 
 import py7zr.archiveinfo
 import py7zr.compression
@@ -423,9 +421,8 @@ def test_buffer_handler():
 
 
 @pytest.mark.unit
-def test_file_handler():
-    tmpdir = tempfile.mkdtemp()
-    target = os.path.join(tmpdir, 'testfile')
+def test_file_handler(tmp_path):
+    target = os.path.join(tmp_path, 'testfile')
     handler = py7zr.compression.FileHandler(target)
     handler.open(mode='wb')
     data = b'01234567890123456789\0'
@@ -437,7 +434,6 @@ def test_file_handler():
     handler.seek(20)
     handler.truncate(None)
     handler.close()
-    shutil.rmtree(tmpdir)
 
 
 @pytest.mark.unit
