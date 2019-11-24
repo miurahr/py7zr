@@ -1,4 +1,6 @@
+import asyncio
 import binascii
+import functools
 import hashlib
 import io
 import os
@@ -164,3 +166,49 @@ def test_skip():
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
     archive.worker.extract(archive.fp)
+
+
+@pytest.mark.files
+def test_close_unlink():
+    tmpdir = tempfile.mkdtemp()
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), os.path.join(tmpdir, 'test_1.7z'))
+    archive = py7zr.SevenZipFile(os.path.join(tmpdir, 'test_1.7z'))
+    archive.extractall(path=tmpdir)
+    archive.close()
+    os.unlink(os.path.join(tmpdir, 'test_1.7z'))
+    shutil.rmtree(tmpdir)
+
+
+def async_wrap(func):
+    @asyncio.coroutine
+    @functools.wraps(func)
+    def run(*args, loop=None, executor=None, **kwargs):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        partial_func = functools.partial(func, *args, **kwargs)
+        return loop.run_in_executor(executor, partial_func)
+
+    return run
+
+
+aiounlink = async_wrap(os.unlink)
+
+
+@asyncio.coroutine
+def aio7zr(archive, path):
+    loop = asyncio.get_event_loop()
+    sevenzip = py7zr.SevenZipFile(archive)
+    partial_py7zr = functools.partial(sevenzip.extractall, path=path)
+    loop.run_in_executor(None, partial_py7zr)
+    loop.run_in_executor(None, sevenzip.close)
+
+
+@pytest.mark.files
+def test_asyncio_executor_unlink():
+    tmpdir = tempfile.mkdtemp()
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), os.path.join(tmpdir, 'test_1.7z'))
+    loop = asyncio.get_event_loop()
+    unzip = asyncio.ensure_future(aio7zr(os.path.join(tmpdir, 'test_1.7z'), path=tmpdir))
+    loop.run_until_complete(unzip)
+    loop.run_until_complete(aiounlink(os.path.join(tmpdir, 'test_1.7z')))
+    shutil.rmtree(tmpdir)
