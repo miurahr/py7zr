@@ -631,7 +631,7 @@ class SevenZipFile:
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
-        raise NotImplementedError
+        self._fpclose(self.fp)
 
 
 # --------------------
