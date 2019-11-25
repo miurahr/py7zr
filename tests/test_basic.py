@@ -1,5 +1,6 @@
 import lzma
 import os
+import pathlib
 import time
 
 import pytest
@@ -157,12 +158,18 @@ def test_py7zr_is_7zfile_fileish():
     assert py7zr.is_7zfile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
 
 
+@pytest.mark.api
+def test_py7zr_is_7zfile_path():
+    assert py7zr.is_7zfile(pathlib.Path(testdata_path).joinpath('test_1.7z'))
+
+
 @pytest.mark.basic
 def test_py7zr_is_not_7zfile(tmp_path):
     target = tmp_path.joinpath('test_not.7z')
     with target.open('wb') as f:
         f.write(b'12345dahodjg98adfjfak;')
-    assert not py7zr.is_7zfile(target)
+    with target.open('rb') as f:
+        assert not py7zr.is_7zfile(f)
 
 
 @pytest.mark.cli
@@ -291,7 +298,7 @@ Codecs:
 def test_cli_extract(tmp_path):
     arcfile = os.path.join(testdata_path, "test_1.7z")
     cli = py7zr.cli.Cli()
-    cli.run(["x", arcfile, "{}".format(tmp_path)])
+    cli.run(["x", arcfile, str(tmp_path.resolve())])
     expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
                 {'filename': 'setup.py', 'mode': 33188, 'mtime': 1552522141,
@@ -314,7 +321,7 @@ def test_non7z_ext(capsys, tmp_path):
     expected = "not a 7z file\n"
     arcfile = os.path.join(testdata_path, "test_1.txt")
     cli = py7zr.cli.Cli()
-    cli.run(["x", arcfile, "{}".format(tmp_path)])
+    cli.run(["x", arcfile, str(tmp_path.resolve())])
     out, err = capsys.readouterr()
     assert expected == out
 

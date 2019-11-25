@@ -651,7 +651,7 @@ class SevenZipFile:
                 multi_thread = False
             fnames.append(f.filename)
             if path is not None:
-                outfilename = str(path.joinpath(f.filename).resolve())
+                outfilename = str(path.joinpath(f.filename))
             else:
                 outfilename = f.filename
             if f.is_directory:
@@ -734,7 +734,8 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
         elif isinstance(file, str):
             with open(file, 'rb') as fp:
                 result = SevenZipFile._check_7zfile(fp)
-        elif isinstance(file, pathlib.Path):
+        elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or \
+             isinstance(file, pathlib.WindowsPath):
             with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
