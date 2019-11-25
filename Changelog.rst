@@ -14,11 +14,15 @@ Current changes
 Added
 -----
 
+* Test: add close and unlink test.
+
 Changed
 -------
 
 Fixed
 -----
+
+* close() now actually close opened file.
 
 Deprecated
 ----------
