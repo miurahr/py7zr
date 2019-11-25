@@ -621,14 +621,19 @@ class SevenZipFile:
         target_files = []
         target_dirs = []
         self.reset()
-        if path is not None and not os.path.exists(path):
+        if path is not None:
             try:
-                os.makedirs(path)
+                if isinstance(path, str):
+                    path = pathlib.Path(path)
+                if not path.exists():
+                    path.mkdir(parents=True)
+                else:
+                    pass
             except OSError as e:
                 if e.errno == errno.EEXIST and os.path.isdir(path):
                     pass
                 else:
-                    raise
+                    raise e
 
         multi_thread = self.header.main_streams.unpackinfo.numfolders > 1 and \
             self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
@@ -646,7 +651,7 @@ class SevenZipFile:
                 multi_thread = False
             fnames.append(f.filename)
             if path is not None:
-                outfilename = os.path.join(path, f.filename)
+                outfilename = path.joinpath(f.filename).as_posix()
             else:
                 outfilename = f.filename
             if f.is_directory:
