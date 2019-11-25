@@ -712,8 +712,7 @@ class SevenZipFile:
         """
         if 'w' in self.mode:
             self._write_archive()
-        self.fp.close()
-
+        self._fpclose(self.fp)
 
 # --------------------
 # exported functions
@@ -734,7 +733,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise
+            raise Bad7zFile("Unknown variable type of file.")
     except OSError:
         pass
     return result
@@ -744,3 +743,4 @@ def unpack_7zarchive(archive, path, extra=None):
     """Function for registering with shutil.register_unpack_archive()"""
     arc = SevenZipFile(archive)
     arc.extractall(path)
+    arc.close()
