@@ -651,7 +651,7 @@ class SevenZipFile:
                 multi_thread = False
             fnames.append(f.filename)
             if path is not None:
-                outfilename = path.joinpath(f.filename).as_posix()
+                outfilename = str(path.joinpath(f.filename).resolve())
             else:
                 outfilename = f.filename
             if f.is_directory:
