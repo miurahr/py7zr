@@ -90,7 +90,7 @@ def test_solid_umlaut():
 
 
 @pytest.mark.files
-def test_bugzilla_4():
+def test_bugzilla_4(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_4.7z'), 'rb'))
     expected = [{'filename': 'History.txt', 'mtime': 1133704668, 'mode': 33188,
                  'digest': '46b08f0af612371860ab39e3b47666c3bd6fb742c5e8775159310e19ebedae7e'},
@@ -100,17 +100,17 @@ def test_bugzilla_4():
                  'digest': '2c3c3ef532828bcd42bb3127349625a25291ff5ae7e6f8d42e0fe9b5be836a99'},
                 {'filename': 'readme.txt', 'mtime': 1133704646, 'mode': 33188,
                  'digest': '84f2693d9746e919883cf169fc83467be6566d7501b5044693a2480ab36a4899'}]
-    decode_all(archive, expected)
+    decode_all(archive, expected, tmp_path)
 
 
 @pytest.mark.files
-def test_bugzilla_16():
+def test_bugzilla_16(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bugzilla_16.7z'), 'rb'))
     expected = [{'filename': 'mame4all_2.5.ini',
                  'digest': 'aaebca5e140e0099a757903fc9f194f9e6da388eed22d37bfd1625c80aa25903'},
                 {'filename': 'mame4all_2.5/mame',
                  'digest': '6bc23b11fbb9a64096408623d476ad16083ef71c5e7919335e8696036034987d'}]
-    decode_all(archive, expected)
+    decode_all(archive, expected, tmp_path)
 
 
 @pytest.mark.files

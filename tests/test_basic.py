@@ -118,7 +118,7 @@ def test_basic_wrong_option_value(tmp_path):
 
 
 @pytest.mark.basic
-def test_basic_extract_1():
+def test_basic_extract_1(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
     expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'},
@@ -127,24 +127,24 @@ def test_basic_extract_1():
                 {'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
                 'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
                 ]
-    decode_all(archive, expected)
+    decode_all(archive, expected, tmp_path)
 
 
 @pytest.mark.basic
-def test_basic_extract_2():
+def test_basic_extract_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_2.7z'), 'rb'))
     expected = [{'filename': 'qt.qt5.597.gcc_64/installscript.qs',
                  'digest': '39445276e79ea43c0fa8b393b35dc621fcb2045cb82238ddf2b838a4fbf8a587'}]
-    decode_all(archive, expected)
+    decode_all(archive, expected, tmp_path)
 
 
 @pytest.mark.basic
-def test_basic_decode_3():
+def test_basic_decode_3(tmp_path):
     """Test when passing path string instead of file-like object."""
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'))
     expected = [{'filename': 'setup.cfg', 'mode': 33188, 'mtime': 1552522033,
                  'digest': 'ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240'}]
-    decode_all(archive, expected)
+    decode_all(archive, expected, tmp_path)
 
 
 @pytest.mark.api

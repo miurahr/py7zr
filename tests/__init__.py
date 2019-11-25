@@ -12,29 +12,24 @@ os.umask(0o022)
 def check_output(expected, tmpdir):
     for exp in expected:
         if isinstance(tmpdir, str):
-            target = os.path.join(tmpdir, exp['filename'])
+            target = pathlib.Path(tmpdir).joinpath(exp['filename'])
         else:
             target = tmpdir.joinpath(exp['filename'])
         if os.name == 'posix':
             if exp.get('mode', None):
-                assert os.stat(target).st_mode == exp['mode'],\
-                    "%s, actual: %d, expected: %d" % (exp['filename'], os.stat(target).st_mode, exp['mode'])
+                assert target.stat().st_mode == exp['mode'],\
+                    "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mode, exp['mode'])
         if exp.get('mtime', None):
-            assert os.stat(target).st_mtime == exp['mtime'],\
-                "%s, actual: %d, expected: %d" % (exp['filename'], os.stat(target).st_mtime, exp['mode'])
+            assert target.stat().st_mtime == exp['mtime'],\
+                "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mtime, exp['mode'])
         m = hashlib.sha256()
-        if isinstance(tmpdir, pathlib.Path):
-            m.update(target.open(mode='rb').read())
-        else:
-            m.update(open(target, 'rb').read())
+        m.update(target.open('rb').read())
         assert m.digest() == binascii.unhexlify(exp['digest']), "Fails digest for %s" % exp['filename']
 
 
-def decode_all(archive, expected):
-    tmpdir = tempfile.mkdtemp()
+def decode_all(archive, expected, tmpdir):
     for i, file_info in enumerate(archive.files):
         assert file_info.lastwritetime is not None
         assert file_info.filename is not None
     archive.extractall(path=tmpdir)
     check_output(expected, tmpdir)
-    shutil.rmtree(tmpdir)
