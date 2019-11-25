@@ -3,14 +3,16 @@ pool:
 
 strategy:
   matrix:
+    Python35:
+      python.version: '3.5'
     Python36:
       python.version: '3.6'
     Python37:
       python.version: '3.7'
     Python38:
       python.version: '3.8'
-#    PyPy3:
-#      python.version: 'pypy3'
+    PyPy3:
+      python.version: 'pypy3'
 
 steps:
 - task: UsePythonVersion@0
