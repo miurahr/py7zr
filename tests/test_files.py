@@ -251,4 +251,3 @@ def test_asyncio_executor_unlink(tmp_path):
     unzip = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
     loop.run_until_complete(unzip)
     loop.run_until_complete(aiounlink(tmp_path.joinpath('test_1.7z')))
-

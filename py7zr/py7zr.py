@@ -719,6 +719,7 @@ class SevenZipFile:
             self._write_archive()
         self._fpclose(self.fp)
 
+
 # --------------------
 # exported functions
 # --------------------
@@ -735,7 +736,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with open(file, 'rb') as fp:
                 result = SevenZipFile._check_7zfile(fp)
         elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or \
-             isinstance(file, pathlib.WindowsPath):
+                isinstance(file, pathlib.WindowsPath):
             with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
