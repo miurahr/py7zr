@@ -244,15 +244,16 @@ class SevenZipFile:
             if mode == 'r':
                 self.fp = open(file, 'rb')  # type: BinaryIO
             elif mode == 'w':
-                self.fp = open(file, 'w+b')  # type: BinaryIO
+                self.fp = open(file, 'w+b')
             elif mode == 'x':
-                self.fp = open(file, 'x+b')  # type: BinaryIO
+                self.fp = open(file, 'x+b')
             elif mode == 'a':
-                self.fp = open(file, 'r+b')  # type: BinaryIO
+                self.fp = open(file, 'r+b')
             else:
                 raise ValueError("File open error.")
             self.mode = mode
-        elif isinstance(file, pathlib.Path):
+        elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or isinstance(file,
+                                                                                                 pathlib.WindowsPath):
             self._filePassed = False
             self.filename = str(file)
             if mode == 'r':
@@ -266,11 +267,13 @@ class SevenZipFile:
             else:
                 raise ValueError("File open error.")
             self.mode = mode
-        else:
+        elif isinstance(file, io.IOBase):
             self._filePassed = True
-            self.fp = file  # type: BinaryIO
+            self.fp = file
             self.filename = getattr(file, 'name', None)
-            self.mode = mode
+            self.mode = mode  # type: ignore  #noqa
+        else:
+            raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
         self._lock = threading.RLock()
         self.solid = False
@@ -465,8 +468,10 @@ class SevenZipFile:
         self.worker = Worker(self.files, self.afterheader, self.header)
 
     @staticmethod
-    def _check_7zfile(fp: BinaryIO) -> bool:
-        return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+    def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
+        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+        fp.seek(-len(MAGIC_7Z), 1)
+        return result
 
     def _get_method_names(self) -> str:
         methods_names = []  # type: List[str]
@@ -725,13 +730,12 @@ class SevenZipFile:
 # --------------------
 def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
-    The filename argument may be a file or file-like object too.
+    The file argument may be a filename or file-like object too.
     """
     result = False
     try:
         if isinstance(file, io.IOBase) and hasattr(file, "read"):
-            result = SevenZipFile._check_7zfile(file)
-            file.seek(-len(MAGIC_7Z), 1)
+            result = SevenZipFile._check_7zfile(file)  # type: ignore  # noqa
         elif isinstance(file, str):
             with open(file, 'rb') as fp:
                 result = SevenZipFile._check_7zfile(fp)
@@ -740,7 +744,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise Bad7zFile("Unknown variable type of file.")
+            raise TypeError('invalid type: file should be str, pathlib.Path or BinaryIO, but {}'.format(type(file)))
     except OSError:
         pass
     return result
