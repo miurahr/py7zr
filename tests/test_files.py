@@ -212,7 +212,7 @@ def test_copy(tmp_path):
 
 @pytest.mark.files
 def test_close_unlink(tmp_path):
-    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), tmp_path.joinpath('test_1.7z'))
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     archive = py7zr.SevenZipFile(tmp_path.joinpath('test_1.7z'))
     archive.extractall(path=tmp_path)
     archive.close()
@@ -222,7 +222,7 @@ def test_close_unlink(tmp_path):
 @pytest.mark.files
 @pytest.mark.asyncio
 def test_asyncio_executor(tmp_path):
-    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), tmp_path.joinpath('test_1.7z'))
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     loop = asyncio.get_event_loop()
     unzip = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
     loop.run_until_complete(unzip)

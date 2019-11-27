@@ -290,8 +290,7 @@ class SevenZipFile:
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
         except Exception as e:
-            fp = self.fp
-            self._fpclose(fp)
+            self._fpclose()
             raise e
 
     def _write_open(self):
@@ -309,11 +308,11 @@ class SevenZipFile:
         folder.totalout = 1
         return folder
 
-    def _fpclose(self, fp: BinaryIO) -> None:
+    def _fpclose(self) -> None:
         assert self._fileRefCnt > 0
         self._fileRefCnt -= 1
         if not self._fileRefCnt and not self._filePassed:
-            fp.close()
+            self.fp.close()
 
     def _real_get_contents(self, fp: BinaryIO) -> None:
         if not self._check_7zfile(fp):
@@ -722,7 +721,7 @@ class SevenZipFile:
         """
         if 'w' in self.mode:
             self._write_archive()
-        self._fpclose(self.fp)
+        self._fpclose()
 
 
 # --------------------
