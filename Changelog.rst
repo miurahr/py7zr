@@ -14,7 +14,6 @@ Current changes
 Added
 -----
 
-* Test: add close and unlink test.
 
 Changed
 -------
@@ -22,7 +21,6 @@ Changed
 Fixed
 -----
 
-* close() now actually close opened file.
 
 Deprecated
 ----------
@@ -33,8 +31,23 @@ Removed
 Security
 --------
 
+`v0.4.3`_
+=========
+
+Added
+-----
+
+* Test: add close and unlink test.
+
+
+Fixed
+-----
+
+* close() now actually close opened file.
+
+
 `v0.4.1`_
-=======
+=========
 
 Fixed
 -----
@@ -436,7 +449,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4.3...HEAD
+.. _v0.4.3: https://github.com/miurahr/py7zr/compare/v0.4.1...v0.4.3
 .. _v0.4.1: https://github.com/miurahr/py7zr/compare/v0.4...v0.4.1
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.4b1...v0.4
 .. _v0.4b1: https://github.com/miurahr/py7zr/compare/v0.4a2...v0.4b1
