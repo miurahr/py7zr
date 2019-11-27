@@ -25,13 +25,18 @@ import bz2
 import concurrent.futures
 import io
 import lzma
-import os
+import sys
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
 from py7zr.properties import CompressionMethod, Configuration
+
+if sys.version_info < (3, 6):
+    import pathlib2 as pathlib
+else:
+    import pathlib
 
 
 class NullHandler():
@@ -97,11 +102,11 @@ class BufferHandler():
 class FileHandler():
     '''File handler treat fileish object'''
 
-    def __init__(self, target: str) -> None:
+    def __init__(self, target: pathlib.Path) -> None:
         self.target = target
 
     def open(self, mode='wb') -> None:
-        self.fp = open(self.target, mode)
+        self.fp = self.target.open(mode=mode)
 
     def write(self, data: bytes) -> None:
         self.fp.write(data)
@@ -122,7 +127,7 @@ class FileHandler():
         self.fp.close()
 
     def stat(self):
-        return os.stat(self.target)
+        return self.target.stat()
 
 
 Handler = Union[NullHandler, BufferHandler, FileHandler]
@@ -235,7 +240,7 @@ class Worker:
         fp.write(arcdata)
         return length
 
-    def register_filelike(self, id: int, fileish: Union[BinaryIO, str, None]) -> None:
+    def register_filelike(self, id: int, fileish: Union[pathlib.Path, BinaryIO, None]) -> None:
         """register file-ish to worker. File-ish can be union of BinaryIO, str and None.
         When BytesIO specified use BufferHandler. When None use NullHandler, and
         and str is recognized as a path."""
@@ -243,7 +248,7 @@ class Worker:
             self.set_output_filepath(id, NullHandler())
         elif isinstance(fileish, io.BytesIO):
             self.set_output_filepath(id, BufferHandler(fileish))
-        elif isinstance(fileish, str):
+        elif isinstance(fileish, pathlib.Path):
             self.set_output_filepath(id, FileHandler(fileish))
         else:
             raise
