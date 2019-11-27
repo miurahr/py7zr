@@ -17,17 +17,24 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+from pkg_resources import DistributionNotFound, get_distribution
+
 from py7zr.exceptions import (Bad7zFile, DecompressionError,
                               UnsupportedCompressionMethodError)
 from py7zr.py7zr import (ArchiveInfo, FileInfo, SevenZipFile, is_7zfile,
                          unpack_7zarchive)
 
 __copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
-__version__ = '0.4b1'
 __license__ = 'LGPL-2.1+'
 __author__ = 'Hiroshi Miura'
 __author_email__ = 'miurahr@linux.com'
 __url__ = 'http://github.com/miurahr/py7zr'
 
-__all__ = ['ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile',
+try:
+    __version__ = get_distribution(__name__).version
+except DistributionNotFound:
+    # package is not installed
+    __version__ = "unknown"
+
+__all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile',
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError', 'unpack_7zarchive']
