@@ -31,6 +31,15 @@ Removed
 Security
 --------
 
+`v0.4.4`_
+=========
+
+Fixed
+-----
+
+* setup.py: replace 'requires' with 'install_requires'
+
+
 `v0.4.3`_
 =========
 
@@ -449,7 +458,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4.4...HEAD
+.. _v0.4.4: https://github.com/miurahr/py7zr/compare/v0.4.3...v0.4.4
 .. _v0.4.3: https://github.com/miurahr/py7zr/compare/v0.4.1...v0.4.3
 .. _v0.4.1: https://github.com/miurahr/py7zr/compare/v0.4...v0.4.1
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.4b1...v0.4
