@@ -27,6 +27,9 @@ from enum import Enum
 from py7zr.exceptions import InternalError
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
+FINISH_7Z = binascii.unhexlify('377abcaf271d')
+READ_BLOCKSIZE = 32248
+QUEUELEN = READ_BLOCKSIZE * 2
 
 
 class Configuration:
