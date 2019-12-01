@@ -693,11 +693,11 @@ class FilesInfo:
                     self._read_name(buffer)
                     fp.seek(current_pos, 0)
             elif prop == Property.CREATION_TIME:
-                self._readTimes(buffer, self.files, 'creationtime')
+                self._read_times(buffer, 'creationtime')
             elif prop == Property.LAST_ACCESS_TIME:
-                self._readTimes(buffer, self.files, 'lastaccesstime')
+                self._read_times(buffer, 'lastaccesstime')
             elif prop == Property.LAST_WRITE_TIME:
-                self._readTimes(buffer, self.files, 'lastwritetime')
+                self._read_times(buffer, 'lastwritetime')
             elif prop == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, self.numfiles, checkall=1)
                 external = buffer.read(1)
@@ -710,6 +710,8 @@ class FilesInfo:
                     fp.seek(self.dataindex, 0)
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
+            elif prop == Property.START_POS:
+                self._read_start_pos(buffer, self.files)
             else:
                 raise Bad7zFile('invalid type %r' % (prop))
 
@@ -724,21 +726,57 @@ class FilesInfo:
             else:
                 f['attributes'] = None
 
-    def _readTimes(self, fp: BinaryIO, files: List[Dict[str, Any]], name: str) -> None:
+    def _read_times(self, fp: BinaryIO, name: str) -> None:
+        defined = read_boolean(fp, len(self.files), checkall=1)
+        # NOTE: the "external" flag is currently ignored, should be 0x00
+        external = fp.read(1)
+        assert external == b'\x00'
+        for i, f in enumerate(self.files):
+            if defined[i]:
+                f[name] = ArchiveTimestamp(read_real_uint64(fp)[0])
+            else:
+                f[name] = None
+
+    def _read_start_pos(self, fp: BinaryIO, files: List[Dict[str, Any]]) -> None:
         defined = read_boolean(fp, len(files), checkall=1)
         # NOTE: the "external" flag is currently ignored, should be 0x00
-        self.external = fp.read(1)
-        for i in range(len(files)):
+        external = fp.read(1)
+        assert external == 0x00
+        for i, f in enumerate(self.files):
             if defined[i]:
-                files[i][name] = ArchiveTimestamp(read_real_uint64(fp)[0])
+                files[i]['startpos'] = read_real_uint64(fp)[0]
             else:
-                files[i][name] = None
+                files[i]['startpos'] = None
+
+    def _write_times(self, fp: BinaryIO, propid, files: List[Dict[str, Any]], name: str) -> None:
+        defined = []  # type: List[bool]
+        for i, f in enumerate(files):
+            defined.append(f[name] is not None if name in f.keys() else False)
+        write_byte(fp, propid)
+        write_byte(fp, b'\x00')
+        write_boolean(fp, defined, all_defined=False)
+        for i, file in enumerate(files):
+            if defined[i]:
+                write_real_uint64(fp, file[name])
+            else:
+                pass
+
+    def _write_prop_bool_vector(self, fp: BinaryIO, propid, vector) -> None:
+        write_byte(fp, propid)
+        write_boolean(fp, vector, all_defined=False)
+
+    def _are_there(self, vector) -> bool:
+        if vector is not None:
+            if functools.reduce(or_, vector):
+                return True
+        return False
 
     def write(self, file: BinaryIO):
         assert self.files is not None
         numfiles = len(self.files)
         numemptystreams = 0
         emptystreams = []
+        # empty streams
         for f in self.files:
             if f['emptystream']:
                 numemptystreams += 1
@@ -746,22 +784,41 @@ class FilesInfo:
         assert numfiles == len(emptystreams)
         write_byte(file, Property.FILES_INFO)
         write_uint64(file, numfiles)
-        write_byte(file, Property.EMPTY_STREAM)
-        write_boolean(file, emptystreams, all_defined=False)
-        if self.emptyfiles is not None:
-            if functools.reduce(or_, self.emptyfiles):  # there are some emptyfile
-                write_byte(file, Property.EMPTY_FILE)
-                write_boolean(file, self.emptyfiles)
-        if self.antifiles is not None:
-            if functools.reduce(or_, self.antifiles):  # there are some antifiles
-                write_byte(file, Property.ANTI)
-                write_boolean(file, self.antifiles)
-        write_byte(file, Property.NAME)
-        no_external = b'\x00'
-        write_byte(file, no_external)
+        self._write_prop_bool_vector(file, Property.EMPTY_STREAM, emptystreams)
+        if self._are_there(self.emptyfiles):
+            self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
+        if self._are_there(self.antifiles):
+            self._write_prop_bool_vector(file, Property.ANTI, self.antifiles)
+        # Name
+        name_defined = 0
+        names = []
+        name_size = 0
         for f in self.files:
             if f.get('filename', None) is not None:
-                write_utf16(file, f['filename'])
+                name_defined += 1
+                names.append(f['filename'])
+                name_size += len(f['filename'].encode('utf-16'))
+        if name_defined > 0:
+            write_byte(file, Property.NAME)
+            write_uint64(file, name_size)
+            no_external = b'\x00'
+            write_byte(file, no_external)
+            for n in names:
+                write_utf16(file, n)
+        # timestamps
+        self._write_times(file, Property.CREATION_TIME, self.files, 'creationtime')
+        self._write_times(file, Property.LAST_ACCESS_TIME, self.files, 'lastaccesstime')
+        self._write_times(file, Property.LAST_WRITE_TIME, self.files, 'lastwritetime')
+        # start_pos
+        # FIXME: TBD
+        # attribute
+        attr_defined = []  # type: List[bool]
+        for f in self.files:
+            attr_defined.append(f['attributes'] is not None if 'attributes' in f.keys() else False)
+        write_boolean(file, attr_defined, all_defined=False)
+        for i, f in enumerate(self.files):
+            if attr_defined[i]:
+                write_uint32(file, f['attributes'])
 
 
 class Header:
@@ -866,14 +923,17 @@ class Header:
             stream.write(file)
         else:
             write_byte(file, Property.HEADER)
-            if self.properties is not None:
-                self.properties.write(file)
-            if self.additional_streams is not None:
-                self.additional_streams.write(file)
+            # archive properties
             if self.main_streams is not None:
                 self.main_streams.write(file)
+            # Files Info
             if self.files_info is not None:
                 self.files_info.write(file)
+            if self.properties is not None:
+                self.properties.write(file)
+            #
+            if self.additional_streams is not None:
+                self.additional_streams.write(file)
             write_byte(file, Property.END)
         endpos = file.tell()
         return endpos - startpos

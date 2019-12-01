@@ -1,4 +1,5 @@
 include *.rst
+include *.toml
 include *.txt
 include *.yml
 include AUTHORS

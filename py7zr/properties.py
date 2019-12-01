@@ -96,6 +96,9 @@ class CompressionMethod(ByteEnum):
     ARM = binascii.unhexlify('07')
     ARMT = binascii.unhexlify('08')
     SPARC = binascii.unhexlify('09')
+    # SWAP = 02..
+    SWAP2 = binascii.unhexlify('020302')
+    SWAP4 = binascii.unhexlify('020304')
     # 7Z = 03..
     LZMA = binascii.unhexlify('030101')
     PPMD = binascii.unhexlify('030401')
