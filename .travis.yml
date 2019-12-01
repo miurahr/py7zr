@@ -1,5 +1,7 @@
-dist: xenial
+language: python
+dist: bionic
 sudo: false
+cache: pip
 language: python
 matrix:
   include:
