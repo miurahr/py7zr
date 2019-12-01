@@ -43,4 +43,3 @@ async def aio7zr(archive, path):
     partial_py7zr = functools.partial(sevenzip.extractall, path=path)
     loop.run_in_executor(None, partial_py7zr)
     loop.run_in_executor(None, sevenzip.close)
-
