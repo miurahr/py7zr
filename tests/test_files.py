@@ -195,7 +195,7 @@ def test_multiblock_zerosize(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.timeout(5, method='thread')
-def test_multiblock_last_padding(tmp_path):
+def test_multiblock_lzma_bug(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()

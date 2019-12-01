@@ -375,6 +375,7 @@ def test_py7zr_writeall_single(tmp_path):
         assert not f.emptystream
 
 
+@pytest.mark.api
 def test_py7zr_writeall_dir(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -383,14 +384,3 @@ def test_py7zr_writeall_dir(tmp_path):
     assert len(archive.files) == 2
     for f in archive.files:
         assert f.filename in ('src', os.path.join('src', 'bra.txt'))
-
-
-def test_py7zr_write_single_close(tmp_path):
-    target = tmp_path.joinpath('target.7z')
-    archive = py7zr.SevenZipFile(target, 'w')
-    archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
-    assert len(archive.files) == 1
-    archive.close()
-    with target.open('rb') as target_archive:
-        val = target_archive.read(1000)
-        assert val.startswith(py7zr.properties.MAGIC_7Z)
