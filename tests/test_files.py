@@ -224,6 +224,7 @@ def test_close_unlink(tmp_path):
 def test_asyncio_executor(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     loop = asyncio.get_event_loop()
-    unzip = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
-    loop.run_until_complete(unzip)
+    task = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
+    loop.run_until_complete(task)
+    loop.run_until_complete(asyncio.sleep(3))
     os.unlink(str(tmp_path.joinpath('test_1.7z')))
