@@ -624,11 +624,10 @@ class StreamsInfo:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
 
     def write(self, file: BinaryIO):
+        write_byte(file, Property.MAIN_STREAMS_INFO)
         if self.packinfo is not None:
-            write_byte(file, Property.PACK_INFO)
             self.packinfo.write(file)
         if self.unpackinfo is not None:
-            write_byte(file, Property.UNPACK_INFO)
             self.unpackinfo.write(file)
         if self.substreamsinfo is not None:
             write_byte(file, Property.SUBSTREAMS_INFO)
@@ -775,7 +774,7 @@ class FilesInfo:
         assert self.files is not None
         numfiles = len(self.files)
         numemptystreams = 0
-        emptystreams = []
+        emptystreams = []  # List[bool]
         # empty streams
         for f in self.files:
             if f['emptystream']:
@@ -928,7 +927,7 @@ class Header:
                 self.main_streams.write(file)
             # Files Info
             if self.files_info is not None:
-                self.files_info.write(file)
+                self.files_info.write(file   )
             if self.properties is not None:
                 self.properties.write(file)
             #
