@@ -350,6 +350,7 @@ class SevenZipFile:
             subinfo = self.header.main_streams.substreamsinfo
             packsizes = packinfo.packsizes
             self.solid = packinfo.numstreams == 1
+            assert subinfo is not None
             if subinfo.unpacksizes is not None:
                 unpacksizes = subinfo.unpacksizes
             else:
@@ -556,6 +557,7 @@ class SevenZipFile:
                 self.header.main_streams.packinfo.packsizes.append(outsize)
                 self.folder.unpacksizes.append(insize)
         pos = self.fp.tell()
+        self.header.main_streams.substreamsinfo.unpacksizes.extend(self.folder.unpacksizes)
         self.sig_header.nextheaderofs = pos - self.afterheader
         self.header.write(self.fp, encoded=False)
         buf = io.BytesIO()

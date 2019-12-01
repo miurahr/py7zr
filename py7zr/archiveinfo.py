@@ -515,6 +515,7 @@ class SubstreamsInfo:
         self.digests = []  # type: List[int]
         self.digestsdefined = []  # type: List[bool]
         self.unpacksizes = None  # type: Optional[List[int]]
+        self.num_unpackstreams_folders = []  # type: List[int]
 
     @classmethod
     def retrieve(cls, file: BinaryIO, numfolders: int, folders: List[Folder]):
@@ -569,7 +570,8 @@ class SubstreamsInfo:
             self.digests = [0] * num_digests_total
 
     def write(self, file: BinaryIO, numfolders: int):
-        if self.num_unpackstreams_folders is None or len(self.num_unpackstreams_folders) == 0:
+        assert self.num_unpackstreams_folders is not None
+        if len(self.num_unpackstreams_folders) == 0:
             # nothing to write
             return
         if self.unpacksizes is None:
@@ -631,7 +633,6 @@ class StreamsInfo:
         if self.unpackinfo is not None:
             self.unpackinfo.write(file)
         if self.substreamsinfo is not None:
-            write_byte(file, Property.SUBSTREAMS_INFO)
             self.substreamsinfo.write(file, self.unpackinfo.numfolders)
         write_byte(file, Property.END)
 
@@ -894,18 +895,6 @@ class Header:
         buffer.seek(0, 0)
         return buffer
 
-    def _build_encoded_header(self):
-        buf = io.BytesIO()
-        self.write(buf, encoded=False)
-        header_data = buf.getvalue()
-        streams = StreamsInfo()
-        streams.packinfo = PackInfo()
-        streams.packinfo.packpos = 0
-        streams.packinfo.packsizes = []  # TODO: fixme
-        streams.unpackinfo = UnpackInfo()
-        streams.unpackinfo.folders = []  # fixme
-        return streams
-
     def build_header(self, folders):
         self.files_info = FilesInfo()
         self.main_streams = StreamsInfo()
@@ -915,13 +904,24 @@ class Header:
         self.main_streams.unpackinfo = UnpackInfo()
         self.main_streams.unpackinfo.numfolders = len(folders)
         self.main_streams.unpackinfo.folders = folders
+        self.main_streams.substreamsinfo = SubstreamsInfo()
+        self.main_streams.substreamsinfo.num_unpackstreams_folders = [len(folders)]
+        self.main_streams.substreamsinfo.unpacksizes = []
 
     def write(self, file: BinaryIO, encoded: bool = True):
         startpos = file.tell()
         if encoded:
-            stream = self._build_encoded_header()
+            buf = io.BytesIO()
+            self.write(buf, encoded=False)
+            header_data = buf.getvalue()
+            streams = StreamsInfo()
+            streams.packinfo = PackInfo()
+            streams.packinfo.packpos = 0
+            streams.packinfo.packsizes = []  # TODO: fixme
+            streams.unpackinfo = UnpackInfo()
+            streams.unpackinfo.folders = []  # fixme
             write_byte(file, Property.ENCODED_HEADER)
-            stream.write(file)
+            streams.write(file)
         else:
             write_byte(file, Property.HEADER)
             # archive properties
