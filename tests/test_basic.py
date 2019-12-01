@@ -1,6 +1,6 @@
 import lzma
 import os
-import pathlib
+import sys
 import time
 
 import pytest
@@ -12,6 +12,11 @@ import py7zr.compression
 import py7zr.properties
 
 from . import check_output, decode_all
+
+if sys.version_info < (3, 6):
+    import pathlib2 as pathlib
+else:
+    import pathlib
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.environ['TZ'] = 'UTC'

@@ -29,17 +29,22 @@ import functools
 import io
 import operator
 import os
-import pathlib
 import stat
+import sys
 import threading
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
+
+if sys.version_info < (3, 6):
+    import pathlib2 as pathlib
+else:
+    import pathlib
 
 
 class ArchiveFile:
@@ -244,11 +249,11 @@ class SevenZipFile:
             if mode == 'r':
                 self.fp = open(file, 'rb')  # type: BinaryIO
             elif mode == 'w':
-                self.fp = open(file, 'w+b')  # type: BinaryIO
+                self.fp = open(file, 'w+b')
             elif mode == 'x':
-                self.fp = open(file, 'x+b')  # type: BinaryIO
+                self.fp = open(file, 'x+b')
             elif mode == 'a':
-                self.fp = open(file, 'r+b')  # type: BinaryIO
+                self.fp = open(file, 'r+b')
             else:
                 raise ValueError("File open error.")
             self.mode = mode
@@ -266,11 +271,13 @@ class SevenZipFile:
             else:
                 raise ValueError("File open error.")
             self.mode = mode
-        else:
+        elif isinstance(file, io.IOBase):
             self._filePassed = True
-            self.fp = file  # type: BinaryIO
+            self.fp = file
             self.filename = getattr(file, 'name', None)
-            self.mode = mode
+            self.mode = mode  # type: ignore  #noqa
+        else:
+            raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
         self._lock = threading.RLock()
         self.solid = False
@@ -287,8 +294,7 @@ class SevenZipFile:
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
         except Exception as e:
-            fp = self.fp
-            self._fpclose(fp)
+            self._fpclose()
             raise e
 
     def _write_open(self):
@@ -306,11 +312,11 @@ class SevenZipFile:
         folder.totalout = 1
         return folder
 
-    def _fpclose(self, fp: BinaryIO) -> None:
+    def _fpclose(self) -> None:
         assert self._fileRefCnt > 0
         self._fileRefCnt -= 1
         if not self._fileRefCnt and not self._filePassed:
-            fp.close()
+            self.fp.close()
 
     def _real_get_contents(self, fp: BinaryIO) -> None:
         if not self._check_7zfile(fp):
@@ -444,20 +450,20 @@ class SevenZipFile:
             return len(self.header.files_info.files)
         return 0
 
-    def _set_file_property(self, outfilename: str, properties: Dict[str, Any]) -> None:
+    def _set_file_property(self, outfilename: pathlib.Path, properties: Dict[str, Any]) -> None:
         # creation time
         creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
         if creationtime is not None:
-            os.utime(outfilename, times=(creationtime, creationtime))
+            os.utime(str(outfilename), times=(creationtime, creationtime))
         if os.name == 'posix':
             st_mode = properties['posix_mode']
             if st_mode is not None:
-                os.chmod(outfilename, st_mode)
+                outfilename.chmod(st_mode)
                 return
         # fallback: only set readonly if specified
         if properties['readonly'] and not properties['is_directory']:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-            os.chmod(outfilename, os.stat(outfilename).st_mode & ro_mask)
+            outfilename.chmod(outfilename.stat().st_mode & ro_mask)
 
     def reset(self) -> None:
         """Seek to where archive data start in archive and recreate new worker."""
@@ -465,8 +471,10 @@ class SevenZipFile:
         self.worker = Worker(self.files, self.afterheader, self.header)
 
     @staticmethod
-    def _check_7zfile(fp: BinaryIO) -> bool:
-        return MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+    def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
+        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+        fp.seek(-len(MAGIC_7Z), 1)
+        return result
 
     def _get_method_names(self) -> str:
         methods_names = []  # type: List[str]
@@ -533,7 +541,7 @@ class SevenZipFile:
                 self.header.main_streams.packinfo.numstreams += 1
                 outsize = 0
                 insize = 0
-                with open(f.origin, mode='rb') as fd:
+                with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
                     insize += len(data)
                     while data:
@@ -558,28 +566,28 @@ class SevenZipFile:
         return
 
     @staticmethod
-    def _make_file_info(target, arcname=None) -> Dict[str, Any]:
+    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
             f['filename'] = arcname
         else:
-            f['filename'] = target
-        if os.path.isdir(target):
+            f['filename'] = str(target)
+        if target.is_dir():
             f['emptystream'] = True
             f['attributes'] = FileAttribute.DIRECTORY
             if os.name == 'posix':
                 f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
-        elif os.path.islink(target):
+        elif target.is_symlink():
             f['emptystream'] = True
             if os.name == 'posix':
                 f['attributes'] = FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16)
             else:
                 f['attributes'] = 0x0  # FIXME
-        elif os.path.isfile(target):
+        elif target.is_file():
             f['emptystream'] = False
             f['attributes'] = 0x0
-            fstat = os.stat(target)
+            fstat = target.stat()
             f['uncompressed'] = fstat.st_size
         return f
 
@@ -617,20 +625,20 @@ class SevenZipFile:
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        target_sym = []
-        target_files = []
-        target_dirs = []
+        target_sym = []  # type: List[Tuple[BinaryIO, str]]
+        target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
+        target_dirs = []  # type: List[pathlib.Path]
         self.reset()
         if path is not None:
+            if isinstance(path, str):
+                path = pathlib.Path(path)
             try:
-                if isinstance(path, str):
-                    path = pathlib.Path(path)
                 if not path.exists():
                     path.mkdir(parents=True)
                 else:
                     pass
             except OSError as e:
-                if e.errno == errno.EEXIST and os.path.isdir(path):
+                if e.errno == errno.EEXIST and path.is_dir():
                     pass
                 else:
                     raise e
@@ -651,11 +659,11 @@ class SevenZipFile:
                 multi_thread = False
             fnames.append(f.filename)
             if path is not None:
-                outfilename = str(path.joinpath(f.filename))
+                outfilename = path.joinpath(f.filename)
             else:
-                outfilename = f.filename
+                outfilename = pathlib.Path(f.filename)
             if f.is_directory:
-                if not os.path.exists(outfilename):
+                if not outfilename.exists():
                     target_dirs.append(outfilename)
                     target_files.append((outfilename, f.file_properties()))
                 else:
@@ -672,43 +680,52 @@ class SevenZipFile:
                 target_files.append((outfilename, f.file_properties()))
         for target_dir in sorted(target_dirs):
             try:
-                os.mkdir(target_dir)
+                target_dir.mkdir()
             except FileExistsError:
-                if os.path.isdir(target_dir):
+                if target_dir.is_dir():
                     # skip rare case
                     pass
-                elif os.path.isfile(target_dir):
+                elif target_dir.is_file():
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
         self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
-            sym_src = b.read().decode(encoding='utf-8')
+            sym_src_org = b.read().decode(encoding='utf-8')
             dirname = os.path.dirname(t)
             if path:
-                sym_src = os.path.join(path, dirname, sym_src)
-                sym_dst = os.path.join(path, t)
+                sym_src = path.joinpath(dirname, sym_src_org)
+                sym_dst = path.joinpath(t)
             else:
-                sym_src = os.path.join(dirname, sym_src)
-                sym_dst = t
-            os.symlink(sym_src, sym_dst)
+                sym_src = pathlib.Path(dirname).joinpath(sym_src_org)
+                sym_dst = pathlib.Path(t)
+            sym_dst.symlink_to(sym_src)
         for o, p in target_files:
             self._set_file_property(o, p)
 
-    def writeall(self, path, arcname=None):
+    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
-        if os.path.isfile(path):
+        if isinstance(path, str):
+            path = pathlib.Path(path)
+        if path.is_file():
             self.write(path, arcname)
-        elif os.path.isdir(path):
+        elif path.is_dir():
             if arcname is not None:
                 self.write(path, arcname)
-            for nm in sorted(os.listdir(path)):
-                self.writeall(os.path.join(path, nm), os.path.join(arcname, nm))
+            for nm in sorted(os.listdir(str(path))):
+                arc = os.path.join(arcname, nm) if arcname is not None else None
+                self.writeall(path.joinpath(nm), arc)
 
-    def write(self, file, arcname=None):
+    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
-        file_info = self._make_file_info(file, arcname)
+        if isinstance(file, str):
+            path = pathlib.Path(file)
+        elif isinstance(file, pathlib.Path):
+            path = file
+        else:
+            raise ValueError("Unsupported file type.")
+        file_info = self._make_file_info(path, arcname)
         self.files.append(file_info)
 
     def close(self):
@@ -717,7 +734,7 @@ class SevenZipFile:
         """
         if 'w' in self.mode:
             self._write_archive()
-        self._fpclose(self.fp)
+        self._fpclose()
 
 
 # --------------------
@@ -725,13 +742,12 @@ class SevenZipFile:
 # --------------------
 def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
-    The filename argument may be a file or file-like object too.
+    The file argument may be a filename or file-like object too.
     """
     result = False
     try:
         if isinstance(file, io.IOBase) and hasattr(file, "read"):
-            result = SevenZipFile._check_7zfile(file)
-            file.seek(-len(MAGIC_7Z), 1)
+            result = SevenZipFile._check_7zfile(file)  # type: ignore  # noqa
         elif isinstance(file, str):
             with open(file, 'rb') as fp:
                 result = SevenZipFile._check_7zfile(fp)
@@ -740,7 +756,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with file.open(mode='rb') as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise Bad7zFile("Unknown variable type of file.")
+            raise TypeError('invalid type: file should be str, pathlib.Path or BinaryIO, but {}'.format(type(file)))
     except OSError:
         pass
     return result

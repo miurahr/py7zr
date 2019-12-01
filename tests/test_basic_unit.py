@@ -4,6 +4,7 @@ import io
 import lzma
 import os
 import struct
+import sys
 
 import pytest
 
@@ -11,6 +12,11 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
+
+if sys.version_info < (3, 6):
+    import pathlib2 as pathlib
+else:
+    import pathlib
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -439,7 +445,8 @@ def test_file_handler(tmp_path):
 
 @pytest.mark.unit
 def test_make_file_info1():
-    file_info = py7zr.py7zr.SevenZipFile._make_file_info(os.path.join(testdata_path, 'src', 'bra.txt'), 'src/bra.txt')
+    file_info = py7zr.py7zr.SevenZipFile._make_file_info(pathlib.Path(os.path.join(testdata_path,
+                                                                                   'src', 'bra.txt')), 'src/bra.txt')
     assert file_info.get('filename') == 'src/bra.txt'
     assert not file_info.get('emptystream')
     assert file_info.get('uncompressed') == 11
@@ -447,7 +454,7 @@ def test_make_file_info1():
 
 @pytest.mark.unit
 def test_make_file_info2():
-    file_info = py7zr.py7zr.SevenZipFile._make_file_info(os.path.join(testdata_path, 'src'))
+    file_info = py7zr.py7zr.SevenZipFile._make_file_info(pathlib.Path(os.path.join(testdata_path, 'src')))
     assert file_info.get('filename') == os.path.join(testdata_path, 'src')
     assert file_info.get('emptystream')
     flag = py7zr.properties.FileAttribute.DIRECTORY

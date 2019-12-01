@@ -55,7 +55,7 @@ def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     archive.extractall(path=tmp_path)
-    with open(tmp_path.joinpath('github_14'), 'rb') as f:
+    with tmp_path.joinpath('github_14').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
 
 
@@ -128,7 +128,7 @@ def test_lzma2bcj(tmp_path):
                                   '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(open(tmp_path.joinpath('5.12.1/msvc2017_64/bin/opengl32sw.dll'), 'rb').read())
+    m.update(tmp_path.joinpath('5.12.1/msvc2017_64/bin/opengl32sw.dll').open('rb').read())
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
 
 
@@ -142,20 +142,20 @@ def test_zerosize(tmp_path):
 def test_register_unpack_archive(tmp_path):
     shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
     shutil.unpack_archive(os.path.join(testdata_path, 'test_1.7z'), tmp_path)
-    target = os.path.join(tmp_path, "setup.cfg")
+    target = tmp_path.joinpath("setup.cfg")
     expected_mode = 33188
     expected_mtime = 1552522033
     if os.name == 'posix':
-        assert os.stat(target).st_mode == expected_mode
-    assert os.stat(target).st_mtime == expected_mtime
+        assert target.stat().st_mode == expected_mode
+    assert target.stat().st_mtime == expected_mtime
     m = hashlib.sha256()
-    m.update(open(target, 'rb').read())
+    m.update(target.open('rb').read())
     assert m.digest() == binascii.unhexlify('ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240')
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmp_path, 'setup.py'), 'rb').read())
+    m.update(tmp_path.joinpath('setup.py').open('rb').read())
     assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmp_path, 'scripts/py7zr'), 'rb').read())
+    m.update(tmp_path.joinpath('scripts/py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
 
 
@@ -174,7 +174,7 @@ def test_github_14_multi(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
-    with open(os.path.join(tmp_path, 'github_14_multi'), 'rb') as f:
+    with tmp_path.joinpath('github_14_multi').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
@@ -183,7 +183,7 @@ def test_multiblock(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmp_path, 'bin/7zdec.exe'), 'rb').read())
+    m.update(tmp_path.joinpath('bin/7zdec.exe').open('rb').read())
     assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
 
 
@@ -199,7 +199,7 @@ def test_multiblock_last_padding(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(open(os.path.join(tmp_path, '5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll'), 'rb').read())
+    m.update(tmp_path.joinpath('5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll').open('rb').read())
     assert m.digest() == binascii.unhexlify('98985de41ddba789d039bb10d86ea3015bf0d8d9fa86b25a0490044c247233d3')
 
 
@@ -212,18 +212,19 @@ def test_copy(tmp_path):
 
 @pytest.mark.files
 def test_close_unlink(tmp_path):
-    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), tmp_path.joinpath('test_1.7z'))
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     archive = py7zr.SevenZipFile(tmp_path.joinpath('test_1.7z'))
     archive.extractall(path=tmp_path)
     archive.close()
-    os.unlink(tmp_path.joinpath('test_1.7z'))
+    tmp_path.joinpath('test_1.7z').unlink()
 
 
 @pytest.mark.files
 @pytest.mark.asyncio
 def test_asyncio_executor(tmp_path):
-    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), tmp_path.joinpath('test_1.7z'))
+    shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     loop = asyncio.get_event_loop()
-    unzip = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
-    loop.run_until_complete(unzip)
-    os.unlink(tmp_path.joinpath('test_1.7z'))
+    task = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
+    loop.run_until_complete(task)
+    loop.run_until_complete(asyncio.sleep(3))
+    os.unlink(str(tmp_path.joinpath('test_1.7z')))
