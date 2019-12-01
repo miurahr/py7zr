@@ -195,14 +195,15 @@ def read_utf16(file: BinaryIO) -> str:
         ch = file.read(2)
         if ch == unhexlify('0000'):
             break
-        val += ch.decode('utf-16')
+        val += ch.decode('utf-16LE')
     return val
 
 
 def write_utf16(file: BinaryIO, val: str):
     """write a utf-16 string to file"""
-    file.write(val.encode('utf-16'))
-    file.write(unhexlify(('0000')))
+    for c in val:
+        file.write(c.encode('utf-16LE'))
+    file.write(b'\x00\x00')
 
 
 class ArchiveProperties:
@@ -783,7 +784,8 @@ class FilesInfo:
         assert numfiles == len(emptystreams)
         write_byte(file, Property.FILES_INFO)
         write_uint64(file, numfiles)
-        self._write_prop_bool_vector(file, Property.EMPTY_STREAM, emptystreams)
+        if self._are_there(emptystreams):
+            self._write_prop_bool_vector(file, Property.EMPTY_STREAM, emptystreams)
         if self._are_there(self.emptyfiles):
             self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
         if self._are_there(self.antifiles):
@@ -796,7 +798,7 @@ class FilesInfo:
             if f.get('filename', None) is not None:
                 name_defined += 1
                 names.append(f['filename'])
-                name_size += len(f['filename'].encode('utf-16'))
+                name_size += len(f['filename'].encode('utf-16')) + 2
         if name_defined > 0:
             write_byte(file, Property.NAME)
             write_uint64(file, name_size)
@@ -927,7 +929,7 @@ class Header:
                 self.main_streams.write(file)
             # Files Info
             if self.files_info is not None:
-                self.files_info.write(file   )
+                self.files_info.write(file)
             if self.properties is not None:
                 self.properties.write(file)
             #

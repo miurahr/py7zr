@@ -15,6 +15,7 @@ Added
 -----
 
 * SevenZipFile: accept pathlib.Path as a file argument.
+* Unit test: read and write UTF-16LE string for filename
 
 Changed
 -------

@@ -282,6 +282,25 @@ def test_read_uint64(testinput, expected):
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("testinput, expected",
+                         [(b't\x00e\x00s\x00t\x00\x00\x00', 'test')])
+def test_read_utf16(testinput, expected):
+    buf = io.BytesIO(testinput)
+    actual = py7zr.archiveinfo.read_utf16(buf)
+    assert actual == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("testinput, expected",
+                         [('test', b't\x00e\x00s\x00t\x00\x00\x00')])
+def test_write_utf16(testinput, expected):
+    buf = io.BytesIO()
+    py7zr.archiveinfo.write_utf16(buf, testinput)
+    actual = buf.getvalue()
+    assert actual == expected
+
+
+@pytest.mark.unit
 def test_write_archive_properties():
     """
     test write function of ArchiveProperties class.
