@@ -1,6 +1,5 @@
 import asyncio
 import binascii
-import functools
 import hashlib
 import io
 import os
@@ -13,7 +12,7 @@ import py7zr
 from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
 from py7zr.helpers import UTC
 
-from . import decode_all
+from . import aio7zr, decode_all
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
@@ -220,34 +219,11 @@ def test_close_unlink(tmp_path):
     os.unlink(tmp_path.joinpath('test_1.7z'))
 
 
-def async_wrap(func):
-    @asyncio.coroutine
-    @functools.wraps(func)
-    def run(*args, loop=None, executor=None, **kwargs):
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        partial_func = functools.partial(func, *args, **kwargs)
-        return loop.run_in_executor(executor, partial_func)
-
-    return run
-
-
-aiounlink = async_wrap(os.unlink)
-
-
-@asyncio.coroutine
-def aio7zr(archive, path):
-    loop = asyncio.get_event_loop()
-    sevenzip = py7zr.SevenZipFile(archive)
-    partial_py7zr = functools.partial(sevenzip.extractall, path=path)
-    loop.run_in_executor(None, partial_py7zr)
-    loop.run_in_executor(None, sevenzip.close)
-
-
 @pytest.mark.files
-def test_asyncio_executor_unlink(tmp_path):
+@pytest.mark.asyncio
+def test_asyncio_executor(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), tmp_path.joinpath('test_1.7z'))
     loop = asyncio.get_event_loop()
     unzip = asyncio.ensure_future(aio7zr(tmp_path.joinpath('test_1.7z'), path=tmp_path))
     loop.run_until_complete(unzip)
-    loop.run_until_complete(aiounlink(tmp_path.joinpath('test_1.7z')))
+    os.unlink(tmp_path.joinpath('test_1.7z'))

@@ -11,8 +11,6 @@ strategy:
       python.version: '3.7'
     Python38:
       python.version: '3.8'
-    PyPy3:
-      python.version: 'pypy3'
 
 steps:
 - task: UsePythonVersion@0

@@ -1,7 +1,11 @@
+import asyncio
 import binascii
+import functools
 import hashlib
 import os
 import pathlib
+
+import py7zr
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
@@ -31,3 +35,12 @@ def decode_all(archive, expected, tmpdir):
         assert file_info.filename is not None
     archive.extractall(path=tmpdir)
     check_output(expected, tmpdir)
+
+
+async def aio7zr(archive, path):
+    loop = asyncio.get_event_loop()
+    sevenzip = py7zr.SevenZipFile(archive)
+    partial_py7zr = functools.partial(sevenzip.extractall, path=path)
+    loop.run_in_executor(None, partial_py7zr)
+    loop.run_in_executor(None, sevenzip.close)
+
