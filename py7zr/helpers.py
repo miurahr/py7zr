@@ -138,3 +138,7 @@ class ArchiveTimestamp(int):
     def as_datetime(self):
         """Convert FILETIME to Python datetime object."""
         return datetime.fromtimestamp(self.totimestamp(), UTC())
+
+    @staticmethod
+    def from_datetime(val):
+        return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)

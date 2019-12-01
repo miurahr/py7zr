@@ -34,7 +34,7 @@ def test_simple_compress_and_decompress():
 
 
 @pytest.mark.basic
-def test_py7zr_write_and_read_single(tmp_path):
+def test_py7zr_write_and_read_single(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
@@ -45,3 +45,13 @@ def test_py7zr_write_and_read_single(tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
+    expected = """total 1 files and directories in solid archive
+   Date      Time    Attr         Size   Compressed  Name
+------------------- ----- ------------ ------------  ------------------------
+2019-11-18 09:29:00 ....A           33           37  test1.txt
+------------------- ----- ------------ ------------  ------------------------
+"""
+    cli = py7zr.cli.Cli()
+    cli.run(["l", str(target)])
+    out, err = capsys.readouterr()
+    assert expected == out

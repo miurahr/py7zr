@@ -749,16 +749,16 @@ class FilesInfo:
             else:
                 files[i]['startpos'] = None
 
-    def _write_times(self, fp: BinaryIO, propid, files: List[Dict[str, Any]], name: str) -> None:
+    def _write_times(self, fp: BinaryIO, propid, name: str) -> None:
         defined = []  # type: List[bool]
-        for i, f in enumerate(files):
+        for i, f in enumerate(self.files):
             defined.append(f[name] is not None if name in f.keys() else False)
         write_byte(fp, propid)
         write_byte(fp, b'\x00')
         write_boolean(fp, defined, all_defined=False)
-        for i, file in enumerate(files):
+        for i, file in enumerate(self.files):
             if defined[i]:
-                write_real_uint64(fp, file[name])
+                write_real_uint64(fp, ArchiveTimestamp.from_datetime(file[name]))
             else:
                 pass
 
@@ -808,9 +808,9 @@ class FilesInfo:
             for n in names:
                 write_utf16(file, n)
         # timestamps
-        self._write_times(file, Property.CREATION_TIME, self.files, 'creationtime')
-        self._write_times(file, Property.LAST_ACCESS_TIME, self.files, 'lastaccesstime')
-        self._write_times(file, Property.LAST_WRITE_TIME, self.files, 'lastwritetime')
+        self._write_times(file, Property.CREATION_TIME, 'creationtime')
+        self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
+        self._write_times(file, Property.LAST_WRITE_TIME, 'lastwritetime')
         # start_pos
         # FIXME: TBD
         # attribute
