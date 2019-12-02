@@ -151,7 +151,7 @@ def write_uint64(file: BinaryIO, value: int):
     file.write(ba)
 
 
-def read_boolean(file: BinaryIO, count: int, checkall: int = False) -> List[bool]:
+def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> List[bool]:
     if checkall:
         all_defined = file.read(1)
         if all_defined != unhexlify('00'):
@@ -548,7 +548,7 @@ class SubstreamsInfo:
                 num_digests += numsubstreams
             num_digests_total += numsubstreams
         if pid == Property.CRC:
-            defined = read_boolean(file, num_digests, checkall=1)
+            defined = read_boolean(file, num_digests, checkall=True)
             crcs = read_crcs(file, num_digests)
             didx = 0
             for i in range(numfolders):
@@ -671,7 +671,7 @@ class FilesInfo:
                 continue
             buffer = io.BytesIO(fp.read(size))
             if prop == Property.EMPTY_STREAM:
-                isempty = read_boolean(buffer, self.numfiles)
+                isempty = read_boolean(buffer, self.numfiles, checkall=False)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
                 for x in isempty:
                     if x:
@@ -679,9 +679,9 @@ class FilesInfo:
                 self.emptyfiles = [False] * numemptystreams
                 self.antifiles = [False] * numemptystreams
             elif prop == Property.EMPTY_FILE:
-                self.emptyfiles = read_boolean(buffer, numemptystreams)
+                self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
             elif prop == Property.ANTI:
-                self.antifiles = read_boolean(buffer, numemptystreams)
+                self.antifiles = read_boolean(buffer, numemptystreams, checkall=False)
             elif prop == Property.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
@@ -700,7 +700,7 @@ class FilesInfo:
             elif prop == Property.LAST_WRITE_TIME:
                 self._read_times(buffer, 'lastwritetime')
             elif prop == Property.ATTRIBUTES:
-                defined = read_boolean(buffer, self.numfiles, checkall=1)
+                defined = read_boolean(buffer, self.numfiles, checkall=True)
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_attributes(buffer, defined)
@@ -728,7 +728,7 @@ class FilesInfo:
                 f['attributes'] = None
 
     def _read_times(self, fp: BinaryIO, name: str) -> None:
-        defined = read_boolean(fp, len(self.files), checkall=1)
+        defined = read_boolean(fp, len(self.files), checkall=True)
         # NOTE: the "external" flag is currently ignored, should be 0x00
         external = fp.read(1)
         assert external == b'\x00'
@@ -739,7 +739,7 @@ class FilesInfo:
                 f[name] = None
 
     def _read_start_pos(self, fp: BinaryIO, files: List[Dict[str, Any]]) -> None:
-        defined = read_boolean(fp, len(files), checkall=1)
+        defined = read_boolean(fp, len(files), checkall=True)
         # NOTE: the "external" flag is currently ignored, should be 0x00
         external = fp.read(1)
         assert external == 0x00
@@ -750,12 +750,12 @@ class FilesInfo:
                 files[i]['startpos'] = None
 
     def _write_times(self, fp: BinaryIO, propid, name: str) -> None:
+        write_byte(fp, propid)
         defined = []  # type: List[bool]
         for i, f in enumerate(self.files):
             defined.append(f[name] is not None if name in f.keys() else False)
-        write_byte(fp, propid)
+        write_boolean(fp, defined, all_defined=True)
         write_byte(fp, b'\x00')
-        write_boolean(fp, defined, all_defined=False)
         for i, file in enumerate(self.files):
             if defined[i]:
                 write_real_uint64(fp, ArchiveTimestamp.from_datetime(file[name]))
@@ -764,7 +764,7 @@ class FilesInfo:
 
     def _write_prop_bool_vector(self, fp: BinaryIO, propid, vector) -> None:
         write_byte(fp, propid)
-        write_boolean(fp, vector, all_defined=False)
+        write_boolean(fp, vector, all_defined=True)
 
     def _are_there(self, vector) -> bool:
         if vector is not None:
@@ -772,18 +772,33 @@ class FilesInfo:
                 return True
         return False
 
+    def _gen_empty_stream(self) -> List[bool]:
+        emptystreams = []  # List[bool]
+        for f in self.files:
+            emptystreams.append(f['emptystream'])
+        return emptystreams
+
+    def _write_names(self, file: BinaryIO):
+        name_defined = 0
+        names = []
+        name_size = 0
+        for f in self.files:
+            if f.get('filename', None) is not None:
+                name_defined += 1
+                names.append(f['filename'])
+                name_size += len(f['filename'].encode('utf-16LE')) + 2  # len(str + NULL_WORD)
+        if name_defined > 0:
+            write_byte(file, Property.NAME)
+            write_uint64(file, name_size + 1)
+            write_byte(file, b'\x00')
+            for n in names:
+                write_utf16(file, n)
+
     def write(self, file: BinaryIO):
         assert self.files is not None
-        numfiles = len(self.files)
-        numemptystreams = 0
-        emptystreams = []  # List[bool]
-        # empty streams
-        for f in self.files:
-            if f['emptystream']:
-                numemptystreams += 1
-            emptystreams.append(f['emptystream'])
-        assert numfiles == len(emptystreams)
         write_byte(file, Property.FILES_INFO)
+        emptystreams = self._gen_empty_stream()
+        numfiles = len(self.files)
         write_uint64(file, numfiles)
         if self._are_there(emptystreams):
             self._write_prop_bool_vector(file, Property.EMPTY_STREAM, emptystreams)
@@ -792,21 +807,7 @@ class FilesInfo:
         if self._are_there(self.antifiles):
             self._write_prop_bool_vector(file, Property.ANTI, self.antifiles)
         # Name
-        name_defined = 0
-        names = []
-        name_size = 0
-        for f in self.files:
-            if f.get('filename', None) is not None:
-                name_defined += 1
-                names.append(f['filename'])
-                name_size += len(f['filename'].encode('utf-16')) + 2
-        if name_defined > 0:
-            write_byte(file, Property.NAME)
-            write_uint64(file, name_size)
-            no_external = b'\x00'
-            write_byte(file, no_external)
-            for n in names:
-                write_utf16(file, n)
+        self._write_names(file)
         # timestamps
         self._write_times(file, Property.CREATION_TIME, 'creationtime')
         self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
@@ -814,6 +815,7 @@ class FilesInfo:
         # start_pos
         # FIXME: TBD
         # attribute
+        write_byte(file, Property.ATTRIBUTES)
         attr_defined = []  # type: List[bool]
         for f in self.files:
             attr_defined.append(f['attributes'] is not None if 'attributes' in f.keys() else False)
@@ -821,7 +823,7 @@ class FilesInfo:
         for i, f in enumerate(self.files):
             if attr_defined[i]:
                 write_uint32(file, f['attributes'])
-
+        write_byte(file, Property.END)
 
 class Header:
     """ the archive header """

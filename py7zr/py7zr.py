@@ -534,7 +534,7 @@ class SevenZipFile:
         compressor = self.folder.get_compressor()
 
         for f in self.files:
-            file_info = {'filename': f.filename, 'emptystream': f.emptystream}
+            file_info = f.file_properties()
             self.header.files_info.files.append(file_info)
             if f.emptystream:
                 pass
@@ -591,6 +591,9 @@ class SevenZipFile:
             f['attributes'] = 0x0
             fstat = target.stat()
             f['uncompressed'] = fstat.st_size
+        f['creationtime'] = target.stat().st_ctime
+        f['lastwritetime'] = target.stat().st_mtime
+        f['lastaccesstime'] = target.stat().st_atime
         return f
 
     # --------------------------------------------------------------------------
