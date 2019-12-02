@@ -1,3 +1,4 @@
+import datetime
 import lzma
 import os
 
@@ -45,12 +46,14 @@ def test_py7zr_write_and_read_single(capsys, tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
-    expected = """total 1 files and directories in solid archive
-   Date      Time    Attr         Size   Compressed  Name
-------------------- ----- ------------ ------------  ------------------------
-2019-11-18 09:29:00 ....A           33           37  test1.txt
-------------------- ----- ------------ ------------  ------------------------
-"""
+    ctime = datetime.datetime.fromtimestamp(os.stat(os.path.join(testdata_path, "test1.txt")).st_ctime)
+    creationdate = ctime.astimezone(py7zr.helpers.Local).strftime("%Y-%m-%d")
+    creationtime = ctime.astimezone(py7zr.helpers.Local).strftime("%H:%M:%S")
+    expected = "total 1 files and directories in solid archive\n" \
+               "   Date      Time    Attr         Size   Compressed  Name\n" \
+               "------------------- ----- ------------ ------------  ------------------------\n"
+    expected += "{} {} ....A           33           37  test1.txt\n".format(creationdate, creationtime)
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
     out, err = capsys.readouterr()
