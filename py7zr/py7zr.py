@@ -588,7 +588,7 @@ class SevenZipFile:
                 f['attributes'] = 0x0  # FIXME
         elif target.is_file():
             f['emptystream'] = False
-            f['attributes'] = 0x0
+            f['attributes'] = FileAttribute.ARCHIVE
             fstat = target.stat()
             f['uncompressed'] = fstat.st_size
         f['creationtime'] = target.stat().st_ctime
