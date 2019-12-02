@@ -752,8 +752,16 @@ class FilesInfo:
     def _write_times(self, fp: BinaryIO, propid, name: str) -> None:
         write_byte(fp, propid)
         defined = []  # type: List[bool]
-        for i, f in enumerate(self.files):
-            defined.append(f[name] is not None if name in f.keys() else False)
+        num_defined = 0  # type: int
+        for f in self.files:
+            if name in f.keys():
+                if f[name] is not None:
+                    defined.append(True)
+                    num_defined += 1
+        if num_defined == len(defined):
+            write_byte(fp, (num_defined * 8 + 2).to_bytes(1, byteorder='little'))
+        else:
+            write_byte(fp, (num_defined * 8 - ( -num_defined // 8 ) + 2).to_bytes(1, byteorder='little'))
         write_boolean(fp, defined, all_defined=True)
         write_byte(fp, b'\x00')
         for i, file in enumerate(self.files):
@@ -794,6 +802,27 @@ class FilesInfo:
             for n in names:
                 write_utf16(file, n)
 
+    def _write_attributes(self, file):
+        defined = []  # type: List[bool]
+        num_defined = 0
+        for f in self.files:
+            if 'attributes' in f.keys():
+                if f['attributes'] is not None:
+                    defined.append(True)
+                    num_defined += 1
+                    continue
+            defined.append(False)
+        write_byte(file, Property.ATTRIBUTES)
+        if num_defined == len(defined):
+            write_byte(file, (num_defined * 4 + 2).to_bytes(1, byteorder='little'))
+        else:
+            write_byte(file, (num_defined * 4 - (-num_defined // 4) + 2).to_bytes(1, byteorder='little'))
+        write_boolean(file, defined, all_defined=False)
+        write_byte(file, b'\x00')
+        for i, f in enumerate(self.files):
+            if defined[i]:
+                write_uint32(file, f['attributes'])
+
     def write(self, file: BinaryIO):
         assert self.files is not None
         write_byte(file, Property.FILES_INFO)
@@ -815,14 +844,7 @@ class FilesInfo:
         # start_pos
         # FIXME: TBD
         # attribute
-        write_byte(file, Property.ATTRIBUTES)
-        attr_defined = []  # type: List[bool]
-        for f in self.files:
-            attr_defined.append(f['attributes'] is not None if 'attributes' in f.keys() else False)
-        write_boolean(file, attr_defined, all_defined=False)
-        for i, f in enumerate(self.files):
-            if attr_defined[i]:
-                write_uint32(file, f['attributes'])
+        self._write_attributes(file)
         write_byte(file, Property.END)
 
 class Header:
