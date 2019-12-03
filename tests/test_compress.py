@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
@@ -58,3 +59,17 @@ def test_py7zr_write_and_read_single(capsys, tmp_path):
     cli.run(["l", str(target)])
     out, err = capsys.readouterr()
     assert expected == out
+
+
+@pytest.mark.basic
+def test_py7zr_write_and_read_directory(tmp_path):
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    assert len(archive.files) == 2
+    archive.close()
+    with target.open('rb') as target_archive:
+        val = target_archive.read(1000)
+        assert val.startswith(py7zr.properties.MAGIC_7Z)
+    archive = py7zr.SevenZipFile(target, 'r')
+    assert archive.test()

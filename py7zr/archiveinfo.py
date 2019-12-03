@@ -206,6 +206,10 @@ def write_utf16(file: BinaryIO, val: str):
     file.write(b'\x00\x00')
 
 
+def bits_to_bytes(bit_length: int) -> int:
+    return - (-bit_length // 8)
+
+
 class ArchiveProperties:
 
     __slots__ = ['property_data']
@@ -761,7 +765,7 @@ class FilesInfo:
         if num_defined == len(defined):
             write_byte(fp, (num_defined * 8 + 2).to_bytes(1, byteorder='little'))
         else:
-            write_byte(fp, (num_defined * 8 - ( -num_defined // 8 ) + 2).to_bytes(1, byteorder='little'))
+            write_byte(fp, (num_defined * 8 + bits_to_bytes(num_defined) + 2).to_bytes(1, byteorder='little'))
         write_boolean(fp, defined, all_defined=True)
         write_byte(fp, b'\x00')
         for i, file in enumerate(self.files):
@@ -779,12 +783,6 @@ class FilesInfo:
             if functools.reduce(or_, vector):
                 return True
         return False
-
-    def _gen_empty_stream(self) -> List[bool]:
-        emptystreams = []  # List[bool]
-        for f in self.files:
-            emptystreams.append(f['emptystream'])
-        return emptystreams
 
     def _write_names(self, file: BinaryIO):
         name_defined = 0
@@ -816,7 +814,7 @@ class FilesInfo:
         if num_defined == len(defined):
             write_byte(file, (num_defined * 4 + 2).to_bytes(1, byteorder='little'))
         else:
-            write_byte(file, (num_defined * 4 - (-num_defined // 4) + 2).to_bytes(1, byteorder='little'))
+            write_byte(file, (num_defined * 4 + bits_to_bytes(num_defined) + 2).to_bytes(1, byteorder='little'))
         write_boolean(file, defined, all_defined=False)
         write_byte(file, b'\x00')
         for i, f in enumerate(self.files):
@@ -826,15 +824,20 @@ class FilesInfo:
     def write(self, file: BinaryIO):
         assert self.files is not None
         write_byte(file, Property.FILES_INFO)
-        emptystreams = self._gen_empty_stream()
         numfiles = len(self.files)
         write_uint64(file, numfiles)
+        emptystreams = []  # List[bool]
+        for f in self.files:
+            emptystreams.append(f['emptystream'])
         if self._are_there(emptystreams):
-            self._write_prop_bool_vector(file, Property.EMPTY_STREAM, emptystreams)
-        if self._are_there(self.emptyfiles):
-            self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
-        if self._are_there(self.antifiles):
-            self._write_prop_bool_vector(file, Property.ANTI, self.antifiles)
+            write_byte(file, Property.EMPTY_STREAM)
+            write_byte(file, bits_to_bytes(numfiles).to_bytes(1, 'little'))
+            write_boolean(file, emptystreams, all_defined=False)
+        else:
+            if self._are_there(self.emptyfiles):
+                self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
+            if self._are_there(self.antifiles):
+                self._write_prop_bool_vector(file, Property.ANTI, self.antifiles)
         # Name
         self._write_names(file)
         # timestamps
@@ -846,6 +849,7 @@ class FilesInfo:
         # attribute
         self._write_attributes(file)
         write_byte(file, Property.END)
+
 
 class Header:
     """ the archive header """
