@@ -1,6 +1,8 @@
-import datetime
 import lzma
 import os
+import pathlib
+import sys
+from datetime import datetime
 
 import pytest
 
@@ -8,6 +10,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
+from py7zr.helpers import Local
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -36,6 +39,7 @@ def test_simple_compress_and_decompress():
 
 
 @pytest.mark.basic
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_py7zr_write_and_read_single(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -47,9 +51,9 @@ def test_py7zr_write_and_read_single(capsys, tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
-    ctime = datetime.datetime.fromtimestamp(os.stat(os.path.join(testdata_path, "test1.txt")).st_ctime)
-    creationdate = ctime.astimezone(py7zr.helpers.Local).strftime("%Y-%m-%d")
-    creationtime = ctime.astimezone(py7zr.helpers.Local).strftime("%H:%M:%S")
+    ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
+    creationdate = ctime.astimezone(Local).strftime("%Y-%m-%d")
+    creationtime = ctime.astimezone(Local).strftime("%H:%M:%S")
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
@@ -62,6 +66,7 @@ def test_py7zr_write_and_read_single(capsys, tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_py7zr_write_and_read_directory(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
