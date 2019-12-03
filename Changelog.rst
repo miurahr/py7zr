@@ -14,6 +14,28 @@ Current changes
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.5a1`_
+=========
+
+Added
+-----
+
+* Experimental support for compression and archiving.
 * SevenZipFile: accept pathlib.Path as a file argument.
 * Unit test: read and write UTF-16LE string for filename
 
@@ -30,17 +52,9 @@ Fixed
 * SignatureHeader function: write nextheaderofs and nextheadersize as real_uint64.
 * docs: description of start header structure.
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.4`_
-=============
+=======
 
 Added
 -----
