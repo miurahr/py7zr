@@ -13,8 +13,6 @@ Added
 Changed
 -------
 
-* Move setuptools config in setup.cfg
-
 Fixed
 -----
 
@@ -26,6 +24,15 @@ Removed
 
 Security
 --------
+
+`v0.5a2`_
+=========
+
+Changed
+-------
+
+* Move setuptools config in setup.cfg
+
 
 `v0.5a1`_
 =========
@@ -157,7 +164,7 @@ Fixed
 * Fix zerofile extraction error with multithread mode(#24, thanks @Arten013)
 
 `v0.3.2`_
-=======
+=========
 
 Added
 -----
@@ -181,7 +188,7 @@ Fixed
 
 
 `v0.3.1`_
-=======
+=========
 
 Added
 -----
