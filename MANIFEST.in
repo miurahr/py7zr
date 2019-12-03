@@ -3,13 +3,15 @@ include *.toml
 include *.txt
 include *.yml
 include LICENSE
+include .coveragerc
+include tox.ini
+include bin/py7zr
+include docs/requirements.txt
+recursive-include py7zr *.py
 recursive-include tests *.py
 recursive-include tests *.sh
 recursive-include tests *.txt
-recursive-include tests/data *.7z
-include .coveragerc
-include tox.ini
-include docs/requirements.txt
+recursive-include tests *.7z
 recursive-include docs *.bat
 recursive-include docs *.dia
 recursive-include docs *.py
