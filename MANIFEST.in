@@ -2,7 +2,6 @@ include *.rst
 include *.toml
 include *.txt
 include *.yml
-include AUTHORS
 include LICENSE
 recursive-include tests *.py
 recursive-include tests *.sh
@@ -17,9 +16,7 @@ recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.yml
 recursive-include docs *.svg
-recursive-include docs *.html
 recursive-include docs *.odp
-recursive-include docs *.ods
 recursive-include docs *.pdf
 recursive-include docs *.txt
 recursive-include docs Makefile

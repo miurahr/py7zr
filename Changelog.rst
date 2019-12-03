@@ -4,10 +4,6 @@ Py7zr ChangeLog
 
 All notable changes to this project will be documented in this file.
 
-***************
-Current changes
-***************
-
 `Unreleased`_
 =============
 
@@ -16,6 +12,8 @@ Added
 
 Changed
 -------
+
+* Move setuptools config in setup.cfg
 
 Fixed
 -----
