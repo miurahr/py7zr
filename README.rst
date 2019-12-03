@@ -38,8 +38,8 @@ Version recommendations are:
 
 Following fixes are included in above versions and python3.6 series is not fixed it.
 
-- _`BPO-21872`: LZMA library sometimes fails to decompress a file
-- _`PyPy3-3088`: lzma.LZMADecomporessor.decompress does not respect max_length
+- `BPO-21872`_: LZMA library sometimes fails to decompress a file
+- `PyPy3-3088`_: lzma.LZMADecomporessor.decompress does not respect max_length
 
 .. _`BPO-21872`: https://bugs.python.org/issue21872
 .. _`PyPy3-3088`: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
