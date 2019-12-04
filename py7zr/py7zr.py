@@ -532,15 +532,15 @@ class SevenZipFile:
         self.header.build_header([self.folder])
 
         compressor = self.folder.get_compressor()
-
+        # TODO: support multiple compresssion folder; current single solid folder
+        outsize = 0
+        self.header.main_streams.packinfo.numstreams = 1
         for f in self.files:
             file_info = f.file_properties()
             self.header.files_info.files.append(file_info)
             if f.emptystream:
                 pass
             else:
-                self.header.main_streams.packinfo.numstreams += 1
-                outsize = 0
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
@@ -551,17 +551,21 @@ class SevenZipFile:
                         self.fp.write(out)
                         data = fd.read(Configuration.read_blocksize)
                         insize += len(data)
-                    out = compressor.flush()
-                    outsize += len(out)
-                    self.fp.write(out)
-                self.header.main_streams.packinfo.packsizes.append(outsize)
                 self.folder.unpacksizes.append(insize)
+        out = compressor.flush()
+        outsize += len(out)
+        self.fp.write(out)
         pos = self.fp.tell()
+        # Update size data in header
+        self.header.main_streams.packinfo.packsizes = [outsize]
         self.header.main_streams.substreamsinfo.unpacksizes.extend(self.folder.unpacksizes)
         self.sig_header.nextheaderofs = pos - self.afterheader
-        self.header.write(self.fp, encoded=False)
+        # Write header
+        # TODO: work with encoded header
+        encoded_header = False
+        self.header.write(self.fp, encoded=encoded_header)
         buf = io.BytesIO()
-        self.header.write(buf, encoded=False)
+        self.header.write(buf, encoded=encoded_header)
         data = buf.getvalue()
         self.sig_header.calccrc(data)
         self.sig_header.write(self.fp)
