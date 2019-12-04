@@ -40,7 +40,7 @@ def test_simple_compress_and_decompress():
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_write_and_read_single(capsys, tmp_path):
+def test_py7zr_compress_single(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "test1.txt"), "test1.txt")
@@ -67,14 +67,56 @@ def test_py7zr_write_and_read_single(capsys, tmp_path):
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_write_and_read_directory(tmp_path):
+def test_py7zr_compress_directory(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     assert len(archive.files) == 2
-    archive.close()
+    archive._write_archive()
+    assert archive.header.main_streams.packinfo.numstreams == 1
+    assert archive.header.main_streams.packinfo.packsizes == [17]
+    # assert archive.header.main_streams.packinfo.crcs is not None
+    assert archive.header.main_streams.unpackinfo.numfolders == 1
+    assert len(archive.header.main_streams.unpackinfo.folders) == 1
+    # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.substreamsinfo.unpacksizes == [11]
+    assert len(archive.header.files_info.files) == 2
+    archive._fpclose()
     with target.open('rb') as target_archive:
         val = target_archive.read(1000)
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
+
+
+@pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_py7zr_compress_1(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.writeall('.')
+    archive._write_archive()
+    assert archive.header.main_streams.packinfo.numstreams == 1
+    assert archive.header.main_streams.packinfo.packsizes == [441]
+    assert archive.header.main_streams.unpackinfo.numfolders == 1
+    assert len(archive.header.main_streams.unpackinfo.folders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
+    assert len(archive.header.files_info.files) == 4
+    assert len(archive.files) == 4
+    # assert archive.header.main_streams.packinfo.crcs is not None
+    # assert archive.header.main_streams.packinfo.packpos != 0
+    # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]
+    archive._fpclose()
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
