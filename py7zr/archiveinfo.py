@@ -645,7 +645,6 @@ class FilesInfo:
     """ holds file properties """
 
     def __init__(self):
-        self.numfiles = None
         self.files = []  # type: List[Dict[str, Any]]
         self.emptyfiles = None
         self.antifiles = None
@@ -658,8 +657,8 @@ class FilesInfo:
         return obj
 
     def _read(self, fp: BinaryIO):
-        self.numfiles = read_uint64(fp)
-        self.files = [{'emptystream': False} for _ in range(self.numfiles)]
+        numfiles = read_uint64(fp)
+        self.files = [{'emptystream': False} for _ in range(numfiles)]
         numemptystreams = 0
         while True:
             typ = read_uint64(fp)
@@ -675,7 +674,7 @@ class FilesInfo:
                 continue
             buffer = io.BytesIO(fp.read(size))
             if prop == Property.EMPTY_STREAM:
-                isempty = read_boolean(buffer, self.numfiles, checkall=False)
+                isempty = read_boolean(buffer, numfiles, checkall=False)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
                 for x in isempty:
                     if x:
@@ -704,7 +703,7 @@ class FilesInfo:
             elif prop == Property.LAST_WRITE_TIME:
                 self._read_times(buffer, 'lastwritetime')
             elif prop == Property.ATTRIBUTES:
-                defined = read_boolean(buffer, self.numfiles, checkall=True)
+                defined = read_boolean(buffer, numfiles, checkall=True)
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_attributes(buffer, defined)

@@ -720,7 +720,7 @@ class SevenZipFile:
         if path.is_file():
             self.write(path, arcname)
         elif path.is_dir():
-            if arcname is not None:
+            if not path.samefile('.'):
                 self.write(path, arcname)
             for nm in sorted(os.listdir(str(path))):
                 arc = os.path.join(arcname, nm) if arcname is not None else None

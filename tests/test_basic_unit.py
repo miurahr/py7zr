@@ -169,8 +169,7 @@ def test_py7zr_header():
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
-    assert header.files_info.numfiles == 3
-    assert len(header.files_info.files) == header.files_info.numfiles
+    assert len(header.files_info.files) == 3
 
 
 @pytest.mark.unit
@@ -183,8 +182,7 @@ def test_py7zr_encoded_header():
     assert header is not None
     assert header.files_info is not None
     assert header.main_streams is not None
-    assert header.files_info.numfiles == 3
-    assert len(header.files_info.files) == header.files_info.numfiles
+    assert len(header.files_info.files) == 3
 
 
 @pytest.mark.unit
@@ -214,7 +212,7 @@ def test_py7zr_files_info_2():
     assert pid == py7zr.properties.Property.FILES_INFO
     files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
-    assert files_info.numfiles == 4
+    assert len(files_info.files) == 4
     assert files_info.files[0].get('filename') == 'copying.txt'
     assert files_info.files[0].get('attributes') == 0x2020
     assert files_info.files[1].get('filename') == 'History.txt'

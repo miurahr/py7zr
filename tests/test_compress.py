@@ -113,6 +113,8 @@ def test_py7zr_compress_1(tmp_path):
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
     assert len(archive.header.files_info.files) == 4
     assert len(archive.files) == 4
+    assert archive.header.files_info.emptyfiles == [True, False, False, False]
+
     # assert archive.header.main_streams.packinfo.crcs is not None
     # assert archive.header.main_streams.packinfo.packpos != 0
     # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]
