@@ -162,7 +162,7 @@ class Cli():
         file.write("Phisical Size = {}\n".format(fstat.st_size))
         file.write("Headers Size = {}\n".format(archive.header.size))  # fixme.
         file.write("Method = {}\n".format(archive._get_method_names()))
-        if archive.solid:
+        if archive._is_solid():
             file.write("Solid = {}\n".format('+'))
         else:
             file.write("Solid = {}\n".format('-'))

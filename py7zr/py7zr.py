@@ -280,7 +280,6 @@ class SevenZipFile:
             raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
         self._lock = threading.RLock()
-        self.solid = False
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
@@ -330,7 +329,6 @@ class SevenZipFile:
             return
         self.header = header
         buffer.close()
-        self.solid = False
         self.files = ArchiveFileList()
         if getattr(self.header, 'files_info', None) is not None:
             self._filelist_retrieve()
@@ -342,20 +340,52 @@ class SevenZipFile:
             raise Bad7zFile('invalid header data')
         return buffer
 
+    class ParseStatus:
+        def __init__(self, src_pos=0):
+            self.src_pos = src_pos
+            self.folder = 0  # 7zip folder where target stored
+            self.outstreams = 0  # output stream count
+            self.input = 0  # unpack stream count in each folder
+            self.stream = 0  # target input stream position
+
+    def _gen_filename(self) -> str:
+        # compressed file is stored without a name, generate one
+        try:
+            basefilename = self.filename
+        except AttributeError:
+            # 7z archive file doesn't have a name
+            return 'contents'
+        else:
+            if basefilename is not None:
+                fn, ext = os.path.splitext(os.path.basename(basefilename))
+                return fn
+            else:
+                return 'contents'
+
+    def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
+        if pstat.input == 0:
+            folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
+        maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
+        uncompressed = unpacksizes[pstat.outstreams]
+        if not isinstance(uncompressed, (list, tuple)):
+            uncompressed = [uncompressed] * len(folder.coders)
+        if file_in_solid > 0:
+            compressed = None
+        elif pstat.stream < len(packsizes):  # file is compressed
+            compressed = packsizes[pstat.stream]
+        else:  # file is not compressed
+            compressed = uncompressed
+        packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
+        return maxsize, compressed, uncompressed, packsize, folder.solid
+
     def _filelist_retrieve(self) -> None:
-        src_pos = self.afterheader
         # Initialize references for convenience
         if hasattr(self.header, 'main_streams'):
             folders = self.header.main_streams.unpackinfo.folders
             packinfo = self.header.main_streams.packinfo
             subinfo = self.header.main_streams.substreamsinfo
             packsizes = packinfo.packsizes
-            self.solid = packinfo.numstreams == 1
-            assert subinfo is not None
-            if subinfo.unpacksizes is not None:
-                unpacksizes = subinfo.unpacksizes
-            else:
-                unpacksizes = [x.unpacksizes for x in folders]
+            unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes for x in folders]
         else:
             subinfo = None
             folders = None
@@ -363,89 +393,51 @@ class SevenZipFile:
             packsizes = []
             unpacksizes = [0]
 
-        # Initialize loop index variables
-        folder_index = 0
-        output_binary_index = 0
-        streamidx = 0
+        pstat = self.ParseStatus()
+        pstat.src_pos=self.afterheader
         file_in_solid = 0
-        instreamindex = 0
-        folder_pos = src_pos
 
         for file_id, file_info in enumerate(self.header.files_info.files):
-
             if not file_info['emptystream'] and folders is not None:
-                folder = folders[folder_index]
-                if streamidx == 0:
-                    folder.solid = subinfo.num_unpackstreams_folders[folder_index] > 1
-
-                file_info['maxsize'] = (folder.solid and packinfo.packsizes[instreamindex]) or None
-                uncompressed = unpacksizes[output_binary_index]
-                if not isinstance(uncompressed, (list, tuple)):
-                    uncompressed = [uncompressed] * len(folder.coders)
-                if file_in_solid > 0:
-                    # file is part of solid archive
-                    # assert instreamindex < len(packsizes), 'Folder outside index for solid archive'
-                    # file_info['compressed'] = packsizes[instreamindex]
-                    file_info['compressed'] = None
-                elif instreamindex < len(packsizes):
-                    # file is compressed
-                    file_info['compressed'] = packsizes[instreamindex]
-                else:
-                    # file is not compressed
-                    file_info['compressed'] = uncompressed
+                folder = folders[pstat.folder]
+                numinstreams = max([coder.get('numinstreams', 1) for coder in folder.coders])
+                (maxsize, compressed, uncompressed,
+                 packsize, solid) = self._get_fileinfo_sizes(pstat, subinfo, packinfo, folder, packsizes,
+                                                             unpacksizes, file_in_solid, numinstreams)
+                pstat.input += 1
+                folder.solid = solid
+                file_info['folder'] = folder
+                file_info['maxsize'] = maxsize
+                file_info['compressed'] = compressed
                 file_info['uncompressed'] = uncompressed
-                numinstreams = 1
-                for coder in folder.coders:
-                    numinstreams = max(numinstreams, coder.get('numinstreams', 1))
-                file_info['packsizes'] = packsizes[instreamindex:instreamindex + numinstreams]
-                streamidx += 1
+                file_info['packsizes'] = packsize
+                if subinfo.digestsdefined[pstat.outstreams]:
+                    file_info['digest'] = subinfo.digests[pstat.outstreams]
+                if folder is None:
+                    pstat.src_pos += file_info['compressed']
+                else:
+                    if folder.solid:
+                        file_in_solid += 1
+                    pstat.outstreams += 1
+                    if folder.files is None:
+                        folder.files = ArchiveFileList(offset=file_id)
+                    folder.files.append(file_info)
+                    if pstat.input >= subinfo.num_unpackstreams_folders[pstat.folder]:
+                        file_in_solid = 0
+                        pstat.src_pos += sum(packinfo.packsizes[pstat.stream:pstat.stream + numinstreams])
+                        pstat.folder += 1
+                        pstat.stream += numinstreams
+                        pstat.input = 0
             else:
+                file_info['folder'] = None
+                file_info['maxsize'] = 0
                 file_info['compressed'] = 0
                 file_info['uncompressed'] = [0]
                 file_info['packsizes'] = [0]
-                folder = None
-                file_info['maxsize'] = 0
-                numinstreams = 1
-
-            file_info['folder'] = folder
-            if folder is not None and subinfo.digestsdefined[output_binary_index]:
-                file_info['digest'] = subinfo.digests[output_binary_index]
 
             if 'filename' not in file_info:
-                # compressed file is stored without a name, generate one
-                try:
-                    basefilename = self.filename
-                except AttributeError:
-                    # 7z archive file doesn't have a name
-                    file_info['filename'] = 'contents'
-                else:
-                    if basefilename is not None:
-                        fn, ext = os.path.splitext(os.path.basename(basefilename))
-                        file_info['filename'] = fn
-                    else:
-                        file_info['filename'] = 'contents'
-
+                file_info['filename'] = self._gen_filename()
             self.files.append(file_info)
-
-            if folder is not None:
-                if folder.solid:
-                    # file_in_solid += unpacksizes[output_binary_index]
-                    file_in_solid = 1
-                output_binary_index += 1
-            else:
-                src_pos += file_info['compressed']
-            if folder is not None:
-                if folder.files is None:
-                    folder.files = ArchiveFileList(offset=file_id)
-                folder.files.append(file_info)
-            if folder is not None and streamidx >= subinfo.num_unpackstreams_folders[folder_index]:
-                file_in_solid = 0
-                for x in range(numinstreams):
-                    folder_pos += packinfo.packsizes[instreamindex + x]
-                src_pos = folder_pos
-                folder_index += 1
-                instreamindex += numinstreams
-                streamidx = 0
 
     def _num_files(self) -> int:
         if getattr(self.header, 'files_info', None) is not None:
@@ -572,6 +564,9 @@ class SevenZipFile:
         self.sig_header.write(self.fp)
         return
 
+    def _is_solid(self):
+        return self.header.main_streams.packinfo.numstreams == 1
+
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
@@ -612,7 +607,7 @@ class SevenZipFile:
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
-                           self.solid, len(self.header.main_streams.unpackinfo.folders))
+                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders))
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
