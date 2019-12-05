@@ -94,7 +94,7 @@ def test_py7zr_compress_directory(tmp_path):
 
 @pytest.mark.file
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_1(tmp_path):
+def test_py7zr_compress_files(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -114,7 +114,10 @@ def test_py7zr_compress_1(tmp_path):
     assert len(archive.header.files_info.files) == 4
     assert len(archive.files) == 4
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
-
+    # Todo
+    assert archive.header.main_streams.substreamsinfo.digestsdefined is not None
+    assert archive.header.main_streams.substreamsinfo.digests is not None
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders is not None
     # assert archive.header.main_streams.packinfo.crcs is not None
     # assert archive.header.main_streams.packinfo.packpos != 0
     # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]

@@ -515,6 +515,8 @@ class UnpackInfo:
 class SubstreamsInfo:
     """ defines the substreams of a folder """
 
+    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders']
+
     def __init__(self):
         self.digests = []  # type: List[int]
         self.digestsdefined = []  # type: List[bool]
@@ -646,7 +648,7 @@ class FilesInfo:
 
     def __init__(self):
         self.files = []  # type: List[Dict[str, Any]]
-        self.emptyfiles = None
+        self.emptyfiles = []  # type: List[bool]
         self.antifiles = None
         self.dataindex = None
 

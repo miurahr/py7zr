@@ -287,6 +287,7 @@ class SevenZipFile:
                 self.reset()
             elif mode in 'w':
                 self._write_open()
+                self._prepare_write()
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -520,7 +521,7 @@ class SevenZipFile:
                 return True
         return False
 
-    def _write_archive(self):
+    def _prepare_write(self) -> None:
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
@@ -531,6 +532,7 @@ class SevenZipFile:
         self.folder.unpacksizes = []
         self.header.build_header([self.folder])
 
+    def _write_archive(self):
         compressor = self.folder.get_compressor()
         # TODO: support multiple compresssion folder; current single solid folder
         outsize = 0
@@ -538,9 +540,8 @@ class SevenZipFile:
         for f in self.files:
             file_info = f.file_properties()
             self.header.files_info.files.append(file_info)
-            if f.emptystream:
-                pass
-            else:
+            self.header.files_info.emptyfiles.append(f.emptystream)
+            if not f.emptystream:
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
