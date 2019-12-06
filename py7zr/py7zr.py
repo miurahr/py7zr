@@ -305,6 +305,7 @@ class SevenZipFile:
         folder = Folder()
         folder.compressor = SevenZipCompressor()
         folder.coders = folder.compressor.coders
+        folder.solid = True
         folder.digestdefined = False
         folder.bindpairs = []
         folder.totalin = 1
@@ -363,8 +364,8 @@ class SevenZipFile:
 
     def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
         if pstat.input == 0:
-            folder_solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
-        maxsize = (folder_solid and packinfo.packsizes[pstat.stream]) or None
+            folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
+        maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
         uncompressed = unpacksizes[pstat.outstreams]
         if not isinstance(uncompressed, (list, tuple)):
             uncompressed = [uncompressed] * len(folder.coders)
@@ -375,7 +376,7 @@ class SevenZipFile:
         else:  # file is not compressed
             compressed = uncompressed
         packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
-        return maxsize, compressed, uncompressed, packsize, folder_solid
+        return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def _filelist_retrieve(self) -> None:
         # Initialize references for convenience
@@ -401,9 +402,10 @@ class SevenZipFile:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get('numinstreams', 1) for coder in folder.coders])
                 (maxsize, compressed, uncompressed,
-                 packsize, folder_solid) = self._get_fileinfo_sizes(pstat, subinfo, packinfo, folder, packsizes,
-                                                                    unpacksizes, file_in_solid, numinstreams)
+                 packsize, solid) = self._get_fileinfo_sizes(pstat, subinfo, packinfo, folder, packsizes,
+                                                             unpacksizes, file_in_solid, numinstreams)
                 pstat.input += 1
+                folder.solid = solid
                 file_info['folder'] = folder
                 file_info['maxsize'] = maxsize
                 file_info['compressed'] = compressed
@@ -414,7 +416,7 @@ class SevenZipFile:
                 if folder is None:
                     pstat.src_pos += file_info['compressed']
                 else:
-                    if folder_solid:
+                    if folder.solid:
                         file_in_solid += 1
                     pstat.outstreams += 1
                     if folder.files is None:

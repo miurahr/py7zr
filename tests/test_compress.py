@@ -110,13 +110,9 @@ def test_py7zr_compress_files(tmp_path):
     assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
-    assert len(archive.files) == 4
     assert len(archive.header.files_info.files) == 4
-    expected = [True, False, False, False]
-    for i, f in enumerate(archive.header.files_info.files):
-        f['emptystream'] = expected[i]
+    assert len(archive.files) == 4
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
     # Todo
     assert archive.header.main_streams.substreamsinfo.digestsdefined is not None

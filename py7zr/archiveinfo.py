@@ -298,8 +298,8 @@ class Folder:
     unpacksizes: uncompressed sizes of outstreams
     """
 
-    __slots__ = ['unpacksizes', 'coders', 'digestdefined', 'totalin', 'totalout',
-                 'bindpairs', 'packed_indices', 'crc', 'decompressor', 'compressor', 'files']
+    __slots__ = ['unpacksizes', 'solid', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
+                 'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor', 'files']
 
     def __init__(self) -> None:
         self.unpacksizes = None  # type: Optional[List[int]]
@@ -310,6 +310,7 @@ class Folder:
         self.totalin = 0  # type: int
         self.totalout = 0  # type: int
         # internal values
+        self.solid = False  # type: bool
         self.digestdefined = False  # type: bool
         self.crc = None  # type: Optional[int]
         # compress/decompress objects
