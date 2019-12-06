@@ -1,5 +1,7 @@
 # Configuration for pytest to automatically collect types.
 # Thanks to Guilherme Salgado.
+import os
+
 import pytest
 from pyannotate_runtime import collect_types
 
@@ -21,4 +23,5 @@ def collect_types_fixture():
 
 
 def pytest_sessionfinish(session, exitstatus):
+    os.makedirs('build/', exist_ok=True)
     collect_types.dump_stats("build/type_info.json")
