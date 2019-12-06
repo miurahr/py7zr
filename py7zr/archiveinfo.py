@@ -126,16 +126,16 @@ def write_uint64(file: BinaryIO, value: int):
     """
     UINT64 means real UINT64 encoded with the following scheme:
 
-      Size of encoding sequence depends from first byte:
-      First_Byte  Extra_Bytes        Value
-      (binary)
-      0xxxxxxx               : ( xxxxxxx           )
-      10xxxxxx    BYTE y[1]  : (  xxxxxx << (8 * 1)) + y
-      110xxxxx    BYTE y[2]  : (   xxxxx << (8 * 2)) + y
-      ...
-      1111110x    BYTE y[6]  : (       x << (8 * 6)) + y
-      11111110    BYTE y[7]  :                         y
-      11111111    BYTE y[8]  :                         y
+    |  Size of encoding sequence depends from first byte:
+    |  First_Byte  Extra_Bytes        Value
+    |  (binary)
+    |  0xxxxxxx               : ( xxxxxxx           )
+    |  10xxxxxx    BYTE y[1]  : (  xxxxxx << (8 * 1)) + y
+    |  110xxxxx    BYTE y[2]  : (   xxxxx << (8 * 2)) + y
+    |  ...
+    |  1111110x    BYTE y[6]  : (       x << (8 * 6)) + y
+    |  11111110    BYTE y[7]  :                         y
+    |  11111111    BYTE y[8]  :                         y
     """
     mask = 0x80
     length = (value.bit_length() + 7) // 8 or 1
@@ -646,6 +646,8 @@ class StreamsInfo:
 class FilesInfo:
     """ holds file properties """
 
+    __slots__ = ['files', 'emptyfiles', 'antifiles', 'dataindex']
+
     def __init__(self):
         self.files = []  # type: List[Dict[str, Any]]
         self.emptyfiles = []  # type: List[bool]
@@ -678,9 +680,7 @@ class FilesInfo:
             if prop == Property.EMPTY_STREAM:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
-                for x in isempty:
-                    if x:
-                        numemptystreams += 1
+                numemptystreams += isempty.count(True)
                 self.emptyfiles = [False] * numemptystreams
                 self.antifiles = [False] * numemptystreams
             elif prop == Property.EMPTY_FILE:
@@ -693,10 +693,9 @@ class FilesInfo:
                     self._read_name(buffer)
                 else:
                     self.dataindex = read_uint64(buffer)
-                    # try to read external data
                     current_pos = fp.tell()
                     fp.seek(self.dataindex, 0)
-                    self._read_name(buffer)
+                    self._read_name(fp)
                     fp.seek(current_pos, 0)
             elif prop == Property.CREATION_TIME:
                 self._read_times(buffer, 'creationtime')
@@ -717,7 +716,7 @@ class FilesInfo:
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
             elif prop == Property.START_POS:
-                self._read_start_pos(buffer, self.files)
+                self._read_start_pos(buffer)
             else:
                 raise Bad7zFile('invalid type %r' % (prop))
 
@@ -727,10 +726,7 @@ class FilesInfo:
 
     def _read_attributes(self, buffer: BinaryIO, defined: List[bool]) -> None:
         for idx, f in enumerate(self.files):
-            if defined[idx]:
-                f['attributes'], _ = read_uint32(buffer)
-            else:
-                f['attributes'] = None
+            f['attributes'] = read_uint32(buffer)[0] if defined[idx] else None
 
     def _read_times(self, fp: BinaryIO, name: str) -> None:
         defined = read_boolean(fp, len(self.files), checkall=True)
@@ -738,21 +734,15 @@ class FilesInfo:
         external = fp.read(1)
         assert external == b'\x00'
         for i, f in enumerate(self.files):
-            if defined[i]:
-                f[name] = ArchiveTimestamp(read_real_uint64(fp)[0])
-            else:
-                f[name] = None
+            f[name] = ArchiveTimestamp(read_real_uint64(fp)[0]) if defined[i] else None
 
-    def _read_start_pos(self, fp: BinaryIO, files: List[Dict[str, Any]]) -> None:
-        defined = read_boolean(fp, len(files), checkall=True)
+    def _read_start_pos(self, fp: BinaryIO) -> None:
+        defined = read_boolean(fp, len(self.files), checkall=True)
         # NOTE: the "external" flag is currently ignored, should be 0x00
         external = fp.read(1)
         assert external == 0x00
         for i, f in enumerate(self.files):
-            if defined[i]:
-                files[i]['startpos'] = read_real_uint64(fp)[0]
-            else:
-                files[i]['startpos'] = None
+            f['startpos'] = read_real_uint64(fp)[0] if defined[i] else None
 
     def _write_times(self, fp: BinaryIO, propid, name: str) -> None:
         write_byte(fp, propid)
