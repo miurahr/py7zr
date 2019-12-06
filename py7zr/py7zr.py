@@ -529,11 +529,13 @@ class SevenZipFile:
         # TODO: support multiple compresssion folder; current single solid folder
         outsize = 0
         self.header.main_streams.packinfo.numstreams = 1
+        num_unpack_streams = 0
         for f in self.files:
             file_info = f.file_properties()
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             if not f.emptystream:
+                num_unpack_streams += 1
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
@@ -552,6 +554,7 @@ class SevenZipFile:
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
         self.header.main_streams.substreamsinfo.unpacksizes.extend(self.folder.unpacksizes)
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         self.sig_header.nextheaderofs = pos - self.afterheader
         # Write header
         # TODO: work with encoded header
