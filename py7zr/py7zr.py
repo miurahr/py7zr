@@ -394,7 +394,7 @@ class SevenZipFile:
             unpacksizes = [0]
 
         pstat = self.ParseStatus()
-        pstat.src_pos=self.afterheader
+        pstat.src_pos = self.afterheader
         file_in_solid = 0
 
         for file_id, file_info in enumerate(self.header.files_info.files):

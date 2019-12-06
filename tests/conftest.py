@@ -21,4 +21,4 @@ def collect_types_fixture():
 
 
 def pytest_sessionfinish(session, exitstatus):
-    collect_types.dump_stats("type_info.json")
+    collect_types.dump_stats("build/type_info.json")
