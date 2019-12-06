@@ -298,8 +298,8 @@ class Folder:
     unpacksizes: uncompressed sizes of outstreams
     """
 
-    __slots__ = ['unpacksizes', 'solid', 'num_coders', 'coders', 'digestdefined', 'totalin', 'totalout',
-                 'bindpairs', 'packed_indices', 'queue', 'crc', 'decompressor', 'compressor', 'files']
+    __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'totalin', 'totalout',
+                 'bindpairs', 'packed_indices', 'crc', 'decompressor', 'compressor', 'files']
 
     def __init__(self) -> None:
         self.unpacksizes = None  # type: Optional[List[int]]
@@ -497,8 +497,8 @@ class UnpackInfo:
         write_uint64(file, self.numfolders)
         write_byte(file, b'\x00')
         for i in range(self.numfolders):
-            for f in self.folders:
-                f.write(file)
+            for folder in self.folders:
+                folder.write(file)
         # If support external entity, we may write
         # self.datastreamidx here.
         # folder data will be written in another place.
@@ -646,13 +646,12 @@ class StreamsInfo:
 class FilesInfo:
     """ holds file properties """
 
-    __slots__ = ['files', 'emptyfiles', 'antifiles', 'dataindex']
+    __slots__ = ['files', 'emptyfiles', 'antifiles']
 
     def __init__(self):
         self.files = []  # type: List[Dict[str, Any]]
         self.emptyfiles = []  # type: List[bool]
         self.antifiles = None
-        self.dataindex = None
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -692,9 +691,9 @@ class FilesInfo:
                 if external == b'\x00':
                     self._read_name(buffer)
                 else:
-                    self.dataindex = read_uint64(buffer)
+                    dataindex = read_uint64(buffer)
                     current_pos = fp.tell()
-                    fp.seek(self.dataindex, 0)
+                    fp.seek(dataindex, 0)
                     self._read_name(fp)
                     fp.seek(current_pos, 0)
             elif prop == Property.CREATION_TIME:
@@ -709,10 +708,10 @@ class FilesInfo:
                 if external == b'\x00':
                     self._read_attributes(buffer, defined)
                 else:
-                    self.dataindex = read_uint64(buffer)
+                    dataindex = read_uint64(buffer)
                     # try to read external data
                     current_pos = fp.tell()
-                    fp.seek(self.dataindex, 0)
+                    fp.seek(dataindex, 0)
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
             elif prop == Property.START_POS:
