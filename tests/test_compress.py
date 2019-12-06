@@ -103,6 +103,7 @@ def test_py7zr_compress_files(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w')
     archive.writeall('.')
     archive._write_archive()
+    # assert archive.header.main_streams.packinfo.crcs is None
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.packinfo.packsizes == [441]
     assert archive.header.main_streams.unpackinfo.numfolders == 1
@@ -110,17 +111,27 @@ def test_py7zr_compress_files(tmp_path):
     assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
-    assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
-    assert len(archive.header.files_info.files) == 4
+    assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert len(archive.files) == 4
+    assert len(archive.header.files_info.files) == 4
+    expected = [True, False, False, False]
+    for i, f in enumerate(archive.header.files_info.files):
+        f['emptystream'] = expected[i]
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
-    # Todo
-    assert archive.header.main_streams.substreamsinfo.digestsdefined is not None
-    assert archive.header.main_streams.substreamsinfo.digests is not None
-    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders is not None
-    # assert archive.header.main_streams.packinfo.crcs is not None
-    # assert archive.header.main_streams.packinfo.packpos != 0
-    # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [3]
+    assert archive.header.main_streams.substreamsinfo.digestsdefined == [True, True, True]
+    assert archive.header.main_streams.substreamsinfo.digests == [3010113243, 3703540999, 2164028094]
+    assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined == False
+    assert archive.header.main_streams.unpackinfo.folders[0].solid == True
+    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]
+    assert archive.header.files_info.files[3].emptystream == False
+    assert archive.header.files_info.files[3].attributes == 215041568
+    assert archive.header.files_info.files[3].maxsize == 441
+    assert archive.header.files_info.files[3].uncompressed == [559]
     archive._fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
