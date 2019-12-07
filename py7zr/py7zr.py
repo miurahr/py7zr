@@ -530,26 +530,42 @@ class SevenZipFile:
         outsize = 0
         self.header.main_streams.packinfo.numstreams = 1
         num_unpack_streams = 0
-        for f in self.files:
+        self.header.main_streams.substreamsinfo.digests = []
+        self.header.main_streams.substreamsinfo.digestsdefined = []
+        last_file_index = 0
+        foutsize = 0
+        for i, f in enumerate(self.files):
             file_info = f.file_properties()
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
+            foutsize = 0
             if not f.emptystream:
+                last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(Configuration.read_blocksize)
                     insize += len(data)
+                    crc = 0  # type: int
                     while data:
+                        crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
                         outsize += len(out)
+                        foutsize += len(out)
                         self.fp.write(out)
                         data = fd.read(Configuration.read_blocksize)
                         insize += len(data)
+                    self.header.main_streams.substreamsinfo.digests.append(crc)
+                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                    self.header.files_info.files[i]['maxsize'] = foutsize
                 self.folder.unpacksizes.append(insize)
-        out = compressor.flush()
-        outsize += len(out)
-        self.fp.write(out)
+        else:
+            out = compressor.flush()
+            outsize += len(out)
+            foutsize += len(out)
+            self.fp.write(out)
+            if len(self.files) > 0:
+                self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         pos = self.fp.tell()
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
@@ -578,22 +594,27 @@ class SevenZipFile:
             f['filename'] = arcname
         else:
             f['filename'] = str(target)
+        fstat = target.stat()
         if target.is_dir():
             f['emptystream'] = True
-            f['attributes'] = FileAttribute.DIRECTORY
+            f['attributes'] = int(FileAttribute.DIRECTORY)
             if os.name == 'posix':
                 f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
         elif target.is_symlink():
             f['emptystream'] = True
             if os.name == 'posix':
-                f['attributes'] = FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                f['attributes'] = int(FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16))
             else:
                 f['attributes'] = 0x0  # FIXME
         elif target.is_file():
             f['emptystream'] = False
-            f['attributes'] = FileAttribute.ARCHIVE
-            fstat = target.stat()
+            f['attributes'] = int(FileAttribute.ARCHIVE)
             f['uncompressed'] = fstat.st_size
+        if os.name == 'posix':
+            f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+        elif os.name == 'nt':
+            f['attributes'] |= (fstat.st_file_attributes & FileAttribute.WINDOWS_MASK)
+
         f['creationtime'] = target.stat().st_ctime
         f['lastwritetime'] = target.stat().st_mtime
         f['lastaccesstime'] = target.stat().st_atime
