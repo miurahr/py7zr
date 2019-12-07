@@ -22,6 +22,7 @@
 #
 
 import binascii
+import stat
 from enum import Enum, IntEnum
 
 from py7zr.exceptions import InternalError
@@ -127,20 +128,21 @@ class CompressionMethod(ByteEnum):
 
 class FileAttribute(IntEnum):
     """Flag mask for file attribute."""
-    DIRECTORY = 0x10
-    READONLY = 0x01
-    HIDDEN = 0x02
-    SYSTEM = 0x04
-    ARCHIVE = 0x20
-    DEVICE = 0x40
-    NORMAL = 0x80
-    TEMPORARY = 0x100
-    SPARSE_FILE = 0x200
-    REPARSE_POINT = 0x400
-    COMPRESSED = 0x800
-    OFFLINE = 0x1000
-    ENCRYPTED = 0x4000
+    DIRECTORY = stat.FILE_ATTRIBUTE_DIRECTORY
+    READONLY = stat.FILE_ATTRIBUTE_READONLY
+    HIDDEN = stat.FILE_ATTRIBUTE_HIDDEN
+    SYSTEM = stat.FILE_ATTRIBUTE_SYSTEM
+    ARCHIVE = stat.FILE_ATTRIBUTE_ARCHIVE
+    DEVICE = stat.FILE_ATTRIBUTE_DEVICE
+    NORMAL = stat.FILE_ATTRIBUTE_NORMAL
+    TEMPORARY = stat.FILE_ATTRIBUTE_TEMPORARY
+    SPARSE_FILE = stat.FILE_ATTRIBUTE_SPARSE_FILE
+    REPARSE_POINT = stat.FILE_ATTRIBUTE_REPARSE_POINT
+    COMPRESSED = stat.FILE_ATTRIBUTE_COMPRESSED
+    OFFLINE = stat.FILE_ATTRIBUTE_OFFLINE
+    ENCRYPTED = stat.FILE_ATTRIBUTE_ENCRYPTED
     UNIX_EXTENSION = 0x8000
+    WINDOWS_MASK = 0x4fff
 
 
 class SupportedMethods:
