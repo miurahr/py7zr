@@ -70,9 +70,9 @@ Here is a code snippet how to decompress some file in your applicaiton.
 
     import py7zr
 
-    def decompress(file):
-        archive = py7zr.Archive(file)
-        archive.extractall(path="/tmp")
+    archive = py7zr.SevenZipFile('sample.7z', mode='x')
+    archive.extractall(path="/tmp")
+    archive.close()
 
 
 py7zr also support `shutil` unpack interface.
@@ -84,6 +84,17 @@ py7zr also support `shutil` unpack interface.
 
     shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
     shutil.unpack_archive('test.7z', '/tmp')
+
+
+Here is a code snippet how to produce archive.
+
+.. code-block::
+
+    import py7zr
+
+    archvie = py7zr.SevenZipFile('target.7z', 'w')
+    archive.writeall('./base_dir')
+    archive.close()
 
 
 License
