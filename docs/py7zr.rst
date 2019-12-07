@@ -60,6 +60,18 @@ The module defines the following items:
     shutil.unpack_archive(filename, [, extract_dir])
 
 
+.. function:: pack_7zarchive(archive, path, extra=None)
+
+   Helper function to intend to use with :mod:`shutil` module which offers a number of high-level operations on files
+   and collections of files. Since :mod:`shutil` has a function to register maker of archive, you can register
+   an helper function and then you can produce archive by calling :meth:`shutil.make_archive`
+
+.. code-block:: python
+
+    shutil.register_archive_format('7zip', pack_7zarchive, description='7zip archive')
+    shutil.make_archive(base_name, '7zip', base_dir)
+
+
 .. seealso::
 
    (external link) `7z_format`_ Documentation of the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
@@ -75,7 +87,7 @@ SevenZipFile Object
 -------------------
 
 
-.. class:: SevenZipFile(file, mode='r', compressionlevel=None)
+.. class:: SevenZipFile(file, mode='r', filter=None)
 
    Open a 7z file, where *file* can be a path to a file (a string), a
    file-like object or a :term:`path-like object`.
@@ -87,14 +99,14 @@ SevenZipFile Object
    a :exc:`FileExistsError` will be raised.
    If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#f1]_
 
-   The *compresslevel* parameter controls the compression level to use when
-   writing files to the archive. Integers ``0`` through ``9`` are accepted. [#f2]_
+   The *filter* parameter controls the compression algorithms to use when
+   writing files to the archive. [#f2]_
 
 
 .. method:: SevenZipFile.close()
 
    Close the archive file.  You must call :meth:`close` before exiting your program
-   or essential records will not be written. [#f3]_
+   or most records will not be written.
 
 
 .. method:: SevenZipFile.getnames()
@@ -121,7 +133,7 @@ SevenZipFile Object
 .. method:: SevenZipFile.testzip()
 
    Read all the files in the archive and check their CRC's and file headers.
-   Return the name of the first bad file, or else return ``None``. [#f4]_
+   Return the name of the first bad file, or else return ``None``. [#f3]_
 
 
 .. method:: SevenZipFile.write(filename, arcname=None)
@@ -129,7 +141,7 @@ SevenZipFile Object
    Write the file named *filename* to the archive, giving it the archive name
    *arcname* (by default, this will be the same as *filename*, but without a drive
    letter and with leading path separators removed).
-   The archive must be open with mode ``'w'``, ``'x'`` or ``'a'``. [#f5]_
+   The archive must be open with mode ``'w'``
 
 
 .. _archiveinfo-object:
@@ -191,6 +203,10 @@ Command-line options
 
    Test whether the 7z file is valid or not.
 
+.. cmdoption:: w <7z file> <base_dir>
+
+   Create 7zip archive from base_directory
+
 
 .. _7z_format: https://www.7-zip.org/7z.html
 
@@ -199,14 +215,9 @@ Command-line options
 
 .. rubric:: Footnotes
 
-.. [#f1] Modes other than ```'r'``` has not implemented yet. If given other than 'r',
-        it will generate :exc:`NotImplementedError`
+.. [#f1] Modes other than ```'r'``` and ```'w'``` have not implemented yet. If given other than 'r'
+        or 'w', it will generate :exc:`NotImplementedError`
 
-.. [#f2] *compresslevel* is always ignored in current version.
+.. [#f2] *filter* is always ignored in current version.
 
 .. [#f3] Not implemented yet, the method will generate :exc:`NotImplementedError`
-
-.. [#f4] Not implemented yet, the method will generate :exc:`NotImplementedError`
-
-.. [#f5] Not implemented yet, the method will generate :exc:`NotImplementedError`
-
