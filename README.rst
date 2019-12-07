@@ -61,6 +61,8 @@ You can run command script py7zr like as follows;
 .. code-block::
 
     $ py7zr l test.7z
+    $ py7zr x test.7z
+    $ py7zr w target.7z test_dir
 
 
 py7zr is a library which can use in your pyhton application.
@@ -75,17 +77,6 @@ Here is a code snippet how to decompress some file in your applicaiton.
     archive.close()
 
 
-py7zr also support `shutil` unpack interface.
-
-.. code-block::
-
-    frpm py7zr import unpack_7zarchive
-    import shutil
-
-    shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
-    shutil.unpack_archive('test.7z', '/tmp')
-
-
 Here is a code snippet how to produce archive.
 
 .. code-block::
@@ -95,6 +86,24 @@ Here is a code snippet how to produce archive.
     archvie = py7zr.SevenZipFile('target.7z', 'w')
     archive.writeall('./base_dir')
     archive.close()
+
+
+py7zr also support `shutil`  interface.
+
+.. code-block::
+
+    frpm py7zr import pack_7zarchvie, unpack_7zarchive
+    import shutil
+
+    # register file format at first.
+    shutil.register_archive_format('7zip', pack_7zarchive, description='7zip archive')
+    shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
+
+    # extraction
+    shutil.unpack_archive('test.7z', '/tmp')
+
+    # compression
+    shutil.make_archive('target', '7zip', 'src')
 
 
 License
