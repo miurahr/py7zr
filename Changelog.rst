@@ -16,8 +16,6 @@ Changed
 Fixed
 -----
 
-* Support custom filters for compression.
-
 Deprecated
 ----------
 
@@ -27,8 +25,20 @@ Removed
 Security
 --------
 
-`v0.5a3`_
+
+`v0.5a4`_
 =========
+
+Added
+-----
+
+* Support for shutil.register_archive_format() and
+  shutil.make_archive() by exposing pack_7zarchive()
+* Support custom filters for compression.
+
+
+`v0.5a3`
+========
 
 Support producing 7zip archive.
 
@@ -43,8 +53,8 @@ Removed
 * Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
 
 
-`v0.5a2`_
-=========
+`v0.5a2`
+========
 
 Changed
 -------
@@ -52,8 +62,8 @@ Changed
 * Move setuptools config in setup.cfg
 
 
-`v0.5a1`_
-=========
+`v0.5a1`
+========
 
 Added
 -----
@@ -90,8 +100,8 @@ Changed
 * NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
 
 
-`v0.4a2`_
-=========
+`v0.4a2`
+========
 
 Added
 -----
@@ -116,8 +126,8 @@ Fixed
 * Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
 
 
-`v0.4a1`_
-=========
+`v0.4a1`
+========
 
 Added
 -----
@@ -465,7 +475,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5a4...HEAD
+.. _v0.5a4: https://github.com/miurahr/py7zr/compare/v0.4...v0.5a4
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
