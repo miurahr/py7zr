@@ -3,6 +3,7 @@ import datetime
 import io
 import lzma
 import os
+import stat
 import struct
 import sys
 
@@ -12,6 +13,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
+from py7zr.py7zr import ArchiveFile, ArchiveFileList, FILE_ATTRIBUTE_UNIX_EXTENSION
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -361,15 +363,15 @@ def test_read_crcs():
 
 @pytest.mark.unit
 def test_file_list_length():
-    file_list = py7zr.py7zr.ArchiveFileList()
-    file_list.append(py7zr.py7zr.ArchiveFile(0, None))
+    file_list = ArchiveFileList()
+    file_list.append(ArchiveFile(0, None))
     assert len(file_list) == 1
 
 
 @pytest.mark.unit
 def test_fileinfo_st_fmt():
     file_info = {}
-    file_info['attributes'] = py7zr.properties.FileAttribute.UNIX_EXTENSION
+    file_info['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION
     file = py7zr.py7zr.ArchiveFile(0, file_info)
     assert file.st_fmt == 0
     file_info['attributes'] = 0
@@ -477,5 +479,5 @@ def test_make_file_info2():
     file_info = py7zr.py7zr.SevenZipFile._make_file_info(pathlib.Path(os.path.join(testdata_path, 'src')))
     assert file_info.get('filename') == os.path.join(testdata_path, 'src')
     assert file_info.get('emptystream')
-    flag = py7zr.properties.FileAttribute.DIRECTORY
+    flag = stat.FILE_ATTRIBUTE_DIRECTORY
     assert file_info.get('attributes') & flag == flag

@@ -11,7 +11,7 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr.helpers import Local
-from py7zr.properties import FileAttribute
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -110,8 +110,8 @@ def test_py7zr_compress_files(tmp_path):
     for i, f in enumerate(archive.header.files_info.files):
         f['emptystream'] = expected[i]
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
-    assert archive.header.files_info.files[3]['emptystream'] == False
-    assert archive.header.files_info.files[3]['attributes'] == 0x0020 | FileAttribute.UNIX_EXTENSION | (0o644 << 16)
+    assert archive.header.files_info.files[3]['emptystream'] is False
+    assert archive.header.files_info.files[3]['attributes'] == 0x0020 | FILE_ATTRIBUTE_UNIX_EXTENSION | (0o644 << 16)
     assert archive.header.files_info.files[3]['maxsize'] == 441
     assert archive.header.files_info.files[3]['uncompressed'] == 559
     assert archive.header.main_streams.packinfo.numstreams == 1
@@ -127,11 +127,11 @@ def test_py7zr_compress_files(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
-    assert archive.header.main_streams.unpackinfo.folders[0].solid == True
+    assert archive.header.main_streams.unpackinfo.folders[0].solid is True
     assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
     assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
     assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
-    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined == False
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
     reader = py7zr.SevenZipFile(target, 'r')

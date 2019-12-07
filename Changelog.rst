@@ -22,6 +22,8 @@ Deprecated
 Removed
 -------
 
+* Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
+
 Security
 --------
 

@@ -39,12 +39,15 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
-from py7zr.properties import MAGIC_7Z, Configuration, FileAttribute
+from py7zr.properties import MAGIC_7Z, Configuration
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
 else:
     import pathlib
+
+FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
+FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
 
 
 class ArchiveFile:
@@ -113,7 +116,7 @@ class ArchiveFile:
         """Compressed size"""
         return self._get_property('compressed')
 
-    def _test_attribute(self, target_bit: FileAttribute) -> bool:
+    def _test_attribute(self, target_bit: int) -> bool:
         attributes = self._get_property('attributes')
         if attributes is None:
             return False
@@ -122,21 +125,21 @@ class ArchiveFile:
     @property
     def archivable(self) -> bool:
         """File has a Windows `archive` flag."""
-        return self._test_attribute(FileAttribute.ARCHIVE)
+        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # type: ignore  # noqa
 
     @property
     def is_directory(self) -> bool:
         """True if file is a directory, otherwise False."""
-        return self._test_attribute(FileAttribute.DIRECTORY)
+        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
 
     @property
     def readonly(self) -> bool:
         """True if file is readonly, otherwise False."""
-        return self._test_attribute(FileAttribute.READONLY)
+        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # type: ignore  # noqa
 
     def _get_unix_extension(self) -> Optional[int]:
         attributes = self._get_property('attributes')
-        if self._test_attribute(FileAttribute.UNIX_EXTENSION):
+        if self._test_attribute(FILE_ATTRIBUTE_UNIX_EXTENSION):
             return attributes >> 16
         return None
 
@@ -597,23 +600,23 @@ class SevenZipFile:
         fstat = target.stat()
         if target.is_dir():
             f['emptystream'] = True
-            f['attributes'] = int(FileAttribute.DIRECTORY)
+            f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
             if os.name == 'posix':
-                f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
         elif target.is_symlink():
             f['emptystream'] = True
             if os.name == 'posix':
-                f['attributes'] = int(FileAttribute.UNIX_EXTENSION | (stat.S_IFLNK << 16))
+                f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
             else:
                 f['attributes'] = 0x0  # FIXME
         elif target.is_file():
             f['emptystream'] = False
-            f['attributes'] = int(FileAttribute.ARCHIVE)
+            f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
             f['uncompressed'] = fstat.st_size
         if os.name == 'posix':
-            f['attributes'] |= FileAttribute.UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+            f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
         elif os.name == 'nt':
-            f['attributes'] |= (fstat.st_file_attributes & FileAttribute.WINDOWS_MASK)
+            f['attributes'] |= (fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK)  # type: ignore  # noqa
 
         f['creationtime'] = target.stat().st_ctime
         f['lastwritetime'] = target.stat().st_mtime
