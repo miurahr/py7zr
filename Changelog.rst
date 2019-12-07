@@ -22,10 +22,24 @@ Deprecated
 Removed
 -------
 
-* Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
-
 Security
 --------
+
+`v0.5a3`_
+=========
+
+Support producing 7zip archive.
+
+Fixed
+-----
+
+* Write: Produce a good archive file for multiple target files.
+
+Removed
+-------
+
+* Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
+
 
 `v0.5a2`_
 =========
