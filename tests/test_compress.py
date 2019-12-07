@@ -1,6 +1,9 @@
+import binascii
+import hashlib
 import lzma
 import os
 import pathlib
+import shutil
 import stat
 import sys
 from datetime import datetime
@@ -11,6 +14,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
+from py7zr import pack_7zarchive, SevenZipFile
 from py7zr.helpers import Local
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -76,10 +80,8 @@ def test_py7zr_compress_directory(tmp_path):
     archive._write_archive()
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.packinfo.packsizes == [17]
-    # assert archive.header.main_streams.packinfo.crcs is not None
     assert archive.header.main_streams.unpackinfo.numfolders == 1
     assert len(archive.header.main_streams.unpackinfo.folders) == 1
-    # assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == [?]
     assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
@@ -140,3 +142,27 @@ def test_py7zr_compress_files(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    m = hashlib.sha256()
+    m.update((tmp_path / 'tgt' / 'setup.py').open('rb').read())
+    assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
+    m = hashlib.sha256()
+    m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
+    assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+
+
+@pytest.mark.api
+def test_register_archive_format(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    shutil.register_archive_format('7zip', pack_7zarchive, description='7zip archive')
+    shutil.make_archive(tmp_path.joinpath('target'), '7zip', tmp_path.joinpath('src'))
+    archive = SevenZipFile(tmp_path.joinpath('target.7z'))
+    archive.extractall(path=tmp_path.joinpath('tgt'))
+    archive.close()
+    m = hashlib.sha256()
+    m.update((tmp_path / 'tgt' / 'setup.py').open('rb').read())
+    assert m.digest() == binascii.unhexlify('b916eed2a4ee4e48c51a2b51d07d450de0be4dbb83d20e67f6fd166ff7921e49')
+    m = hashlib.sha256()
+    m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
+    assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
