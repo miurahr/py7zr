@@ -60,14 +60,8 @@ def read_byte(file: BinaryIO) -> int:
     return ord(file.read(1))
 
 
-def write_bytes(file: BinaryIO, data):
-    if isinstance(data, bytes):
-        return file.write(data)
-    elif isinstance(data, bytearray):
-        assert len(data) > 0
-        return file.write(pack(b'B' * len(data), data))
-    else:
-        raise
+def write_bytes(file: BinaryIO, data: bytes):
+    return file.write(data)
 
 
 def write_byte(file: BinaryIO, data):

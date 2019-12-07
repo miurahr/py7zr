@@ -360,6 +360,8 @@ class SevenZipCompressor():
         self.compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=self.filters)
         self.coders = []
         for filter in self.filters:
+            if filter is None:
+                break
             method = self.lzma_methods_map_r[filter['id']]
             properties = lzma._encode_filter_properties(filter)
             self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})

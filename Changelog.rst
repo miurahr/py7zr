@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Support custom filters for compression.
+
 Deprecated
 ----------
 

@@ -87,7 +87,7 @@ SevenZipFile Object
 -------------------
 
 
-.. class:: SevenZipFile(file, mode='r', filter=None)
+.. class:: SevenZipFile(file, mode='r', filters=None)
 
    Open a 7z file, where *file* can be a path to a file (a string), a
    file-like object or a :term:`path-like object`.
@@ -99,7 +99,7 @@ SevenZipFile Object
    a :exc:`FileExistsError` will be raised.
    If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#f1]_
 
-   The *filter* parameter controls the compression algorithms to use when
+   The *filters* parameter controls the compression algorithms to use when
    writing files to the archive. [#f2]_
 
 

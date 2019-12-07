@@ -169,3 +169,26 @@ def test_register_archive_format(tmp_path):
     m = hashlib.sha256()
     m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+
+
+@pytest.mark.api
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_py7zr_compress_with_simple_filter(tmp_path):
+    filters = [{"id": lzma.FILTER_LZMA2, "preset": lzma.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=filters)
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    archive.close()
+
+
+@pytest.mark.api
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_py7zr_compress_with_custom_filter(tmp_path):
+    my_filters = [
+        {"id": lzma.FILTER_DELTA, "dist": 5},
+        {"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},
+    ]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    archive.close()

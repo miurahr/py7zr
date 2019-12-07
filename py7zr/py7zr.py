@@ -288,7 +288,9 @@ class SevenZipFile:
                 self._real_get_contents(self.fp)
                 self.reset()
             elif mode in 'w':
-                self._write_open()
+                # FIXME: check filters here
+                self.folder = self._create_folder(filters)
+                self.files = ArchiveFileList()
                 self._prepare_write()
             elif mode in 'x':
                 raise NotImplementedError
@@ -300,13 +302,9 @@ class SevenZipFile:
             self._fpclose()
             raise e
 
-    def _write_open(self):
-        self.folder = self._create_folder()
-        self.files = ArchiveFileList()
-
-    def _create_folder(self):
+    def _create_folder(self, filters):
         folder = Folder()
-        folder.compressor = SevenZipCompressor()
+        folder.compressor = SevenZipCompressor(filters)
         folder.coders = folder.compressor.coders
         folder.solid = True
         folder.digestdefined = False
