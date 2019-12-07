@@ -154,9 +154,12 @@ def test_py7zr_compress_files(tmp_path):
 def test_register_archive_format(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
+    # Prepare test data
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    #
     shutil.register_archive_format('7zip', pack_7zarchive, description='7zip archive')
-    shutil.make_archive(tmp_path.joinpath('target'), '7zip', tmp_path.joinpath('src'))
+    shutil.make_archive(str(tmp_path.joinpath('target')), '7zip', str(tmp_path.joinpath('src')))
+    # check result
     archive = SevenZipFile(tmp_path.joinpath('target.7z'))
     archive.extractall(path=tmp_path.joinpath('tgt'))
     archive.close()

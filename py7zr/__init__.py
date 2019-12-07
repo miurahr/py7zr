@@ -33,4 +33,5 @@ except DistributionNotFound:
     __version__ = "unknown"
 
 __all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile',
-           'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError', 'unpack_7zarchive']
+           'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError',
+           'pack_7zarchive', 'unpack_7zarchive']
