@@ -558,7 +558,7 @@ class SevenZipFile:
                     self.header.main_streams.substreamsinfo.digests.append(crc)
                     self.header.main_streams.substreamsinfo.digestsdefined.append(True)
                     self.header.files_info.files[i]['maxsize'] = foutsize
-                self.folder.unpacksizes.append(insize)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -569,7 +569,7 @@ class SevenZipFile:
         pos = self.fp.tell()
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
-        self.header.main_streams.substreamsinfo.unpacksizes.extend(self.folder.unpacksizes)
+        self.folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         self.sig_header.nextheaderofs = pos - self.afterheader
         # Write header
