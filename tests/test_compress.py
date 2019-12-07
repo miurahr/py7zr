@@ -1,6 +1,7 @@
 import lzma
 import os
 import pathlib
+import stat
 import sys
 from datetime import datetime
 
@@ -11,7 +12,6 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr.helpers import Local
-from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -111,7 +111,10 @@ def test_py7zr_compress_files(tmp_path):
         f['emptystream'] = expected[i]
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
     assert archive.header.files_info.files[3]['emptystream'] is False
-    assert archive.header.files_info.files[3]['attributes'] == 0x0020 | FILE_ATTRIBUTE_UNIX_EXTENSION | (0o644 << 16)
+    expected_attributes = stat.FILE_ATTRIBUTE_ARCHIVE
+    if os.name == 'posix':
+        expected_attributes |= 0x8000 | (0o644 << 16)
+    assert archive.header.files_info.files[3]['attributes'] == expected_attributes
     assert archive.header.files_info.files[3]['maxsize'] == 441
     assert archive.header.files_info.files[3]['uncompressed'] == 559
     assert archive.header.main_streams.packinfo.numstreams == 1
