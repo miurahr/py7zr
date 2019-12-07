@@ -795,7 +795,15 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
 
 
 def unpack_7zarchive(archive, path, extra=None):
-    """Function for registering with shutil.register_unpack_archive()"""
+    """Function for registering with shutil.register_unpack_format()"""
     arc = SevenZipFile(archive)
     arc.extractall(path)
     arc.close()
+
+
+def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
+    """Function for registering with shutil.register_archive_format()"""
+    target_name = '{}.7z'.format(base_name)
+    archive = SevenZipFile(target_name, mode='w')
+    archive.writeall(path=base_dir)
+    archive.close()
