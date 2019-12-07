@@ -14,7 +14,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-from py7zr import pack_7zarchive, SevenZipFile
+from py7zr import SevenZipFile, pack_7zarchive
 from py7zr.helpers import Local
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
