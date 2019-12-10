@@ -262,6 +262,7 @@ def test_write_booleans(booleans, all_defined, expected):
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
                          [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
+                          (441, b'\xc0\xb9\x01'),
                           (0xffff7f, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff'),
                           (0x7f1234567f, b'\xf8\x7f\x56\x34\x12\x7f'),
                           (0x1234567890abcd, b'\xfe\xcd\xab\x90\x78\x56\x34\x12'),
@@ -275,7 +276,8 @@ def test_write_uint64(testinput, expected):
 
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
-                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xff\xff', 65535),
+                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xb9\x01', 441),
+                          (b'\xc0\xff\xff', 65535),
                           (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xf0\xff\xff\xff\xff', 0xffffffff),
                           (b'\xf8\x7f\x56\x34\x12\x7f', 0x7f1234567f),
                           (b'\xfe\xcd\xab\x90\x78\x56\x34\x12', 0x1234567890abcd),
@@ -402,7 +404,8 @@ def test_startheader_calccrc():
     # set test data to buffer that start with Property.ENCODED_HEADER
     header_data = b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00' \
                   b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
-    startheader.calccrc(header_data)
+    header_crc = py7zr.helpers.calculate_crc32(header_data)
+    startheader.calccrc(len(header_data), header_crc)
     assert startheader.nextheadercrc == 0xbfe4b8b9
     assert startheader.startheadercrc == 0x37b72a70
 
@@ -414,7 +417,8 @@ def test_write_signature_header():
     startheader.nextheadersize = 0x00000021
     header_data = b'\x17\x060\x01\tp\x00\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00' \
                   b'\x00\x10\x00\x0c\x80\x9d\n\x01\xe5\xa1\xb7b\x00\x00'
-    startheader.calccrc(header_data)
+    header_crc = py7zr.helpers.calculate_crc32(header_data)
+    startheader.calccrc(len(header_data), header_crc)
     file = io.BytesIO()
     startheader.write(file)
     val = file.getvalue()
