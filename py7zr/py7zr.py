@@ -301,6 +301,7 @@ class SevenZipFile:
         except Exception as e:
             self._fpclose()
             raise e
+        self.encoded_header_mode = False
 
     def _create_folder(self, filters):
         folder = Folder()
@@ -465,6 +466,9 @@ class SevenZipFile:
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
 
+    def set_encoded_header_mode(self, mode: bool) -> None:
+        self.encoded_header_mode = mode
+
     @staticmethod
     def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
         result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
@@ -518,12 +522,11 @@ class SevenZipFile:
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        self.header = Header()
         self.folder.totalin = 1
         self.folder.totalout = 1
         self.folder.bindpairs = []
         self.folder.unpacksizes = []
-        self.header.build_header([self.folder])
+        self.header = Header.build_header([self.folder])
 
     def _write_archive(self):
         compressor = self.folder.get_compressor()
@@ -567,20 +570,15 @@ class SevenZipFile:
             self.fp.write(out)
             if len(self.files) > 0:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
-        pos = self.fp.tell()
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
         self.folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
-        self.sig_header.nextheaderofs = pos - self.afterheader
         # Write header
-        # TODO: work with encoded header
-        encoded_header = False
-        self.header.write(self.fp, encoded=encoded_header)
-        buf = io.BytesIO()
-        self.header.write(buf, encoded=encoded_header)
-        data = buf.getvalue()
-        self.sig_header.calccrc(data)
+        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
+                                                                 encoded=self.encoded_header_mode)
+        self.sig_header.nextheaderofs = header_pos - self.afterheader
+        self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
         return
 

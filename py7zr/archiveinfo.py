@@ -604,7 +604,7 @@ class StreamsInfo:
     def __init__(self):
         self.packinfo = None  # type: PackInfo
         self.unpackinfo = None  # type: UnpackInfo
-        self.substreamsinfo = None  # type: SubstreamsInfo
+        self.substreamsinfo = None  # type: Optional[SubstreamsInfo]
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -628,6 +628,9 @@ class StreamsInfo:
 
     def write(self, file: BinaryIO):
         write_byte(file, Property.MAIN_STREAMS_INFO)
+        self._write(file)
+
+    def _write(self, file: BinaryIO):
         if self.packinfo is not None:
             self.packinfo.write(file)
         if self.unpackinfo is not None:
@@ -635,6 +638,28 @@ class StreamsInfo:
         if self.substreamsinfo is not None:
             self.substreamsinfo.write(file, self.unpackinfo.numfolders)
         write_byte(file, Property.END)
+
+
+class HeaderStreamsInfo(StreamsInfo):
+
+    def __init__(self):
+        super().__init__()
+        self.packinfo = PackInfo()
+        self.unpackinfo = UnpackInfo()
+        folder = Folder()
+        folder.compressor = SevenZipCompressor()
+        folder.coders = folder.compressor.coders
+        folder.solid = False
+        folder.digestdefined = False
+        folder.bindpairs = []
+        folder.totalin = 1
+        folder.totalout = 1
+        folder.digestdefined = [True]
+        self.unpackinfo.numfolders = 1
+        self.unpackinfo.folders = [folder]
+
+    def write(self, file: BinaryIO):
+        self._write(file)
 
 
 class FilesInfo:
@@ -711,7 +736,7 @@ class FilesInfo:
             elif prop == Property.START_POS:
                 self._read_start_pos(buffer)
             else:
-                raise Bad7zFile('invalid type %r' % (prop))
+                raise Bad7zFile('invalid type %r' % prop)
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
@@ -762,7 +787,8 @@ class FilesInfo:
         write_byte(fp, propid)
         write_boolean(fp, vector, all_defined=True)
 
-    def _are_there(self, vector) -> bool:
+    @staticmethod
+    def _are_there(vector) -> bool:
         if vector is not None:
             if functools.reduce(or_, vector):
                 return True
@@ -875,9 +901,9 @@ class Header:
             self._extract_header_info(buffer)
             return
         elif pid != Property.ENCODED_HEADER:
-            raise TypeError('Unknown field: %r' % (id))
+            raise TypeError('Unknown field: %r' % id)
         # get from encoded header
-        streams = StreamsInfo.retrieve(buffer)
+        streams = HeaderStreamsInfo.retrieve(buffer)
         self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
 
     def _get_headerdata_from_streams(self, fp: BinaryIO, streams: StreamsInfo) -> BytesIO:
@@ -907,36 +933,43 @@ class Header:
         buffer.seek(0, 0)
         return buffer
 
-    def build_header(self, folders):
-        self.files_info = FilesInfo()
-        self.main_streams = StreamsInfo()
-        self.main_streams.packinfo = PackInfo()
-        self.main_streams.packinfo.numstreams = 0
-        self.main_streams.packinfo.packpos = 0
-        self.main_streams.unpackinfo = UnpackInfo()
-        self.main_streams.unpackinfo.numfolders = len(folders)
-        self.main_streams.unpackinfo.folders = folders
-        self.main_streams.substreamsinfo = SubstreamsInfo()
-        self.main_streams.substreamsinfo.num_unpackstreams_folders = [len(folders)]
-        self.main_streams.substreamsinfo.unpacksizes = []
+    def _encode_header(self, file: BinaryIO, afterheader: int):
+        startpos = file.tell()
+        packpos = startpos - afterheader
+        buf = io.BytesIO()
+        _, raw_header_len, raw_crc = self.write(buf, 0, False)
+        streams = HeaderStreamsInfo()
+        streams.packinfo.packpos = packpos
+        folder = streams.unpackinfo.folders[0]
+        folder.crc = [raw_crc]
+        folder.unpacksizes = [raw_header_len]
+        compressed_len = 0
+        buf.seek(0, 0)
+        data = buf.read(io.DEFAULT_BUFFER_SIZE)
+        while data:
+            out = folder.compressor.compress(data)
+            compressed_len += len(out)
+            file.write(out)
+            data = buf.read(io.DEFAULT_BUFFER_SIZE)
+        out = folder.compressor.flush()
+        compressed_len += len(out)
+        file.write(out)
+        #
+        streams.packinfo.packsizes = [compressed_len]
+        # actual header start position
+        startpos = file.tell()
+        write_byte(file, Property.ENCODED_HEADER)
+        streams.write(file)
+        write_byte(file, Property.END)
+        return startpos
 
-    def write(self, file: BinaryIO, encoded: bool = True):
+    def write(self, file: BinaryIO, afterheader: int, encoded: bool = True):
         startpos = file.tell()
         if encoded:
-            buf = io.BytesIO()
-            self.write(buf, encoded=False)
-            header_data = buf.getvalue()
-            streams = StreamsInfo()
-            streams.packinfo = PackInfo()
-            streams.packinfo.packpos = 0
-            streams.packinfo.packsizes = []  # TODO: fixme
-            streams.unpackinfo = UnpackInfo()
-            streams.unpackinfo.folders = []  # fixme
-            write_byte(file, Property.ENCODED_HEADER)
-            streams.write(file)
+            startpos = self._encode_header(file, afterheader)
         else:
             write_byte(file, Property.HEADER)
-            # archive properties
+            # Archive properties
             if self.main_streams is not None:
                 self.main_streams.write(file)
             # Files Info
@@ -944,12 +977,16 @@ class Header:
                 self.files_info.write(file)
             if self.properties is not None:
                 self.properties.write(file)
-            #
+            # AdditionalStreams
             if self.additional_streams is not None:
                 self.additional_streams.write(file)
             write_byte(file, Property.END)
         endpos = file.tell()
-        return endpos - startpos
+        header_len = endpos - startpos
+        file.seek(startpos, io.SEEK_SET)
+        crc = calculate_crc32(file.read(header_len))
+        file.seek(endpos, io.SEEK_SET)
+        return startpos, header_len, crc
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
@@ -967,6 +1004,22 @@ class Header:
             pid = fp.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % (repr(pid)))
+
+    @staticmethod
+    def build_header(folders):
+        header = Header()
+        header.files_info = FilesInfo()
+        header.main_streams = StreamsInfo()
+        header.main_streams.packinfo = PackInfo()
+        header.main_streams.packinfo.numstreams = 0
+        header.main_streams.packinfo.packpos = 0
+        header.main_streams.unpackinfo = UnpackInfo()
+        header.main_streams.unpackinfo.numfolders = len(folders)
+        header.main_streams.unpackinfo.folders = folders
+        header.main_streams.substreamsinfo = SubstreamsInfo()
+        header.main_streams.substreamsinfo.num_unpackstreams_folders = [len(folders)]
+        header.main_streams.substreamsinfo.unpacksizes = []
+        return header
 
 
 class SignatureHeader:
@@ -1000,9 +1053,9 @@ class SignatureHeader:
         if crc != self.startheadercrc:
             raise Bad7zFile('invalid header data')
 
-    def calccrc(self, data: bytes):
-        self.nextheadersize = len(data)
-        self.nextheadercrc = calculate_crc32(data)
+    def calccrc(self, length: int, header_crc: int):
+        self.nextheadersize = length
+        self.nextheadercrc = header_crc
         assert self.nextheaderofs is not None
         buf = io.BytesIO()
         write_real_uint64(buf, self.nextheaderofs)
