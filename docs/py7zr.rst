@@ -39,7 +39,7 @@ The module defines the following items:
 .. class:: FileInfo
 
     Class used to represent information about a member of an archive file. See section
-   :ref:`fileinfo-objects` for fields details.
+    :ref:`fileinfo-objects` for fields details.
 
 
 .. function:: is_7zfile(filename)

@@ -56,7 +56,7 @@ class ArchiveFile:
     it is directory, link or normal file.
 
     Instances of the :class:`ArchiveFile` class are returned by iterating :attr:`files_list` of
-     :class:`SevenZipFile` objects.
+    :class:`SevenZipFile` objects.
     Each object stores information about a single member of the 7z archive. Most of users use :meth:`extractall()`.
 
     The class also hold an archive parameter where file is exist in
@@ -67,8 +67,8 @@ class ArchiveFile:
 
     def file_properties(self) -> Dict[str, Any]:
         """Return file properties as a hash object. Following keys are included: ‘readonly’, ‘is_directory’,
-         ‘posix_mode’, ‘archivable’, ‘emptystream’, ‘filename’, ‘creationtime’, ‘lastaccesstime’,
-          ‘lastwritetime’, ‘attributes’
+        ‘posix_mode’, ‘archivable’, ‘emptystream’, ‘filename’, ‘creationtime’, ‘lastaccesstime’,
+        ‘lastwritetime’, ‘attributes’
         """
         properties = self._file_info
         if properties is not None:

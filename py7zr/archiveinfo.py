@@ -288,7 +288,7 @@ class Folder:
     coders: list of coder
     num_coders: length of coders
     coder: hash list
-        keys:  method, numinstreams, numoutstreams, properties
+    keys of coders:  method, numinstreams, numoutstreams, properties
     unpacksizes: uncompressed sizes of outstreams
     """
 

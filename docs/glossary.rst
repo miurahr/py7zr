@@ -69,10 +69,20 @@ Glossary
    text file
       A :term:`file object` able to read and write :class:`str` objects.
       Often, a text file actually accesses a byte-oriented datastream
-      and handles the :term:`text encoding` automatically.
+      and handles the text encoding automatically.
       Examples of text files are files opened in text mode (``'r'`` or ``'w'``),
       :data:`sys.stdin`, :data:`sys.stdout`, and instances of
       :class:`io.StringIO`.
 
       See also :term:`binary file` for a file object able to read and write
       :term:`bytes-like objects <bytes-like object>`.
+
+   path-like object
+      An object representing a file system path. A path-like object is either
+      a :class:`str` or :class:`bytes` object representing a path, or an object
+      implementing the :class:`os.PathLike` protocol. An object that supports
+      the :class:`os.PathLike` protocol can be converted to a :class:`str` or
+      :class:`bytes` file system path by calling the :func:`os.fspath` function;
+      :func:`os.fsdecode` and :func:`os.fsencode` can be used to guarantee a
+      :class:`str` or :class:`bytes` result instead, respectively. Introduced
+      by :pep:`519`.
