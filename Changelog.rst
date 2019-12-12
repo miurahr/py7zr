@@ -25,65 +25,41 @@ Removed
 Security
 --------
 
-
-`v0.5a4`_
+`v0.5b1`_
 =========
+
+Support making a 7zip archive.
 
 Added
 -----
 
+* Support for compression and archiving.
+* Support encoded(compressed) header and set as default.(#39)
+* SevenZipFile: accept pathlib.Path as a file argument.
+* Unit test: read and write UTF-16LE string for filename.
 * Support for shutil.register_archive_format() and
   shutil.make_archive() by exposing pack_7zarchive()
 * Support custom filters for compression.
-
-
-`v0.5a3`
-========
-
-Support producing 7zip archive.
-
-Fixed
------
-
-* Write: Produce a good archive file for multiple target files.
-
-Removed
--------
-
-* Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
-
-
-`v0.5a2`
-========
-
-Changed
--------
-
-* Move setuptools config in setup.cfg
-
-
-`v0.5a1`
-========
-
-Added
------
-
-* Experimental support for compression and archiving.
-* SevenZipFile: accept pathlib.Path as a file argument.
-* Unit test: read and write UTF-16LE string for filename
-
-Changed
--------
-
-* Test: Use tmp_path fixture which is pytest default one.
 
 Fixed
 -----
 
 * Skip rare case when directory already exist, that can happen multiple process working
   in same working directory.
+* Write: Produce a good archive file for multiple target files.
 * SignatureHeader function: write nextheaderofs and nextheadersize as real_uint64.
 * docs: description of start header structure.
+
+Removed
+-------
+
+* Drop py7zr.properties.FileAttributes; please use stat.FILE_ATTRIBUTES_*
+
+Changed
+-------
+
+* Test: Use tmp_path fixture which is pytest default one.
+* Move setuptools configurations in setup.py into setup.cfg.
 
 
 `v0.4`_
@@ -92,25 +68,14 @@ Fixed
 Added
 -----
 
+* Support for pypy3 (pypy3.5-7.0) and later(pypy3.6-7.1 or later).
 * unit test for NullHandler, BufferHandler, FileHandler.
+* Update document to add 7zformat descriptions.
 
 Changed
 -------
 
 * NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
-
-
-`v0.4a2`
-========
-
-Added
------
-
-* Support for pypy3 (pypy3.5-7.0) and later(pypy3.6-7.1 or later).
-
-Changed
--------
-
 * Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
   - PyPy issue: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
 * Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
@@ -118,25 +83,6 @@ Changed
   - PyPy Issue: https://bitbucket.org/pypy/pypy/issues/3090/lzma-sometimes-decompresses-data
   - bpo-21872: https://bugs.python.org/issue21872
   - Fix: https://github.com/python/cpython/pull/14048
-
-
-Fixed
------
-
-* Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
-
-
-`v0.4a1`
-========
-
-Added
------
-
-* Update document to add 7zformat descriptions.
-
-Changed
--------
-
 * Remove print functions from API and moves CLI
     - API should not output anything other than error message.
       * Introduce FileInfo class to represent file attributes inside
@@ -147,6 +93,12 @@ Changed
     - Every print things moves to Cli class.
 * Update tests according to API change.
 * Update documents to refrect API changes.
+
+Fixed
+-----
+
+* Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
+
 
 
 `v0.3.5`_
@@ -475,8 +427,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5a4...HEAD
-.. _v0.5a4: https://github.com/miurahr/py7zr/compare/v0.4...v0.5a4
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b1...HEAD
+.. _v0.5b1: https://github.com/miurahr/py7zr/compare/v0.4...v0.5b1
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
