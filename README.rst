@@ -92,7 +92,7 @@ py7zr also support `shutil`  interface.
 
 .. code-block::
 
-    frpm py7zr import pack_7zarchvie, unpack_7zarchive
+    from py7zr import pack_7zarchvie, unpack_7zarchive
     import shutil
 
     # register file format at first.
