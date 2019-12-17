@@ -262,8 +262,9 @@ def test_write_booleans(booleans, all_defined, expected):
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
                          [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
-                          (441, b'\xc0\xb9\x01'),
-                          (0xffff7f, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff'),
+                          (441, b'\x81\xb9'),
+                          (0xffff7f, b'\xe0\x7f\xff\xff'), (0x0e002100, b'\xee\x00\x21\x00'),
+                          (0xffffffff, b'\xf0\xff\xff\xff\xff'),
                           (0x7f1234567f, b'\xf8\x7f\x56\x34\x12\x7f'),
                           (0x1234567890abcd, b'\xfe\xcd\xab\x90\x78\x56\x34\x12'),
                           (0xcf1234567890abcd, b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf')])
@@ -276,9 +277,10 @@ def test_write_uint64(testinput, expected):
 
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
-                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xb9\x01', 441),
+                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\x81\xb9', 441),
                           (b'\xc0\xff\xff', 65535),
-                          (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xf0\xff\xff\xff\xff', 0xffffffff),
+                          (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xee\x00\x21\x00', 0x0e002100),
+                          (b'\xf0\xff\xff\xff\xff', 0xffffffff),
                           (b'\xf8\x7f\x56\x34\x12\x7f', 0x7f1234567f),
                           (b'\xfe\xcd\xab\x90\x78\x56\x34\x12', 0x1234567890abcd),
                           (b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf', 0xcf1234567890abcd)])

@@ -131,18 +131,27 @@ def write_uint64(file: BinaryIO, value: int):
     |  11111110    BYTE y[7]  :                         y
     |  11111111    BYTE y[8]  :                         y
     """
-    mask = 0x80
-    length = (value.bit_length() + 7) // 8 or 1
-    ba = bytearray(value.to_bytes(length, 'little'))
-    for _ in range(length - 1):
-        mask |= mask >> 1
-    if ba[0] >= 2 ** (8 - length):
-        file.write(pack('B', mask))
-    elif length > 1:
-        ba[0] |= mask
+    if value < 0x80:
+        file.write(pack('B', value))
+        return
+    if value > 0x01ffffffffffffff:
+        file.write(b'\xff')
+        file.write(value.to_bytes(8, 'little'))
+        return
+    byte_length = (value.bit_length() + 7) // 8
+    ba = bytearray(value.to_bytes(byte_length, 'little'))
+    high_byte = int(ba[-1])
+    if high_byte < 2 << (8 - byte_length - 1):
+        for x in range(byte_length - 1):
+            high_byte |= 0x80 >> x
+        file.write(pack('B', high_byte))
+        file.write(ba[:byte_length - 1])
     else:
-        pass
-    file.write(ba)
+        mask = 0x80
+        for x in range(byte_length):
+            mask |= 0x80 >> x
+        file.write(pack('B', mask))
+        file.write(ba)
 
 
 def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> List[bool]:
@@ -481,18 +490,18 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % repr(pid))
+            raise Bad7zFile('end id expected but %s found at %d' % (repr(pid), file.tell()))
 
     def write(self, file: BinaryIO):
         assert self.numfolders is not None
         assert self.folders is not None
+        assert self.numfolders == len(self.folders)
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
         write_uint64(file, self.numfolders)
         write_byte(file, b'\x00')
-        for i in range(self.numfolders):
-            for folder in self.folders:
-                folder.write(file)
+        for folder in self.folders:
+            folder.write(file)
         # If support external entity, we may write
         # self.datastreamidx here.
         # folder data will be written in another place.
@@ -768,10 +777,10 @@ class FilesInfo:
                 if f[name] is not None:
                     defined.append(True)
                     num_defined += 1
-        if num_defined == len(defined):
-            write_byte(fp, (num_defined * 8 + 2).to_bytes(1, byteorder='little'))
-        else:
-            write_byte(fp, (num_defined * 8 + bits_to_bytes(num_defined) + 2).to_bytes(1, byteorder='little'))
+        size = num_defined * 8 + 2
+        if not reduce(and_, defined):
+            size += bits_to_bytes(num_defined)
+        write_uint64(fp, size)
         write_boolean(fp, defined, all_defined=True)
         write_byte(fp, b'\x00')
         for i, file in enumerate(self.files):
@@ -818,10 +827,10 @@ class FilesInfo:
                     continue
             defined.append(False)
         write_byte(file, Property.ATTRIBUTES)
-        if num_defined == len(defined):
-            write_byte(file, (num_defined * 4 + 2).to_bytes(1, byteorder='little'))
-        else:
-            write_byte(file, (num_defined * 4 + bits_to_bytes(num_defined) + 2).to_bytes(1, byteorder='little'))
+        size = num_defined * 4 + 2
+        if num_defined != len(defined):
+            size += bits_to_bytes(num_defined)
+        write_uint64(file, size)
         write_boolean(file, defined, all_defined=False)
         write_byte(file, b'\x00')
         for i, f in enumerate(self.files):
@@ -838,7 +847,7 @@ class FilesInfo:
             emptystreams.append(f['emptystream'])
         if self._are_there(emptystreams):
             write_byte(file, Property.EMPTY_STREAM)
-            write_byte(file, bits_to_bytes(numfiles).to_bytes(1, 'little'))
+            write_uint64(file, bits_to_bytes(numfiles))
             write_boolean(file, emptystreams, all_defined=False)
         else:
             if self._are_there(self.emptyfiles):
