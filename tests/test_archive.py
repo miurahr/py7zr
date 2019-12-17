@@ -20,29 +20,6 @@ from py7zr.helpers import Local
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 
-@pytest.mark.unit
-def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
-    lzc = sevenzip_compressor.compressor
-    out1 = lzc.compress(b"Some data\n")
-    out2 = lzc.compress(b"Another piece of data\n")
-    out3 = lzc.compress(b"Even more data\n")
-    out4 = lzc.flush()
-    result = b"".join([out1, out2, out3, out4])
-    size = len(result)
-    #
-    filters = sevenzip_compressor.filters
-    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-    out5 = decompressor.decompress(result)
-    assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
-    #
-    coders = sevenzip_compressor.coders
-    crc = py7zr.helpers.calculate_crc32(result)
-    decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
-    out6 = decompressor.decompress(result)
-    assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
-
-
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_single_encoded_header(capsys, tmp_path):
@@ -286,7 +263,7 @@ def test_register_archive_format(tmp_path):
 
 @pytest.mark.api
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_with_simple_filter(tmp_path):
+def test_compress_with_simple_filter(tmp_path):
     my_filters = [{"id": lzma.FILTER_LZMA2, "preset": lzma.PRESET_DEFAULT}, ]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
@@ -296,7 +273,7 @@ def test_py7zr_compress_with_simple_filter(tmp_path):
 
 @pytest.mark.api
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_with_custom_filter(tmp_path):
+def test_compress_with_custom_filter(tmp_path):
     my_filters = [
         {"id": lzma.FILTER_DELTA, "dist": 5},
         {"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},
@@ -322,6 +299,7 @@ def test_compress_files_2(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+
 
 @pytest.mark.file
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
