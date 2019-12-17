@@ -25,7 +25,7 @@ Size of encoding sequence depends from first byte
 
 +-----------+------------+----------------------------+
 | First_Byte| Extra_Bytes|       Value                |
-| (binary)  |            |                            |
+| (binary)  | (Little E.)| (y is as little endian)    |
 +===========+============+============================+
 |0xxxxxxx   |            | ( xxxxxxx           )      |
 +-----------+------------+----------------------------+
@@ -45,36 +45,43 @@ Property IDs
 ------------
 
 .. productionlist::
-    0x00 : kEnd
-    0x01 : kHeader
-    0x02 : kArchiveProperties
-    0x03 : kAdditionalStreamsInfo
-    0x04 : kMainStreamsInfo
-    0x05 : kFilesInfo
-    0x06 : kPackInfo
-    0x07 : kUnPackInfo
-    0x08 : kSubStreamsInfo
-    0x09 : kSize
-    0x0A : kCRC
-    0x0B : kFolder
-    0x0C : kCodersUnPackSize
-    0x0D : kNumUnPackStream
-    0x0E : kEmptyStream
-    0x0F : kEmptyFile
-    0x10 : kAnti
-    0x11 : kName
-    0x12 : kCTime
-    0x13 : kATime
-    0x14 : kMTime
-    0x15 : kWinAttributes
-    0x16 : kComment
-    0x17 : kEncodedHeader
-    0x18 : kStartPos
-    0x19 : kDummy
+    kEnd: 0x00
+    kHeader: 0x01
+    kArchiveProperties: 0x02
+    kAdditionalStreamsInfo: 0x03
+    kMainStreamsInfo: 0x04
+    kFilesInfo: 0x05
+    kPackInfo: 0x06
+    kUnPackInfo: 0x07
+    kSubStreamsInfo: 0x08
+    kSize: 0x09
+    kCRC: 0x0A
+    kFolder: 0x0B
+    kCodersUnPackSize: 0x0C
+    kNumUnPackStream: 0x0D
+    kEmptyStream: 0x0E
+    kEmptyFile: 0x0F
+    kAnti: 0x10
+    kName: 0x11
+    kCTime: 0x12
+    kATime: 0x13
+    kMTime: 0x14
+    kWinAttributes: 0x15
+    kComment: 0x16
+    kEncodedHeader: 0x17
+    kStartPos: 0x18
+    kDummy: 0x19
 
+Archive Structure
+=================
 
-Headers
-=======
+.. productionlist::
+   ARCHIVE: `SignatureHeader`:
+          : [`PackedStreams`] [`PackedStreamsForHeaders`]
+          : `Header` | `PackedHeader`, `HeaderInfo`
+
+_`Signatureheader`
+==================
 
 .. productionlist::
    SignatureHeader: `Signature` : BYTE kSignature[6] : b'7z\xBC\xAF\x27\x1C'
@@ -87,18 +94,18 @@ Headers
    NextHeaderSize: REAL_UINT64
    NextHeaderCRC: UINT32
 
+_`Header`
+=========
+
 .. productionlist::
    PackedStreamsForHeaders: `Headers Block`
-   Headers Block: PackedHeader: BYTE NID::kHeader : 0x01
-                                :   `ArchiveProperties`
-                                : BYTE NID::kAdditionalStreamsInfo : 0x03
-                                :   `StreamsInfo`
-                                : `BYTE NID::kMainStreamsInfo : 0x04
-                                :   `StreamsInfo`
-                                : `FilesInfo`
-                                : BYTE NID::kEnd
-                : HeaderInfo  : BYTE NID::kEncodedHeader : 0x17
-                                : `StreamsInfo` for encoded header
+   Headers Block: `PackedHeader` | `HeaderInfo`
+
+   PackedHeader: BYTE `kHeader`, `ArchiveProperties`
+               : BYTE `kAdditionalStreamsInfo`, `StreamsInfo`
+               : BYTE `kMainStreamsInfo`, `StreamsInfo`, `FilesInfo`
+               : BYTE `kEnd`
+   HeaderInfo  : BYTE `kEncodedHeader`, `HeaderStreamsInfo`
 
 .. productionlist::
    StreamsInfo: PackInfo    : BYTE NID::kPackInfo : 0x06
