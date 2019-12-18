@@ -683,10 +683,7 @@ class FilesInfo:
         self.files = [{'emptystream': False} for _ in range(numfiles)]
         numemptystreams = 0
         while True:
-            typ = read_uint64(fp)
-            if typ > 255:
-                raise Bad7zFile('invalid type, must be below 256, is %d' % typ)
-            prop = struct.pack(b'B', typ)
+            prop = fp.read(1)
             if prop == Property.END:
                 break
             size = read_uint64(fp)
