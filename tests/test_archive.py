@@ -289,23 +289,6 @@ def test_compress_with_custom_filter(tmp_path):
 def test_compress_files_2(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'mblock_1.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(tmp_path.joinpath('src'))
-    archive = py7zr.SevenZipFile(target, 'w')
-    archive.set_encoded_header_mode(False)
-    archive.writeall('.')
-    archive.close()
-    reader = py7zr.SevenZipFile(target, 'r')
-    reader.extractall(path=tmp_path.joinpath('tgt'))
-    reader.close()
-
-
-@pytest.mark.file
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_compress_files_3(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
     target = tmp_path.joinpath('target.7z')
     os.chdir(tmp_path.joinpath('src'))
