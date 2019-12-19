@@ -705,8 +705,6 @@ class FilesInfo:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
                 numemptystreams += isempty.count(True)
-                self.emptyfiles = [False] * numemptystreams
-                self.antifiles = [False] * numemptystreams
             elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
             elif prop == Property.ANTI:
@@ -820,18 +818,17 @@ class FilesInfo:
         defined = []  # type: List[bool]
         num_defined = 0
         for f in self.files:
-            if 'attributes' in f.keys():
-                if f['attributes'] is not None:
-                    defined.append(True)
-                    num_defined += 1
-                    continue
-            defined.append(False)
-        write_byte(file, Property.ATTRIBUTES)
+            if 'attributes' in f.keys() and f['attributes'] is not None:
+                defined.append(True)
+                num_defined += 1
+            else:
+                defined.append(False)
         size = num_defined * 4 + 2
         if num_defined != len(defined):
             size += bits_to_bytes(num_defined)
+        write_byte(file, Property.ATTRIBUTES)
         write_uint64(file, size)
-        write_boolean(file, defined, all_defined=False)
+        write_boolean(file, defined, all_defined=True)
         write_byte(file, b'\x00')
         for i, f in enumerate(self.files):
             if defined[i]:
