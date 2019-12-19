@@ -262,8 +262,9 @@ def test_write_booleans(booleans, all_defined, expected):
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
                          [(1, b'\x01'), (127, b'\x7f'), (128, b'\x80\x80'), (65535, b'\xc0\xff\xff'),
-                          (441, b'\xc0\xb9\x01'),
-                          (0xffff7f, b'\xe0\x7f\xff\xff'), (0xffffffff, b'\xf0\xff\xff\xff\xff'),
+                          (441, b'\x81\xb9'),
+                          (0xffff7f, b'\xe0\x7f\xff\xff'), (0x0e002100, b'\xee\x00\x21\x00'),
+                          (0xffffffff, b'\xf0\xff\xff\xff\xff'),
                           (0x7f1234567f, b'\xf8\x7f\x56\x34\x12\x7f'),
                           (0x1234567890abcd, b'\xfe\xcd\xab\x90\x78\x56\x34\x12'),
                           (0xcf1234567890abcd, b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf')])
@@ -276,9 +277,10 @@ def test_write_uint64(testinput, expected):
 
 @pytest.mark.unit
 @pytest.mark.parametrize("testinput, expected",
-                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\xc0\xb9\x01', 441),
+                         [(b'\x01', 1), (b'\x7f', 127), (b'\x80\x80', 128), (b'\x81\xb9', 441),
                           (b'\xc0\xff\xff', 65535),
-                          (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xf0\xff\xff\xff\xff', 0xffffffff),
+                          (b'\xe0\x7f\xff\xff', 0xffff7f), (b'\xee\x00\x21\x00', 0x0e002100),
+                          (b'\xf0\xff\xff\xff\xff', 0xffffffff),
                           (b'\xf8\x7f\x56\x34\x12\x7f', 0x7f1234567f),
                           (b'\xfe\xcd\xab\x90\x78\x56\x34\x12', 0x1234567890abcd),
                           (b'\xff\xcd\xab\x90\x78\x56\x34\x12\xcf', 0xcf1234567890abcd)])
@@ -486,3 +488,26 @@ def test_make_file_info2():
     assert file_info.get('emptystream')
     flag = stat.FILE_ATTRIBUTE_DIRECTORY
     assert file_info.get('attributes') & flag == flag
+
+
+@pytest.mark.unit
+def test_simple_compress_and_decompress():
+    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
+    lzc = sevenzip_compressor.compressor
+    out1 = lzc.compress(b"Some data\n")
+    out2 = lzc.compress(b"Another piece of data\n")
+    out3 = lzc.compress(b"Even more data\n")
+    out4 = lzc.flush()
+    result = b"".join([out1, out2, out3, out4])
+    size = len(result)
+    #
+    filters = sevenzip_compressor.filters
+    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+    out5 = decompressor.decompress(result)
+    assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
+    #
+    coders = sevenzip_compressor.coders
+    crc = py7zr.helpers.calculate_crc32(result)
+    decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
+    out6 = decompressor.decompress(result)
+    assert out6 == b'Some data\nAnother piece of data\nEven more data\n'

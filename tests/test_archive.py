@@ -45,7 +45,7 @@ def test_simple_compress_and_decompress():
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_single_encoded_header(capsys, tmp_path):
+def test_compress_single_encoded_header(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(True)
@@ -73,7 +73,7 @@ def test_py7zr_compress_single_encoded_header(capsys, tmp_path):
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_directory_encoded_header(tmp_path):
+def test_compress_directory_encoded_header(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(True)
@@ -99,7 +99,7 @@ def test_py7zr_compress_directory_encoded_header(tmp_path):
 
 @pytest.mark.file
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_files_encoded_header(tmp_path):
+def test_compress_files_encoded_header(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -155,7 +155,7 @@ def test_py7zr_compress_files_encoded_header(tmp_path):
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_single(capsys, tmp_path):
+def test_compress_file_0(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
@@ -183,7 +183,7 @@ def test_py7zr_compress_single(capsys, tmp_path):
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_directory(tmp_path):
+def test_compress_directory(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
@@ -209,7 +209,7 @@ def test_py7zr_compress_directory(tmp_path):
 
 @pytest.mark.file
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_files(tmp_path):
+def test_compress_files_1(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -286,7 +286,7 @@ def test_register_archive_format(tmp_path):
 
 @pytest.mark.api
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_with_simple_filter(tmp_path):
+def test_compress_with_simple_filter(tmp_path):
     my_filters = [{"id": lzma.FILTER_LZMA2, "preset": lzma.PRESET_DEFAULT}, ]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
@@ -296,7 +296,7 @@ def test_py7zr_compress_with_simple_filter(tmp_path):
 
 @pytest.mark.api
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-def test_py7zr_compress_with_custom_filter(tmp_path):
+def test_compress_with_custom_filter(tmp_path):
     my_filters = [
         {"id": lzma.FILTER_DELTA, "dist": 5},
         {"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},
@@ -305,3 +305,37 @@ def test_py7zr_compress_with_custom_filter(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
+
+
+@pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_compress_files_2(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive.close()
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
+
+
+@pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_compress_files_3(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_3.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive.close()
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
