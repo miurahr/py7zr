@@ -316,4 +316,3 @@ def test_compress_files_3(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
-
