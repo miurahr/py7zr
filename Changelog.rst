@@ -25,6 +25,21 @@ Removed
 Security
 --------
 
+`v0.5b2`_
+=========
+
+Changed
+-------
+
+* Update documents.
+
+Fixed
+-----
+
+* Fix write logics (#42)
+* Fix read FilesInfo block.
+
+
 `v0.5b1`_
 =========
 
