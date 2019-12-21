@@ -114,7 +114,7 @@ def test_bugzilla_16(tmp_path):
 
 
 @pytest.mark.files
-def test_symlink(tmp_path):
+def test_extract_symlink(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
                                           'lib/libabc.so.1.2.3', 'lib64']

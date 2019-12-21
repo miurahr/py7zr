@@ -252,6 +252,7 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
+    # split archive.close() into _write_archive() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -336,6 +337,54 @@ def test_compress_files_3(tmp_path):
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
     archive.close()
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
+
+
+@pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_compress_symlink(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive._write_archive()
+    assert len(archive.header.files_info.files) == 6
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [5]
+    assert len(archive.files) == 6
+    assert len(archive.header.files_info.files) == 6
+    expected = [True, False, False, False, False, False]
+    for i, f in enumerate(archive.header.files_info.files):
+        f['emptystream'] = expected[i]
+    assert archive.header.files_info.files[5]['maxsize'] == 1543
+    assert archive.header.main_streams.packinfo.packsizes == [1543]
+    assert archive.header.files_info.files[4]['uncompressed'] == 6536
+    assert archive.header.main_streams.packinfo.numstreams == 1
+    assert archive.header.main_streams.substreamsinfo.digestsdefined == [True, True, True, True, True]
+    assert archive.header.main_streams.substreamsinfo.unpacksizes == [11, 13, 15, 6536, 3]
+    assert archive.header.main_streams.substreamsinfo.digests == [4262439050, 2607345479,
+                                                                  2055456646, 437637236, 2836347852]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [5]
+    assert len(archive.header.main_streams.unpackinfo.folders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert archive.header.main_streams.unpackinfo.numfolders == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].solid
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
+    assert archive.header.main_streams.unpackinfo.folders[0].solid is True
+    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [6578]
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+    assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+    archive._fpclose()
+    # split archive.close() into _write_archive() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()

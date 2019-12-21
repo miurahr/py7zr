@@ -543,7 +543,23 @@ class SevenZipFile:
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             foutsize = 0
-            if not f.emptystream:
+            if f.is_symlink:
+                last_file_index = i
+                num_unpack_streams += 1
+                link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
+                link_target = pathlib.Path(os.readlink(f.origin).decode('utf-8'))
+                tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
+                insize = len(tgt)
+                crc = calculate_crc32(tgt, 0)
+                out = compressor.compress(tgt)
+                outsize += len(out)
+                foutsize += len(out)
+                self.fp.write(out)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+            elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
@@ -563,6 +579,7 @@ class SevenZipFile:
                     self.header.main_streams.substreamsinfo.digestsdefined.append(True)
                     self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -594,17 +611,14 @@ class SevenZipFile:
         else:
             f['filename'] = str(target)
         fstat = target.stat()
-        if target.is_dir():
+        if target.is_symlink():
+            f['emptystream'] = False
+            f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+        elif target.is_dir():
             f['emptystream'] = True
             f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
             if os.name == 'posix':
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-        elif target.is_symlink():
-            f['emptystream'] = True
-            if os.name == 'posix':
-                f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-            else:
-                f['attributes'] = 0x0  # FIXME
         elif target.is_file():
             f['emptystream'] = False
             f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
@@ -736,7 +750,9 @@ class SevenZipFile:
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if path.is_file():
+        if path.is_symlink():
+            self.write(path, arcname)
+        elif path.is_file():
             self.write(path, arcname)
         elif path.is_dir():
             if not path.samefile('.'):
