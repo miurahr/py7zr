@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.5b3`_
+=========
+
+Fixed
+-----
+
+* Support for making archive with symbolic links.
+
+
 `v0.5b2`_
 =========
 
@@ -442,7 +451,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b3...HEAD
+.. _v0.5b3: https://github.com/miurahr/py7zr/compare/v0.5b2...v0.5b3
+.. _v0.5b2: https://github.com/miurahr/py7zr/compare/v0.5b1...v0.5b2
 .. _v0.5b1: https://github.com/miurahr/py7zr/compare/v0.4...v0.5b1
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
