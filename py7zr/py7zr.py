@@ -46,6 +46,9 @@ if sys.version_info < (3, 6):
 else:
     import pathlib
 
+if sys.platform.startswith('win'):
+    import _winapi
+
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
 
@@ -149,7 +152,13 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        return False
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore  # noqa
+
+    @property
+    def is_junction(self) -> bool:
+        """True if file is a junction/reparse point on windows, otherwise False."""
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT |  # type: ignore  # noqa
+                                    stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
 
     @property
     def is_socket(self) -> bool:
@@ -543,7 +552,26 @@ class SevenZipFile:
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             foutsize = 0
-            if not f.emptystream:
+            if f.is_symlink:
+                last_file_index = i
+                num_unpack_streams += 1
+                link_target = pathlib.Path(os.readlink(f.origin))
+                if str(link_target).startswith('\\\\?\\'):
+                    tgt = os.readlink(f.origin).encode('utf-8')
+                else:
+                    link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
+                    tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
+                insize = len(tgt)
+                crc = calculate_crc32(tgt, 0)
+                out = compressor.compress(tgt)
+                outsize += len(out)
+                foutsize += len(out)
+                self.fp.write(out)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+            elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
@@ -563,6 +591,7 @@ class SevenZipFile:
                     self.header.main_streams.substreamsinfo.digestsdefined.append(True)
                     self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -588,31 +617,40 @@ class SevenZipFile:
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = target
+        f['origin'] = str(target)
         if arcname is not None:
             f['filename'] = arcname
         else:
             f['filename'] = str(target)
-        fstat = target.stat()
-        if target.is_dir():
-            f['emptystream'] = True
-            f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-            if os.name == 'posix':
+        if os.name == 'nt':
+            fstat = os.stat(str(target), follow_symlinks=False)
+            if target.is_symlink():
+                f['emptystream'] = False
+                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+            elif target.is_dir():
+                f['emptystream'] = True
+                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+            elif target.is_file():
+                f['emptystream'] = False
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['uncompressed'] = fstat.st_size
+        else:
+            fstat = target.stat()
+            if target.is_symlink():
+                f['emptystream'] = False
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+            elif target.is_dir():
+                f['emptystream'] = True
+                f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-        elif target.is_symlink():
-            f['emptystream'] = True
-            if os.name == 'posix':
-                f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-            else:
-                f['attributes'] = 0x0  # FIXME
-        elif target.is_file():
-            f['emptystream'] = False
-            f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-            f['uncompressed'] = fstat.st_size
-        if os.name == 'posix':
-            f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-        elif os.name == 'nt':
-            f['attributes'] |= (fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK)  # type: ignore  # noqa
+                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+            elif target.is_file():
+                f['emptystream'] = False
+                f['uncompressed'] = fstat.st_size
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
         f['creationtime'] = target.stat().st_ctime
         f['lastwritetime'] = target.stat().st_mtime
@@ -653,6 +691,7 @@ class SevenZipFile:
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
+        target_junction = []  # type: List[Tuple[BinaryIO, str]]
         target_sym = []  # type: List[Tuple[BinaryIO, str]]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
@@ -703,6 +742,11 @@ class SevenZipFile:
                 pair = (buf, f.filename)
                 target_sym.append(pair)
                 self.worker.register_filelike(f.id, buf)
+            elif f.is_junction:
+                buf = io.BytesIO()
+                pair = (buf, f.filename)
+                target_junction.append(pair)
+                self.worker.register_filelike(f.id, buf)
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
@@ -720,7 +764,7 @@ class SevenZipFile:
         self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
-            sym_src_org = b.read().decode(encoding='utf-8')
+            sym_src_org = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
             dirname = os.path.dirname(t)
             if path:
                 sym_src = path.joinpath(dirname, sym_src_org)
@@ -729,6 +773,19 @@ class SevenZipFile:
                 sym_src = pathlib.Path(dirname).joinpath(sym_src_org)
                 sym_dst = pathlib.Path(t)
             sym_dst.symlink_to(sym_src)
+
+        # create junction point only on windows platform
+        if sys.platform.startswith('win'):
+            for b, t in target_junction:
+                b.seek(0)
+                junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                dirname = os.path.dirname(t)
+                if path:
+                    junction_point = path.joinpath(t)
+                else:
+                    junction_point = pathlib.Path(dirname).joinpath(t)
+                _winapi.CreateJunction(junction_target, junction_point)  # type: ignore  # noqa
+
         for o, p in target_files:
             self._set_file_property(o, p)
 
@@ -736,7 +793,9 @@ class SevenZipFile:
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if path.is_file():
+        if path.is_symlink():
+            self.write(path, arcname)
+        elif path.is_file():
             self.write(path, arcname)
         elif path.is_dir():
             if not path.samefile('.'):

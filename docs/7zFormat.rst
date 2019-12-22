@@ -125,6 +125,7 @@ _`Header`
                             : for(`Folders`)
                             :   for(`Folder`.NumOutStreams)
                             :      UINT64 `UnPackSize`
+                            : UINT64[`Folders`] CRCs
               : SubStreamsInfo   : BYTE NID::kSubStreamsInfo : 0x08
                                  : BYTE NID::kNumUnPackStream : 0x0D
                                  :   UINT64 `NumUnPackStreamsInFolders[NumFolders]`
