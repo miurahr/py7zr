@@ -344,7 +344,7 @@ def test_compress_files_3(tmp_path):
 
 @pytest.mark.file
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="There is different results in windows" )
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="There is different results in windows")
 def test_compress_symlink(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
