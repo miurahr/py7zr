@@ -635,32 +635,32 @@ class SevenZipFile:
             f['filename'] = arcname
         else:
             f['filename'] = str(target)
-        fstat = target.stat()
-        if isinstance(target, pathlib.WindowsPath) and target.is_symlink():
-            f['emptystream'] = False
-            if target.is_dir():
-                f['attributes'] = stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
-                f['attributes'] |= stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-            else:
-                f['attributes'] = stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  #noqa
-                f['attributes'] |= stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-        elif isinstance(target, pathlib.PosixPath) and target.is_symlink():
-            f['emptystream'] = False
-            f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)  # type: ignore  # noqa
-            f['attributes'] |= stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-        elif target.is_dir():
-            f['emptystream'] = True
-            f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-            if os.name == 'posix':
+        if os.name == 'nt':
+            fstat = os.stat(str(target), follow_symlinks=False)
+            if target.is_symlink() or target.is_dir():
+                f['emptystream'] = False
+                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK
+            elif target.is_file():
+                f['emptystream'] = False
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['uncompressed'] = fstat.st_size
+        else:
+            fstat = target.stat()
+            if target.is_symlink():
+                f['emptystream'] = False
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+            elif target.is_dir():
+                f['emptystream'] = True
+                f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-        elif target.is_file():
-            f['emptystream'] = False
-            f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-            f['uncompressed'] = fstat.st_size
-        if os.name == 'posix':
-            f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-        elif os.name == 'nt':
-            f['attributes'] |= (fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK)  # type: ignore  # noqa
+                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+            elif target.is_file():
+                f['emptystream'] = False
+                f['uncompressed'] = fstat.st_size
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
         f['creationtime'] = target.stat().st_ctime
         f['lastwritetime'] = target.stat().st_mtime
