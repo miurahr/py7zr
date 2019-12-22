@@ -554,26 +554,15 @@ class SevenZipFile:
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             foutsize = 0
-            if f.is_junction:
+            if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                tgt = os.readlink(f.origin).encode('utf-8')
-                insize = len(tgt)
-                crc = calculate_crc32(tgt, 0)
-                out = compressor.compress(tgt)
-                outsize += len(out)
-                foutsize += len(out)
-                self.fp.write(out)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
-                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                self.header.files_info.files[i]['maxsize'] = foutsize
-            elif f.is_symlink:
-                last_file_index = i
-                num_unpack_streams += 1
-                link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
                 link_target = pathlib.Path(os.readlink(f.origin))
-                tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
+                if str(link_target).startswith('\\\\?\\'):
+                    tgt = os.readlink(f.origin).encode('utf-8')
+                else:
+                    link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
+                    tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
                 out = compressor.compress(tgt)
@@ -777,7 +766,7 @@ class SevenZipFile:
         self.worker.extract(self.fp, multithread=multi_thread)
         for b, t in target_sym:
             b.seek(0)
-            sym_src_org = b.read().decode(encoding='utf-8')
+            sym_src_org = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
             dirname = os.path.dirname(t)
             if path:
                 sym_src = path.joinpath(dirname, sym_src_org)
@@ -791,7 +780,7 @@ class SevenZipFile:
         if sys.platform.startswith('win'):
             for b, t in target_junction:
                 b.seek(0)
-                junction_target = pathlib.Path(b.read().decode(encoding='utf-16LE'))
+                junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
                 dirname = os.path.dirname(t)
                 if path:
                     junction_point = path.joinpath(t)
