@@ -46,6 +46,9 @@ if sys.version_info < (3, 6):
 else:
     import pathlib
 
+if sys.platform.startswith('win'):
+    import _winapi
+
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
 
@@ -149,14 +152,15 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        if self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY):
+        if self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY):  # type: ignore  # noqa
             return False
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore  # noqa
 
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT |  # type: ignore  # noqa
+                                    stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
 
     @property
     def is_socket(self) -> bool:
@@ -553,7 +557,7 @@ class SevenZipFile:
             if f.is_junction:
                 last_file_index = i
                 num_unpack_streams += 1
-                tgt = str(pathlib.Path(os.readlink(f.origin)))
+                tgt = os.readlink(f.origin).encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
                 out = compressor.compress(tgt)
@@ -697,6 +701,7 @@ class SevenZipFile:
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
+        target_junction = []  # type: List[Tuple[BinaryIO, str]]
         target_sym = []  # type: List[Tuple[BinaryIO, str]]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
@@ -747,6 +752,11 @@ class SevenZipFile:
                 pair = (buf, f.filename)
                 target_sym.append(pair)
                 self.worker.register_filelike(f.id, buf)
+            elif f.is_junction:
+                buf = io.BytesIO()
+                pair = (buf, f.filename)
+                target_junction.append(pair)
+                self.worker.register_filelike(f.id, buf)
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
@@ -773,6 +783,19 @@ class SevenZipFile:
                 sym_src = pathlib.Path(dirname).joinpath(sym_src_org)
                 sym_dst = pathlib.Path(t)
             sym_dst.symlink_to(sym_src)
+
+        # create junction point only on windows platform
+        if sys.platform.startswith('win'):
+            for b, t in target_junction:
+                b.seek(0)
+                junction_target = pathlib.Path(b.read().decode(encoding='utf-16LE'))
+                dirname = os.path.dirname(t)
+                if path:
+                    junction_point = path.joinpath(t)
+                else:
+                    junction_point = pathlib.Path(dirname).joinpath(t)
+                _winapi.CreateJunction(junction_target, junction_point)  # type: ignore  # noqa
+
         for o, p in target_files:
             self._set_file_property(o, p)
 
