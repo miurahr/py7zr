@@ -97,7 +97,7 @@ def test_compress_directory_encoded_header(tmp_path):
     assert archive.test()
 
 
-@pytest.mark.file
+@pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_encoded_header(tmp_path):
     tmp_path.joinpath('src').mkdir()
@@ -207,7 +207,7 @@ def test_compress_directory(tmp_path):
     assert archive.test()
 
 
-@pytest.mark.file
+@pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_1(tmp_path):
     tmp_path.joinpath('src').mkdir()
@@ -308,7 +308,7 @@ def test_compress_with_custom_filter(tmp_path):
     archive.close()
 
 
-@pytest.mark.file
+@pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_2(tmp_path):
     tmp_path.joinpath('src').mkdir()
@@ -325,7 +325,7 @@ def test_compress_files_2(tmp_path):
     reader.close()
 
 
-@pytest.mark.file
+@pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_3(tmp_path):
     tmp_path.joinpath('src').mkdir()
