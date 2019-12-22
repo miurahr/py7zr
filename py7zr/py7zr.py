@@ -155,6 +155,12 @@ class ArchiveFile:
         return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore  # noqa
 
     @property
+    def is_junction(self) -> bool:
+        """True if file is a junction/reparse point on windows, otherwise False."""
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT |  # type: ignore  # noqa
+                                    stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
+
+    @property
     def is_socket(self) -> bool:
         """True if file is a socket, otherwise False."""
         e = self._get_unix_extension()
