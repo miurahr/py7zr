@@ -149,7 +149,14 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        return False
+        if self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY):
+            return False
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+    @property
+    def is_junction(self) -> bool:
+        """True if file is a junction/reparse point on windows, otherwise False."""
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)
 
     @property
     def is_socket(self) -> bool:
@@ -543,7 +550,21 @@ class SevenZipFile:
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             foutsize = 0
-            if f.is_symlink:
+            if f.is_junction:
+                last_file_index = i
+                num_unpack_streams += 1
+                tgt = str(pathlib.Path(os.readlink(f.origin)))
+                insize = len(tgt)
+                crc = calculate_crc32(tgt, 0)
+                out = compressor.compress(tgt)
+                outsize += len(out)
+                foutsize += len(out)
+                self.fp.write(out)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+            elif f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
                 link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
@@ -611,9 +632,18 @@ class SevenZipFile:
         else:
             f['filename'] = str(target)
         fstat = target.stat()
-        if target.is_symlink():
+        if isinstance(target, pathlib.WindowsPath) and target.is_symlink():
             f['emptystream'] = False
-            f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+            if target.is_dir():
+                f['attributes'] = stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                f['attributes'] |= stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+            else:
+                f['attributes'] = stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  #noqa
+                f['attributes'] |= stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+        elif isinstance(target, pathlib.PosixPath) and target.is_symlink():
+            f['emptystream'] = False
+            f['attributes'] = FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)  # type: ignore  # noqa
+            f['attributes'] |= stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
         elif target.is_dir():
             f['emptystream'] = True
             f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
