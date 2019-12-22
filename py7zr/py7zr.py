@@ -637,9 +637,12 @@ class SevenZipFile:
             f['filename'] = str(target)
         if os.name == 'nt':
             fstat = os.stat(str(target), follow_symlinks=False)
-            if target.is_symlink() or target.is_dir():
+            if target.is_symlink():
                 f['emptystream'] = False
-                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK
+                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+            elif target.is_dir():
+                f['emptystream'] = True
+                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
                 f['emptystream'] = False
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
