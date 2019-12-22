@@ -547,7 +547,7 @@ class SevenZipFile:
                 last_file_index = i
                 num_unpack_streams += 1
                 link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
-                link_target = pathlib.Path(os.readlink(f.origin).decode('utf-8'))
+                link_target = pathlib.Path(os.readlink(f.origin))
                 tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
@@ -605,7 +605,7 @@ class SevenZipFile:
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = target
+        f['origin'] = str(target)
         if arcname is not None:
             f['filename'] = arcname
         else:
