@@ -38,7 +38,8 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
+from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
+                           readlink)
 from py7zr.properties import MAGIC_7Z, Configuration
 
 if sys.version_info < (3, 6):
@@ -555,7 +556,7 @@ class SevenZipFile:
             if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                link_target = pathlib.Path(os.readlink(f.origin))
+                link_target = pathlib.Path(readlink(f.origin))
                 if str(link_target).startswith('\\\\?\\'):
                     tgt = os.readlink(f.origin).encode('utf-8')
                 else:

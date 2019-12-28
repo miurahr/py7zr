@@ -13,3 +13,4 @@ setuptools_scm>=3.3
 tox
 twine
 wheel
+pywin32; sys_platform == 'win32'
