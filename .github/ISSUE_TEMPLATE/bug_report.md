@@ -10,12 +10,23 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+**Related issue**
+(if exist)
+
 **To Reproduce**
 Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+(example)
+1. Prepare test data attached as 'file' in current directory.
+2. Run following code with python3.
+'
+import py7zr
+archive = py7zr.SevenZipFile('test.7z','w')
+archive.writeall('file')
+archive.close()
+'
+3. test.7z is produced
+4. run command in ternminal '7z l test.7z'
+5. See error
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
