@@ -631,9 +631,13 @@ class SevenZipFile:
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
-                f['emptystream'] = False
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                f['uncompressed'] = fstat.st_size
+                if fstat.st_size == 0:
+                    f['emptystream'] = True
+                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                else:
+                    f['emptystream'] = False
+                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                    f['uncompressed'] = fstat.st_size
         else:
             fstat = target.stat()
             if target.is_symlink():
