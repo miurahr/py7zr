@@ -433,3 +433,33 @@ def test_compress_zerofile(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+
+
+@pytest.mark.file
+def test_compress_directories(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt1').mkdir()
+    tmp_path.joinpath('tgt2').mkdir()
+    # target files
+    tmp_path.joinpath('src', 'dir1').mkdir()
+    tmp_path.joinpath('src', 'dir2').mkdir()
+    tmp_path.joinpath('src', 'dir3').mkdir()
+    tmp_path.joinpath('src', 'dir4').mkdir()
+    tmp_path.joinpath('src', 'dir5').mkdir()
+    tmp_path.joinpath('src', 'dir6').mkdir()
+    tmp_path.joinpath('src', 'dir7').mkdir()
+    tmp_path.joinpath('src', 'dir8').mkdir()
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive._write_archive()
+    for i, f in enumerate(archive.header.files_info.files):
+        f['emptystream'] = True
+    archive._fpclose()
+    # split archive.close() into _write_archive() and _fpclose()
+    ## Check can it extract?
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt1'))
+    reader.close()

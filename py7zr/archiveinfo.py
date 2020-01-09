@@ -177,18 +177,11 @@ def write_boolean(file: BinaryIO, booleans: List[bool], all_defined: bool = Fals
         return
     elif all_defined:
         file.write(b'\x00')
-    mask = 0x80
-    o = 0x00
-    for b in booleans:
-        if mask == 0:
-            file.write(pack('B', o))
-            mask = 0x80
-            o = 0x80 if b else 0x00
-        else:
-            o |= mask if b else 0x00
-            mask >>= 1
-    if mask != 0x00:
-        file.write(pack('B', o))
+    o = bytearray(-(-len(booleans) // 8))
+    for i, b in enumerate(booleans):
+        if b:
+            o[i // 8] |= 1 << (7 - i % 8)
+    file.write(o)
 
 
 def read_utf16(file: BinaryIO) -> str:
