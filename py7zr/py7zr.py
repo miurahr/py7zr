@@ -651,15 +651,10 @@ class SevenZipFile:
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_file():
-                if fstat.st_size == 0:
-                    f['emptystream'] = True
-                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                    f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-                else:
-                    f['emptystream'] = False
-                    f['uncompressed'] = fstat.st_size
-                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                    f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+                f['emptystream'] = False
+                f['uncompressed'] = fstat.st_size
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
         f['creationtime'] = target.stat().st_ctime
         f['lastwritetime'] = target.stat().st_mtime
