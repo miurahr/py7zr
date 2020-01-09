@@ -423,7 +423,7 @@ def test_compress_zerofile(tmp_path):
     archive.writeall('.')
     archive._write_archive()
     assert len(archive.header.files_info.files) == 1
-    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [0]
     assert len(archive.files) == 1
     assert len(archive.header.files_info.files) == 1
     expected = [True]
