@@ -27,6 +27,14 @@ Removed
 Security
 --------
 
+`v0.5b5`_
+=========
+
+Fixed
+-----
+
+* Revert zero size file logic which break extraction by 7zip.
+
 `v0.5b4`_
 =========
 
@@ -465,7 +473,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b5...HEAD
+.. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
 .. _v0.5b4: https://github.com/miurahr/py7zr/compare/v0.5b3...v0.5b4
 .. _v0.5b3: https://github.com/miurahr/py7zr/compare/v0.5b2...v0.5b3
 .. _v0.5b2: https://github.com/miurahr/py7zr/compare/v0.5b1...v0.5b2
