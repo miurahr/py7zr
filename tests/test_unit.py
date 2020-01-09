@@ -249,8 +249,25 @@ def test_read_archive_properties():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("abytes, count, checkall, expected",
+                         [(b'\xb4\x80', 9, False, [True, False, True, True, False, True, False, False, True]),
+                          (b'\xff\xc0', 10, False, [True, True, True, True, True, True, True, True, True, True]),
+                          (b'\xff\xff\x80', 17, False, [True, True, True, True, True, True, True, True,
+                                                        True, True, True, True, True, True, True, True,
+                                                        True])
+                          ])
+def test_read_booleans(abytes, count, checkall, expected):
+    buf = io.BytesIO(abytes)
+    actual = py7zr.archiveinfo.read_boolean(buf, count, checkall)
+    assert actual == expected
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("booleans, all_defined, expected",
                          [([True, False, True, True, False, True, False, False, True], False, b'\xb4\x80'),
+                          ([True, True, True, True, True, True, True, True, True, True], False, b'\xff\xc0'),
+                          ([True, True, True, True, True, True, True, True,
+                            True, True, True, True, True, True, True, True, True], False, b'\xff\xff\x80'),
                           ([True, False, True, True, False, True, False, False, True], True, b'\x00\xb4\x80')])
 def test_write_booleans(booleans, all_defined, expected):
     buffer = io.BytesIO()

@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Support for making archive with zero size files.
+
 Deprecated
 ----------
 
