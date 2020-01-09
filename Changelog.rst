@@ -33,6 +33,8 @@ Fixed
 
 * Support for making archive with zero size files(#47).
 * Produced broken archive when target has many directorires(#48).
+* Reduce test warnings, fix annotations.
+* Fix coverage error on test.
 
 
 `v0.5b3`_

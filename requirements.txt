@@ -2,7 +2,7 @@ texttable
 pytest
 pytest-cov
 pytest-timeout
-coverage
+coverage==4.5.4
 coveralls
 flake8
 pyannotate
