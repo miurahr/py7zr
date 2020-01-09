@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Revert zero size file logic(#47).
+
 Deprecated
 ----------
 
