@@ -459,7 +459,6 @@ def test_compress_directories(tmp_path):
         f['emptystream'] = True
     archive._fpclose()
     # split archive.close() into _write_archive() and _fpclose()
-    ## Check can it extract?
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
