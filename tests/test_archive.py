@@ -410,6 +410,7 @@ def test_compress_link_on_windows(tmp_path):
 
 
 @pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_zerofile(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -436,6 +437,7 @@ def test_compress_zerofile(tmp_path):
 
 
 @pytest.mark.file
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_directories(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt1').mkdir()
