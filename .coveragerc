@@ -1,6 +1,7 @@
 [run]
 omit = 
    *test*
+branch = True
 
 [report]
 exclude_lines =

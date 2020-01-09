@@ -6,9 +6,9 @@ language: python
 matrix:
   include:
     - python: 3.7
-      env: TOXENV=check
+      env: TOXENV=check PYTEST_NO_COVERAGE=1
     - python: 3.7
-      env: TOXENV=mypy
+      env: TOXENV=mypy  PYTEST_NO_COVERAGE=1
     - python: 3.5
       env: TOXENV=py35
     - python: 3.6
@@ -21,13 +21,20 @@ matrix:
     #  env: TOXENV=pypy3
 
 install:
-  - pip install tox-travis coveralls
+  - pip install tox-travis codecov coveralls
 
 script: tox
 
 after_success:
   - python setup.py sdist bdist_wheel
-  - coveralls
+  - |
+    if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
+      coverage combine
+      coverage xml --ignore-errors
+      coverage report -m --ignore-errors
+      codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
+      coveralls
+    fi
 
 deploy:
   - provider: pypi
