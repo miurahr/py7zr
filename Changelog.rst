@@ -16,8 +16,6 @@ Changed
 Fixed
 -----
 
-* Support for making archive with zero size files.
-
 Deprecated
 ----------
 
@@ -26,6 +24,16 @@ Removed
 
 Security
 --------
+
+`v0.5b4`_
+=========
+
+Fixed
+-----
+
+* Support for making archive with zero size files(#47).
+* Produced broken archive when target has many directorires(#48).
+
 
 `v0.5b3`_
 =========
@@ -453,7 +461,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b4...HEAD
+.. _v0.5b4: https://github.com/miurahr/py7zr/compare/v0.5b3...v0.5b4
 .. _v0.5b3: https://github.com/miurahr/py7zr/compare/v0.5b2...v0.5b3
 .. _v0.5b2: https://github.com/miurahr/py7zr/compare/v0.5b1...v0.5b2
 .. _v0.5b1: https://github.com/miurahr/py7zr/compare/v0.4...v0.5b1
