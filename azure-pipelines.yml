@@ -26,5 +26,5 @@ steps:
     coverage combine
     coverage xml --ignore-errors
     coverage report -m --ignore-errors
-    codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } mac
+    env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } mac
   displayName: 'Converage report'

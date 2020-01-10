@@ -19,14 +19,9 @@ test_script:
   - "%PYTHON%\\python.exe -m tox"
 
 after_test:
-  - if not exist dist mkdir dist
   - "%PYTHON%\\python.exe setup.py bdist_wheel"
-  - if exist .coverage (cp .coverage dist\) else (echo no .coverage)
-  - "%PYTHON%\\Scripts\\coverage combine"
   - "%PYTHON%\\Scripts\\coverage xml --ignore-errors"
-  - "%PYTHON%\\Scripts\\coverage report -m --ignore-errors"
   - "%PYTHON%\\Scripts\\codecov --required -X gcov pycov search -f coverage.xml --flags %TOXENV:-= % windows"
-  - if exist coverage.xml (cp coverage.xml dist\) else (echo no coverage.xml)
 
 artifacts:
   - path: dist\*
