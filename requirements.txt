@@ -2,7 +2,8 @@ texttable
 pytest
 pytest-cov
 pytest-timeout
-coverage==4.5.4
+coverage[toml]==5.0.1
+codecov
 coveralls
 flake8
 pyannotate

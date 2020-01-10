@@ -11,10 +11,20 @@ environment:
       TOXENV: py38
 
 install:
-  - "%PYTHON%\\python.exe -m pip install wheel tox"
+  - "%PYTHON%\\python.exe -m pip install wheel tox codecov coveralls"
 
 build: off
 
 test_script:
   - "%PYTHON%\\python.exe -m tox"
 
+after_test:
+  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+  - "%PYTHON%\\Scripts\\coverage xml --ignore-errors"
+  - "%PYTHON%\\Scripts\\codecov --required -X gcov pycov search -f coverage.xml --flags %TOXENV:-= % windows"
+
+artifacts:
+  - path: dist\*
+
+matrix:
+  fast_finish: true

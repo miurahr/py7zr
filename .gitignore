@@ -2,6 +2,7 @@
 .venv
 venv
 build
+_build
 dist
 tmp
 *.egg-info
@@ -10,9 +11,9 @@ tmp
 .mypy_cache
 __pycache__
 .benchmarks
-.coverage
-*.egg-info
 .tox
-_build
 pip-wheel-metadata
 type_info.json
+.coverage
+.coverage.*
+coverage.xml

@@ -2,3 +2,9 @@
 requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.3"]
 
 [tools.setuptools_scm]
+
+[tool.coverage.run]
+omit = "*test*"
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == .__main__.:", "def __repr__"]
