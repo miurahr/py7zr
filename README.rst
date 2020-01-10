@@ -20,6 +20,9 @@ py7zr
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
+.. image:: https://codecov.io/gh/miurahr/py7zr/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/miurahr/py7zr
+
 Pure python 7-zip implementation
 
 
