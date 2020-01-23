@@ -39,7 +39,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
-from py7zr.properties import MAGIC_7Z, Configuration
+from py7zr.properties import MAGIC_7Z, ArchivePassword, Configuration
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -251,9 +251,11 @@ class FileInfo:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r', filters: Optional[str] = None) -> None:
+    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
+                 *, filters: Optional[str] = None, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        ArchivePassword(password)
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool

@@ -50,6 +50,7 @@ class Cli():
         extract_parser.set_defaults(func=self.run_extract)
         extract_parser.add_argument("arcfile", help="7z archive file")
         extract_parser.add_argument("odir", nargs="?", help="output directory")
+        extract_parser.add_argument("--password", help="Extraction with password")
         create_parser = subparsers.add_parser('c')
         create_parser.set_defaults(func=self.run_create)
         create_parser.add_argument("arcfile", help="7z archive file")
@@ -191,8 +192,8 @@ class Cli():
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
             return(1)
-
-        a = py7zr.SevenZipFile(target, 'r')
+        password = args.password
+        a = py7zr.SevenZipFile(target, 'r', password=password)
         if args.odir:
             a.extractall(path=args.odir)
         else:
