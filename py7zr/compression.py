@@ -197,7 +197,7 @@ class AESDecompressor:
             ba.extend(password)
             for i in range(32):
                 ba.append(0)
-            key = ba[:32]
+            key = ba[:32]  # type: bytes
         else:
             rounds = 1 << cycles
             m = hashlib.sha256()
