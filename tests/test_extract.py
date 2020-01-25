@@ -231,3 +231,9 @@ def test_asyncio_executor(tmp_path):
     loop.run_until_complete(task)
     loop.run_until_complete(asyncio.sleep(3))
     os.unlink(str(tmp_path.joinpath('test_1.7z')))
+
+
+@pytest.mark.files
+def test_no_main_streams(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
