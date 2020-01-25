@@ -23,6 +23,7 @@
 #
 import bz2
 import concurrent.futures
+import hashlib
 import io
 import lzma
 import sys
@@ -30,7 +31,6 @@ from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
 from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
@@ -200,7 +200,7 @@ class AESDecompressor:
             key = ba[:32]
         else:
             rounds = 1 << cycles
-            m = SHA256.new()
+            m = hashlib.sha256()
             for round in range(rounds):
                 m.update(salt)
                 m.update(password)
