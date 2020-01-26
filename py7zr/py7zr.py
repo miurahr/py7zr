@@ -393,7 +393,7 @@ class SevenZipFile:
 
     def _filelist_retrieve(self) -> None:
         # Initialize references for convenience
-        if hasattr(self.header, 'main_streams'):
+        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             folders = self.header.main_streams.unpackinfo.folders
             packinfo = self.header.main_streams.packinfo
             subinfo = self.header.main_streams.substreamsinfo
@@ -712,7 +712,7 @@ class SevenZipFile:
                 else:
                     raise e
 
-        multi_thread = self.header.main_streams.unpackinfo.numfolders > 1 and \
+        multi_thread = self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 1 and \
             self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
         fnames = []  # type: List[str]
         for f in self.files:

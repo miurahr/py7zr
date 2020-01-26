@@ -10,13 +10,13 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Add release note automation workflow with Github actions.
+
 Changed
 -------
 
 Fixed
 -----
-
-* Revert zero size file logic(#47).
 
 Deprecated
 ----------
@@ -26,6 +26,16 @@ Removed
 
 Security
 --------
+
+
+`v0.5b6`_
+=========
+
+Fixed
+-----
+
+* Fix extraction of archive which has zero size files and directories(#54).
+* Revert zero size file logic(#47).
 
 `v0.5b5`_
 =========
@@ -473,7 +483,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b6...HEAD
+.. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
 .. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
 .. _v0.5b4: https://github.com/miurahr/py7zr/compare/v0.5b3...v0.5b4
 .. _v0.5b3: https://github.com/miurahr/py7zr/compare/v0.5b2...v0.5b3
