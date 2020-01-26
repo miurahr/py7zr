@@ -237,3 +237,9 @@ def test_asyncio_executor(tmp_path):
 def test_no_main_streams(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+
+    
+@pytest.mark.files
+def test_extract_encrypted(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted.7z'), 'rb'), password='secret')
+    archive.extractall(path=tmp_path)

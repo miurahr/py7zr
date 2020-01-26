@@ -13,6 +13,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
+from Crypto.Cipher import AES
 from py7zr.py7zr import (FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFile,
                          ArchiveFileList)
 
@@ -528,3 +529,69 @@ def test_simple_compress_and_decompress():
     decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("password, cycle, salt, expected",
+                         [('secret', 19, b'',
+                           b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d')
+                          ])
+def test_calculate_key(password: str, cycle: int, salt: bytes, expected: bytes):
+    key = py7zr.compression.AESDecompressor._calculate_key(password.encode('utf-16LE'), cycle, salt, 'sha256')
+    assert key == expected
+
+
+@pytest.mark.unit
+def test_aescipher():
+    key = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
+    iv = b'|&\xae\x94do\x8a4\x00\x00\x00\x00\x00\x00\x00\x00'
+    indata = b"T\x9f^\xb5\xbf\xdc\x08/\xfe<\xe6i'\x84A^\x83\xdc\xdd5\xe9\xd5\xd0b\xa9\x7fH$\x11\x82\x8d" \
+             b"\xce[\x85\xe7\xf2}\xe3oJ*\xc0:\xf4\xfd\x82\xe8I"
+    expected = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2" \
+               b"\xf7\\m\xe0t\xa6$yF_-\xa0\x0b8f "
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    result = cipher.decrypt(indata)
+    assert expected == result
+
+
+@pytest.mark.unit
+def test_aesdecrypt(monkeypatch):
+
+    class Passthrough:
+        def __init__(self):
+            pass
+
+        def decompress(self, data, len):
+            return data
+
+        def need_input(self):
+            return True
+
+        def eof(self):
+            return False
+
+    def lzmamock(self, coders):
+        return Passthrough()
+
+    monkeypatch.setattr(py7zr.compression.AESDecompressor, "_set_lzma_decompressor", lzmamock)
+
+    properties = b'S\x07|&\xae\x94do\x8a4'
+    password = 'secret'
+    indata = b"T\x9f^\xb5\xbf\xdc\x08/\xfe<\xe6i'\x84A^\x83\xdc\xdd5\xe9\xd5\xd0b\xa9\x7fH$\x11\x82\x8d" \
+             b"\xce[\x85\xe7\xf2}\xe3oJ*\xc0:\xf4\xfd\x82\xe8I"
+    expected = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2" \
+               b"\xf7\\m\xe0t\xa6$yF_-\xa0\x0b8f "
+
+    decompressor = py7zr.compression.AESDecompressor(properties, password, [{'hoge': None}])
+    assert decompressor.decompress(indata) == expected
+
+
+@pytest.mark.unit
+def test_archive_password():
+    a = py7zr.properties.ArchivePassword('secret')
+    assert str(a) == 'secret'
+    assert a.get() == 'secret'
+    b = py7zr.properties.ArchivePassword()
+    assert b.get() == 'secret'
+    b.set('password')
+    assert b.get() == 'password'

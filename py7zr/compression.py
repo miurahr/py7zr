@@ -23,15 +23,17 @@
 #
 import bz2
 import concurrent.futures
+import hashlib
 import io
 import lzma
 import sys
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
+from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
-from py7zr.properties import CompressionMethod, Configuration
+from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -131,6 +133,96 @@ class FileHandler():
 
 
 Handler = Union[NullHandler, BufferHandler, FileHandler]
+
+
+class AESDecompressor:
+
+    lzma_methods_map = {
+        CompressionMethod.LZMA: lzma.FILTER_LZMA1,
+        CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
+        CompressionMethod.DELTA: lzma.FILTER_DELTA,
+        CompressionMethod.P7Z_BCJ: lzma.FILTER_X86,
+        CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
+        CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
+        CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
+        CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
+        CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
+    }
+
+    def __init__(self, aes_properties: bytes, password: str, coders: List[Dict[str, Any]]) -> None:
+        byte_password = password.encode('utf-16LE')
+        firstbyte = aes_properties[0]
+        numcyclespower = firstbyte & 0x3f
+        if firstbyte & 0xc0 != 0:
+            saltsize = (firstbyte >> 7) & 1
+            ivsize = (firstbyte >> 6) & 1
+            secondbyte = aes_properties[1]
+            saltsize += (secondbyte >> 4)
+            ivsize += (secondbyte & 0x0f)
+            assert len(aes_properties) == 2 + saltsize + ivsize
+            salt = aes_properties[2:2 + saltsize]
+            iv = aes_properties[2 + saltsize:2 + saltsize + ivsize]
+            assert len(salt) == saltsize
+            assert len(iv) == ivsize
+            assert numcyclespower <= 24
+            if ivsize < 16:
+                iv += bytes('\x00' * (16 - ivsize), 'ascii')
+            key = self._calculate_key(byte_password, numcyclespower, salt, 'sha256')
+            self.lzma_decompressor = self._set_lzma_decompressor(coders)
+            self.cipher = AES.new(key, AES.MODE_CBC, iv)
+        else:
+            raise UnsupportedCompressionMethodError
+
+    # set pipeline decompressor
+    def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]):
+        filters = []  # type: List[Dict[str, Any]]
+        for coder in coders:
+            filter = self.lzma_methods_map.get(coder['method'], None)
+            if filter is not None:
+                properties = coder.get('properties', None)
+                if properties is not None:
+                    filters[:0] = [lzma._decode_filter_properties(filter, properties)]  # type: ignore
+                else:
+                    filters[:0] = [{'id': filter}]
+            else:
+                raise UnsupportedCompressionMethodError
+        return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+
+    @staticmethod
+    def _calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+        assert digest == 'sha256'
+        if cycles == 0x3f:
+            ba = bytearray()
+            ba.extend(salt)
+            ba.extend(password)
+            for i in range(32):
+                ba.append(0)
+            key = ba[:32]  # type: bytes
+        else:
+            rounds = 1 << cycles
+            m = hashlib.sha256()
+            for round in range(rounds):
+                m.update(salt)
+                m.update(password)
+                m.update(round.to_bytes(8, byteorder='little', signed=False))
+            key = m.digest()[:32]
+        return key
+
+    @property
+    def needs_input(self) -> bool:
+        return self.lzma_decompressor.needs_input
+
+    @property
+    def eof(self) -> bool:
+        return self.lzma_decompressor.eof
+
+    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
+        temp = self.cipher.decrypt(data)
+        return self.lzma_decompressor.decompress(temp, max_length)
+
+    @property
+    def unused_data(self):
+        return self.unused_data
 
 
 class Worker:
@@ -272,11 +364,18 @@ class SevenZipDecompressor:
 
     FILTER_BZIP2 = 0x31
     FILTER_ZIP = 0x32
+    FILTER_COPY = 0x33
     alt_methods_map = {
         CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
+        CompressionMethod.COPY: FILTER_COPY,
+    }
+    FILTER_AES = 0
+    enc_methods_map = {
+        CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
     }
 
     def __init__(self, coders: List[Dict[str, Any]], size: int, crc: Optional[int]) -> None:
+        # Get password which was set when creation of py7zr.SevenZipFile object.
         self.input_size = size
         self.consumed = 0  # type: int
         self.crc = crc
@@ -299,10 +398,18 @@ class SevenZipDecompressor:
             filter = self.alt_methods_map.get(coders[0]['method'], None)
             if len(coders) == 1 and filter is not None:
                 if filter == self.FILTER_BZIP2:
-                    self.decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor]
+                    self.decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, AESDecompressor]  # noqa
+                elif filter == self.FILTER_COPY:
+                    # FIXME
+                    raise e
                 else:
                     raise e
                 self.can_partial_decompress = False
+            filter = self.enc_methods_map.get(coders[0]['method'], None)
+            if filter == self.FILTER_AES:
+                password = ArchivePassword().get()
+                properties = coders[0].get('properties', None)
+                self.decompressor = AESDecompressor(properties, password, coders[1:])
             else:
                 raise e
         else:

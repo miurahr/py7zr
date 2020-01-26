@@ -23,6 +23,7 @@
 
 import binascii
 from enum import Enum
+from typing import Optional
 
 from py7zr.exceptions import InternalError
 
@@ -138,3 +139,31 @@ class SupportedMethods:
               {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT"},
               {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC'}
               ]
+
+
+# this class is Borg/Singleton
+class ArchivePassword:
+
+    _shared_state = {
+        '_password': None,
+    }
+
+    def __init__(self, password: Optional[str] = None):
+        self.__dict__ = self._shared_state
+        if password is not None:
+            self._password = password
+
+    def set(self, password):
+        self._password = password
+
+    def get(self):
+        if self._password is not None:
+            return self._password
+        else:
+            return ''
+
+    def __str__(self):
+        if self._password is not None:
+            return self._password
+        else:
+            return ''
