@@ -10,8 +10,6 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Add release note automation workflow with Github actions.
-
 Changed
 -------
 
@@ -27,6 +25,13 @@ Removed
 Security
 --------
 
+`v0.5rc1`_
+=========
+
+Added
+-----
+
+* Add release note automation workflow with Github actions.
 
 `v0.5b6`_
 =========
@@ -483,7 +488,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5b6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5rc1...HEAD
+.. _v0.5rc1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.5rc1
 .. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
 .. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
 .. _v0.5b4: https://github.com/miurahr/py7zr/compare/v0.5b3...v0.5b4
