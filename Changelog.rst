@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Add release note automation workflow with Github actions.
+
 Changed
 -------
 
@@ -24,6 +26,7 @@ Removed
 
 Security
 --------
+
 
 `v0.5b6`_
 =========
