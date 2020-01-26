@@ -584,3 +584,14 @@ def test_aesdecrypt(monkeypatch):
 
     decompressor = py7zr.compression.AESDecompressor(properties, password, [{'hoge': None}])
     assert decompressor.decompress(indata) == expected
+
+
+@pytest.mark.unit
+def test_archive_password():
+    a = py7zr.properties.ArchivePassword('secret')
+    assert str(a) == 'secret'
+    assert a.get() == 'secret'
+    b = py7zr.properties.ArchivePassword()
+    assert b.get() == 'secret'
+    b.set('password')
+    assert b.get() == 'password'
