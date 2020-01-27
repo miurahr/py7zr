@@ -735,6 +735,7 @@ class SevenZipFile:
             else:
                 outfilename = pathlib.Path(f.filename)
             if targets is not None and f.filename not in targets:
+                self.worker.register_filelike(f.id, None)
                 continue
             if f.is_directory:
                 if not outfilename.exists():
