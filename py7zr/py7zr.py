@@ -693,6 +693,9 @@ class SevenZipFile:
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
+        return self.extract(path)
+
+    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
         target_junction = []  # type: List[Tuple[BinaryIO, str]]
         target_sym = []  # type: List[Tuple[BinaryIO, str]]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -714,7 +717,7 @@ class SevenZipFile:
 
         multi_thread = self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 1 and \
             self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
-        fnames = []  # type: List[str]
+        fnames = []  # type: List[str]  # check duplicated filename in one archive?
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -731,6 +734,8 @@ class SevenZipFile:
                 outfilename = path.joinpath(f.filename)
             else:
                 outfilename = pathlib.Path(f.filename)
+            if targets is not None and f.filename not in targets:
+                continue
             if f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)

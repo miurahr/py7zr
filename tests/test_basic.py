@@ -367,3 +367,17 @@ def test_py7zr_writeall_dir(tmp_path):
     assert len(archive.files) == 2
     for f in archive.files:
         assert f.filename in ('src', os.path.join('src', 'bra.txt'))
+
+
+@pytest.mark.api
+def test_py7zr_extract_specified_file(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    expected = [{'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
+                'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
+                ]
+    archive.extract(path=tmp_path, targets=['scripts', 'scripts/py7zr'])
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert not tmp_path.joinpath('setup.cfg').exists()
+    assert not tmp_path.joinpath('setup.py').exists()
+    check_output(expected, tmp_path)
