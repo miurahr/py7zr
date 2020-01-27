@@ -4,6 +4,7 @@ import functools
 import hashlib
 import os
 import pathlib
+from datetime import datetime, timezone
 
 import py7zr
 
@@ -43,3 +44,11 @@ async def aio7zr(archive, path):
     partial_py7zr = functools.partial(sevenzip.extractall, path=path)
     loop.run_in_executor(None, partial_py7zr)
     loop.run_in_executor(None, sevenzip.close)
+
+
+def ltime(dt_utc):
+    return dt_utc.replace(tzinfo=timezone.utc).astimezone(tz=None).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def ltime2(y, m, d, h, min, s):
+    return ltime(datetime(y, m, d, h, min, s))

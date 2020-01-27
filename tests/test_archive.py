@@ -17,6 +17,8 @@ import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
 from py7zr.helpers import Local
 
+from . import ltime
+
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 
@@ -58,12 +60,10 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
     ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
-    creationdate = ctime.astimezone(Local).strftime("%Y-%m-%d")
-    creationtime = ctime.astimezone(Local).strftime("%H:%M:%S")
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} {} ....A           33           37  test1.txt\n".format(creationdate, creationtime)
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
@@ -168,12 +168,10 @@ def test_compress_file_0(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
     ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
-    creationdate = ctime.astimezone(Local).strftime("%Y-%m-%d")
-    creationtime = ctime.astimezone(Local).strftime("%H:%M:%S")
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} {} ....A           33           37  test1.txt\n".format(creationdate, creationtime)
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
