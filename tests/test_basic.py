@@ -1,5 +1,6 @@
 import lzma
 import os
+import re
 import sys
 
 import pytest
@@ -376,8 +377,26 @@ def test_py7zr_extract_specified_file(tmp_path):
                 'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
                 ]
     archive.extract(path=tmp_path, targets=['scripts', 'scripts/py7zr'])
+    archive.close()
     assert tmp_path.joinpath('scripts').is_dir()
     assert tmp_path.joinpath('scripts/py7zr').exists()
     assert not tmp_path.joinpath('setup.cfg').exists()
     assert not tmp_path.joinpath('setup.py').exists()
     check_output(expected, tmp_path)
+
+
+@pytest.mark.api
+def test_py7zr_extract_and_getnames(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    allfiles = archive.getnames()
+    filter_pattern = re.compile(r'scripts.*')
+    targets = []
+    for f in allfiles:
+        if filter_pattern.match(f):
+            targets.append(f)
+    archive.extract(path=tmp_path, targets=targets)
+    archive.close()
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert not tmp_path.joinpath('setup.cfg').exists()
+    assert not tmp_path.joinpath('setup.py').exists()
