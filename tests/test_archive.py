@@ -324,6 +324,7 @@ def test_compress_files_2(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
 def test_compress_files_3(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -341,7 +342,7 @@ def test_compress_files_3(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="There is different results in windows")
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
 def test_compress_symlink(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -383,24 +384,6 @@ def test_compress_symlink(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
     # split archive.close() into _write_archive() and _fpclose()
-    reader = py7zr.SevenZipFile(target, 'r')
-    reader.extractall(path=tmp_path.joinpath('tgt'))
-    reader.close()
-
-
-@pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(not sys.platform.startswith("win"), reason="Only on Windows")
-def test_compress_link_on_windows(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(tmp_path.joinpath('src'))
-    archive = py7zr.SevenZipFile(target, 'w')
-    archive.set_encoded_header_mode(False)
-    archive.writeall('.')
-    archive.close()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
