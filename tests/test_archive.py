@@ -15,7 +15,6 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
-from py7zr.helpers import Local
 
 from . import ltime
 
