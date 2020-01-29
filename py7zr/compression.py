@@ -31,7 +31,7 @@ from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
-from py7zr import UnsupportedCompressionMethodError
+from py7zr import DecompressionError, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
 from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
 
@@ -133,6 +133,29 @@ class FileHandler():
 
 
 Handler = Union[NullHandler, BufferHandler, FileHandler]
+
+
+class CopyDecompressor:
+
+    def __init__(self) -> None:
+        self.unused_data = b''
+
+    @property
+    def needs_input(self) -> bool:
+        return True
+
+    @property
+    def eof(self) -> bool:
+        return False
+
+    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
+        if max_length is None:
+            length = len(data)
+        else:
+            length = min(len(data), max_length)
+        buf = self.unused_data + data
+        self.unused_data = buf[length:]
+        return buf[:length]
 
 
 class AESDecompressor:
@@ -280,24 +303,22 @@ class Worker:
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
-            if not decompressor.eof:
-                max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
-                if decompressor.needs_input:
-                    read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
-                    inp = fp.read(read_size)
-                    tmp = decompressor.decompress(inp, max_length)
-                    if len(tmp) == 0:
-                        # FIXME: there is a bug in python core?
-                        break
-                else:
-                    tmp = decompressor.decompress(b'', max_length)
-                if out_remaining >= len(tmp):
-                    out_remaining -= len(tmp)
-                    fileish.write(tmp)
-                    if out_remaining <= 0:
-                        break
+            if decompressor.eof:
+                raise DecompressionError
+            max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
+            if decompressor.needs_input:
+                read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
+                inp = fp.read(read_size)
+                tmp = decompressor.decompress(inp, max_length)
+                if len(tmp) == 0:
+                    raise DecompressionError
             else:
-                break
+                tmp = decompressor.decompress(b'', max_length)
+            if out_remaining >= len(tmp):
+                out_remaining -= len(tmp)
+                fileish.write(tmp)
+                if out_remaining <= 0:
+                    break
         assert out_remaining == 0
         if decompressor.eof:
             if decompressor.crc is not None and not decompressor.check_crc():
@@ -365,12 +386,10 @@ class SevenZipDecompressor:
     FILTER_BZIP2 = 0x31
     FILTER_ZIP = 0x32
     FILTER_COPY = 0x33
+    FILTER_AES = 0x34
     alt_methods_map = {
         CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
         CompressionMethod.COPY: FILTER_COPY,
-    }
-    FILTER_AES = 0
-    enc_methods_map = {
         CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
     }
 
@@ -380,42 +399,38 @@ class SevenZipDecompressor:
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        filters = []  # type: List[Dict[str, Any]]
         try:
-            for coder in coders:
-                if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
-                    raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
-                filter = self.lzma_methods_map.get(coder['method'], None)
-                if filter is not None:
-                    properties = coder.get('properties', None)
-                    if properties is not None:
-                        filters[:0] = [lzma._decode_filter_properties(filter, properties)]  # type: ignore
-                    else:
-                        filters[:0] = [{'id': filter}]
-                else:
-                    raise UnsupportedCompressionMethodError
-        except UnsupportedCompressionMethodError as e:
-            filter = self.alt_methods_map.get(coders[0]['method'], None)
-            if len(coders) == 1 and filter is not None:
-                if filter == self.FILTER_BZIP2:
-                    self.decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, AESDecompressor]  # noqa
-                elif filter == self.FILTER_COPY:
-                    # FIXME
-                    raise e
-                else:
-                    raise e
-                self.can_partial_decompress = False
-            filter = self.enc_methods_map.get(coders[0]['method'], None)
-            if filter == self.FILTER_AES:
-                password = ArchivePassword().get()
-                properties = coders[0].get('properties', None)
-                self.decompressor = AESDecompressor(properties, password, coders[1:])
+            self._set_lzma_decompressor(coders)
+        except UnsupportedCompressionMethodError:
+            self._set_alternative_decompressor(coders)
+
+    def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]) -> None:
+        filters = []  # type: List[Dict[str, Any]]
+        for coder in coders:
+            if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
+                raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
+            filter_id = self.lzma_methods_map.get(coder['method'], None)
+            if filter_id is None:
+                raise UnsupportedCompressionMethodError
+            properties = coder.get('properties', None)
+            if properties is not None:
+                filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
             else:
-                raise e
+                filters[:0] = [{'id': filter_id}]
+        self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, AESDecompressor, CopyDecompressor]  # noqa
+
+    def _set_alternative_decompressor(self, coders: List[Dict[str, Any]]) -> None:
+        filter_id = self.alt_methods_map.get(coders[0]['method'], None)
+        if filter_id == self.FILTER_BZIP2:
+            self.decompressor = bz2.BZ2Decompressor()
+        elif filter_id == self.FILTER_COPY:
+            self.decompressor = CopyDecompressor()
+        elif filter_id == self.FILTER_AES:
+            password = ArchivePassword().get()
+            properties = coders[0].get('properties', None)
+            self.decompressor = AESDecompressor(properties, password, coders[1:])
         else:
-            self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-            self.can_partial_decompress = True
-        self.filters = filters
+            raise UnsupportedCompressionMethodError
 
     @property
     def needs_input(self) -> bool:
