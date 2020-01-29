@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support COPY method for decompression.
+
 Changed
 -------
 
@@ -26,7 +28,7 @@ Security
 --------
 
 `v0.5rc1`_
-=========
+==========
 
 Added
 -----
