@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 
 import py7zr
-from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
+from py7zr import unpack_7zarchive
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -205,7 +205,6 @@ def test_multiblock_lzma_bug(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
 def test_copy(tmp_path):
     """ test loading of copy compressed files.(help wanted)"""
     check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path)
