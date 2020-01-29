@@ -108,6 +108,16 @@ py7zr also support `shutil`  interface.
     # compression
     shutil.make_archive('target', '7zip', 'src')
 
+Use Cases
+=========
+
+- `aqtinstall`_ Another (unofficial) Qt (aqt) CLI Installer on multi-platforms.
+- PreNLP_ Preprocessing Library for Natural Language Processing
+- mlox_  a tool for sorting and analyzing Morrowind plugin load order
+
+.. _aqtinstall: https://github.com/miurahr/aqtinstall
+.. _PreNLP: https://github.com/lyeoni/prenlp
+.. _mlox: https://github.com/mlox/mlox
 
 License
 =======
