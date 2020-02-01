@@ -23,7 +23,6 @@
 #
 import bz2
 import concurrent.futures
-import hashlib
 import io
 import lzma
 import sys
@@ -32,7 +31,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import DecompressionError, UnsupportedCompressionMethodError
-from py7zr.helpers import calculate_crc32
+from py7zr.helpers import calculate_crc32, calculate_key
 from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
 
 if sys.version_info < (3, 6):
@@ -158,26 +157,6 @@ class CopyDecompressor:
         return buf[:length]
 
 
-def _calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-    assert digest == 'sha256'
-    if cycles == 0x3f:
-        ba = bytearray()
-        ba.extend(salt)
-        ba.extend(password)
-        for i in range(32):
-            ba.append(0)
-        key = ba[:32]  # type: bytes
-    else:
-        rounds = 1 << cycles
-        m = hashlib.sha256()
-        for round in range(rounds):
-            m.update(salt)
-            m.update(password)
-            m.update(round.to_bytes(8, byteorder='little', signed=False))
-        key = m.digest()[:32]
-    return key
-
-
 class AESDecompressor:
 
     lzma_methods_map = {
@@ -210,7 +189,7 @@ class AESDecompressor:
             assert numcyclespower <= 24
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
-            key = _calculate_key(byte_password, numcyclespower, salt, 'sha256')
+            key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
             self.lzma_decompressor = self._set_lzma_decompressor(coders)
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = b''

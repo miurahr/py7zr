@@ -537,7 +537,7 @@ def test_simple_compress_and_decompress():
                            b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d')
                           ])
 def test_calculate_key(password: str, cycle: int, salt: bytes, expected: bytes):
-    key = py7zr.compression._calculate_key(password.encode('utf-16LE'), cycle, salt, 'sha256')
+    key = py7zr.helpers.calculate_key(password.encode('utf-16LE'), cycle, salt, 'sha256')
     assert key == expected
 
 
