@@ -158,6 +158,26 @@ class CopyDecompressor:
         return buf[:length]
 
 
+def _calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+    assert digest == 'sha256'
+    if cycles == 0x3f:
+        ba = bytearray()
+        ba.extend(salt)
+        ba.extend(password)
+        for i in range(32):
+            ba.append(0)
+        key = ba[:32]  # type: bytes
+    else:
+        rounds = 1 << cycles
+        m = hashlib.sha256()
+        for round in range(rounds):
+            m.update(salt)
+            m.update(password)
+            m.update(round.to_bytes(8, byteorder='little', signed=False))
+        key = m.digest()[:32]
+    return key
+
+
 class AESDecompressor:
 
     lzma_methods_map = {
@@ -190,9 +210,11 @@ class AESDecompressor:
             assert numcyclespower <= 24
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
-            key = self._calculate_key(byte_password, numcyclespower, salt, 'sha256')
+            key = _calculate_key(byte_password, numcyclespower, salt, 'sha256')
             self.lzma_decompressor = self._set_lzma_decompressor(coders)
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
+            self.buf = b''
+            self.flushed = False
         else:
             raise UnsupportedCompressionMethodError
 
@@ -211,41 +233,41 @@ class AESDecompressor:
                 raise UnsupportedCompressionMethodError
         return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
-    @staticmethod
-    def _calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-        assert digest == 'sha256'
-        if cycles == 0x3f:
-            ba = bytearray()
-            ba.extend(salt)
-            ba.extend(password)
-            for i in range(32):
-                ba.append(0)
-            key = ba[:32]  # type: bytes
-        else:
-            rounds = 1 << cycles
-            m = hashlib.sha256()
-            for round in range(rounds):
-                m.update(salt)
-                m.update(password)
-                m.update(round.to_bytes(8, byteorder='little', signed=False))
-            key = m.digest()[:32]
-        return key
-
     @property
     def needs_input(self) -> bool:
-        return self.lzma_decompressor.needs_input
+        return self.lzma_decompressor.needs_input and not self.flushed
 
     @property
     def eof(self) -> bool:
-        return self.lzma_decompressor.eof
+        return self.lzma_decompressor.eof or self.flushed
 
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
-        temp = self.cipher.decrypt(data)
-        return self.lzma_decompressor.decompress(temp, max_length)
+        if len(data) == 0 and len(self.buf) == 0:  # action flush
+            self.flushded = True
+            return self.lzma_decompressor.decompress(b'', max_length)
+        elif len(data) == 0:  # action padding
+            self.flushded = True
+            padlen = 16 - len(self.buf) % 16
+            temp = self.cipher.decrypt(self.buf + bytes(padlen))
+            self.buf = b''
+            return self.lzma_decompressor.decompress(temp, max_length)
+        else:
+            compdata = self.buf  + data
+            currentlen = len(compdata)
+            a = currentlen // 16
+            nextlen = a * 16
+            if currentlen == nextlen:
+                self.buf = b''
+                temp = self.cipher.decrypt(compdata)
+                return self.lzma_decompressor.decompress(temp, max_length)
+            else:
+                self.buf = compdata[currentlen - nextlen:]
+                temp = self.cipher.decrypt(compdata[:nextlen])
+                return self.lzma_decompressor.decompress(temp, max_length)
 
     @property
     def unused_data(self):
-        return self.unused_data
+        return self.buf
 
 
 class Worker:
