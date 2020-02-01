@@ -265,7 +265,7 @@ class PackInfo:
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
-        self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]  # type: List[int]
+        self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
         return self
 
     def write(self, file: BinaryIO):
