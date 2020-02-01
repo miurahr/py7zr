@@ -11,6 +11,7 @@ Added
 -----
 
 * Add release note automation workflow with Github actions.
+* COPY decompression method.(#61)
 
 Changed
 -------
@@ -18,11 +19,15 @@ Changed
 Fixed
 -----
 
+* Fix retrieving Folder header information logics for codecs.(#62)
+
 Deprecated
 ----------
 
 Removed
 -------
+
+* Test symlink on windows.(#60)
 
 Security
 --------
