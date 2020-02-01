@@ -31,7 +31,32 @@ FINISH_7Z = binascii.unhexlify('377abcaf271d')
 READ_BLOCKSIZE = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
 
-READ_BLOCKSIZE = 32248
+# Esposed constants
+FILTER_LZMA1 = lzma.FILTER_LZMA1
+FILTER_LZMA2 = lzma.FILTER_LZMA2
+FILTER_DELTA = lzma.FILTER_DELTA
+FILTER_ARM = lzma.FILTER_ARM
+FILTER_ARMTHUMB = lzma.FILTER_ARMTHUMB
+FILTER_IA64 = lzma.FILTER_IA64
+FILTER_POWERPC = lzma.FILTER_POWERPC
+FILTER_SPARC = lzma.FILTER_SPARC
+FILTER_X86 = lzma.FILTER_X86
+CHECK_CRC32 = lzma.CHECK_CRC32
+CHECK_CRC64 = lzma.CHECK_CRC64
+CHECK_SHA256 = lzma.CHECK_SHA256
+CHECK_NONE = lzma.CHECK_NONE
+CHECK_ID_MAX = lzma.CHECK_ID_MAX
+CHECK_UNKNOWN = lzma.CHECK_UNKNOWN
+PRESET_DEFAULT = lzma.PRESET_DEFAULT
+PRESET_EXTREME = lzma.PRESET_EXTREME
+FILTER_CRYPTO_AES256_SHA256 = 0x06F10701
+FILTER_CRYPTO_ZIP = 0x06F10101
+FILTER_CRYPTO_RAR29 = 0x06F10303
+
+FILTER_BZIP2 = 0x31
+FILTER_ZIP = 0x32
+FILTER_COPY = 0x33
+FILTER_ZSTD = 0x35
 
 
 class ByteEnum(bytes, Enum):
@@ -167,23 +192,30 @@ lzma_methods_map = {
     CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
     CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
 }
+
 lzma_methods_map_r = {
+    lzma.FILTER_LZMA1: CompressionMethod.LZMA,
     lzma.FILTER_LZMA2: CompressionMethod.LZMA2,
     lzma.FILTER_DELTA: CompressionMethod.DELTA,
     lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
 }
-FILTER_BZIP2 = 0x31
-FILTER_ZIP = 0x32
-FILTER_COPY = 0x33
-FILTER_AES = 0x34
-FILTER_ZSTD = 0x35
+
 alt_methods_map = {
     CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
     CompressionMethod.MISC_DEFLATE: FILTER_ZIP,
     CompressionMethod.COPY: FILTER_COPY,
-    CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
+    CompressionMethod.CRYPT_AES256_SHA256: FILTER_CRYPTO_AES256_SHA256,
     CompressionMethod.MISC_ZSTD: FILTER_ZSTD,
 }
+
+alt_methods_map_r = {
+    FILTER_BZIP2: CompressionMethod.MISC_BZIP2,
+    FILTER_ZIP: CompressionMethod.MISC_DEFLATE,
+    FILTER_COPY: CompressionMethod.COPY,
+    FILTER_CRYPTO_AES256_SHA256: CompressionMethod.CRYPT_AES256_SHA256,
+    FILTER_ZSTD: CompressionMethod.MISC_ZSTD,
+}
+
 methods_name_map = {
     CompressionMethod.LZMA2: "LZMA2",
     CompressionMethod.LZMA: "LZMA",

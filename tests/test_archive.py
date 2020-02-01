@@ -7,6 +7,7 @@ import os
 import pathlib
 import shutil
 import stat
+import subprocess
 import sys
 from datetime import datetime
 
@@ -30,7 +31,7 @@ def check_bit(val, mask):
 
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compressor.SevenZipCompressor()
+    sevenzip_compressor = py7zr.compressor.SevenZipCompressor([{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ])
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -274,6 +275,11 @@ def test_compress_files_1(tmp_path):
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
 
 
 @pytest.mark.api
@@ -300,7 +306,7 @@ def test_register_archive_format(tmp_path):
 @pytest.mark.api
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_with_simple_filter(tmp_path):
-    my_filters = [{"id": lzma.FILTER_LZMA2, "preset": lzma.PRESET_DEFAULT}, ]
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
@@ -311,8 +317,8 @@ def test_compress_with_simple_filter(tmp_path):
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_with_custom_filter(tmp_path):
     my_filters = [
-        {"id": lzma.FILTER_DELTA, "dist": 5},
-        {"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME},
+        {"id": py7zr.FILTER_DELTA, "dist": 5},
+        {"id": py7zr.FILTER_LZMA2, "preset": 7 | py7zr.PRESET_EXTREME},
     ]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
@@ -327,7 +333,7 @@ def test_compress_files_2(tmp_path):
     tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
     target = tmp_path.joinpath('target.7z')
-    os.chdir(tmp_path.joinpath('src'))
+    os.chdir(str(tmp_path.joinpath('src')))
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
@@ -337,6 +343,11 @@ def test_compress_files_2(tmp_path):
     reader.close()
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
 
 
 @pytest.mark.files
@@ -370,7 +381,8 @@ def test_compress_symlink(tmp_path):
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
     target = tmp_path.joinpath('target.7z')
     os.chdir(tmp_path.joinpath('src'))
-    archive = py7zr.SevenZipFile(target, 'w')
+    filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}, ]
+    archive = py7zr.SevenZipFile(target, 'w', filters=filters)
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
     archive._write_archive()
@@ -442,6 +454,11 @@ def test_compress_zerofile(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
 
 
 @pytest.mark.files
@@ -472,14 +489,11 @@ def test_compress_directories(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
-
-
-@pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.xfail(reason="Not implemented yet.")
-def test_compress_files_with_password(tmp_path):
-    target = tmp_path.joinpath('target.7z')
-    archive = py7zr.SevenZipFile(target, mode='w', password='secret')
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
 
 
 @pytest.mark.files
@@ -538,8 +552,164 @@ def test_compress_files_deref_loop(tmp_path):
     tmp_path.joinpath('tgt').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
     target = tmp_path.joinpath('target.7z')
-    os.chdir(tmp_path.joinpath('src'))
+    os.chdir(str(tmp_path.joinpath('src')))
     # create symlink loop
     tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
     with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
         archive.writeall('.')
+
+
+@pytest.mark.basic
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_encrypt_file_0(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    archive = py7zr.SevenZipFile(target, 'w', password='secret')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive.close()
+    reader = py7zr.SevenZipFile(target, 'r', password='secret')
+    reader.extractall(path=tmp_path.joinpath('tgt1'))
+    reader.close()
+    #
+    result = subprocess.run(['7z', 't', '-p secret', (tmp_path / 'target.7z').as_posix()],
+                            check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
+
+
+@pytest.mark.basic
+def test_compress_lzma2_bcj(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_X86},
+                  {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'lzma2bcj.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.writeall(tmp_path / "src", "src")
+    archive._write_archive()
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].solid
+    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
+    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
+    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+    assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+    archive._fpclose()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
+        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+        assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
+        assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
+        assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
+        assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+        assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
+
+
+@pytest.mark.basic
+def  test_compress_multi_filter_delta(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_DELTA, "dist": 5},
+                  {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    assert archive.files is not None
+    assert len(archive.files) == 2
+    for f in archive.files:
+        assert f.filename in ('src', os.path.join('src', 'bra.txt'))
+    archive.set_encoded_header_mode(False)
+    archive._write_archive()
+    assert len(archive.header.files_info.files) == 2
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+    assert len(archive.header.files_info.files) == 2
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].solid
+    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
+    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
+    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+    assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+    expected = [True, False]
+    for i, f in enumerate(archive.header.files_info.files):
+        f['emptystream'] = expected[i]
+    archive._fpclose()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        assert len(archive.header.files_info.files) == 2
+        assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+        assert len(archive.header.files_info.files) == 2
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
+        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+        assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
+        assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
+        assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
+        assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
+        assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+        assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0
+
+
+@pytest.mark.api
+def test_encrypt_with_default_filter(tmp_path):
+    filters = [
+        {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
+        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
+    ]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=filters, password='secret')
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    archive.set_encoded_header_mode(False)
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties'] is not None
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties']) == 18
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['properties'] == b'\x16'
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[1]['properties']) == 1
+    archive._write_archive()
+    archive._fpclose()
+    #
+    with py7zr.SevenZipFile(target, 'r', password='secret') as arc:
+        arc.extractall(path=tmp_path / "tgt")
+    #
+    result = subprocess.run(['7z', 't', '-p secret', (tmp_path / 'target.7z').as_posix()], check=True, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+    assert result.returncode == 0

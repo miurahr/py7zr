@@ -33,10 +33,11 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
-from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
-from py7zr.exceptions import Bad7zFile
+from py7zr.compressor import Bond, SevenZipCompressor, SevenZipDecompressor
+from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import MAGIC_7Z, CompressionMethod, Property
+from py7zr.properties import (MAGIC_7Z, FILTER_CRYPTO_AES256_SHA256, PRESET_DEFAULT, FILTER_LZMA2,
+                              CompressionMethod, Property)
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b'\x00'
@@ -301,7 +302,7 @@ class Folder:
     def __init__(self) -> None:
         self.unpacksizes = None  # type: Optional[List[int]]
         self.coders = []  # type: List[Dict[str, Any]]
-        self.bindpairs = []  # type: List[Any]
+        self.bindpairs = []  # type: List[Bond]
         self.packed_indices = []  # type: List[int]
         # calculated values
         self.totalin = 0  # type: int
@@ -343,7 +344,7 @@ class Folder:
             self.coders.append(c)
         num_bindpairs = self.totalout - 1
         for i in range(num_bindpairs):
-            self.bindpairs.append((read_uint64(file), read_uint64(file),))
+            self.bindpairs.append(Bond(read_uint64(file), read_uint64(file),))
         num_packedstreams = self.totalin - num_bindpairs
         if num_packedstreams == 1:
             for i in range(self.totalin):
@@ -352,10 +353,32 @@ class Folder:
         elif num_packedstreams > 1:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
+        self.unpacksizes = []
+
+    def prepare_coderinfo(self, compressor):
+        self.compressor = compressor
+        self.coders = self.compressor.coders
+        assert len(self.coders) > 0
+        self.solid = True
+        self.digestdefined = False
+        self.bindpairs = []
+        self.totalin = 0
+        self.totalout = 0
+        for i, c in enumerate(self.coders):
+            self.totalin += c['numinstreams']
+            self.totalout += c['numoutstreams']
+        num_bindpairs = self.totalout - 1
+        for i in range(num_bindpairs):
+            self.bindpairs.append(Bond(incoder=i + 1, outcoder=i))
+        assert len(self.bindpairs) == num_bindpairs
+        num_packedstreams = self.totalin - num_bindpairs
+        if num_packedstreams > 1:
+            # FIXME
+            self.packed_indices.append(0)
+        self.unpacksizes = []
 
     def write(self, file: BinaryIO):
         num_coders = len(self.coders)
-        assert num_coders > 0
         write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
             id = c['method']  # type: bytes
@@ -367,17 +390,15 @@ class Folder:
             write_bytes(file, id[:id_size])
             if not self.is_simple(c):
                 write_uint64(file, c['numinstreams'])
-                assert c['numoutstreams'] == 1
                 write_uint64(file, c['numoutstreams'])
             if c['properties'] is not None:
                 write_uint64(file, len(c['properties']))
                 write_bytes(file, c['properties'])
         num_bindpairs = self.totalout - 1
-        assert len(self.bindpairs) == num_bindpairs
         num_packedstreams = self.totalin - num_bindpairs
-        for bp in self.bindpairs:
-            write_uint64(file, bp[0])
-            write_uint64(file, bp[1])
+        for bond in self.bindpairs:
+            write_uint64(file, bond.incoder)
+            write_uint64(file, bond.outcoder)
         if num_packedstreams > 1:
             for pi in self.packed_indices:
                 write_uint64(file, pi)
@@ -396,13 +417,7 @@ class Folder:
         if self.compressor is not None:
             return self.compressor
         else:
-            try:
-                # FIXME: set filters
-                self.compressor = SevenZipCompressor()
-                self.coders = self.compressor.coders
-                return self.compressor
-            except Exception as e:
-                raise e
+            raise InternalError
 
     def get_unpack_size(self) -> int:
         if self.unpacksizes is None:
@@ -413,14 +428,14 @@ class Folder:
         raise TypeError('not found')
 
     def _find_in_bin_pair(self, index: int) -> int:
-        for idx, (a, b) in enumerate(self.bindpairs):
-            if a == index:
+        for idx, bond in enumerate(self.bindpairs):
+            if bond.incoder == index:
                 return idx
         return -1
 
     def _find_out_bin_pair(self, index: int) -> int:
-        for idx, (a, b) in enumerate(self.bindpairs):
-            if b == index:
+        for idx, bond in enumerate(self.bindpairs):
+            if bond.outcoder == index:
                 return idx
         return -1
 
@@ -476,7 +491,7 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found at %d' % (repr(pid), file.tell()))
+            raise Bad7zFile('end id expected but {:s} found at 0x{:08x}'.format(repr(pid), file.tell()))
 
     def write(self, file: BinaryIO):
         assert self.numfolders is not None
@@ -494,10 +509,20 @@ class UnpackInfo:
         #   write_byte(file, b'\x01')
         #   assert self.datastreamidx is not None
         #   write_uint64(file, self.datastreamidx)
+        self._write_coders_info(file)
+
+    def _write_coders_info(self, file: BinaryIO):
+        ''' write out following information
+            UnPackSize[Folders][Folders.NumOutstreams]
+            CRCs[NumFolders]
+        :param file: target file to write
+        :return: None
+        '''
         write_byte(file, Property.CODERS_UNPACK_SIZE)
         for folder in self.folders:
             for i in range(folder.totalout):
                 write_uint64(file, folder.unpacksizes[i])
+        # FIXME: write CRCs here.
         write_byte(file, Property.END)
 
 
@@ -641,17 +666,7 @@ class HeaderStreamsInfo(StreamsInfo):
         super().__init__()
         self.packinfo = PackInfo()
         self.unpackinfo = UnpackInfo()
-        folder = Folder()
-        folder.compressor = SevenZipCompressor()
-        folder.coders = folder.compressor.coders
-        folder.solid = False
-        folder.digestdefined = False
-        folder.bindpairs = []
-        folder.totalin = 1
-        folder.totalout = 1
-        folder.digestdefined = [True]
         self.unpackinfo.numfolders = 1
-        self.unpackinfo.folders = [folder]
 
     def write(self, file: BinaryIO):
         self._write(file)
@@ -919,14 +934,16 @@ class Header:
         buffer.seek(0, 0)
         return buffer
 
-    def _encode_header(self, file: BinaryIO, afterheader: int):
+    def _encode_header(self, file: BinaryIO, afterheader: int, filters):
         startpos = file.tell()
         packpos = startpos - afterheader
         buf = io.BytesIO()
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
+        folder = Folder()
+        folder.prepare_coderinfo(compressor=SevenZipCompressor(filters=filters))
         streams = HeaderStreamsInfo()
+        streams.unpackinfo.folders = [folder]
         streams.packinfo.packpos = packpos
-        folder = streams.unpackinfo.folders[0]
         folder.crc = [raw_crc]
         folder.unpacksizes = [raw_header_len]
         compressed_len = 0
@@ -949,10 +966,15 @@ class Header:
         write_byte(file, Property.END)
         return startpos
 
-    def write(self, file: BinaryIO, afterheader: int, encoded: bool = True):
+    def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
         startpos = file.tell()
-        if encoded:
-            startpos = self._encode_header(file, afterheader)
+        if encrypted:
+            filters = [{'id': FILTER_CRYPTO_AES256_SHA256}]
+            startpos = self._encode_header(file, afterheader, filters)
+        elif encoded:
+            filters = [
+                {"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, ]
+            startpos = self._encode_header(file, afterheader, filters)
         else:
             write_byte(file, Property.HEADER)
             # Archive properties
