@@ -268,13 +268,14 @@ class Worker:
             numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
             folders = self.header.main_streams.unpackinfo.folders
+            filename = getattr(fp, 'name', None)
+            empty_files = [f for f in self.files if f.emptystream]
             if not multithread:
+                self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
                 for i in range(numfolders):
                     self.extract_single(fp, folders[i].files, self.src_start + positions[i],
                                         self.src_start + positions[i + 1])
             else:
-                filename = getattr(fp, 'name', None)
-                empty_files = [f for f in self.files if f.emptystream]
                 self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     threads = []
@@ -293,6 +294,8 @@ class Worker:
 
     def extract_single(self, fp: BinaryIO, files, src_start: int, src_end: int) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
+        if files is None:
+            return
         fp.seek(src_start)
         for f in files:
             fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
