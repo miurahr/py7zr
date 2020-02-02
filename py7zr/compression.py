@@ -231,7 +231,7 @@ class AESDecompressor:
             temp = self.cipher.decrypt(inp)
             return self.lzma_decompressor.decompress(temp, max_length)
         else:
-            compdata = self.buf  + data
+            compdata = self.buf + data
             currentlen = len(compdata)
             a = currentlen // 16
             nextpos = a * 16
