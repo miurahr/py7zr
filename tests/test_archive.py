@@ -1,4 +1,5 @@
 import binascii
+import filecmp
 import hashlib
 import lzma
 import os
@@ -150,6 +151,8 @@ def test_compress_files_encoded_header(tmp_path):
     m = hashlib.sha256()
     m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.basic
@@ -259,6 +262,8 @@ def test_compress_files_1(tmp_path):
     m = hashlib.sha256()
     m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.api
@@ -320,6 +325,8 @@ def test_compress_files_2(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.files
@@ -338,6 +345,8 @@ def test_compress_files_3(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 
