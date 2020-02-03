@@ -10,13 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Support COPY method for decompression.
-
 Changed
 -------
-
-* When archive has an archive which is same name, then write
-  with postfix '_0'.
 
 Fixed
 -----
@@ -29,6 +24,20 @@ Removed
 
 Security
 --------
+
+`v0.5rc2`_
+==========
+
+Added
+-----
+
+* Support COPY method for decompression.
+
+Changed
+-------
+
+* When archive has an archive which is same name, then write
+  with postfix '_0'.
 
 `v0.5rc1`_
 ==========
@@ -493,7 +502,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5rc1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5rc2...HEAD
+.. _v0.5rc2: https://github.com/miurahr/py7zr/compare/v0.5rc1...v0.5rc2
 .. _v0.5rc1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.5rc1
 .. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
 .. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
