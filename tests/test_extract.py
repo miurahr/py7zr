@@ -176,6 +176,8 @@ def test_github_14_multi(tmp_path):
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
+    with tmp_path.joinpath('github_14_multi_0').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
