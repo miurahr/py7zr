@@ -728,7 +728,7 @@ class SevenZipFile:
                 i = 0
                 while True:
                     outname = f.filename + '_%d' % i
-                    if not outname in fnames:
+                    if outname not in fnames:
                         break
             else:
                 outname = f.filename
