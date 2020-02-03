@@ -15,6 +15,9 @@ Added
 Changed
 -------
 
+* When archive has an archive which is same name, then write
+  with postfix '_0'.
+
 Fixed
 -----
 

@@ -723,12 +723,18 @@ class SevenZipFile:
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
             if f.filename in fnames:
-                multi_thread = False
-            fnames.append(f.filename)
-            if path is not None:
-                outfilename = path.joinpath(f.filename)
+                i = 0
+                while True:
+                    outname = f.filename + '_%d' % i
+                    if not outname in fnames:
+                        break
             else:
-                outfilename = pathlib.Path(f.filename)
+                outname = f.filename
+            fnames.append(outname)
+            if path is not None:
+                outfilename = path.joinpath(outname)
+            else:
+                outfilename = pathlib.Path(outname)
             if f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)
