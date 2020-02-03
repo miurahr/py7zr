@@ -23,7 +23,6 @@
 #
 import bz2
 import concurrent.futures
-import hashlib
 import io
 import lzma
 import sys
@@ -32,7 +31,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import DecompressionError, UnsupportedCompressionMethodError
-from py7zr.helpers import calculate_crc32
+from py7zr.helpers import calculate_crc32, calculate_key
 from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
 
 if sys.version_info < (3, 6):
@@ -190,9 +189,11 @@ class AESDecompressor:
             assert numcyclespower <= 24
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
-            key = self._calculate_key(byte_password, numcyclespower, salt, 'sha256')
+            key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
             self.lzma_decompressor = self._set_lzma_decompressor(coders)
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
+            self.buf = b''
+            self.flushed = False
         else:
             raise UnsupportedCompressionMethodError
 
@@ -211,26 +212,6 @@ class AESDecompressor:
                 raise UnsupportedCompressionMethodError
         return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
-    @staticmethod
-    def _calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-        assert digest == 'sha256'
-        if cycles == 0x3f:
-            ba = bytearray()
-            ba.extend(salt)
-            ba.extend(password)
-            for i in range(32):
-                ba.append(0)
-            key = ba[:32]  # type: bytes
-        else:
-            rounds = 1 << cycles
-            m = hashlib.sha256()
-            for round in range(rounds):
-                m.update(salt)
-                m.update(password)
-                m.update(round.to_bytes(8, byteorder='little', signed=False))
-            key = m.digest()[:32]
-        return key
-
     @property
     def needs_input(self) -> bool:
         return self.lzma_decompressor.needs_input
@@ -240,12 +221,33 @@ class AESDecompressor:
         return self.lzma_decompressor.eof
 
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
-        temp = self.cipher.decrypt(data)
-        return self.lzma_decompressor.decompress(temp, max_length)
+        if len(data) == 0 and len(self.buf) == 0:  # action flush
+            return self.lzma_decompressor.decompress(b'', max_length)
+        elif len(data) == 0:  # action padding
+            self.flushded = True
+            padlen = 16 - len(self.buf) % 16
+            inp = self.buf + bytes(padlen)
+            self.buf = b''
+            temp = self.cipher.decrypt(inp)
+            return self.lzma_decompressor.decompress(temp, max_length)
+        else:
+            compdata = self.buf + data
+            currentlen = len(compdata)
+            a = currentlen // 16
+            nextpos = a * 16
+            if currentlen == nextpos:
+                self.buf = b''
+                temp = self.cipher.decrypt(compdata)
+                return self.lzma_decompressor.decompress(temp, max_length)
+            else:
+                self.buf = compdata[nextpos:]
+                assert len(self.buf) < 16
+                temp = self.cipher.decrypt(compdata[:nextpos])
+                return self.lzma_decompressor.decompress(temp, max_length)
 
     @property
     def unused_data(self):
-        return self.unused_data
+        return self.buf
 
 
 class Worker:
@@ -262,29 +264,36 @@ class Worker:
 
     def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
-        if multithread:
-            numfolders = self.header.main_streams.unpackinfo.numfolders
-            positions = self.header.main_streams.packinfo.packpositions
-            folders = self.header.main_streams.unpackinfo.folders
-            filename = getattr(fp, 'name', None)
-            empty_files = [f for f in self.files if f.emptystream]
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                threads = []
-                threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
-                                               empty_files, 0))
-                for i in range(numfolders):
-                    threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
-                                                   folders[i].files, self.src_start + positions[i]))
-                for future in concurrent.futures.as_completed(threads):
-                    try:
-                        future.result()
-                    except Exception as e:
-                        raise e
+        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
+            if not multithread:
+                src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
+                self.extract_single(fp, self.files, self.src_start, src_end)
+            else:
+                numfolders = self.header.main_streams.unpackinfo.numfolders
+                folders = self.header.main_streams.unpackinfo.folders
+                filename = getattr(fp, 'name', None)
+                empty_files = [f for f in self.files if f.emptystream]
+                positions = self.header.main_streams.packinfo.packpositions
+                self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    threads = []
+                    for i in range(numfolders):
+                        threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
+                                                       folders[i].files, self.src_start + positions[i],
+                                                       self.src_start + positions[i + 1]))
+                    for future in concurrent.futures.as_completed(threads):
+                        try:
+                            future.result()
+                        except Exception as e:
+                            raise e
         else:
-            self.extract_single(fp, self.files, self.src_start)
+            empty_files = [f for f in self.files if f.emptystream]
+            self.extract_single(fp, empty_files, 0, 0)
 
-    def extract_single(self, fp: BinaryIO, files, src_start: int) -> None:
+    def extract_single(self, fp: BinaryIO, files, src_start: int, src_end: int) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
+        if files is None:
+            return
         fp.seek(src_start)
         for f in files:
             fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
@@ -293,34 +302,42 @@ class Worker:
             if f.emptystream:
                 fileish.write(b'')
             else:
-                self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed)
+                self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed, src_end)
             fileish.close()
 
     def decompress(self, fp: BinaryIO, folder, fileish: Handler,
-                   size: int, compressed_size: Optional[int]) -> None:
-        """decompressor wrapper called from extract method."""
+                   size: int, compressed_size: Optional[int], src_end: int) -> None:
+        """decompressor wrapper called from extract method.
+
+           :parameter fp: archive source file pointer
+           :parameter folder: Folder object that have decompressor object.
+           :parameter fileish: output file Handler, BufferHandler, FileHandler or NullHandler
+           :parameter size: uncompressed size of target file.
+           :parameter compressed_size: compressed size of target file.
+           :parameter src_end: end position of the folder
+           :returns None
+        """
         assert folder is not None
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
-            if decompressor.eof:
-                raise DecompressionError
             max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
-            if decompressor.needs_input:
-                read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
+            rest_size = src_end - fp.tell()
+            read_size = min(Configuration.get('read_blocksize'), rest_size)
+            if read_size == 0:
+                tmp = decompressor.decompress(b'', max_length)
+            else:
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
-                if len(tmp) == 0:
-                    raise DecompressionError
-            else:
-                tmp = decompressor.decompress(b'', max_length)
+            if len(tmp) == 0:
+                raise DecompressionError
             if out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fileish.write(tmp)
                 if out_remaining <= 0:
                     break
         assert out_remaining == 0
-        if decompressor.eof:
+        if fp.tell() >= src_end:
             if decompressor.crc is not None and not decompressor.check_crc():
                 print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
         return
