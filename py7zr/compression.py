@@ -265,17 +265,15 @@ class Worker:
     def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
-            numfolders = self.header.main_streams.unpackinfo.numfolders
-            positions = self.header.main_streams.packinfo.packpositions
-            folders = self.header.main_streams.unpackinfo.folders
-            filename = getattr(fp, 'name', None)
-            empty_files = [f for f in self.files if f.emptystream]
             if not multithread:
-                self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
-                for i in range(numfolders):
-                    self.extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                        self.src_start + positions[i + 1])
+                src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
+                self.extract_single(fp, self.files, self.src_start, src_end)
             else:
+                numfolders = self.header.main_streams.unpackinfo.numfolders
+                folders = self.header.main_streams.unpackinfo.folders
+                filename = getattr(fp, 'name', None)
+                empty_files = [f for f in self.files if f.emptystream]
+                positions = self.header.main_streams.packinfo.packpositions
                 self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     threads = []

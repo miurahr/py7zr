@@ -340,6 +340,7 @@ def test_compress_files_3(tmp_path):
     reader.close()
 
 
+
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
