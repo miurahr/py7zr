@@ -51,7 +51,7 @@ def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> byt
         ba.extend(password)
         for i in range(32):
             ba.append(0)
-        key = ba[:32]  # type: bytes
+        key = bytes(ba[:32])  # type: bytes
     else:
         rounds = 1 << cycles
         m = hashlib.sha256()
