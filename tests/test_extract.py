@@ -11,8 +11,8 @@ import pytest
 
 import py7zr
 from py7zr import unpack_7zarchive
-from py7zr.helpers import UTC
 from py7zr.exceptions import UnsupportedCompressionMethodError
+from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
 
