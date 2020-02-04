@@ -732,13 +732,19 @@ class SevenZipFile:
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
-            if f.filename in fnames:
-                multi_thread = False
-            fnames.append(f.filename)
-            if path is not None:
-                outfilename = path.joinpath(f.filename)
+            if f.filename not in fnames:
+                outname = f.filename
             else:
-                outfilename = pathlib.Path(f.filename)
+                i = 0
+                while True:
+                    outname = f.filename + '_%d' % i
+                    if outname not in fnames:
+                        break
+            fnames.append(outname)
+            if path is not None:
+                outfilename = path.joinpath(outname)
+            else:
+                outfilename = pathlib.Path(outname)
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue

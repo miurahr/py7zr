@@ -287,7 +287,7 @@ def test_cli_extract(tmp_path):
 
 @pytest.mark.cli
 def test_cli_encrypted_extract(tmp_path):
-    arcfile = os.path.join(testdata_path, "encrypted.7z")
+    arcfile = os.path.join(testdata_path, "encrypted_1.7z")
     cli = py7zr.cli.Cli()
     cli.run(["x", "--password", "secret", arcfile, str(tmp_path.resolve())])
     expected = [{'filename': 'test1.txt', 'mode': 33188,

@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 
 import py7zr
-from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
+from py7zr import unpack_7zarchive
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -177,6 +177,8 @@ def test_github_14_multi(tmp_path):
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
+    with tmp_path.joinpath('github_14_multi_0').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
@@ -206,7 +208,6 @@ def test_multiblock_lzma_bug(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
 def test_copy(tmp_path):
     """ test loading of copy compressed files.(help wanted)"""
     check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path)
@@ -242,5 +243,11 @@ def test_no_main_streams(tmp_path):
 
 @pytest.mark.files
 def test_extract_encrypted(tmp_path):
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted.7z'), 'rb'), password='secret')
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_1.7z'), 'rb'), password='secret')
+    archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+def test_extract_encrypted_2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
