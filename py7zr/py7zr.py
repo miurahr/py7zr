@@ -297,7 +297,7 @@ class SevenZipFile:
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
-                self.reset()
+                self._reset_worker()
             elif mode in 'w':
                 # FIXME: check filters here
                 self.folder = self._create_folder(filters)
@@ -472,7 +472,13 @@ class SevenZipFile:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
             outfilename.chmod(outfilename.stat().st_mode & ro_mask)
 
-    def reset(self) -> None:
+    def _reset_decompressor(self) -> None:
+        if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
+            for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
+                compressed_size = self.header.main_streams.packinfo.packsizes[i]
+                folder.get_decompressor(compressed_size, reset=True)
+
+    def _reset_worker(self) -> None:
         """Seek to where archive data start in archive and recreate new worker."""
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
@@ -503,7 +509,7 @@ class SevenZipFile:
         return digest == crc
 
     def _test_pack_digest(self) -> bool:
-        self.reset()
+        self._reset_worker()
         crcs = self.header.main_streams.packinfo.crcs
         if crcs is not None and len(crcs) > 0:
             # check packed stream's crc
@@ -513,7 +519,7 @@ class SevenZipFile:
         return True
 
     def _test_unpack_digest(self) -> bool:
-        self.reset()
+        self._reset_worker()
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
@@ -700,7 +706,6 @@ class SevenZipFile:
         target_sym = []  # type: List[Tuple[BinaryIO, str]]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
-        self.reset()
         if path is not None:
             if isinstance(path, str):
                 path = pathlib.Path(path)
@@ -830,6 +835,12 @@ class SevenZipFile:
         if 'w' in self.mode:
             self._write_archive()
         self._fpclose()
+
+    def reset(self) -> None:
+        """When read mode, it reset file pointer, decompress worker and decompressor"""
+        if self.mode == 'r':
+            self._reset_worker()
+            self._reset_decompressor()
 
 
 # --------------------

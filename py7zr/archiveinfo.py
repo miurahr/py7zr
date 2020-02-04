@@ -386,8 +386,8 @@ class Folder:
             for pi in self.packed_indices:
                 write_uint64(file, pi)
 
-    def get_decompressor(self, size: int) -> SevenZipDecompressor:
-        if self.decompressor is not None:
+    def get_decompressor(self, size: int, reset: bool = False) -> SevenZipDecompressor:
+        if self.decompressor is not None and not reset:
             return self.decompressor
         else:
             try:
