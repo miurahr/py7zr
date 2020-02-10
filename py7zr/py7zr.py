@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -39,7 +39,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
-from py7zr.properties import MAGIC_7Z, ArchivePassword, Configuration
+from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -51,6 +51,8 @@ if sys.platform.startswith('win'):
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
+P7ZIP_MAJOR_VERSION = b'\x00'
+P7ZIP_MINOR_VERSION = b'\x04'
 
 
 class ArchiveFile:
@@ -503,7 +505,7 @@ class SevenZipFile:
         remaining_size = size
         digest = None
         while remaining_size > 0:
-            block = min(Configuration.read_blocksize, remaining_size)
+            block = min(READ_BLOCKSIZE, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest == crc
@@ -584,7 +586,7 @@ class SevenZipFile:
                 num_unpack_streams += 1
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
-                    data = fd.read(Configuration.read_blocksize)
+                    data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
                     crc = 0  # type: int
                     while data:
@@ -593,7 +595,7 @@ class SevenZipFile:
                         outsize += len(out)
                         foutsize += len(out)
                         self.fp.write(out)
-                        data = fd.read(Configuration.read_blocksize)
+                        data = fd.read(READ_BLOCKSIZE)
                         insize += len(data)
                     self.header.main_streams.substreamsinfo.digests.append(crc)
                     self.header.main_streams.substreamsinfo.digestsdefined.append(True)

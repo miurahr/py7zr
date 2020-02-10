@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -33,11 +33,11 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
+from py7zr.py7zr import P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import (MAGIC_7Z, CompressionMethod, Configuration,
-                              Property)
+from py7zr.properties import MAGIC_7Z, CompressionMethod, Property
 
 MAX_LENGTH = 65536
 
@@ -1022,7 +1022,7 @@ class SignatureHeader:
     __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
 
     def __init__(self) -> None:
-        self.version = (Configuration.P7ZIP_MAJOR_VERSION, Configuration.P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
+        self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
         self.startheadercrc = None  # type: Optional[int]
         self.nextheaderofs = None  # type: Optional[int]
         self.nextheadersize = None  # type: Optional[int]

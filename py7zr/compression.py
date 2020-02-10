@@ -32,7 +32,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Union
 from Crypto.Cipher import AES
 from py7zr import DecompressionError, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, calculate_key
-from py7zr.properties import ArchivePassword, CompressionMethod, Configuration
+from py7zr.properties import ArchivePassword, CompressionMethod, READ_BLOCKSIZE
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -323,7 +323,7 @@ class Worker:
         while out_remaining > 0:
             max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
             rest_size = src_end - fp.tell()
-            read_size = min(Configuration.get('read_blocksize'), rest_size)
+            read_size = min(READ_BLOCKSIZE, rest_size)
             if read_size == 0:
                 tmp = decompressor.decompress(b'', max_length)
             else:
@@ -359,7 +359,7 @@ class Worker:
         """Compress specified file-ish into folder where fp placed."""
         compressor = folder.get_compressor()
         length = 0
-        for indata in f.read(Configuration.get('read_blocksize')):
+        for indata in f.read(READ_BLOCKSIZE):
             arcdata = compressor.compress(indata)
             folder.crc = calculate_crc32(arcdata, folder.crc)
             length += len(arcdata)
