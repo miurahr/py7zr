@@ -33,13 +33,14 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
-from py7zr.py7zr import P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import MAGIC_7Z, CompressionMethod, Property
 
 MAX_LENGTH = 65536
+P7ZIP_MAJOR_VERSION = b'\x00'
+P7ZIP_MINOR_VERSION = b'\x04'
 
 
 def read_crcs(file: BinaryIO, count: int) -> List[int]:

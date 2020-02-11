@@ -51,8 +51,6 @@ if sys.platform.startswith('win'):
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
-P7ZIP_MAJOR_VERSION = b'\x00'
-P7ZIP_MINOR_VERSION = b'\x04'
 
 
 class ArchiveFile:
