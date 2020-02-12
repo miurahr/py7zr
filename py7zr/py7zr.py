@@ -789,12 +789,11 @@ class SevenZipFile:
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
-            for t in target_junction:
-                with pathlib.Path(t).resolve() as junction_dst:
-                    with junction_dst.open('rb') as b:
-                        junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
-                        junction_dst.unlink()
-                        _winapi.CreateJunction(junction_target, t)  # type: ignore  # noqa
+            for junction_dst in target_junction:
+                with junction_dst.open('rb') as b:
+                    junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                    junction_dst.unlink()
+                    _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
 
         for o, p in target_files:
             self._set_file_property(o, p)
