@@ -276,4 +276,4 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
     os.chdir(str(tmp_path))
     os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
     archive.extractall(path='target')
-    assert os.readlink(tmp_path.joinpath('target/lib/libabc.so.1.2')) == 'libabc.so.1.2.3'
+    assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
