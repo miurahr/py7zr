@@ -274,6 +274,6 @@ def test_extract_ppmd(tmp_path):
 def test_extract_symlink_with_relative_target_path(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     os.chdir(str(tmp_path))
-    os.makedirs(tmp_path.joinpath('target'))
+    os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
     archive.extractall(path='target')
     assert os.readlink(tmp_path.joinpath('target/lib/libabc.so.1.2')) == 'libabc.so.1.2.3'
