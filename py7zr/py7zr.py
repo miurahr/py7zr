@@ -784,10 +784,9 @@ class SevenZipFile:
             with pathlib.Path(t).resolve() as sym_dst:
                 with sym_dst.open('rb') as b:
                     sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-                    dirname = os.path.dirname(t)
-                    with working_directory(dirname):
-                        sym_dst.unlink()
-                        sym_dst.symlink_to(pathlib.Path(sym_src))
+                sym_dst.unlink()  # unlink after close().
+                with working_directory(os.path.dirname(t)):
+                    sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
