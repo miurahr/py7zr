@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.6a2`_
+=========
+
+Fixed
+-----
+
+* Fix symbolic link extraction with relative path target directory.
+
+
 `v0.6a1`_
 =========
 
@@ -501,7 +510,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6a1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6a2...HEAD
+.. _v0.6a2: https://github.com/miurahr/py7zr/compare/v0.6a1...v0.6a2
 .. _v0.6a1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.6a1
 .. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
 .. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
