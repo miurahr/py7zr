@@ -238,3 +238,13 @@ def test_asyncio_executor(tmp_path):
 def test_no_main_streams(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
+def test_extract_symlink_with_relative_target_path(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
+    os.chdir(str(tmp_path))
+    os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
+    archive.extractall(path='target')
+    assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
