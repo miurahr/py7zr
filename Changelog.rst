@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.5rc3`_
+==========
+
+Fixed
+-----
+
+* Fix symbolic link extraction with relative path target directory.
+
 `v0.5rc2`_
 ==========
 
