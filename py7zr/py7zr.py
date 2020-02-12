@@ -780,7 +780,8 @@ class SevenZipFile:
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.
-        for sym_dst in target_sym:
+        for t in target_sym:
+            sym_dst = t.resolve()
             with sym_dst.open('rb') as b:
                 sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
             sym_dst.unlink()  # unlink after close().
@@ -789,7 +790,8 @@ class SevenZipFile:
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
-            for junction_dst in target_junction:
+            for t in target_junction:
+                junction_dst = t.resolve()
                 with junction_dst.open('rb') as b:
                     junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
                     junction_dst.unlink()
