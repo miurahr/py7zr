@@ -273,8 +273,7 @@ def test_extract_ppmd(tmp_path):
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
 def test_extract_symlink_with_relative_target_path(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
-    os.chdir(tmp_path)
+    os.chdir(str(tmp_path))
     os.makedirs(tmp_path.joinpath('target'))
     archive.extractall(path='target')
     assert os.readlink(tmp_path.joinpath('target/lib/libabc.so.1.2')) == 'libabc.so.1.2.3'
-
