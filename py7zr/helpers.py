@@ -178,7 +178,7 @@ def working_directory(path):
         return
     else:
         prev_cwd = os.getcwd()
-        os.chdir(path)
+        os.chdir(str(path))  # py35 need str()
         try:
             yield
         finally:

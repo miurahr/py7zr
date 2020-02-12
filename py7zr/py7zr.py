@@ -702,8 +702,8 @@ class SevenZipFile:
         return self.extract(path)
 
     def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
-        target_junction = []  # type: List[Tuple[BinaryIO, str]]
-        target_sym = []  # type: List[Tuple[BinaryIO, str]]
+        target_junction = []  # type: List[pathlib.Path]
+        target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
         if path is not None:
@@ -780,13 +780,12 @@ class SevenZipFile:
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.
-        for t in target_sym:
-            with pathlib.Path(t).resolve() as sym_dst:
-                with sym_dst.open('rb') as b:
-                    sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-                sym_dst.unlink()  # unlink after close().
-                with working_directory(os.path.dirname(t)):
-                    sym_dst.symlink_to(pathlib.Path(sym_src))
+        for sym_dst in target_sym:
+            with sym_dst.open('rb') as b:
+                sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+            sym_dst.unlink()  # unlink after close().
+            with working_directory(os.path.dirname(t)):
+                sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
