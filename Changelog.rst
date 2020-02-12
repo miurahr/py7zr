@@ -28,10 +28,15 @@ Security
 `v0.6a2`_
 =========
 
+Added
+-----
+
+* Support filtering  a target of  extracted files from archive (#64)
+
 Fixed
 -----
 
-* Fix symbolic link extraction with relative path target directory.
+* Fix symbolic link extraction with relative path target directory.(#67)
 
 
 `v0.6a1`_
