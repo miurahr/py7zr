@@ -15,16 +15,20 @@ require an understanding of the format, as defined in `7z_format`_.
 
 'py7zr' supports extraction and compression. Both features have limitations;
 
-- There are unsupported compression algorithms, because Python core does not support it. it support
+- There are unsupported compression algorithms, because Python core does not support it.
+  Here is a list of supported algorithms.
 
-    * lzma
-    * lzma2
+    * LZMA
+    * LZMA2
     * BCJ
+    * Delta
+    * COPY
+    * Bzip2
 
-and not support
+and not supported.
 
-    * ppmd
-    * bcj2
+    * PPMd
+    * BCJ2
 
 /home/miurahr/projects/py7zr/venvpy/bin/pypy3 /home/miurahr/lib/apps/PyCharm-P/ch-0/193.5662.61/plugins/python/helpers/pycharm/_jb_tox_runner.py -e docs
 GLOB sdist-make: /home/miurahr/projects/py7zr/setup.py

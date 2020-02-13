@@ -38,7 +38,8 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
+from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
+                           working_directory)
 from py7zr.properties import MAGIC_7Z, Configuration
 
 if sys.version_info < (3, 6):
@@ -561,12 +562,11 @@ class SevenZipFile:
             if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                link_target = pathlib.Path(os.readlink(f.origin))
-                if str(link_target).startswith('\\\\?\\'):
-                    tgt = os.readlink(f.origin).encode('utf-8')
-                else:
-                    link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
-                    tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
+                dirname = os.path.dirname(f.origin)
+                basename = os.path.basename(f.origin)
+                with working_directory(dirname):
+                    link_target = os.readlink(basename)
+                    tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
                 out = compressor.compress(tgt)
@@ -700,8 +700,8 @@ class SevenZipFile:
         return self.extract(path)
 
     def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
-        target_junction = []  # type: List[Tuple[BinaryIO, str]]
-        target_sym = []  # type: List[Tuple[BinaryIO, str]]
+        target_junction = []  # type: List[pathlib.Path]
+        target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
         if path is not None:
@@ -755,15 +755,11 @@ class SevenZipFile:
             elif f.is_socket:
                 pass
             elif f.is_symlink:
-                buf = io.BytesIO()
-                pair = (buf, f.filename)
-                target_sym.append(pair)
-                self.worker.register_filelike(f.id, buf)
+                target_sym.append(outfilename)
+                self.worker.register_filelike(f.id, outfilename)
             elif f.is_junction:
-                buf = io.BytesIO()
-                pair = (buf, f.filename)
-                target_junction.append(pair)
-                self.worker.register_filelike(f.id, buf)
+                target_junction.append(outfilename)
+                self.worker.register_filelike(f.id, outfilename)
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
@@ -779,29 +775,25 @@ class SevenZipFile:
                 else:
                     raise Exception("Directory making fails on unknown condition.")
         self.worker.extract(self.fp, multithread=multi_thread)
-        for b, t in target_sym:
-            b.seek(0)
-            sym_src_org = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-            dirname = os.path.dirname(t)
-            if path:
-                sym_src = path.joinpath(dirname, sym_src_org)
-                sym_dst = path.joinpath(t)
-            else:
-                sym_src = pathlib.Path(dirname).joinpath(sym_src_org)
-                sym_dst = pathlib.Path(t)
-            sym_dst.symlink_to(sym_src)
+
+        # create symbolic links on target path as a working directory.
+        # if path is None, work on current working directory.
+        for t in target_sym:
+            sym_dst = t.resolve()
+            with sym_dst.open('rb') as b:
+                sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+            sym_dst.unlink()  # unlink after close().
+            with working_directory(sym_dst.parent):
+                sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
-            for b, t in target_junction:
-                b.seek(0)
-                junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
-                dirname = os.path.dirname(t)
-                if path:
-                    junction_point = path.joinpath(t)
-                else:
-                    junction_point = pathlib.Path(dirname).joinpath(t)
-                _winapi.CreateJunction(junction_target, junction_point)  # type: ignore  # noqa
+            for t in target_junction:
+                junction_dst = t.resolve()
+                with junction_dst.open('rb') as b:
+                    junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                    junction_dst.unlink()
+                    _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
 
         for o, p in target_files:
             self._set_file_property(o, p)
