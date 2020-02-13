@@ -30,7 +30,7 @@ from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
-from py7zr import DecompressionError, UnsupportedCompressionMethodError
+from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
@@ -329,9 +329,7 @@ class Worker:
             else:
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
-            if len(tmp) == 0:
-                raise DecompressionError
-            if out_remaining >= len(tmp):
+            if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fileish.write(tmp)
                 if out_remaining <= 0:
