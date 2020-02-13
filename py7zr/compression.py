@@ -29,7 +29,7 @@ import sys
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
-from py7zr import DecompressionError, UnsupportedCompressionMethodError
+from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32
 from py7zr.properties import CompressionMethod, Configuration
 
@@ -211,18 +211,14 @@ class Worker:
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
-            if decompressor.eof:
-                raise DecompressionError
             max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
             if decompressor.needs_input:
                 read_size = min(Configuration.get('read_blocksize'), decompressor.remaining_size)
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
-                if len(tmp) == 0:
-                    raise DecompressionError
             else:
                 tmp = decompressor.decompress(b'', max_length)
-            if out_remaining >= len(tmp):
+            if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fileish.write(tmp)
                 if out_remaining <= 0:
