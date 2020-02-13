@@ -255,7 +255,7 @@ def test_extract_ppmd(tmp_path):
         archive.extractall(path=tmp_path)
         archive.close()
 
-        
+
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
 def test_extract_symlink_with_relative_target_path(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
