@@ -25,6 +25,11 @@ Removed
 Security
 --------
 
+`v0.5`_
+=======
+
+* same as v0.5rc3.
+
 `v0.5rc3`_
 ==========
 
@@ -510,7 +515,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5rc3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5...HEAD
+.. _v0.5: https://github.com/miurahr/py7zr/compare/v0.5rc3...v0.5
 .. _v0.5rc3: https://github.com/miurahr/py7zr/compare/v0.5rc2...v0.5rc3
 .. _v0.5rc2: https://github.com/miurahr/py7zr/compare/v0.5rc1...v0.5rc2
 .. _v0.5rc1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.5rc1
