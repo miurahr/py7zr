@@ -11,6 +11,7 @@ import pytest
 
 import py7zr
 from py7zr import unpack_7zarchive
+from py7zr.exceptions import UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -241,6 +242,20 @@ def test_no_main_streams(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_bzip2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
+def test_extract_ppmd(tmp_path):
+    with pytest.raises(UnsupportedCompressionMethodError):
+        archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'ppmd.7z'), 'rb'))
+        archive.extractall(path=tmp_path)
+        archive.close()
+
+
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
 def test_extract_symlink_with_relative_target_path(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))

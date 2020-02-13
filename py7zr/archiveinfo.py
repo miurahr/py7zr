@@ -384,8 +384,8 @@ class Folder:
     def is_simple(self, coder):
         return coder['numinstreams'] == 1 and coder['numoutstreams'] == 1
 
-    def get_decompressor(self, size: int) -> SevenZipDecompressor:
-        if self.decompressor is not None:
+    def get_decompressor(self, size: int, reset: bool = False) -> SevenZipDecompressor:
+        if self.decompressor is not None and not reset:
             return self.decompressor
         else:
             try:
