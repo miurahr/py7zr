@@ -30,7 +30,7 @@ from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
-from py7zr import DecompressionError, UnsupportedCompressionMethodError
+from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
