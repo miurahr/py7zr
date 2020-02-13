@@ -329,9 +329,7 @@ class Worker:
             else:
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
-            if len(tmp) == 0:
-                raise DecompressionError
-            if out_remaining >= len(tmp):
+            if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fileish.write(tmp)
                 if out_remaining <= 0:

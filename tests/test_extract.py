@@ -262,6 +262,13 @@ def test_extract_bzip2(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_bzip2_2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2_2.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
 def test_extract_ppmd(tmp_path):
     with pytest.raises(UnsupportedCompressionMethodError):
         archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'ppmd.7z'), 'rb'))
