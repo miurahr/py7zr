@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.6b1`_
+=========
+
+Fixed
+-----
+
+* Fixed extraction of 7zip file with BZip2 algorithm.(#66)
+
 `v0.6a2`_
 =========
 
@@ -45,6 +53,7 @@ Fixed
 Added
 -----
 
+* Support decryption (#55)
 * Add release note automation workflow with Github actions.
 * COPY decompression method.(#61)
 
@@ -515,7 +524,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6a2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b1...HEAD
+.. _v0.6b1: https://github.com/miurahr/py7zr/compare/v0.6a2...v0.6b1
 .. _v0.6a2: https://github.com/miurahr/py7zr/compare/v0.6a1...v0.6a2
 .. _v0.6a1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.6a1
 .. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
