@@ -1,8 +1,8 @@
 import asyncio
 import binascii
 import hashlib
-import io
 import os
+import pathlib
 import shutil
 import sys
 from datetime import datetime
@@ -62,32 +62,25 @@ def test_github_14(tmp_path):
 
 
 @pytest.mark.files
-def _test_umlaut_archive(filename):
+def _test_umlaut_archive(filename: str, target: pathlib.Path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
-    outbuf = []
-    for i, cf in enumerate(archive.files):
-        assert cf is not None
-        buf = io.BytesIO()
-        archive.worker.register_filelike(cf.id, buf)
-        outbuf.append(buf)
-    archive.worker.extract(archive.fp)
-    buf = outbuf[0]
-    buf.seek(0)
-    actual = buf.read()
-    assert actual == bytes('This file contains a german umlaut in the filename.', 'ascii')
+    archive.extractall(path=target)
+    archive.close()
+    actual = target.joinpath('t\xe4st.txt').open().read()
+    assert actual == 'This file contains a german umlaut in the filename.'
 
 
 @pytest.mark.files
-def test_non_solid_umlaut():
+def test_non_solid_umlaut(tmp_path):
     # test loading of a non-solid archive containing files with umlauts
-    _test_umlaut_archive('umlaut-non_solid.7z')
+    _test_umlaut_archive('umlaut-non_solid.7z', tmp_path)
 
 
 @pytest.mark.files
-def test_solid_umlaut():
+def test_solid_umlaut(tmp_path):
     # test loading of a solid archive containing files with umlauts
-    _test_umlaut_archive('umlaut-solid.7z')
+    _test_umlaut_archive('umlaut-solid.7z', tmp_path)
 
 
 @pytest.mark.files

@@ -13,6 +13,8 @@ Added
 Changed
 -------
 
+* Concurrency with multiprocessing module.(#71)
+
 Fixed
 -----
 
