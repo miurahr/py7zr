@@ -463,18 +463,6 @@ def test_null_handler():
 
 
 @pytest.mark.unit
-def test_buffer_handler():
-    buf = io.BytesIO(b'1234567890')
-    handler = py7zr.compression.BufferHandler(buf)
-    handler.open()
-    data = handler.read(5)
-    handler.write(data)
-    handler.seek(5)
-    handler.truncate(None)
-    handler.close()
-
-
-@pytest.mark.unit
 def test_file_handler(tmp_path):
     target = tmp_path.joinpath('testfile')
     handler = py7zr.compression.FileHandler(target)

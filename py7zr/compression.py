@@ -26,7 +26,6 @@ import io
 import lzma
 import multiprocessing
 import sys
-from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
@@ -68,38 +67,6 @@ class NullHandler():
         return None
 
 
-class BufferHandler():
-    '''Buffer handler handles BytesIO/StringIO buffers.'''
-
-    def __init__(self, target: BytesIO) -> None:
-        self.buf = target
-        self.target = "memory buffer"
-
-    def open(self, mode=None) -> None:
-        pass
-
-    def write(self, data: bytes) -> None:
-        self.buf.write(data)
-
-    def read(self, size=None):
-        if size is not None:
-            return self.buf.read(size)
-        else:
-            return self.buf.read()
-
-    def seek(self, offset, whence=1):
-        self.buf.seek(offset, whence)
-
-    def truncate(self, size):
-        pass
-
-    def close(self) -> None:
-        pass
-
-    def stat(self):
-        return None
-
-
 class FileHandler():
     '''File handler treat fileish object'''
 
@@ -131,7 +98,7 @@ class FileHandler():
         return self.target.stat()
 
 
-Handler = Union[NullHandler, BufferHandler, FileHandler]
+Handler = Union[NullHandler, FileHandler]
 
 
 class CopyDecompressor:
@@ -278,7 +245,7 @@ class Worker:
                 extract_processes = []
                 for i in range(numfolders):
                     p = multiprocessing.Process(target=self.extract_single,
-                                                args=(open(filename, 'rb'), folders[i].files,
+                                                args=(filename, folders[i].files,
                                                       self.src_start + positions[i], self.src_start + positions[i + 1]))
                     p.start()
                     extract_processes.append(p)
@@ -288,10 +255,12 @@ class Worker:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0)
 
-    def extract_single(self, fp: BinaryIO, files, src_start: int, src_end: int) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
+        if isinstance(fp, str):
+            fp = open(fp, 'rb')
         fp.seek(src_start)
         for f in files:
             fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
@@ -372,8 +341,6 @@ class Worker:
         and str is recognized as a path."""
         if fileish is None:
             self.set_output_filepath(id, NullHandler())
-        elif isinstance(fileish, io.BytesIO):
-            self.set_output_filepath(id, BufferHandler(fileish))
         elif isinstance(fileish, pathlib.Path):
             self.set_output_filepath(id, FileHandler(fileish))
         else:
