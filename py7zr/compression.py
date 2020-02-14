@@ -22,9 +22,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
-import concurrent.futures
 import io
 import lzma
+import multiprocessing
 import sys
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Union
@@ -275,17 +275,15 @@ class Worker:
                 empty_files = [f for f in self.files if f.emptystream]
                 positions = self.header.main_streams.packinfo.packpositions
                 self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    threads = []
-                    for i in range(numfolders):
-                        threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
-                                                       folders[i].files, self.src_start + positions[i],
-                                                       self.src_start + positions[i + 1]))
-                    for future in concurrent.futures.as_completed(threads):
-                        try:
-                            future.result()
-                        except Exception as e:
-                            raise e
+                extract_processes = []
+                for i in range(numfolders):
+                    p = multiprocessing.Process(target=self.extract_single,
+                                                args=(open(filename, 'rb'), folders[i].files,
+                                                      self.src_start + positions[i], self.src_start + positions[i + 1]))
+                    p.start()
+                    extract_processes.append(p)
+                for p in extract_processes:
+                    p.join()
         else:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0)
