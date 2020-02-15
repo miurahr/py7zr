@@ -73,6 +73,7 @@ class Worker:
     def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if multithread:
+            ctx = multiprocessing.get_context(method='spawn')
             numfolders = self.header.main_streams.unpackinfo.numfolders
             positions = self.header.main_streams.packinfo.packpositions
             folders = self.header.main_streams.unpackinfo.folders
@@ -81,7 +82,7 @@ class Worker:
             self.extract_single(filename, empty_files, 0)
             extract_processes = []
             for i in range(numfolders):
-                p = multiprocessing.Process(target=self.extract_single,
+                p = ctx.Process(target=self.extract_single,
                                             args=(filename, folders[i].files,
                                                   self.src_start + positions[i]))
                 p.start()
