@@ -26,7 +26,7 @@ import io
 import lzma
 import multiprocessing
 import sys
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
@@ -159,7 +159,7 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header) -> None:
-        self.target_filepath = {}  # type: Dict[int, Optional[BinaryIO]]
+        self.target_filepath = {}  # type: Dict[int, Optional[pathlib.Path]]
         self.files = files
         self.src_start = src_start
         self.header = header
@@ -204,13 +204,13 @@ class Worker:
                     if not f.emptystream:
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
 
-    def decompress(self, fp: BinaryIO, folder, fileish: BinaryIO,
+    def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer
            :parameter folder: Folder object that have decompressor object.
-           :parameter fileish: output file Handler, BufferHandler, FileHandler or NullHandler
+           :parameter fq: output file pathlib.Path
            :parameter size: uncompressed size of target file.
            :parameter compressed_size: compressed size of target file.
            :parameter src_end: end position of the folder
@@ -230,7 +230,7 @@ class Worker:
                 tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
-                fileish.write(tmp)
+                fq.write(tmp)
                 if out_remaining <= 0:
                     break
         assert out_remaining == 0
@@ -244,20 +244,19 @@ class Worker:
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
-                target = self.target_filepath.get(f.id, None)  # type: Optional[BinaryIO]
-                if target is not None:
-                    target.open()
-                    length = self.compress(fp, folder, target)
-                    target.close()
-                    f['compressed'] = length
+                filepath = self.target_filepath[f.id]
+                if filepath is not None:
+                    with filepath.open(mode='rb') as target:
+                        length = self.compress(fp, folder, target)
+                        f['compressed'] = length
             self.files.append(f)
         fp.flush()
 
-    def compress(self, fp: BinaryIO, folder, fileish):
+    def compress(self, fp: BinaryIO, folder, fq: IO[Any]):
         """Compress specified file-ish into folder where fp placed."""
         compressor = folder.get_compressor()
         length = 0
-        for indata in fileish.read(READ_BLOCKSIZE):
+        for indata in fq.read(READ_BLOCKSIZE):
             arcdata = compressor.compress(indata)
             folder.crc = calculate_crc32(arcdata, folder.crc)
             length += len(arcdata)
