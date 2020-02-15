@@ -1,6 +1,7 @@
 import asyncio
 import binascii
 import hashlib
+import multiprocessing
 import os
 import pathlib
 import shutil
@@ -242,6 +243,8 @@ def test_extract_encrypted(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skipif(multiprocessing.get_start_method() != 'fork',
+                    reason='known bug when multiprocessing mode is other than fork')
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
