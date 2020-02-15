@@ -22,9 +22,9 @@ steps:
 - script: tox -e py
   displayName: 'Run Tox'
 
-- script: |
-    coverage combine
-    coverage xml --ignore-errors
-    coverage report -m --ignore-errors
-    env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } mac
-  displayName: 'Converage report'
+# - script: |
+#     coverage combine
+#     coverage xml --ignore-errors
+#     coverage report -m --ignore-errors
+#     env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } mac
+#   displayName: 'Converage report'

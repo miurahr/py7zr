@@ -22,12 +22,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
-import concurrent.futures
 import io
 import lzma
+import multiprocessing
 import sys
-from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
@@ -38,100 +37,6 @@ if sys.version_info < (3, 6):
     import pathlib2 as pathlib
 else:
     import pathlib
-
-
-class NullHandler():
-    '''Null handler pass to null the data.'''
-
-    def __init__(self):
-        pass
-
-    def open(self, mode=None):
-        pass
-
-    def write(self, t):
-        pass
-
-    def read(self, size):
-        return b''
-
-    def seek(self, offset, whence=1):
-        pass
-
-    def truncate(self, size):
-        pass
-
-    def close(self):
-        pass
-
-    def stat(self):
-        return None
-
-
-class BufferHandler():
-    '''Buffer handler handles BytesIO/StringIO buffers.'''
-
-    def __init__(self, target: BytesIO) -> None:
-        self.buf = target
-        self.target = "memory buffer"
-
-    def open(self, mode=None) -> None:
-        pass
-
-    def write(self, data: bytes) -> None:
-        self.buf.write(data)
-
-    def read(self, size=None):
-        if size is not None:
-            return self.buf.read(size)
-        else:
-            return self.buf.read()
-
-    def seek(self, offset, whence=1):
-        self.buf.seek(offset, whence)
-
-    def truncate(self, size):
-        pass
-
-    def close(self) -> None:
-        pass
-
-    def stat(self):
-        return None
-
-
-class FileHandler():
-    '''File handler treat fileish object'''
-
-    def __init__(self, target: pathlib.Path) -> None:
-        self.target = target
-
-    def open(self, mode='wb') -> None:
-        self.fp = self.target.open(mode=mode)
-
-    def write(self, data: bytes) -> None:
-        self.fp.write(data)
-
-    def read(self, size=None):
-        if size is not None:
-            return self.fp.read(size)
-        else:
-            return self.fp.read()
-
-    def seek(self, offset, whence=1):
-        self.fp.seek(offset, whence)
-
-    def truncate(self, size=None):
-        self.fp.truncate(size)
-
-    def close(self) -> None:
-        self.fp.close()
-
-    def stat(self):
-        return self.target.stat()
-
-
-Handler = Union[NullHandler, BufferHandler, FileHandler]
 
 
 class CopyDecompressor:
@@ -254,13 +159,10 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header) -> None:
-        self.target_filepath = {}  # type: Dict[int, Handler]
+        self.target_filepath = {}  # type: Dict[int, Optional[pathlib.Path]]
         self.files = files
         self.src_start = src_start
         self.header = header
-
-    def set_output_filepath(self, index: int, func: Handler) -> None:
-        self.target_filepath[index] = func
 
     def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
@@ -275,43 +177,40 @@ class Worker:
                 empty_files = [f for f in self.files if f.emptystream]
                 positions = self.header.main_streams.packinfo.packpositions
                 self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    threads = []
-                    for i in range(numfolders):
-                        threads.append(executor.submit(self.extract_single, open(filename, 'rb'),
-                                                       folders[i].files, self.src_start + positions[i],
-                                                       self.src_start + positions[i + 1]))
-                    for future in concurrent.futures.as_completed(threads):
-                        try:
-                            future.result()
-                        except Exception as e:
-                            raise e
+                extract_processes = []
+                for i in range(numfolders):
+                    p = multiprocessing.Process(target=self.extract_single,
+                                                args=(filename, folders[i].files,
+                                                      self.src_start + positions[i], self.src_start + positions[i + 1]))
+                    p.start()
+                    extract_processes.append(p)
+                for p in extract_processes:
+                    p.join()
         else:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0)
 
-    def extract_single(self, fp: BinaryIO, files, src_start: int, src_end: int) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
+        if isinstance(fp, str):
+            fp = open(fp, 'rb')
         fp.seek(src_start)
         for f in files:
-            fileish = self.target_filepath.get(f.id, NullHandler())  # type: Handler
-            fileish.open()
-            # Skip empty file read
-            if f.emptystream:
-                fileish.write(b'')
-            else:
-                self.decompress(fp, f.folder, fileish, f.uncompressed[-1], f.compressed, src_end)
-            fileish.close()
+            fileish = self.target_filepath.get(f.id, None)
+            if fileish is not None:
+                with fileish.open(mode='wb') as ofp:
+                    if not f.emptystream:
+                        self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
 
-    def decompress(self, fp: BinaryIO, folder, fileish: Handler,
+    def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer
            :parameter folder: Folder object that have decompressor object.
-           :parameter fileish: output file Handler, BufferHandler, FileHandler or NullHandler
+           :parameter fq: output file pathlib.Path
            :parameter size: uncompressed size of target file.
            :parameter compressed_size: compressed size of target file.
            :parameter src_end: end position of the folder
@@ -331,7 +230,7 @@ class Worker:
                 tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
-                fileish.write(tmp)
+                fq.write(tmp)
                 if out_remaining <= 0:
                     break
         assert out_remaining == 0
@@ -345,19 +244,19 @@ class Worker:
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
-                target = self.target_filepath.get(f.id, NullHandler())  # type: Handler
-                target.open()
-                length = self.compress(fp, folder, target)
-                target.close()
-                f['compressed'] = length
+                filepath = self.target_filepath[f.id]
+                if filepath is not None:
+                    with filepath.open(mode='rb') as target:
+                        length = self.compress(fp, folder, target)
+                        f['compressed'] = length
             self.files.append(f)
         fp.flush()
 
-    def compress(self, fp: BinaryIO, folder, f: Handler):
+    def compress(self, fp: BinaryIO, folder, fq: IO[Any]):
         """Compress specified file-ish into folder where fp placed."""
         compressor = folder.get_compressor()
         length = 0
-        for indata in f.read(READ_BLOCKSIZE):
+        for indata in fq.read(READ_BLOCKSIZE):
             arcdata = compressor.compress(indata)
             folder.crc = calculate_crc32(arcdata, folder.crc)
             length += len(arcdata)
@@ -368,18 +267,9 @@ class Worker:
         fp.write(arcdata)
         return length
 
-    def register_filelike(self, id: int, fileish: Union[pathlib.Path, BinaryIO, None]) -> None:
-        """register file-ish to worker. File-ish can be union of BinaryIO, str and None.
-        When BytesIO specified use BufferHandler. When None use NullHandler, and
-        and str is recognized as a path."""
-        if fileish is None:
-            self.set_output_filepath(id, NullHandler())
-        elif isinstance(fileish, io.BytesIO):
-            self.set_output_filepath(id, BufferHandler(fileish))
-        elif isinstance(fileish, pathlib.Path):
-            self.set_output_filepath(id, FileHandler(fileish))
-        else:
-            raise
+    def register_filelike(self, id: int, fileish: Optional[pathlib.Path]) -> None:
+        """register file-ish to worker."""
+        self.target_filepath[id] = fileish
 
 
 class SevenZipDecompressor:

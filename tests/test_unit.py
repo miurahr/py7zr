@@ -452,45 +452,6 @@ def test_write_signature_header():
 
 
 @pytest.mark.unit
-def test_null_handler():
-    handler = py7zr.compression.NullHandler()
-    handler.open()
-    data = handler.read(100)
-    handler.write(data)
-    handler.seek(10)
-    handler.truncate(None)
-    handler.close()
-
-
-@pytest.mark.unit
-def test_buffer_handler():
-    buf = io.BytesIO(b'1234567890')
-    handler = py7zr.compression.BufferHandler(buf)
-    handler.open()
-    data = handler.read(5)
-    handler.write(data)
-    handler.seek(5)
-    handler.truncate(None)
-    handler.close()
-
-
-@pytest.mark.unit
-def test_file_handler(tmp_path):
-    target = tmp_path.joinpath('testfile')
-    handler = py7zr.compression.FileHandler(target)
-    handler.open(mode='wb')
-    data = b'01234567890123456789\0'
-    handler.write(data)
-    handler.close()
-    handler.open(mode='r+b')
-    data = handler.read(5)
-    assert data == b'01234'
-    handler.seek(20)
-    handler.truncate(None)
-    handler.close()
-
-
-@pytest.mark.unit
 def test_make_file_info1():
     file_info = py7zr.py7zr.SevenZipFile._make_file_info(pathlib.Path(os.path.join(testdata_path,
                                                                                    'src', 'bra.txt')), 'src/bra.txt')
