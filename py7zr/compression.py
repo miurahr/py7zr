@@ -159,7 +159,7 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header) -> None:
-        self.target_filepath = {}  # type: Dict[int, Optional[FileHandler]]
+        self.target_filepath = {}  # type: Dict[int, Optional[BinaryIO]]
         self.files = files
         self.src_start = src_start
         self.header = header
@@ -244,7 +244,7 @@ class Worker:
         fp.seek(self.src_start)
         for f in self.files:
             if not f['emptystream']:
-                target = self.target_filepath.get(f.id, None)  # type: Handler
+                target = self.target_filepath.get(f.id, None)  # type: Optional[BinaryIO]
                 if target is not None:
                     target.open()
                     length = self.compress(fp, folder, target)
