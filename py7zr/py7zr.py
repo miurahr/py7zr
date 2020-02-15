@@ -292,7 +292,6 @@ class SevenZipFile:
         else:
             raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
-        self._lock = threading.RLock()
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
