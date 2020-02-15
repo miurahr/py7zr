@@ -25,6 +25,24 @@ Removed
 Security
 --------
 
+`v0.6b2`_
+=========
+
+Changed
+-------
+
+* Concurrency implementation changes to use multiprocessing.Process() instead of
+  concurrency.futures to avoid freeze or deadlock with application usage of it.(#70)
+* Stop checking coverage because coverage.py > 5.0.0 produce error when multiprocessing.Process() usage.
+* Drop handlers, NullHandler, BufferHnalder, and FileHander.
+
+Known Issues
+------------
+
+* Extraction of encrypted archive which has multiple compression folders fails when
+  multiprocessing mode is not 'fork', that is python3.8 and later on MacOS, and on Windows.
+  see. test_extract_encrypted_2()
+
 `v0.6b1`_
 =========
 
@@ -524,7 +542,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b2...HEAD
+.. _v0.6b2: https://github.com/miurahr/py7zr/compare/v0.6b1...v0.6b2
 .. _v0.6b1: https://github.com/miurahr/py7zr/compare/v0.6a2...v0.6b1
 .. _v0.6a2: https://github.com/miurahr/py7zr/compare/v0.6a1...v0.6a2
 .. _v0.6a1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.6a1
