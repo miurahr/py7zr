@@ -177,9 +177,10 @@ class Worker:
                 empty_files = [f for f in self.files if f.emptystream]
                 positions = self.header.main_streams.packinfo.packpositions
                 self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                ctx = multiprocessing.get_context(method='spawn')
                 extract_processes = []
                 for i in range(numfolders):
-                    p = multiprocessing.Process(target=self.extract_single,
+                    p = ctx.Process(target=self.extract_single,
                                                 args=(filename, folders[i].files,
                                                       self.src_start + positions[i], self.src_start + positions[i + 1]))
                     p.start()
