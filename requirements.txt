@@ -1,6 +1,7 @@
 texttable
 pytest
 pytest-cov
+pytest-remotedata
 pytest-timeout
 coverage[toml]==5.0.1
 codecov
