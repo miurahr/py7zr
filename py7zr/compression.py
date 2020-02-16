@@ -410,5 +410,8 @@ def get_methods_names(coders: List[dict]) -> List[str]:
     }
     methods_names = []  # type: List[str]
     for coder in coders:
-        methods_names.append(methods_name_map[coder['method']])
+        try:
+            methods_names.append(methods_name_map[coder['method']])
+        except KeyError:
+            raise UnsupportedCompressionMethodError("Unknown method {}".format(coder['method']))
     return methods_names
