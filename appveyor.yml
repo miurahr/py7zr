@@ -2,6 +2,7 @@ environment:
   COVERALLS_PARALLEL: true
   COVERALLS_REPO_TOKEN:
     secure: dZWaKkr6xvP+aDksWLreF0p0L7LLiybUY2bUgGAqc3m/uVWHszncQcsXe5X1+rrf
+  PYTEST_ADDOPTS: -v --remote-data
   matrix:
     - PYTHON: "C:\\Python36-x64"
       TOXENV: py36
@@ -11,7 +12,8 @@ environment:
       TOXENV: py38
 
 install:
-  - "%PYTHON%\\python.exe -m pip install wheel tox codecov coveralls"
+  - "%PYTHON%\\python.exe -m pip install wheel tox"
+  # - "%PYTHON%\\python.exe -m pip install codecov coveralls"
 
 build: off
 
