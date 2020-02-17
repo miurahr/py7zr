@@ -181,8 +181,8 @@ class Worker:
                 extract_processes = []
                 for i in range(numfolders):
                     p = ctx.Process(target=self.extract_single,
-                                                args=(filename, folders[i].files,
-                                                      self.src_start + positions[i], self.src_start + positions[i + 1]))
+                                    args=(filename, folders[i].files,
+                                          self.src_start + positions[i], self.src_start + positions[i + 1]))
                     p.start()
                     extract_processes.append(p)
                 for p in extract_processes:

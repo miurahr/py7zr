@@ -33,7 +33,9 @@ def extract_archive(archive, base_dir):
 @pytest.mark.remote_data
 def test_concurrent_futures(tmp_path):
     archives = [(tmp_path.joinpath('qt3d.7z'),
-                 'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/qt5_5126/qt.qt5.5126.win64_mingw73/5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
+                 'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/'
+                 'qt5_5126/qt.qt5.5126.win64_mingw73/'
+                 '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
                 (tmp_path.joinpath('lpng1634.7z'), 'https://github.com/glennrp/libpng-releases/raw/master/lpng1634.7z'),
                 ]
     with concurrent.futures.ProcessPoolExecutor(2) as pexec:
