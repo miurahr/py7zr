@@ -2,9 +2,9 @@ import logging
 import multiprocessing
 import threading
 import time
+from urllib.request import urlopen
 
 import pytest
-from urllib.request import urlopen
 
 import py7zr
 
