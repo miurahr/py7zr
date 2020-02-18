@@ -1,8 +1,7 @@
-import concurrent.futures
-import functools
 import logging
+import multiprocessing
+import threading
 import time
-from operator import and_
 
 import pytest
 from urllib.request import urlopen
@@ -10,68 +9,67 @@ from urllib.request import urlopen
 import py7zr
 
 
-def retrieve_archive(archive, url):
-    resp = urlopen(url)
+def download(pool, archive, url):
+    pool.acquire(blocking=True)
     try:
+        logging.getLogger().info("Start Downloading {}".format(url))
+        resp = urlopen(url)
         with archive.open('wb') as fd:
             while True:
                 chunk = resp.read(8196)
                 if not chunk:
                     break
                 fd.write(chunk)
-    except Exception as e:
-        return None
-    return archive
+    except Exception:
+        raise Exception('Download Error.')
+    pool.release()
 
 
-def extract_archive(archive, base_dir):
+def extract(archive, base_dir):
+    logging.getLogger().info("Extracting {}".format(archive))
     py7zr.SevenZipFile(archive).extractall(path=base_dir)
-    return archive, time.process_time()
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.timeout(120)
 @pytest.mark.remote_data
-def test_concurrent_futures(tmp_path):
+def test_concurrent_run(tmp_path, caplog):
     archives = [(tmp_path.joinpath('qt3d.7z'),
                  'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/'
                  'qt5_5126/qt.qt5.5126.win64_mingw73/'
                  '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
-                (tmp_path.joinpath('lpng1634.7z'), 'https://github.com/glennrp/libpng-releases/raw/master/lpng1634.7z'),
+                (tmp_path.joinpath('EnvVarUpdate.7z'), 'https://nsis.sourceforge.io/'
+                                                       'mediawiki/images/a/ad/EnvVarUpdate.7z'),
+                (tmp_path.joinpath('GTKVICE-3.3.7z'), 'https://downloads.sourceforge.net/project/'
+                                                      'vice-emu/releases/binaries/windows/GTK3VICE-3.4-win64.7z'),
+                (tmp_path.joinpath('lpng1634.7z'), 'https://github.com/glennrp/libpng-releases/raw/master/lpng1634.7z')
                 ]
-    with concurrent.futures.ProcessPoolExecutor(2) as pexec:
-        download_task = []
-        completed_downloads = []
-        extract_task = []
-        completed_extract = []
-        with concurrent.futures.ThreadPoolExecutor(2) as texec:
-            for ar in archives:
-                logging.warning("Downloading {}...".format(ar[1]))
-                download_task.append(texec.submit(retrieve_archive, ar[0], ar[1]))
-                completed_downloads.append(False)
-                completed_extract.append(False)
-            while True:
-                for i, t in enumerate(download_task):
-                    if completed_downloads[i]:
-                        continue
-                    elif t.done():
-                        archive = t.result()
-                        if archive is None:
-                            pytest.fail('Failed to download test data.')
-                        logging.warning("Extracting {}...".format(archive))
-                        extract_task.append(pexec.submit(extract_archive, archive, tmp_path))
-                        completed_downloads[i] = True
-                if functools.reduce(and_, completed_downloads):
-                    logging.warning("Downloads are Completed.")
-                    break
+    caplog.set_level(logging.INFO)
+    start_time = time.perf_counter()
+    # Limit the number of threads of download.
+    pool = threading.BoundedSemaphore(2)
+    download_threads = []
+    extract_processes = []
+    completed_downloads = []
+    ctx = multiprocessing.get_context(method='spawn')
+    for ar in archives:
+        t = threading.Thread(target=download, args=(pool, ar[0], ar[1]))
+        download_threads.append((t, ar[0]))
+        completed_downloads.append(False)
+        t.start()
+    while True:
+        all_done = True
+        for i, (t, a) in enumerate(download_threads):
+            if not completed_downloads[i]:
+                t.join(0.05)
+                if not t.is_alive():
+                    completed_downloads[i] = True
+                    p = ctx.Process(target=extract, args=(a, tmp_path))
+                    extract_processes.append(p)
+                    p.start()
                 else:
-                    time.sleep(0.5)
-        while True:
-            for i, t in enumerate(extract_task):
-                if not completed_extract[i] and t.done():
-                    (archive, elapsed) = t.result()
-                    logging.warning("Done {} extraction in {:.8f}.".format(archive, elapsed))
-                    completed_extract[i] = True
-            if functools.reduce(and_, completed_extract):
-                break
-            else:
-                time.sleep(0.5)
+                    all_done = False
+        if all_done:
+            break
+    for p in extract_processes:
+        p.join()
+    logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
