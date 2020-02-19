@@ -168,15 +168,26 @@ class Worker:
     def extract(self, fp: BinaryIO, parallel: bool) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
+            src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
+            numfolders = self.header.main_streams.unpackinfo.numfolders
             if not parallel:
-                src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
                 r, w = multiprocessing.Pipe()
                 self.extract_single(fp, self.files, self.src_start, src_end, w)
                 exc = r.recv()
                 if exc is not None:
                     raise exc[0](exc[1])
+            elif numfolders == 1:
+                filename = getattr(fp, 'name', None)
+                ctx = multiprocessing.get_context(method='spawn')
+                r, w = multiprocessing.Pipe(duplex=False)
+                p = ctx.Process(target=self.extract_single,
+                                args=(filename, self.files, self.src_start, src_end, w))
+                p.start()
+                p.join()
+                exc = r.recv()
+                if exc is not None:
+                    raise exc[0](exc[1])
             else:
-                numfolders = self.header.main_streams.unpackinfo.numfolders
                 folders = self.header.main_streams.unpackinfo.folders
                 filename = getattr(fp, 'name', None)
                 empty_files = [f for f in self.files if f.emptystream]
