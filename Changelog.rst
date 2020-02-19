@@ -25,6 +25,22 @@ Removed
 Security
 --------
 
+`v0.6b4`_
+=========
+
+Changed
+-------
+
+* extract: decompression is done as another process in default.
+* extract: default multiprocessing mode is spawn
+* extract: single process mode for password protected archive.
+
+Fixed
+-----
+
+* extract: catch UnsupportedMethod exception properly when multiprocessing.
+
+
 `v0.6b3`_
 =========
 
@@ -562,7 +578,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b4...HEAD
+.. _v0.6b4: https://github.com/miurahr/py7zr/compare/v0.6b3...v0.6b4
 .. _v0.6b3: https://github.com/miurahr/py7zr/compare/v0.6b2...v0.6b3
 .. _v0.6b2: https://github.com/miurahr/py7zr/compare/v0.6b1...v0.6b2
 .. _v0.6b1: https://github.com/miurahr/py7zr/compare/v0.6a2...v0.6b1
