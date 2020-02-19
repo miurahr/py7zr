@@ -37,6 +37,14 @@ def test_concurrent_run(tmp_path, caplog):
                  'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/'
                  'qt5_5126/qt.qt5.5126.win64_mingw73/'
                  '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
+                (tmp_path.joinpath('qtactiveqt.7z'),
+                 'http://mirrors.dotsrc.org/qtproject/online/qtsdkrepository/windows_x86/desktop/'
+                 'qt5_5132/qt.qt5.5132.win64_mingw73/'
+                 '5.13.2-0-201910281254qtactiveqt-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
+                (tmp_path.joinpath('opengl32sw.7z'),
+                 'http://mirrors.ocf.berkeley.edu/qt/online/qtsdkrepository/windows_x86/desktop/'
+                 'qt5_5132/qt.qt5.5132.win64_mingw73/'
+                 '5.13.2-0-201910281254opengl32sw-64-mesa_12_0_rc2.7z'),
                 (tmp_path.joinpath('EnvVarUpdate.7z'), 'https://nsis.sourceforge.io/'
                                                        'mediawiki/images/a/ad/EnvVarUpdate.7z'),
                 (tmp_path.joinpath('GTKVICE-3.3.7z'), 'https://downloads.sourceforge.net/project/'
@@ -46,7 +54,7 @@ def test_concurrent_run(tmp_path, caplog):
     caplog.set_level(logging.INFO)
     start_time = time.perf_counter()
     # Limit the number of threads of download.
-    pool = threading.BoundedSemaphore(2)
+    pool = threading.BoundedSemaphore(6)
     download_threads = []
     extract_processes = []
     completed_downloads = []

@@ -25,6 +25,7 @@ import bz2
 import io
 import lzma
 import multiprocessing
+import os
 import sys
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
@@ -164,46 +165,69 @@ class Worker:
         self.src_start = src_start
         self.header = header
 
-    def extract(self, fp: BinaryIO, multithread: bool = False) -> None:
+    def extract(self, fp: BinaryIO, parallel: bool) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
-            if not multithread:
+            if not parallel:
                 src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
-                self.extract_single(fp, self.files, self.src_start, src_end)
+                r, w = multiprocessing.Pipe()
+                self.extract_single(fp, self.files, self.src_start, src_end, w)
+                exc = r.recv()
+                if exc is not None:
+                    raise exc[0](exc[1])
             else:
                 numfolders = self.header.main_streams.unpackinfo.numfolders
                 folders = self.header.main_streams.unpackinfo.folders
                 filename = getattr(fp, 'name', None)
                 empty_files = [f for f in self.files if f.emptystream]
                 positions = self.header.main_streams.packinfo.packpositions
-                self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                r, w = multiprocessing.Pipe(duplex=False)
+                self.extract_single(open(filename, 'rb'), empty_files, 0, 0, w)
+                exc = r.recv()
+                if exc is not None:
+                    raise exc[0](exc[1])
                 ctx = multiprocessing.get_context(method='spawn')
                 extract_processes = []
                 for i in range(numfolders):
+                    r, w = multiprocessing.Pipe(duplex=False)
                     p = ctx.Process(target=self.extract_single,
                                     args=(filename, folders[i].files,
-                                          self.src_start + positions[i], self.src_start + positions[i + 1]))
+                                          self.src_start + positions[i], self.src_start + positions[i + 1], w))
                     p.start()
-                    extract_processes.append(p)
-                for p in extract_processes:
+                    extract_processes.append((p, r))
+                for p, r in extract_processes:
                     p.join()
+                    exc = r.recv()
+                    if exc is not None:
+                        raise exc[0](exc[1])
         else:
             empty_files = [f for f in self.files if f.emptystream]
-            self.extract_single(fp, empty_files, 0, 0)
+            r, w = multiprocessing.Pipe()
+            self.extract_single(fp, empty_files, 0, 0, w)
+            exc = r.recv()
+            if exc is not None:
+                raise exc[0](exc[1])
 
-    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int, pipe) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
+            pipe.send(None)
             return
-        if isinstance(fp, str):
-            fp = open(fp, 'rb')
-        fp.seek(src_start)
-        for f in files:
-            fileish = self.target_filepath.get(f.id, None)
-            if fileish is not None:
-                with fileish.open(mode='wb') as ofp:
-                    if not f.emptystream:
-                        self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+        try:
+            if isinstance(fp, str):
+                fp = open(fp, 'rb')
+            fp.seek(src_start)
+            for f in files:
+                fileish = self.target_filepath.get(f.id, None)
+                if fileish is not None:
+                    with fileish.open(mode='wb') as ofp:
+                        if not f.emptystream:
+                            self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+        except Exception:
+            exc_type, exc_val, _ = sys.exc_info()
+            pipe.send((exc_type, exc_val))
+        else:
+            pipe.send(None)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:

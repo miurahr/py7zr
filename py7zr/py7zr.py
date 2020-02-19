@@ -31,7 +31,6 @@ import operator
 import os
 import stat
 import sys
-import threading
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
@@ -256,7 +255,11 @@ class SevenZipFile:
                  *, filters: Optional[str] = None, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        ArchivePassword(password)
+        if password is not None:
+            ArchivePassword(password)
+            self.password_protected = True
+        else:
+            self.password_protected = False
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool
@@ -294,7 +297,6 @@ class SevenZipFile:
         else:
             raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
-        self._lock = threading.RLock()
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
@@ -476,8 +478,7 @@ class SevenZipFile:
     def _reset_decompressor(self) -> None:
         if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
             for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
-                compressed_size = self.header.main_streams.packinfo.packsizes[i]
-                folder.get_decompressor(compressed_size, reset=True)
+                folder.decompressor = None
 
     def _reset_worker(self) -> None:
         """Seek to where archive data start in archive and recreate new worker."""
@@ -524,7 +525,7 @@ class SevenZipFile:
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
-            self.worker.extract(self.fp)  # TODO: print progress
+            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
         except Bad7zFile:
             return False
         else:
@@ -719,9 +720,6 @@ class SevenZipFile:
                     pass
                 else:
                     raise e
-
-        multi_thread = self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 1 and \
-            self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
         for f in self.files:
             # TODO: sanity check
@@ -776,7 +774,7 @@ class SevenZipFile:
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
-        self.worker.extract(self.fp, multithread=multi_thread)
+        self.worker.extract(self.fp, parallel=(not self.password_protected))
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.

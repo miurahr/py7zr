@@ -161,7 +161,7 @@ def test_skip():
     for i, cf in enumerate(archive.files):
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
-    archive.worker.extract(archive.fp)
+    archive.worker.extract(archive.fp, parallel=True)
 
 
 @pytest.mark.files
