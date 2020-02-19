@@ -25,7 +25,6 @@ import bz2
 import io
 import lzma
 import multiprocessing
-import os
 import sys
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
