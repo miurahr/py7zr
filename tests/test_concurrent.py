@@ -37,6 +37,10 @@ def test_concurrent_run(tmp_path, caplog):
                  'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/'
                  'qt5_5126/qt.qt5.5126.win64_mingw73/'
                  '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
+                (tmp_path.joinpath('qtbase.7z'),
+                 'http://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/windows_x86/desktop/'
+                 'qt5_5132/qt.qt5.5132.win32_mingw73/'
+                 '5.13.2-0-201910281254qtbase-Windows-Windows_7-Mingw73-Windows-Windows_7-X86.7z'),
                 (tmp_path.joinpath('qtactiveqt.7z'),
                  'http://mirrors.dotsrc.org/qtproject/online/qtsdkrepository/windows_x86/desktop/'
                  'qt5_5132/qt.qt5.5132.win64_mingw73/'
