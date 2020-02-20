@@ -11,7 +11,8 @@ pyannotate
 pycryptodome
 mypy; python_version >= '3.7'
 setuptools>=42
-setuptools_scm>=3.3
+setuptools_scm>=3.5.0
 tox
 twine
 wheel
+pep517
