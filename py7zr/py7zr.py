@@ -38,7 +38,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
-                           working_directory)
+                           readlink, working_directory)
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
@@ -568,7 +568,7 @@ class SevenZipFile:
                 dirname = os.path.dirname(f.origin)
                 basename = os.path.basename(f.origin)
                 with working_directory(dirname):
-                    link_target = os.readlink(basename)
+                    link_target = readlink(basename)
                     tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
