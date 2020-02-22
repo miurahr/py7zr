@@ -18,6 +18,7 @@
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import argparse
+import getpass
 import os
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
@@ -50,7 +51,8 @@ class Cli():
         extract_parser.set_defaults(func=self.run_extract)
         extract_parser.add_argument("arcfile", help="7z archive file")
         extract_parser.add_argument("odir", nargs="?", help="output directory")
-        extract_parser.add_argument("--password", help="Extraction with password")
+        extract_parser.add_argument("-P", "--password", action="store_true",
+                                    help="Password protected archive(you will be asked a password).")
         create_parser = subparsers.add_parser('c')
         create_parser.set_defaults(func=self.run_create)
         create_parser.add_argument("arcfile", help="7z archive file")
@@ -192,7 +194,14 @@ class Cli():
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
             return(1)
-        password = args.password
+        if args.password:
+            try:
+                password = getpass.getpass()
+            except getpass.GetPassWarning:
+                sys.stderr.write('Warning: your password may be shown.\n')
+                return(1)
+        else:
+            password = None
         a = py7zr.SevenZipFile(target, 'r', password=password)
         if args.odir:
             a.extractall(path=args.odir)

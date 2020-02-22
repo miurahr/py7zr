@@ -1,3 +1,4 @@
+import getpass
 import lzma
 import os
 import re
@@ -286,10 +287,16 @@ def test_cli_extract(tmp_path):
 
 
 @pytest.mark.cli
-def test_cli_encrypted_extract(tmp_path):
+def test_cli_encrypted_extract(monkeypatch, tmp_path):
+
+    def _getpasswd():
+        return 'secret'
+
+    monkeypatch.setattr(getpass, "getpass", _getpasswd)
+
     arcfile = os.path.join(testdata_path, "encrypted_1.7z")
     cli = py7zr.cli.Cli()
-    cli.run(["x", "--password", "secret", arcfile, str(tmp_path.resolve())])
+    cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
     expected = [{'filename': 'test1.txt', 'mode': 33188,
                  'digest': '0f16b2f4c3a74b9257cd6229c0b7b91855b3260327ef0a42ecf59c44d065c5b2'},
                 {'filename': 'test/test2.txt', 'mode': 33188,
