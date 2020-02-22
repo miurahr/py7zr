@@ -33,9 +33,9 @@ from typing import Optional
 from zlib import crc32
 
 if sys.platform == "win32":
-    from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,
+    from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,  # noqa
                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT)
-    from winioctlcon import FSCTL_GET_REPARSE_POINT
+    from winioctlcon import FSCTL_GET_REPARSE_POINT  # noqa
 
 
 def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1024 * 1024) -> int:
@@ -175,17 +175,18 @@ class ArchiveTimestamp(int):
         return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)
 
 
+def _check_bit(val, flag):
+    return bool(val & flag == flag)
+
+
 def islink(path):
     """
     Cross-platform islink implementation.
-
     Supports Windows NT symbolic links and reparse points.
-
     """
     if sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
         return os.path.islink(path)
-    return bool(os.path.exists(path) and GetFileAttributes(path) &
-                stat.FILE_ATTRIBUTE_REPARSE_POINT == stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    return os.path.exists(path) and _check_bit(GetFileAttributes(path), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def _parse_reparse_buffer(buf):
@@ -216,7 +217,6 @@ def _parse_reparse_buffer(buf):
             } GenericReparseBuffer;
         } DUMMYUNIONNAME;
     } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
-
     """
     # See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/ns-ntifs-_reparse_data_buffer
 
@@ -251,7 +251,6 @@ def _parse_reparse_buffer(buf):
 def readlink(path):
     """
     Cross-platform implementation of readlink for Python < 3.8
-
     Supports Windows NT symbolic links and reparse points.
     """
     if sys.platform != "win32":
@@ -260,7 +259,7 @@ def readlink(path):
     if not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
 
-    if islink(path): # may be a symbolic link.
+    if islink(path):  # may be a symbolic link.
         return os.readlink(path)
 
     if sys.version_info >= (3, 8):
@@ -271,7 +270,7 @@ def readlink(path):
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea
         handle = CreateFileW(path, GENERIC_READ, 0, None, OPEN_EXISTING,
-                              FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)
+                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)
         MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024
         buf = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
         CloseHandle(handle)
@@ -291,7 +290,6 @@ def readlink(path):
 def working_directory(path):
     """A context manager which changes the working directory to the given
     path, and then changes it back to its previous value on exit.
-
     """
     if path is None or path == '':
         yield
