@@ -194,14 +194,14 @@ class Cli():
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
             return(1)
-        if args.password:
+        if not args.password:
+            password = None  # type: Optional[str]
+        else:
             try:
                 password = getpass.getpass()
             except getpass.GetPassWarning:
                 sys.stderr.write('Warning: your password may be shown.\n')
                 return(1)
-        else:
-            password = None
         a = py7zr.SevenZipFile(target, 'r', password=password)
         if args.odir:
             a.extractall(path=args.odir)
