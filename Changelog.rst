@@ -25,6 +25,9 @@ Removed
 Security
 --------
 
+* CLI: Use 'getpass' standard library to input password.(#59)
+
+
 `v0.6b4`_
 =========
 
