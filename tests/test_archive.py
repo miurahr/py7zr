@@ -1,4 +1,5 @@
 import binascii
+import filecmp
 import hashlib
 import lzma
 import os
@@ -15,7 +16,8 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
-from py7zr.helpers import Local
+
+from . import ltime
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -58,12 +60,10 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
     ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
-    creationdate = ctime.astimezone(Local).strftime("%Y-%m-%d")
-    creationtime = ctime.astimezone(Local).strftime("%H:%M:%S")
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} {} ....A           33           37  test1.txt\n".format(creationdate, creationtime)
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
@@ -151,6 +151,8 @@ def test_compress_files_encoded_header(tmp_path):
     m = hashlib.sha256()
     m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.basic
@@ -168,12 +170,10 @@ def test_compress_file_0(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
     ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
-    creationdate = ctime.astimezone(Local).strftime("%Y-%m-%d")
-    creationtime = ctime.astimezone(Local).strftime("%H:%M:%S")
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} {} ....A           33           37  test1.txt\n".format(creationdate, creationtime)
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
@@ -262,6 +262,8 @@ def test_compress_files_1(tmp_path):
     m = hashlib.sha256()
     m.update((tmp_path / 'tgt' / 'scripts' / 'py7zr').open('rb').read())
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.api
@@ -323,10 +325,13 @@ def test_compress_files_2(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
 def test_compress_files_3(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -340,11 +345,13 @@ def test_compress_files_3(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
+    assert dc.diff_files == []
 
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="There is different results in windows")
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
 def test_compress_symlink(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -386,24 +393,6 @@ def test_compress_symlink(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
     # split archive.close() into _write_archive() and _fpclose()
-    reader = py7zr.SevenZipFile(target, 'r')
-    reader.extractall(path=tmp_path.joinpath('tgt'))
-    reader.close()
-
-
-@pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(not sys.platform.startswith("win"), reason="Only on Windows")
-def test_compress_link_on_windows(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(tmp_path.joinpath('src'))
-    archive = py7zr.SevenZipFile(target, 'w')
-    archive.set_encoded_header_mode(False)
-    archive.writeall('.')
-    archive.close()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()

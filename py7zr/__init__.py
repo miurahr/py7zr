@@ -19,6 +19,7 @@
 
 from pkg_resources import DistributionNotFound, get_distribution
 
+from py7zr.cli import Cli
 from py7zr.exceptions import (Bad7zFile, DecompressionError,
                               UnsupportedCompressionMethodError)
 from py7zr.py7zr import (ArchiveInfo, FileInfo, SevenZipFile, is_7zfile,
@@ -35,3 +36,8 @@ except DistributionNotFound:
 __all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile',
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError',
            'pack_7zarchive', 'unpack_7zarchive']
+
+
+def main():
+    cli = Cli()
+    return cli.run()

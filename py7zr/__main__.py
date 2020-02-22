@@ -17,8 +17,9 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+import sys
+
+from . import main
 
 if __name__ == "__main__":
-    import sys
-    import py7zr.cli
-    sys.exit(py7zr.cli.Cli().run())
+    sys.exit(main())

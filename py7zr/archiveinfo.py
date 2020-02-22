@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -36,10 +36,11 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import (MAGIC_7Z, CompressionMethod, Configuration,
-                              Property)
+from py7zr.properties import MAGIC_7Z, CompressionMethod, Property
 
 MAX_LENGTH = 65536
+P7ZIP_MAJOR_VERSION = b'\x00'
+P7ZIP_MINOR_VERSION = b'\x04'
 
 
 def read_crcs(file: BinaryIO, count: int) -> List[int]:
@@ -265,7 +266,7 @@ class PackInfo:
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))
-        self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams)]  # type: List[int]
+        self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
         return self
 
     def write(self, file: BinaryIO):
@@ -322,28 +323,24 @@ class Folder:
 
     def _read(self, file: BinaryIO) -> None:
         num_coders = read_uint64(file)
-        for i in range(num_coders):
-            while True:
-                b = read_byte(file)
-                methodsize = b & 0xf
-                iscomplex = b & 0x10 == 0x10
-                hasattributes = b & 0x20 == 0x20
-                last_alternative = b & 0x80 == 0
-                c = {'method': file.read(methodsize)}  # type: Dict[str, Any]
-                if iscomplex:
-                    c['numinstreams'] = read_uint64(file)
-                    c['numoutstreams'] = read_uint64(file)
-                else:
-                    c['numinstreams'] = 1
-                    c['numoutstreams'] = 1
-                self.totalin += c['numinstreams']
-                self.totalout += c['numoutstreams']
-                if hasattributes:
-                    proplen = read_uint64(file)
-                    c['properties'] = file.read(proplen)
-                self.coders.append(c)
-                if last_alternative:
-                    break
+        for _ in range(num_coders):
+            b = read_byte(file)
+            methodsize = b & 0xf
+            iscomplex = b & 0x10 == 0x10
+            hasattributes = b & 0x20 == 0x20
+            c = {'method': file.read(methodsize)}  # type: Dict[str, Any]
+            if iscomplex:
+                c['numinstreams'] = read_uint64(file)
+                c['numoutstreams'] = read_uint64(file)
+            else:
+                c['numinstreams'] = 1
+                c['numoutstreams'] = 1
+            self.totalin += c['numinstreams']
+            self.totalout += c['numoutstreams']
+            if hasattributes:
+                proplen = read_uint64(file)
+                c['properties'] = file.read(proplen)
+            self.coders.append(c)
         num_bindpairs = self.totalout - 1
         for i in range(num_bindpairs):
             self.bindpairs.append((read_uint64(file), read_uint64(file),))
@@ -361,18 +358,17 @@ class Folder:
         assert num_coders > 0
         write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
-            method = c['method']  # type: bytes
-            method_size = len(method)
-            numinstreams = c['numinstreams']
-            numoutstreams = c['numoutstreams']
-            iscomplex = 0x00 if numinstreams == 1 and numoutstreams == 1 else 0x10
-            last_alternative = 0x80 if i < num_coders - 1 else 0x00
+            id = c['method']  # type: bytes
+            id_size = len(id) & 0x0f
+            iscomplex = 0x10 if not self.is_simple(c) else 0x00
             hasattributes = 0x20 if c['properties'] is not None else 0x00
-            write_byte(file, struct.pack('B', method_size & 0xf | iscomplex | hasattributes | last_alternative))
-            write_bytes(file, method)
-            if iscomplex == 0x10:
-                write_uint64(file, numinstreams)
-                write_uint64(file, numoutstreams)
+            flag = struct.pack('B', id_size | iscomplex | hasattributes)
+            write_byte(file, flag)
+            write_bytes(file, id[:id_size])
+            if not self.is_simple(c):
+                write_uint64(file, c['numinstreams'])
+                assert c['numoutstreams'] == 1
+                write_uint64(file, c['numoutstreams'])
             if c['properties'] is not None:
                 write_uint64(file, len(c['properties']))
                 write_bytes(file, c['properties'])
@@ -386,8 +382,11 @@ class Folder:
             for pi in self.packed_indices:
                 write_uint64(file, pi)
 
-    def get_decompressor(self, size: int) -> SevenZipDecompressor:
-        if self.decompressor is not None:
+    def is_simple(self, coder):
+        return coder['numinstreams'] == 1 and coder['numoutstreams'] == 1
+
+    def get_decompressor(self, size: int, reset: bool = False) -> SevenZipDecompressor:
+        if self.decompressor is not None and not reset:
             return self.decompressor
         else:
             try:
@@ -1024,7 +1023,7 @@ class SignatureHeader:
     __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
 
     def __init__(self) -> None:
-        self.version = (Configuration.P7ZIP_MAJOR_VERSION, Configuration.P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
+        self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
         self.startheadercrc = None  # type: Optional[int]
         self.nextheaderofs = None  # type: Optional[int]
         self.nextheadersize = None  # type: Optional[int]

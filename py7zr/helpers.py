@@ -21,6 +21,8 @@
 #
 #
 
+import contextlib
+import hashlib
 import os
 import stat
 import struct
@@ -49,6 +51,26 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
         pos += blocksize
 
     return value & 0xffffffff
+
+
+def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+    assert digest == 'sha256'
+    if cycles == 0x3f:
+        ba = bytearray()
+        ba.extend(salt)
+        ba.extend(password)
+        for i in range(32):
+            ba.append(0)
+        key = bytes(ba[:32])  # type: bytes
+    else:
+        rounds = 1 << cycles
+        m = hashlib.sha256()
+        for round in range(rounds):
+            m.update(salt)
+            m.update(password)
+            m.update(round.to_bytes(8, byteorder='little', signed=False))
+        key = m.digest()[:32]
+    return key
 
 
 EPOCH_AS_FILETIME = 116444736000000000
@@ -263,3 +285,21 @@ def readlink(path):
         if result['tag'] == stat.IO_REPARSE_TAG_MOUNT_POINT:
             rpath[:0] = '\\??\\'
     return rpath
+
+
+@contextlib.contextmanager
+def working_directory(path):
+    """A context manager which changes the working directory to the given
+    path, and then changes it back to its previous value on exit.
+
+    """
+    if path is None or path == '':
+        yield
+        return
+    else:
+        prev_cwd = os.getcwd()
+        os.chdir(str(path))  # py35 need str()
+        try:
+            yield
+        finally:
+            os.chdir(prev_cwd)

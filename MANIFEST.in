@@ -5,7 +5,6 @@ include *.yml
 include LICENSE
 include .coveragerc
 include tox.ini
-include bin/py7zr
 include docs/requirements.txt
 recursive-include py7zr *.py
 recursive-include tests *.py

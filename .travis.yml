@@ -25,27 +25,12 @@ install:
 
 script: tox
 
-after_success:
-  - python setup.py sdist bdist_wheel
-  - |
-    if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
-      coverage combine
-      coverage xml --ignore-errors
-      coverage report -m --ignore-errors
-      codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
-      coveralls
-    fi
-
-deploy:
-  - provider: pypi
-    user: miurahr
-    password:
-      secure: Khjdp5eGZNyZPZb0nOBO387jR8AEIdgfqXZDN7QjXFl8z6ck0SqTica6969nzRV7PZirXiokdcH/mV91TzhVZJh4kwUPm8sXEM+I1VyEPZr0uAFErV47BI2RAmCPc0w/rJ0YEyO97PiGmgd7XHXiMmgYnShlB5UvtbgNcsZCorVXsIxNhs3AENNSDuDss44sUWl2EGVZqAwz4JzQb43ngJ8GzDoinJQBJFfiwCC8yj6f343pG43lcCAeyX2wNr8GSOgUbdmZYhEJXgTIhCauFVI2CzzStzSMMPWvqks0gCmhAQhYGUULMqAIZbrF1PpdX7GkgEfnrKShcg4svKBUpODn5limba4bHk8vw9XlsrQf8BnJvj+fl1lCeL/AqJdfWMwcPg4/kp9NsV9ujXyIFAT6CLZWLQ3UrUQ2wIfmMPwZwuSuTmJecqVihITdVihwPl+NUEGrBpifSuFnYdu08kn/ghKiP4hka7gONpVcW0mrPZ6GdmpOtXb6JB/9qQaj6ehJRNTOv/E8pZoIgtP2Ftu4amewReS/d+iLyn3glXboM6bilryXNh04aeh3ZEKbP9Gb78itpeQI9adbZmPBEOGfA3Q4saw2GfnU+dkHj1WLX9MRs0bMWJJqNouZrWxi9Jn9z4wlVqcz2NM1lDQ9oDeLO/MMx402yLdLfTMtdsw=
-    file_glob: true
-    file:
-    - dist/*.whl
-    skip_cleanup: true
-    skip_existing: true
-    on:
-      repo: miurahr/py7zr
-      tags: true
+# after_success:
+#   - |
+#     if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
+#       coverage combine
+#       coverage xml --ignore-errors
+#       coverage report -m --ignore-errors
+#       codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
+#       coveralls
+#     fi

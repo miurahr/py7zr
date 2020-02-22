@@ -1,8 +1,8 @@
 import asyncio
 import binascii
 import hashlib
-import io
 import os
+import pathlib
 import shutil
 import sys
 from datetime import datetime
@@ -10,7 +10,8 @@ from datetime import datetime
 import pytest
 
 import py7zr
-from py7zr import UnsupportedCompressionMethodError, unpack_7zarchive
+from py7zr import unpack_7zarchive
+from py7zr.exceptions import UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -61,32 +62,25 @@ def test_github_14(tmp_path):
 
 
 @pytest.mark.files
-def _test_umlaut_archive(filename):
+def _test_umlaut_archive(filename: str, target: pathlib.Path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
-    outbuf = []
-    for i, cf in enumerate(archive.files):
-        assert cf is not None
-        buf = io.BytesIO()
-        archive.worker.register_filelike(cf.id, buf)
-        outbuf.append(buf)
-    archive.worker.extract(archive.fp)
-    buf = outbuf[0]
-    buf.seek(0)
-    actual = buf.read()
-    assert actual == bytes('This file contains a german umlaut in the filename.', 'ascii')
+    archive.extractall(path=target)
+    archive.close()
+    actual = target.joinpath('t\xe4st.txt').open().read()
+    assert actual == 'This file contains a german umlaut in the filename.'
 
 
 @pytest.mark.files
-def test_non_solid_umlaut():
+def test_non_solid_umlaut(tmp_path):
     # test loading of a non-solid archive containing files with umlauts
-    _test_umlaut_archive('umlaut-non_solid.7z')
+    _test_umlaut_archive('umlaut-non_solid.7z', tmp_path)
 
 
 @pytest.mark.files
-def test_solid_umlaut():
+def test_solid_umlaut(tmp_path):
     # test loading of a solid archive containing files with umlauts
-    _test_umlaut_archive('umlaut-solid.7z')
+    _test_umlaut_archive('umlaut-solid.7z', tmp_path)
 
 
 @pytest.mark.files
@@ -114,6 +108,7 @@ def test_bugzilla_16(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
 def test_extract_symlink(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
@@ -166,7 +161,7 @@ def test_skip():
     for i, cf in enumerate(archive.files):
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
-    archive.worker.extract(archive.fp)
+    archive.worker.extract(archive.fp, parallel=True)
 
 
 @pytest.mark.files
@@ -176,6 +171,8 @@ def test_github_14_multi(tmp_path):
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
+        assert f.read() == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
+    with tmp_path.joinpath('github_14_multi_0').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
@@ -205,7 +202,6 @@ def test_multiblock_lzma_bug(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(raises=UnsupportedCompressionMethodError)
 def test_copy(tmp_path):
     """ test loading of copy compressed files.(help wanted)"""
     check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path)
@@ -231,3 +227,60 @@ def test_asyncio_executor(tmp_path):
     loop.run_until_complete(task)
     loop.run_until_complete(asyncio.sleep(3))
     os.unlink(str(tmp_path.joinpath('test_1.7z')))
+
+
+@pytest.mark.files
+def test_no_main_streams(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+def test_extract_encrypted(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_1.7z'), 'rb'), password='secret')
+    archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.skip(reason='A known bug issue #75.')
+def test_extract_encrypted_2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
+    archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+def test_extract_bzip2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
+def test_extract_bzip2_2(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2_2.7z'), 'rb'))
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
+def test_extract_ppmd(tmp_path):
+    with pytest.raises(UnsupportedCompressionMethodError):
+        archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'ppmd.7z'), 'rb'))
+        archive.extractall(path=tmp_path)
+        archive.close()
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
+def test_extract_symlink_with_relative_target_path(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
+    os.chdir(str(tmp_path))
+    os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
+    archive.extractall(path='target')
+    assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
+
+
+@pytest.mark.files
+def test_extract_emptystream_mix(tmp_path):
+    archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
+    archive.extractall(path=tmp_path)

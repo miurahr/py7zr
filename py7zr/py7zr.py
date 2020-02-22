@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -31,7 +31,6 @@ import operator
 import os
 import stat
 import sys
-import threading
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
@@ -39,8 +38,8 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
-                           readlink)
-from py7zr.properties import MAGIC_7Z, Configuration
+                           readlink, working_directory)
+from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -252,9 +251,15 @@ class FileInfo:
 class SevenZipFile:
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r', filters: Optional[str] = None) -> None:
+    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
+                 *, filters: Optional[str] = None, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        if password is not None:
+            ArchivePassword(password)
+            self.password_protected = True
+        else:
+            self.password_protected = False
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool
@@ -292,11 +297,10 @@ class SevenZipFile:
         else:
             raise TypeError("invalid file: {}".format(type(file)))
         self._fileRefCnt = 1
-        self._lock = threading.RLock()
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
-                self.reset()
+                self._reset_worker()
             elif mode in 'w':
                 # FIXME: check filters here
                 self.folder = self._create_folder(filters)
@@ -392,7 +396,7 @@ class SevenZipFile:
 
     def _filelist_retrieve(self) -> None:
         # Initialize references for convenience
-        if hasattr(self.header, 'main_streams'):
+        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             folders = self.header.main_streams.unpackinfo.folders
             packinfo = self.header.main_streams.packinfo
             subinfo = self.header.main_streams.substreamsinfo
@@ -471,7 +475,12 @@ class SevenZipFile:
             ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
             outfilename.chmod(outfilename.stat().st_mode & ro_mask)
 
-    def reset(self) -> None:
+    def _reset_decompressor(self) -> None:
+        if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
+            for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
+                folder.decompressor = None
+
+    def _reset_worker(self) -> None:
         """Seek to where archive data start in archive and recreate new worker."""
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
@@ -496,13 +505,13 @@ class SevenZipFile:
         remaining_size = size
         digest = None
         while remaining_size > 0:
-            block = min(Configuration.read_blocksize, remaining_size)
+            block = min(READ_BLOCKSIZE, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest == crc
 
     def _test_pack_digest(self) -> bool:
-        self.reset()
+        self._reset_worker()
         crcs = self.header.main_streams.packinfo.crcs
         if crcs is not None and len(crcs) > 0:
             # check packed stream's crc
@@ -512,11 +521,11 @@ class SevenZipFile:
         return True
 
     def _test_unpack_digest(self) -> bool:
-        self.reset()
+        self._reset_worker()
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
-            self.worker.extract(self.fp)  # TODO: print progress
+            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
         except Bad7zFile:
             return False
         else:
@@ -556,12 +565,11 @@ class SevenZipFile:
             if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                link_target = pathlib.Path(readlink(f.origin))
-                if str(link_target).startswith('\\\\?\\'):
-                    tgt = os.readlink(f.origin).encode('utf-8')
-                else:
-                    link_parent = pathlib.Path(os.path.abspath(os.path.dirname(f.origin)))
-                    tgt = str(link_target.relative_to(link_parent)).encode('utf-8')
+                dirname = os.path.dirname(f.origin)
+                basename = os.path.basename(f.origin)
+                with working_directory(dirname):
+                    link_target = readlink(basename)
+                    tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
                 out = compressor.compress(tgt)
@@ -577,7 +585,7 @@ class SevenZipFile:
                 num_unpack_streams += 1
                 insize = 0
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
-                    data = fd.read(Configuration.read_blocksize)
+                    data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
                     crc = 0  # type: int
                     while data:
@@ -586,7 +594,7 @@ class SevenZipFile:
                         outsize += len(out)
                         foutsize += len(out)
                         self.fp.write(out)
-                        data = fd.read(Configuration.read_blocksize)
+                        data = fd.read(READ_BLOCKSIZE)
                         insize += len(data)
                     self.header.main_streams.substreamsinfo.digests.append(crc)
                     self.header.main_streams.substreamsinfo.digestsdefined.append(True)
@@ -692,11 +700,13 @@ class SevenZipFile:
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        target_junction = []  # type: List[Tuple[BinaryIO, str]]
-        target_sym = []  # type: List[Tuple[BinaryIO, str]]
+        return self.extract(path)
+
+    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
+        target_junction = []  # type: List[pathlib.Path]
+        target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
         target_dirs = []  # type: List[pathlib.Path]
-        self.reset()
         if path is not None:
             if isinstance(path, str):
                 path = pathlib.Path(path)
@@ -710,10 +720,7 @@ class SevenZipFile:
                     pass
                 else:
                     raise e
-
-        multi_thread = self.header.main_streams.unpackinfo.numfolders > 1 and \
-            self.header.main_streams.packinfo.numstreams == self.header.main_streams.unpackinfo.numfolders
-        fnames = []  # type: List[str]
+        fnames = []  # type: List[str]  # check duplicated filename in one archive?
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -723,13 +730,22 @@ class SevenZipFile:
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
-            if f.filename in fnames:
-                multi_thread = False
-            fnames.append(f.filename)
-            if path is not None:
-                outfilename = path.joinpath(f.filename)
+            if f.filename not in fnames:
+                outname = f.filename
             else:
-                outfilename = pathlib.Path(f.filename)
+                i = 0
+                while True:
+                    outname = f.filename + '_%d' % i
+                    if outname not in fnames:
+                        break
+            fnames.append(outname)
+            if path is not None:
+                outfilename = path.joinpath(outname)
+            else:
+                outfilename = pathlib.Path(outname)
+            if targets is not None and f.filename not in targets:
+                self.worker.register_filelike(f.id, None)
+                continue
             if f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)
@@ -739,15 +755,11 @@ class SevenZipFile:
             elif f.is_socket:
                 pass
             elif f.is_symlink:
-                buf = io.BytesIO()
-                pair = (buf, f.filename)
-                target_sym.append(pair)
-                self.worker.register_filelike(f.id, buf)
+                target_sym.append(outfilename)
+                self.worker.register_filelike(f.id, outfilename)
             elif f.is_junction:
-                buf = io.BytesIO()
-                pair = (buf, f.filename)
-                target_junction.append(pair)
-                self.worker.register_filelike(f.id, buf)
+                target_junction.append(outfilename)
+                self.worker.register_filelike(f.id, outfilename)
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
@@ -762,30 +774,26 @@ class SevenZipFile:
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
-        self.worker.extract(self.fp, multithread=multi_thread)
-        for b, t in target_sym:
-            b.seek(0)
-            sym_src_org = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-            dirname = os.path.dirname(t)
-            if path:
-                sym_src = path.joinpath(dirname, sym_src_org)
-                sym_dst = path.joinpath(t)
-            else:
-                sym_src = pathlib.Path(dirname).joinpath(sym_src_org)
-                sym_dst = pathlib.Path(t)
-            sym_dst.symlink_to(sym_src)
+        self.worker.extract(self.fp, parallel=(not self.password_protected))
+
+        # create symbolic links on target path as a working directory.
+        # if path is None, work on current working directory.
+        for t in target_sym:
+            sym_dst = t.resolve()
+            with sym_dst.open('rb') as b:
+                sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+            sym_dst.unlink()  # unlink after close().
+            with working_directory(sym_dst.parent):
+                sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
-            for b, t in target_junction:
-                b.seek(0)
-                junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
-                dirname = os.path.dirname(t)
-                if path:
-                    junction_point = path.joinpath(t)
-                else:
-                    junction_point = pathlib.Path(dirname).joinpath(t)
-                _winapi.CreateJunction(junction_target, junction_point)  # type: ignore  # noqa
+            for t in target_junction:
+                junction_dst = t.resolve()
+                with junction_dst.open('rb') as b:
+                    junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                    junction_dst.unlink()
+                    _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
 
         for o, p in target_files:
             self._set_file_property(o, p)
@@ -823,6 +831,12 @@ class SevenZipFile:
         if 'w' in self.mode:
             self._write_archive()
         self._fpclose()
+
+    def reset(self) -> None:
+        """When read mode, it reset file pointer, decompress worker and decompressor"""
+        if self.mode == 'r':
+            self._reset_worker()
+            self._reset_decompressor()
 
 
 # --------------------

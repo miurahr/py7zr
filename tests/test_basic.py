@@ -1,7 +1,7 @@
 import lzma
 import os
+import re
 import sys
-import time
 
 import pytest
 
@@ -11,7 +11,7 @@ import py7zr.cli
 import py7zr.compression
 import py7zr.properties
 
-from . import check_output, decode_all
+from . import check_output, decode_all, ltime2
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -19,9 +19,6 @@ else:
     import pathlib
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
-os.environ['TZ'] = 'UTC'
-if os.name == 'posix':
-    time.tzset()
 os.umask(0o022)
 
 
@@ -31,71 +28,63 @@ def test_basic_initinfo():
     assert archive is not None
 
 
-@pytest.mark.basic
-def test_basic_list_1():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
-    archive_list = archive.list()
-    # TODO
-
-
 @pytest.mark.cli
 def test_cli_list_1(capsys):
     arc = os.path.join(testdata_path, 'test_1.7z')
     expected = """total 4 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-2019-03-14 00:10:08 D....            0            0  scripts
-2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58               setup.cfg
-2019-03-14 00:09:01 ....A          559               setup.py
-------------------- ----- ------------ ------------  ------------------------
 """
+    expected += "{} D....            0            0  scripts\n".format(ltime2(2019, 3, 14, 0, 10, 8))
+    expected += "{} ....A          111          441  scripts/py7zr\n".format(ltime2(2019, 3, 14, 0, 10, 8))
+    expected += "{} ....A           58               setup.cfg\n".format(ltime2(2019, 3, 14, 0, 7, 13))
+    expected += "{} ....A          559               setup.py\n".format(ltime2(2019, 3, 14, 0, 9, 1))
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", arc])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.basic
 def test_cli_list_2(capsys):
     arc = os.path.join(testdata_path, 'test_3.7z')
-    expected = """total 28 files and directories in solid archive
-   Date      Time    Attr         Size   Compressed  Name
-------------------- ----- ------------ ------------  ------------------------
-2018-10-18 14:52:42 D....            0            0  5.9.7
-2018-10-18 14:52:43 D....            0            0  5.9.7/gcc_64
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/include
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/include/QtX11Extras
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/lib
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/lib/cmake
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/lib/cmake/Qt5X11Extras
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/lib/pkgconfig
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/mkspecs
-2018-10-18 14:52:42 D....            0            0  5.9.7/gcc_64/mkspecs/modules
-2018-10-16 10:26:21 ....A           26         8472  5.9.7/gcc_64/include/QtX11Extras/QX11Info
-2018-10-16 10:26:24 ....A          176               5.9.7/gcc_64/include/QtX11Extras/QtX11Extras
-2018-10-16 10:26:24 ....A          201               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasDepends
-2018-10-16 10:26:24 ....A           32               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasVersion
-2018-10-16 10:26:27 ....A          722               5.9.7/gcc_64/lib/libQt5X11Extras.la
-2018-10-16 10:26:21 ....A         2280               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasglobal.h
-2018-10-16 10:26:24 ....A          222               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasversion.h
-2018-10-16 10:26:21 ....A         2890               5.9.7/gcc_64/include/QtX11Extras/qx11info_x11.h
-2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so
-2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5
-2018-10-16 10:26:27 ....A        14568               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9.7
-2018-10-18 14:52:42 ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9
-2018-10-16 10:26:24 ....A         6704               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfig.cmake
-2018-10-16 10:26:24 ....A          287               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfigVersion.cmake
-2018-10-16 10:26:27 ....A          283               5.9.7/gcc_64/lib/pkgconfig/Qt5X11Extras.pc
-2018-10-16 10:26:24 ....A          555               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras.pri
-2018-10-16 10:26:24 ....A          526               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras_private.pri
-2018-10-18 10:28:16 ....A         1064               5.9.7/gcc_64/lib/libQt5X11Extras.prl
-------------------- ----- ------------ ------------  ------------------------
-"""
+    expected = "total 28 files and directories in solid archive\n"
+    expected += "   Date      Time    Attr         Size   Compressed  Name\n"
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
+    expected += "{} D....            0            0  5.9.7\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64\n".format(ltime2(2018, 10, 18, 14, 52, 43))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/include\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/include/QtX11Extras\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/lib\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/lib/cmake\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/lib/cmake/Qt5X11Extras\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/lib/pkgconfig\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/mkspecs\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} D....            0            0  5.9.7/gcc_64/mkspecs/modules\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} ....A           26         8472  5.9.7/gcc_64/include/QtX11Extras/QX11Info\n".format(ltime2(2018, 10, 16, 10, 26, 21))  # noqa: E501
+    expected += "{} ....A          176               5.9.7/gcc_64/include/QtX11Extras/QtX11Extras\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A          201               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasDepends\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A           32               5.9.7/gcc_64/include/QtX11Extras/QtX11ExtrasVersion\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A          722               5.9.7/gcc_64/lib/libQt5X11Extras.la\n".format(ltime2(2018, 10, 16, 10, 26, 27))  # noqa: E501
+    expected += "{} ....A         2280               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasglobal.h\n".format(ltime2(2018, 10, 16, 10, 26, 21))  # noqa: E501
+    expected += "{} ....A          222               5.9.7/gcc_64/include/QtX11Extras/qtx11extrasversion.h\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A         2890               5.9.7/gcc_64/include/QtX11Extras/qx11info_x11.h\n".format(ltime2(2018, 10, 16, 10, 26, 21))  # noqa: E501
+    expected += "{} ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} ....A        14568               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9.7\n".format(ltime2(2018, 10, 16, 10, 26, 27))  # noqa: E501
+    expected += "{} ....A           24               5.9.7/gcc_64/lib/libQt5X11Extras.so.5.9\n".format(ltime2(2018, 10, 18, 14, 52, 42))  # noqa: E501
+    expected += "{} ....A         6704               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfig.cmake\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A          287               5.9.7/gcc_64/lib/cmake/Qt5X11Extras/Qt5X11ExtrasConfigVersion.cmake\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A          283               5.9.7/gcc_64/lib/pkgconfig/Qt5X11Extras.pc\n".format(ltime2(2018, 10, 16, 10, 26, 27))  # noqa: E501
+    expected += "{} ....A          555               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras.pri\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A          526               5.9.7/gcc_64/mkspecs/modules/qt_lib_x11extras_private.pri\n".format(ltime2(2018, 10, 16, 10, 26, 24))  # noqa: E501
+    expected += "{} ....A         1064               5.9.7/gcc_64/lib/libQt5X11Extras.prl\n".format(ltime2(2018, 10, 18, 10, 28, 16))  # noqa: E501
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", arc])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.api
@@ -197,24 +186,6 @@ def test_cli_no_subcommand(capsys):
 
 
 @pytest.mark.cli
-def test_cli_list(capsys):
-    arcfile = os.path.join(testdata_path, "test_1.7z")
-    expected = """total 4 files and directories in solid archive
-   Date      Time    Attr         Size   Compressed  Name
-------------------- ----- ------------ ------------  ------------------------
-2019-03-14 00:10:08 D....            0            0  scripts
-2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58               setup.cfg
-2019-03-14 00:09:01 ....A          559               setup.py
-------------------- ----- ------------ ------------  ------------------------
-"""
-    cli = py7zr.cli.Cli()
-    cli.run(["l", arcfile])
-    out, err = capsys.readouterr()
-    assert out == expected
-
-
-@pytest.mark.cli
 def test_cli_list_verbose(capsys):
     arcfile = os.path.join(testdata_path, "test_1.7z")
     expected = """Listing archive: {}
@@ -230,12 +201,12 @@ Blocks = 1
 total 4 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-2019-03-14 00:10:08 D....            0            0  scripts
-2019-03-14 00:10:08 ....A          111          441  scripts/py7zr
-2019-03-14 00:07:13 ....A           58               setup.cfg
-2019-03-14 00:09:01 ....A          559               setup.py
-------------------- ----- ------------ ------------  ------------------------
 """.format(arcfile, arcfile)
+    expected += "{} D....            0            0  scripts\n".format(ltime2(2019, 3, 14, 0, 10, 8))
+    expected += "{} ....A          111          441  scripts/py7zr\n".format(ltime2(2019, 3, 14, 0, 10, 8))
+    expected += "{} ....A           58               setup.cfg\n".format(ltime2(2019, 3, 14, 0, 7, 13))
+    expected += "{} ....A          559               setup.py\n".format(ltime2(2019, 3, 14, 0, 9, 1))
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", "--verbose", arcfile])
     out, err = capsys.readouterr()
@@ -314,6 +285,19 @@ def test_cli_extract(tmp_path):
     check_output(expected, tmp_path)
 
 
+@pytest.mark.cli
+def test_cli_encrypted_extract(tmp_path):
+    arcfile = os.path.join(testdata_path, "encrypted_1.7z")
+    cli = py7zr.cli.Cli()
+    cli.run(["x", "--password", "secret", arcfile, str(tmp_path.resolve())])
+    expected = [{'filename': 'test1.txt', 'mode': 33188,
+                 'digest': '0f16b2f4c3a74b9257cd6229c0b7b91855b3260327ef0a42ecf59c44d065c5b2'},
+                {'filename': 'test/test2.txt', 'mode': 33188,
+                 'digest': '1d0d28682fca74c5912ea7e3f6878ccfdb6e4e249b161994b7f2870e6649ef09'}
+                ]
+    check_output(expected, tmp_path)
+
+
 @pytest.mark.basic
 def test_digests():
     arcfile = os.path.join(testdata_path, "test_2.7z")
@@ -328,7 +312,7 @@ def test_non7z_ext(capsys, tmp_path):
     cli = py7zr.cli.Cli()
     cli.run(["x", arcfile, str(tmp_path.resolve())])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.cli
@@ -338,7 +322,7 @@ def test_non7z_test(capsys):
     cli = py7zr.cli.Cli()
     cli.run(["t", arcfile])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.cli
@@ -348,7 +332,7 @@ def test_non7z_list(capsys):
     cli = py7zr.cli.Cli()
     cli.run(["l", arcfile])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.unit
@@ -384,3 +368,49 @@ def test_py7zr_writeall_dir(tmp_path):
     assert len(archive.files) == 2
     for f in archive.files:
         assert f.filename in ('src', os.path.join('src', 'bra.txt'))
+
+
+@pytest.mark.api
+def test_py7zr_extract_specified_file(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    expected = [{'filename': 'scripts/py7zr', 'mode': 33261, 'mtime': 1552522208,
+                'digest': 'b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd'}
+                ]
+    archive.extract(path=tmp_path, targets=['scripts', 'scripts/py7zr'])
+    archive.close()
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert not tmp_path.joinpath('setup.cfg').exists()
+    assert not tmp_path.joinpath('setup.py').exists()
+    check_output(expected, tmp_path)
+
+
+@pytest.mark.api
+def test_py7zr_extract_and_getnames(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    allfiles = archive.getnames()
+    filter_pattern = re.compile(r'scripts.*')
+    targets = []
+    for f in allfiles:
+        if filter_pattern.match(f):
+            targets.append(f)
+    archive.extract(path=tmp_path, targets=targets)
+    archive.close()
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert not tmp_path.joinpath('setup.cfg').exists()
+    assert not tmp_path.joinpath('setup.py').exists()
+
+
+@pytest.mark.api
+def test_py7zr_extract_and_reset_iteration(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))
+    iterations = archive.getnames()
+    for target in iterations:
+        archive.extract(path=tmp_path, targets=[target])
+        archive.reset()
+    archive.close()
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert tmp_path.joinpath('setup.cfg').exists()
+    assert tmp_path.joinpath('setup.py').exists()
