@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import threading
 import time
 from urllib.request import urlopen
