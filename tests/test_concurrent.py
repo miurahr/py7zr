@@ -9,7 +9,7 @@ import pytest
 import py7zr
 
 
-def download(pool, archive, url):
+def download(pool, archive, url, results):
     pool.acquire()
     try:
         logging.getLogger().info("Start Downloading {}".format(url))
@@ -21,14 +21,21 @@ def download(pool, archive, url):
                     break
                 fd.write(chunk)
     except Exception:
-        raise Exception('Download Error.')
+        results[archive] = False
+    else:
+        results[archive] = True
     pool.release()
 
 
-def extract(pool, archive, base_dir):
+def extract(pool, archive, base_dir, results):
     pool.acquire()
-    logging.getLogger().info("Extracting {}".format(archive))
-    py7zr.SevenZipFile(archive).extractall(path=base_dir)
+    try:
+        logging.getLogger().info("Extracting {}".format(archive))
+        py7zr.SevenZipFile(archive).extractall(path=base_dir)
+    except Exception:
+        results[archive] = False
+    else:
+        results[archive] = True
     pool.release()
 
 
@@ -39,6 +46,10 @@ def test_concurrent_run(tmp_path, caplog):
                  'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/'
                  'windows_x86/desktop/qt5_5126/qt.qt5.5126.win64_mingw73/'
                  '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
+                (tmp_path.joinpath('qtconnectivity.7z'),
+                 'http://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/linux_x64/desktop/'
+                 'qt5_5126/qt.qt5.5126.gcc_64/'
+                 '5.12.6-0-201911111601qtconnectivity-Linux-RHEL_7_4-GCC-Linux-RHEL_7_4-X86_64.7z'),
                 (tmp_path.joinpath('qtxmlpatterns.7z'),
                  'https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/'
                  'windows_x86/desktop/qt5_5132/qt.qt5.5132.win64_mingw73/'
@@ -64,32 +75,57 @@ def test_concurrent_run(tmp_path, caplog):
                 ]
     caplog.set_level(logging.INFO)
     start_time = time.perf_counter()
-    # Limit the number of threads of download.
+    # Limit a number of threads of download.
     pool = threading.BoundedSemaphore(3)
-    ex_pool = multiprocessing.BoundedSemaphore(6)
-    download_threads = []
-    extract_processes = []
-    completed_downloads = []
-    ctx = multiprocessing.get_context(method='spawn')
+    # Limit a number of extraction threads.
+    ex_pool = threading.BoundedSemaphore(6)
+    download_threads = {}
+    download_results = {}
+    extract_threads = {}
+    completed_downloads = {}
+    completed_extracts = {}
+    extract_results = {}
     for ar in archives:
-        t = threading.Thread(target=download, args=(pool, ar[0], ar[1]))
-        download_threads.append((t, ar[0]))
-        completed_downloads.append(False)
+        fname = ar[0]
+        url = ar[1]
+        t = threading.Thread(target=download, args=(pool, fname, url, download_results))
+        download_threads[fname] = t
+        extract_threads[fname] = None
+        completed_downloads[fname] = False
+        completed_extracts[fname] = False
         t.start()
     while True:
         all_done = True
-        for i, (t, a) in enumerate(download_threads):
-            if not completed_downloads[i]:
+        for a in download_threads:
+            if not completed_downloads[a]:
+                t = download_threads[a]
                 t.join(0.05)
                 if not t.is_alive():
-                    completed_downloads[i] = True
-                    p = ctx.Process(target=extract, args=(ex_pool, a, tmp_path))
-                    extract_processes.append(p)
-                    p.start()
+                    completed_downloads[a] = True
+                    ex = threading.Thread(target=extract, args=(ex_pool, a, tmp_path, extract_results))
+                    extract_threads[a] = ex
+                    ex.start()
                 else:
                     all_done = False
+            elif completed_extracts[a] or extract_threads[a] is None:
+                pass
+            else:
+                ex = extract_threads[a]
+                ex.join(0.005)
+                if not ex.is_alive():
+                    if extract_results[a]:
+                        completed_extracts[a] = True
+                    else:
+                        raise Exception("Extraction error.")
         if all_done:
             break
-    for p in extract_processes:
-        p.join()
+        time.sleep(0.5)
+    for a in extract_threads:
+        if not completed_extracts[a]:
+            ex = extract_threads[a]
+            ex.join()
+            if not extract_results[a]:
+                raise Exception("Extraction error.")
+            else:
+                completed_extracts[a] = True
     logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
