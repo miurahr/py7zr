@@ -42,7 +42,9 @@ class MyThreadRun:
         pool.acquire()
         try:
             logging.getLogger().info("Extracting {}".format(archive))
-            py7zr.SevenZipFile(archive).extractall(path=base_dir)
+            szf = py7zr.SevenZipFile(archive)
+            szf.extractall(path=base_dir)
+            szf.close()
         except Exception:
             results[archive] = False
         else:
@@ -131,7 +133,7 @@ class FuturesRun:
         try:
             szf = py7zr.SevenZipFile(archive)
             szf.extractall(path=path)
-            os.unlink(archive)
+            szf.close()
         except Exception:
             exc = sys.exc_info()
             logging.error("Caught extraction error: %s" % exc[1])
