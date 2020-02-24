@@ -38,7 +38,6 @@ class MyThreadRun:
             results[archive] = True
         pool.release()
 
-
     def extract(self, pool, archive, base_dir, results):
         pool.acquire()
         try:
@@ -196,6 +195,7 @@ class FuturesRun:
                 else:
                     time.sleep(0.5)
 
+
 archives = [('qt3d.7z',
              'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/'
              'windows_x86/desktop/qt5_5126/qt.qt5.5126.win64_mingw73/'
@@ -227,6 +227,7 @@ archives = [('qt3d.7z',
                                'vice-emu/releases/binaries/windows/GTK3VICE-3.4-win64.7z'),
             ('lpng1634.7z', 'https://github.com/glennrp/libpng-releases/raw/master/lpng1634.7z')
             ]
+
 
 @pytest.mark.timeout(600)
 @pytest.mark.remote_data

@@ -23,7 +23,7 @@ steps:
   displayName: 'Install Tox'
 
 - script: tox -e py
-  env: {PYTEST_ADDOPTS: '${addopts}'}
+  env: {PYTEST_ADDOPTS: '$(addopts)'}
   displayName: 'Run Tox'
 
 # - script: |
