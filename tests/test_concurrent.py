@@ -2,6 +2,7 @@ import concurrent.futures
 import functools
 import logging
 import os
+import ssl
 import sys
 import threading
 import time
@@ -11,6 +12,9 @@ from operator import and_
 import pytest
 
 import py7zr
+
+# hack only for the test, it is highly discouraged for production.
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class MyThreadRun:
@@ -119,7 +123,7 @@ class FuturesRun:
                     fd.write(chunk)
         except Exception:
             exc = sys.exc_info()
-            logging.error("Caught extraction error: %s" % exc[1])
+            logging.error("Caught download error: %s" % exc[1])
             return False, None
         return True, time.process_time()
 
