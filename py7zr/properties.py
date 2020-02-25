@@ -26,6 +26,9 @@ from enum import Enum
 from typing import Optional
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
+FINISH_7Z = binascii.unhexlify('377abcaf271d')
+READ_BLOCKSIZE = 32248
+QUEUELEN = READ_BLOCKSIZE * 2
 
 READ_BLOCKSIZE = 32248
 
