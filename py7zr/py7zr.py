@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+import contextlib
 import datetime
 import errno
 import functools
@@ -248,7 +249,7 @@ class FileInfo:
         self.creationtime = creationtime
 
 
-class SevenZipFile:
+class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
@@ -316,6 +317,12 @@ class SevenZipFile:
             self._fpclose()
             raise e
         self.encoded_header_mode = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _create_folder(self, filters):
         folder = Folder()
