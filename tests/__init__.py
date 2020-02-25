@@ -35,6 +35,7 @@ def decode_all(archive, expected, tmpdir):
         assert file_info.lastwritetime is not None
         assert file_info.filename is not None
     archive.extractall(path=tmpdir)
+    archive.close()
     check_output(expected, tmpdir)
 
 

@@ -375,7 +375,7 @@ def test_py7zr_writeall_dir(tmp_path):
     assert len(archive.files) == 2
     for f in archive.files:
         assert f.filename in ('src', os.path.join('src', 'bra.txt'))
-
+    archive._fpclose()
 
 @pytest.mark.api
 def test_py7zr_extract_specified_file(tmp_path):

@@ -59,6 +59,7 @@ def test_compress_single_encoded_header(capsys, tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.test()
+    archive.close()
     ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
     expected = "total 1 files and directories in solid archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \

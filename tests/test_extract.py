@@ -36,6 +36,7 @@ def check_archive(archive, tmp_path):
     archive.extractall(path=tmp_path)
     assert tmp_path.joinpath('test/test2.txt').open('rb').read() == bytes('This file is located in a folder.', 'ascii')
     assert tmp_path.joinpath('test1.txt').open('rb').read() == bytes('This file is located in the root.', 'ascii')
+    archive.close()
 
 
 @pytest.mark.files
@@ -114,6 +115,7 @@ def test_extract_symlink(tmp_path):
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
                                           'lib/libabc.so.1.2.3', 'lib64']
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
@@ -123,6 +125,7 @@ def test_lzma2bcj(tmp_path):
     assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
                                   '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
     archive.extractall(path=tmp_path)
+    archive.close()
     m = hashlib.sha256()
     m.update(tmp_path.joinpath('5.12.1/msvc2017_64/bin/opengl32sw.dll').open('rb').read())
     assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
@@ -132,6 +135,7 @@ def test_lzma2bcj(tmp_path):
 def test_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.api
@@ -162,6 +166,7 @@ def test_skip():
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
     archive.worker.extract(archive.fp, parallel=True)
+    archive.close()
 
 
 @pytest.mark.files
@@ -170,6 +175,7 @@ def test_github_14_multi(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
+    archive.close()
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
     with tmp_path.joinpath('github_14_multi_0').open('rb') as f:
@@ -180,6 +186,7 @@ def test_github_14_multi(tmp_path):
 def test_multiblock(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.close()
     m = hashlib.sha256()
     m.update(tmp_path.joinpath('bin/7zdec.exe').open('rb').read())
     assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
@@ -189,10 +196,11 @@ def test_multiblock(tmp_path):
 def test_multiblock_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_2.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
-@pytest.mark.timeout(5, method='thread')
+@pytest.mark.timeout(10, method='thread')
 def test_multiblock_lzma_bug(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     archive.extractall(path=tmp_path)
