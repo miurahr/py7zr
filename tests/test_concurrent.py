@@ -1,7 +1,6 @@
 import concurrent.futures
 import functools
 import logging
-import os
 import ssl
 import sys
 import threading
@@ -202,10 +201,6 @@ archives = [('qt3d.7z',
              'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/'
              'windows_x86/desktop/qt5_5126/qt.qt5.5126.win64_mingw73/'
              '5.12.6-0-201911111120qt3d-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
-            ('qtconnectivity.7z',
-             'http://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/linux_x64/desktop/'
-             'qt5_5126/qt.qt5.5126.gcc_64/'
-             '5.12.6-0-201911111601qtconnectivity-Linux-RHEL_7_4-GCC-Linux-RHEL_7_4-X86_64.7z'),
             ('qtxmlpatterns.7z',
              'https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/'
              'windows_x86/desktop/qt5_5132/qt.qt5.5132.win64_mingw73/'
@@ -215,8 +210,7 @@ archives = [('qt3d.7z',
              'windows_x86/desktop/qt5_5132/qt.qt5.5132.win64_mingw73/'
              '5.13.2-0-201910281254qtactiveqt-Windows-Windows_10-Mingw73-Windows-Windows_10-X86_64.7z'),
             ('qtbase.7z',
-             # 'http://qt.mirrors.tds.net/qt/online/qtsdkrepository/'
-             'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/'
+             'http://qt.mirrors.tds.net/qt/online/qtsdkrepository/'
              'windows_x86/desktop/qt5_5132/qt.qt5.5132.win32_mingw73/'
              '5.13.2-0-201910281254qtbase-Windows-Windows_7-Mingw73-Windows-Windows_7-X86.7z'),
             ('opengl32sw.7z',
@@ -231,7 +225,7 @@ archives = [('qt3d.7z',
             ]
 
 
-@pytest.mark.timeout(600)
+@pytest.mark.timeout(180)
 @pytest.mark.remote_data
 def test_concurrent_run(tmp_path, caplog):
     caplog.set_level(logging.INFO)
@@ -241,7 +235,7 @@ def test_concurrent_run(tmp_path, caplog):
     logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
 
 
-@pytest.mark.timeout(600)
+@pytest.mark.timeout(180)
 @pytest.mark.remote_data
 def test_concurrent_futures(tmp_path, caplog):
     caplog.set_level(logging.INFO)

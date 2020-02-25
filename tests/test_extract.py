@@ -281,6 +281,7 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
 def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
     archive.extractall(path=tmp_path)
