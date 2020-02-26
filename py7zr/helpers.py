@@ -21,7 +21,6 @@
 #
 #
 
-import contextlib
 import hashlib
 import os
 import stat
@@ -284,20 +283,3 @@ def readlink(path):
         if result['tag'] == stat.IO_REPARSE_TAG_MOUNT_POINT:
             rpath[:0] = '\\??\\'
     return rpath
-
-
-@contextlib.contextmanager
-def working_directory(path):
-    """A context manager which changes the working directory to the given
-    path, and then changes it back to its previous value on exit.
-    """
-    if path is None or path == '':
-        yield
-        return
-    else:
-        prev_cwd = os.getcwd()
-        os.chdir(str(path))  # py35 need str()
-        try:
-            yield
-        finally:
-            os.chdir(prev_cwd)

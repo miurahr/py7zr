@@ -38,7 +38,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
-                           readlink, working_directory)
+                           readlink)
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
@@ -567,9 +567,8 @@ class SevenZipFile:
                 num_unpack_streams += 1
                 dirname = os.path.dirname(f.origin)
                 basename = os.path.basename(f.origin)
-                with working_directory(dirname):
-                    link_target = readlink(basename)
-                    tgt = link_target.encode('utf-8')
+                link_target = readlink(pathlib.Path(dirname) / basename)
+                tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
                 out = compressor.compress(tgt)
@@ -783,8 +782,7 @@ class SevenZipFile:
             with sym_dst.open('rb') as b:
                 sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
             sym_dst.unlink()  # unlink after close().
-            with working_directory(sym_dst.parent):
-                sym_dst.symlink_to(pathlib.Path(sym_src))
+            sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
