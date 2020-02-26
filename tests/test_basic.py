@@ -377,6 +377,7 @@ def test_py7zr_writeall_dir(tmp_path):
         assert f.filename in ('src', os.path.join('src', 'bra.txt'))
     archive._fpclose()
 
+
 @pytest.mark.api
 def test_py7zr_extract_specified_file(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb'))

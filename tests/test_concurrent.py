@@ -17,6 +17,7 @@ import py7zr
 ssl._create_default_https_context = ssl._create_unverified_context
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
+
 class MyThreadRun:
     def __init__(self):
         pass

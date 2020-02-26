@@ -785,7 +785,7 @@ class SevenZipFile:
             sym_dst.unlink()  # unlink after close().
             with working_directory(sym_dst.parent) as dir_fd:
                 os.symlink(sym_src, str(sym_dst), dir_fd=dir_fd)
-                #sym_dst.symlink_to(pathlib.Path(sym_src))
+                # sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):
