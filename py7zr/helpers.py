@@ -20,8 +20,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-import contextlib
-import os
 import time as _time
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Optional
@@ -143,21 +141,3 @@ class ArchiveTimestamp(int):
     @staticmethod
     def from_datetime(val):
         return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)
-
-
-@contextlib.contextmanager
-def working_directory(path):
-    """A context manager which changes the working directory to the given
-    path, and then changes it back to its previous value on exit.
-
-    """
-    if path is None or path == '':
-        yield
-        return
-    else:
-        prev_cwd = os.getcwd()
-        os.chdir(str(path))  # py35 need str()
-        try:
-            yield
-        finally:
-            os.chdir(prev_cwd)
