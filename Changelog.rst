@@ -10,6 +10,28 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+
+`v0.6b5`_
+=========
+
+Added
+-----
+
 * Add concurrent extraction test.
 * Add remote data test for general application test.
 * Add class for multi volume header.
@@ -27,12 +49,6 @@ Fixed
 
 * Build with pep517 utility.
 * Fix race condition for changing current working directory of caller, which cause failures in multithreading.(#80,#82)
-
-Deprecated
-----------
-
-Removed
--------
 
 Security
 --------
@@ -593,7 +609,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b5...HEAD
+.. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
 .. _v0.6b4: https://github.com/miurahr/py7zr/compare/v0.6b3...v0.6b4
 .. _v0.6b3: https://github.com/miurahr/py7zr/compare/v0.6b2...v0.6b3
 .. _v0.6b2: https://github.com/miurahr/py7zr/compare/v0.6b1...v0.6b2
