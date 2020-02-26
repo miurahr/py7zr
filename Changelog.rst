@@ -10,12 +10,22 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Add concurrent extraction test.
+* Add remote data test for general application test.
+* Add class for multi volume header.
+* Add readlink helper function for windows.
+
 Changed
 -------
+
+* Release process is done by Github Actions
+* Temporary disable to measure coverage, which is not working with threading.
+* Tox: now pass PYTEST_ADDOPTS environment variable.
 
 Fixed
 -----
 
+* Build with pep517 utility.
 * Fix race condition for changing current working directory of caller, which cause failures in multithreading.(#80,#82)
 
 Deprecated
