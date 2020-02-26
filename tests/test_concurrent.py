@@ -1,12 +1,13 @@
 import concurrent.futures
 import functools
 import logging
+import os
 import ssl
 import sys
 import threading
 import time
-from urllib.request import urlopen
 from operator import and_
+from urllib.request import urlopen
 
 import pytest
 
@@ -14,7 +15,7 @@ import py7zr
 
 # hack only for the test, it is highly discouraged for production.
 ssl._create_default_https_context = ssl._create_unverified_context
-
+testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 class MyThreadRun:
     def __init__(self):
@@ -242,4 +243,28 @@ def test_concurrent_futures(tmp_path, caplog):
     start_time = time.perf_counter()
     runner = FuturesRun()
     runner.download_and_extract(archives, tmp_path)
+    logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
+
+
+@pytest.mark.timeout(180)
+def test_concurrent_extraction(tmp_path, caplog):
+
+    def extractor(archive, path):
+        szf = py7zr.SevenZipFile(archive, 'r')
+        szf.extractall(path=path)
+        szf.close()
+        return True
+
+    caplog.set_level(logging.INFO)
+    start_time = time.perf_counter()
+    archives = ['bugzilla_16.7z', 'bugzilla_4.7z', 'bzip2.7z', 'bzip2_2.7z', 'copy.7z',
+                'empty.7z', 'github_14.7z', 'lzma2bcj.7z', 'mblock_1.7z', 'mblock_2.7z',
+                'mblock_3.7z', 'solid.7z', 'symlink.7z', 'test_1.7z', 'test_2.7z',
+                'test_3.7z', 'test_4.7z', 'test_5.7z', 'test_6.7z',
+                'test_folder.7z', 'umlaut-non_solid.7z', 'umlaut-solid.7z', 'zerosize.7z']
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        tasks = [executor.submit(extractor, os.path.join(testdata_path, ar), tmp_path.joinpath(ar)) for ar in archives]
+        for future in concurrent.futures.as_completed(tasks):
+            if not future.result():
+                raise Exception("Extract error.")
     logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))

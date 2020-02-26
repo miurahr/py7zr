@@ -24,12 +24,13 @@
 import contextlib
 import hashlib
 import os
+import pathlib
 import stat
 import struct
 import sys
 import time as _time
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import Optional
+from typing import Generator, Optional, Union
 from zlib import crc32
 
 if sys.platform == "win32":
@@ -287,17 +288,15 @@ def readlink(path):
 
 
 @contextlib.contextmanager
-def working_directory(path):
-    """A context manager which changes the working directory to the given
-    path, and then changes it back to its previous value on exit.
+def working_directory(path: Union[pathlib.Path, str]) -> Generator:
+    """A context manager which create dir_fd of the working directory to the given
+    path, and return dir_fd, then close it when exiting from context.
     """
     if path is None or path == '':
-        yield
-        return
-    else:
-        prev_cwd = os.getcwd()
-        os.chdir(str(path))  # py35 need str()
-        try:
-            yield
-        finally:
-            os.chdir(prev_cwd)
+        path = pathlib.Path('.')
+    dir_fd = os.open(str(path), os.O_RDONLY)
+    os.fchdir(dir_fd)
+    try:
+        yield dir_fd
+    finally:
+        os.close(dir_fd)

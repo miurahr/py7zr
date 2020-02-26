@@ -567,8 +567,8 @@ class SevenZipFile:
                 num_unpack_streams += 1
                 dirname = os.path.dirname(f.origin)
                 basename = os.path.basename(f.origin)
-                with working_directory(dirname):
-                    link_target = readlink(basename)
+                with working_directory(dirname) as dir_fd:
+                    link_target = readlink(basename, dir_fd=dir_fd)
                     tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
@@ -783,8 +783,9 @@ class SevenZipFile:
             with sym_dst.open('rb') as b:
                 sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
             sym_dst.unlink()  # unlink after close().
-            with working_directory(sym_dst.parent):
-                sym_dst.symlink_to(pathlib.Path(sym_src))
+            with working_directory(sym_dst.parent) as dir_fd:
+                os.symlink(sym_src, str(sym_dst), dir_fd=dir_fd)
+                #sym_dst.symlink_to(pathlib.Path(sym_src))
 
         # create junction point only on windows platform
         if sys.platform.startswith('win'):

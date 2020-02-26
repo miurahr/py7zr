@@ -16,6 +16,9 @@ Changed
 Fixed
 -----
 
+* Fix race condition for changing current working directory of caller,
+  which cause file operation fails in multithreading environment. (#80)
+
 Deprecated
 ----------
 
