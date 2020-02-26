@@ -16,9 +16,7 @@ Changed
 Fixed
 -----
 
-* Fix race condition for changing current working directory of caller,
-￼  which cause file operation fails in multithreading environment.
-   by remove os.chdir() (#80, #82)
+* Fix race condition for changing current working directory of caller, which cause failures in multithreading.(#80,#82)
 
 Deprecated
 ----------
