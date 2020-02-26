@@ -45,7 +45,7 @@ archives = [('qt3d.7z',
 @pytest.mark.remote_data
 def test_concurrent_futures(tmp_path, caplog):
 
-    def download_and_extract(self, ar, path):
+    def download_and_extract(ar, path):
         archive = path.joinpath(ar[0])
         url = ar[1]
         try:
