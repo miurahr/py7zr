@@ -247,22 +247,22 @@ def _parse_reparse_buffer(buf):
     return data
 
 
-def readlink(path):
+def readlink(path, *, dir_fd=None):
     """
     Cross-platform implementation of readlink for Python < 3.8
     Supports Windows NT symbolic links and reparse points.
     """
     if sys.platform != "win32":
-        return os.readlink(path)
+        return os.readlink(path, dir_fd=dir_fd)
 
     if not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
 
     if islink(path):  # may be a symbolic link.
-        return os.readlink(path)
+        return os.readlink(path, dir_fd=dir_fd)
 
     if sys.version_info >= (3, 8):
-        rpath = os.readlink(path)
+        rpath = os.readlink(path, dir_fd=dir_fd)
     else:
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
         # is a symbolic link to a directory or a NTFS junction.
