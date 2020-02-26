@@ -5,9 +5,9 @@ environment:
   matrix:
     - PYTHON: "C:\\Python36-x64"
       TOXENV: py36
-      PYTEST_ADDOPTS: --remote-data
     - PYTHON: "C:\\Python37-x64"
       TOXENV: py37
+      PYTEST_ADDOPTS: --remote-data
     - PYTHON: "C:\\Python38-x64"
       TOXENV: py38
 
