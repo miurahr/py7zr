@@ -1,5 +1,6 @@
 import concurrent.futures
 import logging
+import os
 import ssl
 import sys
 import time
@@ -11,8 +12,7 @@ import py7zr
 
 # hack only for the test, it is highly discouraged for production.
 ssl._create_default_https_context = ssl._create_unverified_context
-
-
+testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 archives = [('qt3d.7z',
              'https://ftp.jaist.ac.jp/pub/qtproject/online/qtsdkrepository/'
              'windows_x86/desktop/qt5_5126/qt.qt5.5126.win64_mingw73/'
