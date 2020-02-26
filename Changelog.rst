@@ -4,26 +4,15 @@ Py7zr ChangeLog
 
 All notable changes to this project will be documented in this file.
 
-`Unreleased`_
-=============
 
-Added
------
-
-Changed
--------
+`v0.5.3`_
+=========
 
 Fixed
 -----
 
-Deprecated
-----------
+* Fix race condition for changing current working directory of caller, which cause failures in multithreading.(#80,#82)
 
-Removed
--------
-
-Security
---------
 
 `v0.5.2`_
 =========
@@ -534,7 +523,7 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.5.2...HEAD
+.. _v0.5.3: https://github.com/miurahr/py7zr/compare/v0.5.2...v0.5.3
 .. _v0.5.2: https://github.com/miurahr/py7zr/compare/v0.5.1...v0.5.2
 .. _v0.5.1: https://github.com/miurahr/py7zr/compare/v0.5...v0.5.1
 .. _v0.5: https://github.com/miurahr/py7zr/compare/v0.5rc3...v0.5
