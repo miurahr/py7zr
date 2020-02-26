@@ -5,8 +5,8 @@ import ssl
 import sys
 import threading
 import time
-from urllib.request import urlopen
 from operator import and_
+from urllib.request import urlopen
 
 import pytest
 
