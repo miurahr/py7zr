@@ -3,7 +3,6 @@ import logging
 import os
 import ssl
 import sys
-import time
 from urllib.request import urlopen
 
 import pytest
@@ -41,58 +40,48 @@ archives = [('qt3d.7z',
             ]
 
 
-@pytest.mark.timeout(180)
+@pytest.mark.timeout(360)
 @pytest.mark.remote_data
-def test_concurrent_futures(tmp_path, caplog):
+def test_concurrent_futures(tmp_path):
 
     def download_and_extract(ar, path):
         archive = path.joinpath(ar[0])
-        url = ar[1]
         try:
-            resp = urlopen(url)
+            resp = urlopen(ar[1])
             with open(archive, 'wb') as fd:
                 while True:
                     chunk = resp.read(8196)
                     if not chunk:
                         break
                     fd.write(chunk)
-        except Exception:
-            exc = sys.exc_info()
-            logging.error("Caught download error: %s" % exc[1])
-            return False, None
-        archive = path.joinpath(ar[0])
-        try:
             szf = py7zr.SevenZipFile(archive)
             szf.extractall(path=path)
             szf.close()
         except Exception:
             exc = sys.exc_info()
-            logging.error("Caught extraction error: %s" % exc[1])
-            return False, None
-        return True, time.process_time()
+            logging.error("Caught error: %s" % exc[1])
+            return False
+        return True
 
-    caplog.set_level(logging.INFO)
-    start_time = time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor() as texec:
         tasks = [texec.submit(download_and_extract, ar, tmp_path) for ar in archives]
         for task in concurrent.futures.as_completed(tasks):
-            (res, elapsed) = task.result()
-            if not res:
-                raise Exception("Failed to extract")
-    logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
+            if not task.result():
+                raise Exception("Failed to extract.")
 
 
 @pytest.mark.timeout(180)
 def test_concurrent_extraction(tmp_path, caplog):
 
     def extractor(archive, path):
-        szf = py7zr.SevenZipFile(archive, 'r')
-        szf.extractall(path=path)
-        szf.close()
+        try:
+            szf = py7zr.SevenZipFile(archive, 'r')
+            szf.extractall(path=path)
+            szf.close()
+        except Exception:
+            return False
         return True
 
-    caplog.set_level(logging.INFO)
-    start_time = time.perf_counter()
     archives = ['bugzilla_16.7z', 'bugzilla_4.7z', 'bzip2.7z', 'bzip2_2.7z', 'copy.7z',
                 'empty.7z', 'github_14.7z', 'lzma2bcj.7z', 'mblock_1.7z', 'mblock_2.7z',
                 'mblock_3.7z', 'solid.7z', 'symlink.7z', 'test_1.7z', 'test_2.7z',
@@ -103,4 +92,3 @@ def test_concurrent_extraction(tmp_path, caplog):
         for future in concurrent.futures.as_completed(tasks):
             if not future.result():
                 raise Exception("Extract error.")
-    logging.getLogger().info("Elapsed time {:.8f}".format(time.perf_counter() - start_time))
