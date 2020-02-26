@@ -563,7 +563,7 @@ class SevenZipFile:
                 num_unpack_streams += 1
                 dirname = os.path.dirname(f.origin)
                 basename = os.path.basename(f.origin)
-                link_target = os.readlink(pathlib.Path(dirname) / basename)
+                link_target = os.readlink(str(pathlib.Path(dirname) / basename))
                 tgt = link_target.encode('utf-8')
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)
