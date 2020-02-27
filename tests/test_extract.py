@@ -204,6 +204,7 @@ def test_multiblock_zerosize(tmp_path):
 def test_multiblock_lzma_bug(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.close()
     m = hashlib.sha256()
     m.update(tmp_path.joinpath('5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll').open('rb').read())
     assert m.digest() == binascii.unhexlify('98985de41ddba789d039bb10d86ea3015bf0d8d9fa86b25a0490044c247233d3')
@@ -241,19 +242,22 @@ def test_asyncio_executor(tmp_path):
 def test_no_main_streams(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
 def test_extract_encrypted(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_1.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
-@pytest.mark.skip(reason='A known bug issue #75.')
+@pytest.mark.timeout(2)
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
@@ -286,6 +290,7 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
     os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
     archive.extractall(path='target')
     assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
+    archive.close()
 
 
 @pytest.mark.files
@@ -293,3 +298,4 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
 def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
     archive.extractall(path=tmp_path)
+    archive.close()
