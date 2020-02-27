@@ -26,6 +26,15 @@ Security
 --------
 
 
+`v0.6b6`_
+=========
+
+Fixed
+-----
+
+* Make pywin32 a regular runtime dependency
+
+
 `v0.6b5`_
 =========
 
@@ -609,7 +618,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b6...HEAD
+.. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
 .. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
 .. _v0.6b4: https://github.com/miurahr/py7zr/compare/v0.6b3...v0.6b4
 .. _v0.6b3: https://github.com/miurahr/py7zr/compare/v0.6b2...v0.6b3
