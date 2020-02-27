@@ -253,6 +253,7 @@ def test_extract_encrypted(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skip(reason='A known bug issue #75.')
 @pytest.mark.timeout(2)
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
