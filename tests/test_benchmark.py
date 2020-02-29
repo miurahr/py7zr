@@ -13,7 +13,7 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 def test_extract_benchmark(tmp_path, benchmark, data):
 
     def extractor(path, target):
-        target_path = tempfile.mkdtemp(dir=path)
+        target_path = tempfile.mkdtemp(dir=str(path))
         szf = py7zr.SevenZipFile(os.path.join(testdata_path, target), 'r')
         szf.extractall(path=target_path)
         szf.close()
