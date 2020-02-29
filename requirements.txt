@@ -1,5 +1,6 @@
 texttable
 pytest
+pytest-benchmark
 pytest-cov
 pytest-timeout
 coverage[toml]==5.0.1
