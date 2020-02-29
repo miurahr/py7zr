@@ -25,6 +25,19 @@ Removed
 Security
 --------
 
+`v0.6b7`_
+=========
+
+Added
+-----
+
+* Test: add benchmarking test.
+
+Changed
+-------
+
+* Concurrency strategy: change to threading instead of multiprocessing. (#92)
+
 
 `v0.6b6`_
 =========
@@ -618,7 +631,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b7...HEAD
+.. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
 .. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
 .. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
 .. _v0.6b4: https://github.com/miurahr/py7zr/compare/v0.6b3...v0.6b4
