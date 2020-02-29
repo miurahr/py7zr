@@ -1,5 +1,6 @@
 texttable
 pytest
+pytest-benchmark
 pytest-cov
 pytest-remotedata
 pytest-timeout
