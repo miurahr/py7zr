@@ -247,7 +247,7 @@ def _parse_reparse_buffer(buf):
     return data
 
 
-def readlink(path, *, dir_fd=None):
+def readlink(path, *, dir_fd=None) -> str:
     """
     Cross-platform implementation of readlink for Python < 3.8
     Supports Windows NT symbolic links and reparse points.
