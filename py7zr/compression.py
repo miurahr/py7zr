@@ -24,8 +24,8 @@
 import bz2
 import io
 import lzma
-import threading
 import sys
+import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
