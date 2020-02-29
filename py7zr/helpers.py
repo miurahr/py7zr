@@ -32,9 +32,9 @@ from typing import Optional
 from zlib import crc32
 
 if sys.platform == "win32":
-    from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,  # noqa
-                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT)
-    from winioctlcon import FSCTL_GET_REPARSE_POINT  # noqa
+    from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,
+                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT)  # type: ignore
+    from winioctlcon import FSCTL_GET_REPARSE_POINT  # type: ignore
 
 
 def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1024 * 1024) -> int:
@@ -247,23 +247,20 @@ def _parse_reparse_buffer(buf):
     return data
 
 
-def readlink(path, *, dir_fd=None) -> str:
+def readlink(path: str, *, dir_fd=None) -> str:
     """
     Cross-platform implementation of readlink for Python < 3.8
     Supports Windows NT symbolic links and reparse points.
     """
-    if sys.platform != "win32":
+    if sys.version_info >= (3, 8) or sys.platform != "win32":
         return os.readlink(path, dir_fd=dir_fd)
 
     if not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
-
-    if islink(path):  # may be a symbolic link.
+    elif islink(path):  # may be a symbolic link.
         return os.readlink(path, dir_fd=dir_fd)
 
-    if sys.version_info >= (3, 8):
-        rpath = os.readlink(path, dir_fd=dir_fd)
-    else:
+    if sys.platform == "win32":
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
         # is a symbolic link to a directory or a NTFS junction.
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
@@ -282,4 +279,4 @@ def readlink(path, *, dir_fd=None) -> str:
             rpath = result['buffer']
         if result['tag'] == stat.IO_REPARSE_TAG_MOUNT_POINT:
             rpath[:0] = '\\??\\'
-    return rpath
+        return rpath
