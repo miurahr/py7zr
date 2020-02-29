@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pytest
 
@@ -8,11 +9,13 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
 
 @pytest.mark.benchmark
-def test_benchmark_basic(tmp_path, benchmark):
+@pytest.mark.parametrize("data", ['solid.7z', 'mblock_1.7z'])
+def test_extract_benchmark(tmp_path, benchmark, data):
 
-    def extractor(path):
-        szf = py7zr.SevenZipFile(os.path.join(testdata_path, 'solid.7z'), 'r')
-        szf.extractall(path=path)
+    def extractor(path, target):
+        target_path = tempfile.mkdtemp(dir=path)
+        szf = py7zr.SevenZipFile(os.path.join(testdata_path, target), 'r')
+        szf.extractall(path=target_path)
         szf.close()
 
-    benchmark(extractor, tmp_path)
+    benchmark(extractor, tmp_path, data)
