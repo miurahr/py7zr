@@ -311,3 +311,39 @@ class NullIO:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+
+class BufferOverflow(Exception):
+    pass
+
+
+class Buffer:
+
+    def __init__(self, size=16):
+        self._size = size
+        self._buf = bytearray(size)
+        self._buflen = 0
+        self.view = memoryview(self._buf[0:0])
+
+    def add(self, data):
+        length = len(data)
+        if length + self._buflen > self._size:
+            raise BufferOverflow()
+        self._buf[self._buflen:self._buflen + length] = data
+        self._buflen += length
+        self.view = memoryview(self._buf[0:self._buflen])
+
+    def reset(self):
+        self._buflen = 0
+        self.view = memoryview(self._buf[0:0])
+
+    def set(self, data):
+        length = len(data)
+        if length > self._size:
+            raise BufferOverflow()
+        self._buf[0:length] = data
+        self._buflen = length
+        self.view = memoryview(self._buf[0:length])
+
+    def __len__(self):
+        return self._buflen
