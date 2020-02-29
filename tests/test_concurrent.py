@@ -74,13 +74,9 @@ def test_concurrent_futures(tmp_path):
 def test_concurrent_extraction(tmp_path, caplog):
 
     def extractor(archive, path):
-        try:
-            szf = py7zr.SevenZipFile(archive, 'r')
-            szf.extractall(path=path)
-            szf.close()
-        except Exception:
-            return False
-        return True
+        szf = py7zr.SevenZipFile(archive, 'r')
+        szf.extractall(path=path)
+        szf.close()
 
     archives = ['bugzilla_16.7z', 'bugzilla_4.7z', 'bzip2.7z', 'bzip2_2.7z', 'copy.7z',
                 'empty.7z', 'github_14.7z', 'lzma2bcj.7z', 'mblock_1.7z', 'mblock_2.7z',
@@ -89,6 +85,6 @@ def test_concurrent_extraction(tmp_path, caplog):
                 'test_folder.7z', 'umlaut-non_solid.7z', 'umlaut-solid.7z', 'zerosize.7z']
     with concurrent.futures.ThreadPoolExecutor() as executor:
         tasks = [executor.submit(extractor, os.path.join(testdata_path, ar), tmp_path.joinpath(ar)) for ar in archives]
-        for future in concurrent.futures.as_completed(tasks):
-            if not future.result():
-                raise Exception("Extract error.")
+        done, not_done = concurrent.futures.wait(tasks, return_when=concurrent.futures.ALL_COMPLETED)
+        if len(not_done) > 0:
+            raise Exception("Extraction error.")
