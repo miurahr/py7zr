@@ -13,8 +13,12 @@ Added
 Changed
 -------
 
+* SevenZipFile(file-object, 'r') now can run extract() well even unlink before extract().
+
 Fixed
 -----
+
+* Some of decryption of encrypted archive fails.(#75)
 
 Deprecated
 ----------
