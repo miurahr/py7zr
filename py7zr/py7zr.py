@@ -42,8 +42,10 @@ from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
+    import contextlib2 as contextlib
     import pathlib2 as pathlib
 else:
+    import contextlib
     import pathlib
 
 if sys.platform.startswith('win'):
@@ -248,7 +250,7 @@ class FileInfo:
         self.creationtime = creationtime
 
 
-class SevenZipFile:
+class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
@@ -316,6 +318,12 @@ class SevenZipFile:
             self._fpclose()
             raise e
         self.encoded_header_mode = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _create_folder(self, filters):
         folder = Folder()

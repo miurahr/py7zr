@@ -422,3 +422,20 @@ def test_py7zr_extract_and_reset_iteration(tmp_path):
     assert tmp_path.joinpath('scripts/py7zr').exists()
     assert tmp_path.joinpath('setup.cfg').exists()
     assert tmp_path.joinpath('setup.py').exists()
+
+
+@pytest.mark.api
+def test_context_manager_1(tmp_path):
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'), 'r') as z:
+        z.extractall(path=tmp_path)
+    assert tmp_path.joinpath('scripts').is_dir()
+    assert tmp_path.joinpath('scripts/py7zr').exists()
+    assert tmp_path.joinpath('setup.cfg').exists()
+    assert tmp_path.joinpath('setup.py').exists()
+
+
+@pytest.mark.api
+def test_context_manager_2(tmp_path):
+    target = tmp_path.joinpath('target.7z')
+    with py7zr.SevenZipFile(target, 'w') as z:
+        z.writeall(os.path.join(testdata_path, "src"), "src")
