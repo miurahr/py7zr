@@ -193,7 +193,7 @@ def test_multiblock(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.platform != "win32", reason="Cannot unlink opened file on Windows")
+@pytest.mark.skipif(sys.platform.startswith('win'), reason="Cannot unlink opened file on Windows")
 def test_multiblock_unlink(tmp_path):
     """When passing opened file object, even after unlink it should work."""
     shutil.copy(os.path.join(testdata_path, 'mblock_1.7z'), str(tmp_path))
