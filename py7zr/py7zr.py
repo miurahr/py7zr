@@ -23,7 +23,6 @@
 #
 #
 """Read 7zip format archives."""
-import contextlib
 import datetime
 import errno
 import functools
@@ -43,8 +42,10 @@ from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
+    import contextlib2 as contextlib
     import pathlib2 as pathlib
 else:
+    import contextlib
     import pathlib
 
 if sys.platform.startswith('win'):
