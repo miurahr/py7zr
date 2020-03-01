@@ -183,23 +183,29 @@ class Worker:
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
             numfolders = self.header.main_streams.unpackinfo.numfolders
-            if not parallel or numfolders == 1:
+            if numfolders == 1:
                 self.extract_single(fp, self.files, self.src_start, src_end)
             else:
                 folders = self.header.main_streams.unpackinfo.folders
-                filename = getattr(fp, 'name', None)
-                empty_files = [f for f in self.files if f.emptystream]
                 positions = self.header.main_streams.packinfo.packpositions
-                self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
-                extract_threads = []
-                for i in range(numfolders):
-                    p = threading.Thread(target=self.extract_single,
-                                         args=(filename, folders[i].files,
-                                               self.src_start + positions[i], self.src_start + positions[i + 1]))
-                    p.start()
-                    extract_threads.append((p))
-                for p in extract_threads:
-                    p.join()
+                empty_files = [f for f in self.files if f.emptystream]
+                if not parallel:
+                    self.extract_single(fp, empty_files, 0, 0)
+                    for i in range(numfolders):
+                        self.extract_single(fp, folders[i].files, self.src_start + positions[i],
+                                            self.src_start + positions[i + 1])
+                else:
+                    filename = getattr(fp, 'name', None)
+                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                    extract_threads = []
+                    for i in range(numfolders):
+                        p = threading.Thread(target=self.extract_single,
+                                             args=(filename, folders[i].files,
+                                                   self.src_start + positions[i], self.src_start + positions[i + 1]))
+                        p.start()
+                        extract_threads.append((p))
+                    for p in extract_threads:
+                        p.join()
         else:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0)

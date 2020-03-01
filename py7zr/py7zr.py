@@ -773,7 +773,7 @@ class SevenZipFile:
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
-        self.worker.extract(self.fp, parallel=(not self.password_protected))
+        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.
