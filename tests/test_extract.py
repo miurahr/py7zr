@@ -258,15 +258,14 @@ def test_no_main_streams(tmp_path):
 
 
 @pytest.mark.files
-def test_extract_encrypted(tmp_path):
+def test_extract_encrypted_1(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_1.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
     archive.close()
 
 
 @pytest.mark.files
-@pytest.mark.skip(reason='A known bug issue #75.')
-@pytest.mark.timeout(2)
+@pytest.mark.timeout(20)
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
