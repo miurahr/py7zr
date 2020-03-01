@@ -10,6 +10,28 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+
+`v0.6b8`_
+=========
+
+Added
+-----
+
 * Introduce context manager for SevenZipFile (#95)
 
 Changed
@@ -23,14 +45,6 @@ Fixed
 * Fix README example for extraction option.
 * Some of decryption of encrypted archive fails.(#75)
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.6b7`_
 =========
