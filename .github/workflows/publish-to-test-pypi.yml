@@ -22,6 +22,7 @@ jobs:
     - name: twine check
       run: python -m twine check dist/*
     - name: Publish distribution 📦 to Test PyPI
+      if: startsWith(github.event.ref, 'refs/heads/master')
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.testpypi_password }}
