@@ -21,6 +21,7 @@
 #
 #
 
+import ctypes
 import hashlib
 import os
 import stat
@@ -52,8 +53,9 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
     return value & 0xffffffff
 
 
-def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     assert digest == 'sha256'
+    assert cycles <= 0x3f
     if cycles == 0x3f:
         ba = bytearray()
         ba.extend(salt)
@@ -65,13 +67,40 @@ def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> byt
         rounds = 1 << cycles
         m = hashlib.sha256()
         for round in range(rounds):
-            m.update(salt)
-            m.update(password)
-            m.update(round.to_bytes(8, byteorder='little', signed=False))
+            m.update(salt + password + round.to_bytes(8, byteorder='little', signed=False))
         key = m.digest()[:32]
     return key
 
 
+
+def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
+    assert digest == 'sha256'
+    assert cycles <= 0x3f
+    if cycles == 0x3f:
+        key = bytes(bytearray(salt + password + bytes(32))[:32])  # type: bytes
+    else:
+        rounds = 1 << cycles
+        m = hashlib.sha256()
+        length = len(salt) + len(password)
+        class RoundBuf(ctypes.LittleEndianStructure):
+            _pack_ = 1
+            _fields_ = [
+                ('saltpassword', ctypes.c_ubyte * length),
+                ('round', ctypes.c_uint64)
+            ]
+        buf = RoundBuf()
+        for i, c in enumerate(salt + password):
+            buf.saltpassword[i] = c
+        buf.round = 0
+        mv = memoryview(buf)
+        while buf.round < rounds:
+            m.update(mv)
+            buf.round += 1
+        key = m.digest()[:32]
+    return key
+
+
+calculate_key = _calculate_key1
 EPOCH_AS_FILETIME = 116444736000000000
 
 
