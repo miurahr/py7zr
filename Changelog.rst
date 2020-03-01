@@ -20,6 +20,7 @@ Changed
 Fixed
 -----
 
+* Fix README example for extraction option.
 * Some of decryption of encrypted archive fails.(#75)
 
 Deprecated
