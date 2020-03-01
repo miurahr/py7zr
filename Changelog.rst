@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Introduce context manager for SevenZipFile (#95)
+
 Changed
 -------
 
