@@ -616,7 +616,10 @@ class SevenZipFile:
         return
 
     def _is_solid(self):
-        return self.header.main_streams.packinfo.numstreams == 1
+        for f in self.header.main_streams.substreamsinfo.num_unpackstreams_folders:
+            if f > 1:
+                return True
+        return False
 
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
