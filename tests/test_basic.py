@@ -224,7 +224,7 @@ Type = 7z
 Phisical Size = 1663
 Headers Size = 0
 Method = LZMA2
-Solid = +
+Solid = -
 Blocks = 1
 
 Everything is Ok
