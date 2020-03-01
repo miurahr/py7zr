@@ -172,7 +172,7 @@ def test_skip():
 @pytest.mark.files
 def test_github_14_multi(tmp_path):
     """ multiple unnamed objects."""
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14_multi.7z'), 'rb'))
+    archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'github_14_multi.7z'), 'r')
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
     archive.close()
@@ -190,6 +190,18 @@ def test_multiblock(tmp_path):
     m = hashlib.sha256()
     m.update(tmp_path.joinpath('bin/7zdec.exe').open('rb').read())
     assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.platform != "win32", reason="Cannot unlink opened file on Windows")
+def test_multiblock_unlink(tmp_path):
+    """When passing opened file object, even after unlink it should work."""
+    shutil.copy(os.path.join(testdata_path, 'mblock_1.7z'), str(tmp_path))
+    src = tmp_path.joinpath('mblock_1.7z')
+    archive = py7zr.SevenZipFile(open(str(src), 'rb'))
+    os.unlink(str(src))
+    archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
