@@ -122,6 +122,8 @@ SevenZipFile Object
    The *filters* parameter controls the compression algorithms to use when
    writing files to the archive. [#f2]_
 
+   SevenZipFile class has a capability as context manager. It can handle
+   'with' statement.
 
 .. method:: SevenZipFile.close()
 
