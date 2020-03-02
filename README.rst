@@ -71,7 +71,10 @@ You can run command script py7zr like as follows;
 
     $ py7zr l test.7z
     $ py7zr x test.7z
+    $ py7zr x -P test.7z
+      password?: ****
     $ py7zr w target.7z test_dir
+    $ py7zr help
 
 
 py7zr is a library which can use in your pyhton application.
@@ -97,7 +100,7 @@ Here is a code snippet how to produce archive.
     archive.close()
 
 
-You can also use 'with' block because py7zr provide context manager.
+You can also use 'with' block because py7zr provide context manager(v0.6 and later).
 
 .. code-block::
 
@@ -125,7 +128,7 @@ Note: if you specify only a file but not a parent directory, it will fail.
         archive.extract(targets=selective_files)
 
 
-py7zr support an extraction of password protected archive.
+py7zr support an extraction of password protected archive.(v0.6 and later)
 
 .. code-block::
 
