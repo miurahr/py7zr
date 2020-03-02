@@ -97,7 +97,7 @@ Here is a code snippet how to produce archive.
     archive.close()
 
 
-You can also use context manager.
+You can also use 'with' block because py7zr provide context manager.
 
 .. code-block::
 
@@ -108,6 +108,32 @@ You can also use context manager.
 
     with py7zr.SevenZipFile('target.7z', 'w') as z:
         z.writeall('./base_dir')
+
+
+py7zr also supports extraction of single or selected files by 'extract(targets=['file path'])'.
+Note: if you specify only a file but not a parent directory, it will fail.
+
+.. code-block::
+
+    import py7zr
+    import re
+
+    filter_pattern = re.compile(r'<your/target/file_and_directories/regex/expression>')
+    with SevenZipFile('archive.7z', 'r') as archive:
+        allfiles = archive.getnames()
+        selective_files = [f if filter_pattern.match(f) for f in allfiles]
+        archive.extract(targets=selective_files)
+
+
+py7zr support an extraction of password protected archive.
+
+.. code-block::
+
+    import py7zr
+
+    with py7zr.SevenZipFile('encrypted.7z', mode='r', password='secret') as z:
+        z.extractall()
+
 
 
 py7zr also support `shutil`  interface.
