@@ -75,7 +75,7 @@ Here is a code snippet how to decompress some file in your applicaiton.
 
     import py7zr
 
-    archive = py7zr.SevenZipFile('sample.7z', mode='x')
+    archive = py7zr.SevenZipFile('sample.7z', mode='r')
     archive.extractall(path="/tmp")
     archive.close()
 
