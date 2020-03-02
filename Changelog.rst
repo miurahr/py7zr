@@ -5,6 +5,14 @@ Py7zr ChangeLog
 All notable changes to this project will be documented in this file.
 
 
+`v0.5.4`_
+=========
+
+Fixed
+-----
+
+* Fix readme: extraction mode code was wrong. for extraction 'r' is correct.
+
 `v0.5.3`_
 =========
 
@@ -523,6 +531,7 @@ Changed
 
 
 .. History links
+.. _v0.5.4: https://github.com/miurahr/py7zr/compare/v0.5.3...v0.5.4
 .. _v0.5.3: https://github.com/miurahr/py7zr/compare/v0.5.2...v0.5.3
 .. _v0.5.2: https://github.com/miurahr/py7zr/compare/v0.5.1...v0.5.2
 .. _v0.5.1: https://github.com/miurahr/py7zr/compare/v0.5...v0.5.1
