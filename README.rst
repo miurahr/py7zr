@@ -77,7 +77,7 @@ You can run command script py7zr like as follows;
     $ py7zr help
 
 
-py7zr is a library which can use in your pyhton application.
+py7zr is a library which can use in your python application.
 Here is a code snippet how to decompress some file in your applicaiton.
 
 .. code-block::
