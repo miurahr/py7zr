@@ -132,6 +132,12 @@ def test_lzma2bcj(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_lzmabcj_archiveinfo():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzmabcj.7z'), 'r') as ar:
+        ar.archiveinfo()
+
+
+@pytest.mark.files
 def test_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     archive.extractall(path=tmp_path)
