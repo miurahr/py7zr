@@ -26,9 +26,6 @@ and not support
     * ppmd
     * bcj2
 
-/home/miurahr/projects/py7zr/venvpy/bin/pypy3 /home/miurahr/lib/apps/PyCharm-P/ch-0/193.5662.61/plugins/python/helpers/pycharm/_jb_tox_runner.py -e docs
-GLOB sdist-make: /home/miurahr/projects/py7zr/setup.py
-docs inst-nodeps: /home/miurahr/projects/py7zr/.tox/.tm
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 

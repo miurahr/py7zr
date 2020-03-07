@@ -29,13 +29,13 @@ Pure python 7-zip implementation
 Dependency
 ==========
 
-It uses a standard lzma module.
+`py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
+The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
 Minimum required version is Python 3.5.
 Two additional library is required only on Python3.5; contextlib2 and pathlib2.
 
 Compression is supported on Python 3.6 and later.
-
 pywin32 module is required on Windows platform.
 
 There are other runtime requrements; texttable, pycryptodome
@@ -49,9 +49,32 @@ Following fixes are included in these versions, and it is not fixed on python3.6
 
 - `BPO-21872`_: LZMA library sometimes fails to decompress a file
 - `PyPy3-3088`_: lzma.LZMADecomporessor.decompress does not respect max_length
-
+_
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
 .. _`BPO-21872`: https://bugs.python.org/issue21872
 .. _`PyPy3-3088`: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
+
+
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+
+    * lzma
+    * lzma2
+    * Deflate
+    * BCJ
+
+`py7zr` also support algorithms that is implemented in python core.
+
+    * BZip2
+    * COPY
+
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms such as
+
+    * PPMd
+    * BCJ2
+
+- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
+  but not work with original 7-zip because the original does not implement the feature.
 
 
 Document
