@@ -18,6 +18,8 @@ Changed
 
 * Update documents and README about supported algorithms.
 * Re-enable coverage report.
+* Refactoring SevenZipFile._write_archive() method to move
+  core chunk into compression module Worker.archive() method.
 
 Fixed
 -----
