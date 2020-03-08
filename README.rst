@@ -58,10 +58,10 @@ _
 
 'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
 
-    * lzma
-    * lzma2
-    * Deflate
-    * BCJ
+    * LZMA
+    * LZMA2
+    * BCJ(X86, IA64, ARM, ARMT, PPC, POWERPC)
+    * Delta
 
 `py7zr` also support algorithms that is implemented in python core.
 
