@@ -12,6 +12,7 @@ Added
 
 * Test: SevenZipFile.archiveinfo() for various archives.
 * Test: extraction of LZMA+BCJ archive become fails as marked known issue.
+* Support deflate decompression method.
 
 Changed
 -------
