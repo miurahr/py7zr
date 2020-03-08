@@ -31,8 +31,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import (NullIO, calculate_crc32, calculate_key,
-                           readlink)
+from py7zr.helpers import NullIO, calculate_crc32, calculate_key, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
 if sys.version_info < (3, 6):
@@ -278,7 +277,7 @@ class Worker:
                 link_target = readlink(str(pathlib.Path(dirname) / basename))  # type: str
                 tgt = link_target.encode('utf-8')  # type: bytes
                 insize = len(tgt)
-                crc = calculate_crc32(tgt, 0)
+                crc = calculate_crc32(tgt, 0)  # type: int
                 out = compressor.compress(tgt)
                 outsize += len(out)
                 foutsize += len(out)
@@ -294,7 +293,7 @@ class Worker:
                 with pathlib.Path(f.origin).open(mode='rb') as fd:
                     data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
-                    crc = 0  # type: int
+                    crc = 0
                     while data:
                         crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
