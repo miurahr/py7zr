@@ -222,7 +222,14 @@ class Worker:
             if fileish is not None:
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
+                        # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                    else:
+                        pass # just create empty file
+            elif not f.emptystream:
+                # read and bin off a data but check crc
+                with io.BytesIO() as ofp:
+                    self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
