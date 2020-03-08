@@ -138,6 +138,13 @@ def test_extract_lzmabcj_archiveinfo():
 
 
 @pytest.mark.files
+@pytest.mark.xfail(reason="Uknown problem that it become no data exception.")
+def test_extract_lzmabcj(tmp_path):
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzmabcj.7z'), 'r') as ar:
+        ar.extractall(path=tmp_path)
+
+
+@pytest.mark.files
 def test_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     archive.extractall(path=tmp_path)
@@ -271,7 +278,7 @@ def test_extract_encrypted_1(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.timeout(20)
+@pytest.mark.timeout(30)
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)

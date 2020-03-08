@@ -245,15 +245,16 @@ class Worker:
             read_size = min(READ_BLOCKSIZE, rest_size)
             if read_size == 0:
                 tmp = decompressor.decompress(b'', max_length)
+                if len(tmp) == 0:
+                    raise Exception("decompression get wrong: no output data.")
             else:
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fq.write(tmp)
-                if out_remaining <= 0:
-                    break
-        assert out_remaining == 0
+            if out_remaining <= 0:
+                break
         if fp.tell() >= src_end:
             if decompressor.crc is not None and not decompressor.check_crc():
                 print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
