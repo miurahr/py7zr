@@ -225,7 +225,7 @@ class Worker:
                         # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
                     else:
-                        pass # just create empty file
+                        pass  # just create empty file
             elif not f.emptystream:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:

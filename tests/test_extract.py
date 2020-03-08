@@ -324,4 +324,3 @@ def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
     archive.extractall(path=tmp_path)
     archive.close()
-
