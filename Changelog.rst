@@ -10,11 +10,21 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Test: SevenZipFile.archiveinfo() for various archives.
+* Test: extraction of LZMA+BCJ archive become fails as marked known issue.
+
 Changed
 -------
 
+* Update documents and README about supported algorithms.
+
 Fixed
 -----
+
+* Fix SevenZipFIle.archiveinfo() crash for LZMA+BCJ archive.(#100)
+* Fix SevenZipFile.test() method defeated from v0.6b2 (#103)
+* Fix SevenZipFile.solid() method to return proper value. (#72,#97)
+
 
 Deprecated
 ----------
