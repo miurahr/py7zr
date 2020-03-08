@@ -37,8 +37,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import (ArchiveTimestamp, calculate_crc32, filetime_to_dt,
-                           readlink)
+from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
@@ -308,6 +307,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.folder = self._create_folder(filters)
                 self.files = ArchiveFileList()
                 self._prepare_write()
+                self._reset_worker()
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -556,70 +556,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header = Header.build_header([self.folder])
 
     def _write_archive(self):
-        compressor = self.folder.get_compressor()
-        # TODO: support multiple compresssion folder; current single solid folder
-        outsize = 0
-        self.header.main_streams.packinfo.numstreams = 1
-        num_unpack_streams = 0
-        self.header.main_streams.substreamsinfo.digests = []
-        self.header.main_streams.substreamsinfo.digestsdefined = []
-        last_file_index = 0
-        foutsize = 0
-        for i, f in enumerate(self.files):
-            file_info = f.file_properties()
-            self.header.files_info.files.append(file_info)
-            self.header.files_info.emptyfiles.append(f.emptystream)
-            foutsize = 0
-            if f.is_symlink:
-                last_file_index = i
-                num_unpack_streams += 1
-                dirname = os.path.dirname(f.origin)
-                basename = os.path.basename(f.origin)
-                link_target = readlink(str(pathlib.Path(dirname) / basename))  # type: str
-                tgt = link_target.encode('utf-8')  # type: bytes
-                insize = len(tgt)
-                crc = calculate_crc32(tgt, 0)
-                out = compressor.compress(tgt)
-                outsize += len(out)
-                foutsize += len(out)
-                self.fp.write(out)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
-                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                self.header.files_info.files[i]['maxsize'] = foutsize
-            elif not f.emptystream:
-                last_file_index = i
-                num_unpack_streams += 1
-                insize = 0
-                with pathlib.Path(f.origin).open(mode='rb') as fd:
-                    data = fd.read(READ_BLOCKSIZE)
-                    insize += len(data)
-                    crc = 0  # type: int
-                    while data:
-                        crc = calculate_crc32(data, crc)
-                        out = compressor.compress(data)
-                        outsize += len(out)
-                        foutsize += len(out)
-                        self.fp.write(out)
-                        data = fd.read(READ_BLOCKSIZE)
-                        insize += len(data)
-                    self.header.main_streams.substreamsinfo.digests.append(crc)
-                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                    self.header.files_info.files[i]['maxsize'] = foutsize
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-
-        else:
-            out = compressor.flush()
-            outsize += len(out)
-            foutsize += len(out)
-            self.fp.write(out)
-            if len(self.files) > 0:
-                self.header.files_info.files[last_file_index]['maxsize'] = foutsize
-        # Update size data in header
-        self.header.main_streams.packinfo.packsizes = [outsize]
-        self.folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
-        # Write header
+        self.worker.archive(self.fp, self.folder)
+        # Write header and update signature header
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
                                                                  encoded=self.encoded_header_mode)
         self.sig_header.nextheaderofs = header_pos - self.afterheader

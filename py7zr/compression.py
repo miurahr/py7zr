@@ -24,13 +24,14 @@
 import bz2
 import io
 import lzma
+import os
 import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import NullIO, calculate_crc32, calculate_key
+from py7zr.helpers import NullIO, calculate_crc32, calculate_key, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
 if sys.version_info < (3, 6):
@@ -255,31 +256,67 @@ class Worker:
 
     def archive(self, fp: BinaryIO, folder):
         """Run archive task for specified 7zip folder."""
-        fp.seek(self.src_start)
-        for f in self.files:
-            if not f['emptystream']:
-                filepath = self.target_filepath[f.id]
-                if filepath is not None:
-                    with filepath.open(mode='rb') as target:
-                        length = self.compress(fp, folder, target)
-                        f['compressed'] = length
-            self.files.append(f)
-        fp.flush()
-
-    def compress(self, fp: BinaryIO, folder, fq: IO[Any]):
-        """Compress specified file-ish into folder where fp placed."""
         compressor = folder.get_compressor()
-        length = 0
-        for indata in fq.read(READ_BLOCKSIZE):
-            arcdata = compressor.compress(indata)
-            folder.crc = calculate_crc32(arcdata, folder.crc)
-            length += len(arcdata)
-            fp.write(arcdata)
-        arcdata = compressor.flush()
-        folder.crc = calculate_crc32(arcdata, folder.crc)
-        length += len(arcdata)
-        fp.write(arcdata)
-        return length
+        outsize = 0
+        self.header.main_streams.packinfo.numstreams = 1
+        num_unpack_streams = 0
+        self.header.main_streams.substreamsinfo.digests = []
+        self.header.main_streams.substreamsinfo.digestsdefined = []
+        last_file_index = 0
+        foutsize = 0
+        for i, f in enumerate(self.files):
+            file_info = f.file_properties()
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(f.emptystream)
+            foutsize = 0
+            if f.is_symlink:
+                last_file_index = i
+                num_unpack_streams += 1
+                dirname = os.path.dirname(f.origin)
+                basename = os.path.basename(f.origin)
+                link_target = readlink(str(pathlib.Path(dirname) / basename))  # type: str
+                tgt = link_target.encode('utf-8')  # type: bytes
+                insize = len(tgt)
+                crc = calculate_crc32(tgt, 0)  # type: int
+                out = compressor.compress(tgt)
+                outsize += len(out)
+                foutsize += len(out)
+                fp.write(out)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+            elif not f.emptystream:
+                last_file_index = i
+                num_unpack_streams += 1
+                insize = 0
+                with pathlib.Path(f.origin).open(mode='rb') as fd:
+                    data = fd.read(READ_BLOCKSIZE)
+                    insize += len(data)
+                    crc = 0
+                    while data:
+                        crc = calculate_crc32(data, crc)
+                        out = compressor.compress(data)
+                        outsize += len(out)
+                        foutsize += len(out)
+                        fp.write(out)
+                        data = fd.read(READ_BLOCKSIZE)
+                        insize += len(data)
+                    self.header.main_streams.substreamsinfo.digests.append(crc)
+                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                    self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+        else:
+            out = compressor.flush()
+            outsize += len(out)
+            foutsize += len(out)
+            fp.write(out)
+            if len(self.files) > 0:
+                self.header.files_info.files[last_file_index]['maxsize'] = foutsize
+        # Update size data in header
+        self.header.main_streams.packinfo.packsizes = [outsize]
+        folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
 
     def register_filelike(self, id: int, fileish: Optional[pathlib.Path]) -> None:
         """register file-ish to worker."""
