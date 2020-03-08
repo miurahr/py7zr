@@ -17,6 +17,7 @@ Changed
 -------
 
 * Update documents and README about supported algorithms.
+* Re-enable coverage report.
 
 Fixed
 -----

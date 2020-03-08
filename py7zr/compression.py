@@ -164,20 +164,6 @@ class Worker:
         self.src_start = src_start
         self.header = header
 
-    def Pipe(self):
-        class _pipe:
-            def __init__(self):
-                self.msg = None
-
-            def send(self, msg):
-                self.msg = msg
-
-            def recv(self):
-                return self.msg
-
-        p = _pipe()
-        return (p, p)
-
     def extract(self, fp: BinaryIO, parallel: bool) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
@@ -365,14 +351,6 @@ class SevenZipDecompressor:
         else:
             raise UnsupportedCompressionMethodError
 
-    @property
-    def needs_input(self) -> bool:
-        return self.decompressor.needs_input
-
-    @property
-    def eof(self) -> bool:
-        return self.decompressor.eof
-
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
         self.consumed += len(data)
         if max_length is not None:
@@ -383,14 +361,6 @@ class SevenZipDecompressor:
         if self.crc is not None:
             self.digest = calculate_crc32(folder_data, self.digest)
         return folder_data
-
-    @property
-    def unused_data(self):
-        return self.decompressor.unused_data
-
-    @property
-    def remaining_size(self) -> int:
-        return self.input_size - self.consumed
 
     def check_crc(self):
         return self.crc == self.digest
