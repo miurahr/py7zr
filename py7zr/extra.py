@@ -27,8 +27,8 @@ from typing import Any, Dict, List, Optional
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import calculate_key
-from py7zr.properties import CompressionMethod
+from py7zr.helpers import Buffer, calculate_key
+from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
 
 
 class DeflateDecompressor:
@@ -103,7 +103,7 @@ class AESDecompressor:
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
             self.lzma_decompressor = self._set_lzma_decompressor(coders)
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
-            self.buf = b''
+            self.buf = Buffer(size=READ_BLOCKSIZE + 16)
             self.flushed = False
         else:
             raise UnsupportedCompressionMethodError
@@ -128,22 +128,28 @@ class AESDecompressor:
             return self.lzma_decompressor.decompress(b'', max_length)
         elif len(data) == 0:  # action padding
             self.flushded = True
-            padlen = 16 - len(self.buf) % 16
-            inp = self.buf + bytes(padlen)
-            self.buf = b''
-            temp = self.cipher.decrypt(inp)
+            # align = 16
+            # padlen = (align - offset % align) % align
+            #       = (align - (offset & (align - 1))) & (align - 1)
+            #       = -offset & (align -1)
+            #       = -offset & (16 - 1) = -offset & 15
+            padlen = -len(self.buf) & 15
+            self.buf.add(bytes(padlen))
+            temp = self.cipher.decrypt(self.buf.view)
+            self.buf.reset()
             return self.lzma_decompressor.decompress(temp, max_length)
         else:
-            compdata = self.buf + data
-            currentlen = len(compdata)
-            a = currentlen // 16
-            nextpos = a * 16
+            currentlen = len(self.buf) + len(data)
+            nextpos = (currentlen // 16) * 16
             if currentlen == nextpos:
-                self.buf = b''
-                temp = self.cipher.decrypt(compdata)
+                self.buf.add(data)
+                temp = self.cipher.decrypt(self.buf.view)
+                self.buf.reset()
                 return self.lzma_decompressor.decompress(temp, max_length)
             else:
-                self.buf = compdata[nextpos:]
-                assert len(self.buf) < 16
-                temp = self.cipher.decrypt(compdata[:nextpos])
+                buflen = len(self.buf)
+                temp2 = data[nextpos - buflen:]
+                self.buf.add(data[:nextpos - buflen])
+                temp = self.cipher.decrypt(self.buf.view)
+                self.buf.set(temp2)
                 return self.lzma_decompressor.decompress(temp, max_length)
