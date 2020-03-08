@@ -26,8 +26,8 @@ import os
 import stat
 import struct
 import sys
-import zlib
 import time as _time
+import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Optional
 
