@@ -60,9 +60,10 @@ Following fixes are included in these versions, and it is not fixed on python3.6
 Compression Methods
 ===================
 
-'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
-It also support algorithms that is implemented in python core.
-`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms such as BCJ2.
+'py7zr' supports algorithms and filters which python3 standard `lzma module`_ and `liblzma`_ support.
+It also support algorithms that is implemented in python core such as Bzip2.
+It does not support one which `lzma module`_ and `liblzma`_ can not handle such as BCJ2.
+
 Here is a table of algorithms.
 
 +---------------------------------+----------------------------------------+
