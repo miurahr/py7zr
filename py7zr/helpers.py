@@ -280,3 +280,34 @@ def readlink(path: str, *, dir_fd=None) -> str:
         if result['tag'] == stat.IO_REPARSE_TAG_MOUNT_POINT:
             rpath[:0] = '\\??\\'
         return rpath
+
+
+class NullIO:
+    """IO class of /dev/null"""
+
+    def __init__(self):
+        pass
+
+    def write(self, data):
+        return len(data)
+
+    def read(self, length=None):
+        if length is not None:
+            return bytes(length)
+        else:
+            return b''
+
+    def close(self):
+        pass
+
+    def flush(self):
+        pass
+
+    def open(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass

@@ -30,7 +30,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import calculate_crc32, calculate_key
+from py7zr.helpers import NullIO, calculate_crc32, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
 if sys.version_info < (3, 6):
@@ -222,7 +222,14 @@ class Worker:
             if fileish is not None:
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
+                        # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                    else:
+                        pass  # just create empty file
+            elif not f.emptystream:
+                # read and bin off a data but check crc
+                with NullIO() as ofp:
+                    self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:

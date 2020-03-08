@@ -13,22 +13,25 @@ This module provides tools to read and list 7z file. Features is not implemented
 to create, write and append a 7z file.  Any advanced use of this module will
 require an understanding of the format, as defined in `7z_format`_.
 
-'py7zr' supports extraction and compression. Both features have limitations;
+Compression Methods
+===================
 
-- There are unsupported compression algorithms, because Python core does not support it. it support
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+It also support algorithms that is implemented in python core.
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms such as BCJ2.
+Here is a table of algorithms.
 
-    * lzma
-    * lzma2
-    * BCJ
-
-and not support
-
-    * ppmd
-    * bcj2
-
-- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
-  but not work with original 7-zip because the original does not implement the feature.
-
++---------------------------------+----------------------------------------+
+| Category                        | Algorithms                             |
++=================================+========================================+
+| Compress/Decompress Supported   | LZMA2                                  |
+|                                 | BCJ(X86, IA64, ARM, ARMT, PPC, POWERPC)|
++---------------------------------+----------------------------------------+
+| Decompress only                 | LZMA, Delta, COPY, Bzip2, Deflate      |
+| (Decryption)                    | AES                                    |
++---------------------------------+----------------------------------------+
+| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ                   |
++---------------------------------+----------------------------------------+
 
 The module is built upon awesome development effort and knowledge of `pylzma` module
 and its `py7zlib.py` program by Joachim Bauch. Great appreciation for Joachim!
