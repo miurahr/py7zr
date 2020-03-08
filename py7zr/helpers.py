@@ -27,9 +27,9 @@ import stat
 import struct
 import sys
 import time as _time
+import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Optional
-from zlib import crc32
 
 if sys.platform == "win32":
     from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,
@@ -42,11 +42,11 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
     length = len(data)
     pos = blocksize
     if value:
-        value = crc32(data[:pos], value)
+        value = zlib.crc32(data[:pos], value)
     else:
-        value = crc32(data[:pos])
+        value = zlib.crc32(data[:pos])
     while pos < length:
-        value = crc32(data[pos:pos + blocksize], value)
+        value = zlib.crc32(data[pos:pos + blocksize], value)
         pos += blocksize
 
     return value & 0xffffffff

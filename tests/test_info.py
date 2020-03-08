@@ -84,9 +84,8 @@ def test_archiveinfo_lzma_bcj_sparc():
 
 @pytest.mark.files
 def test_archivetest_deflate():
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
-            assert ar.test()
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
+        assert ar.test()
 
 
 @pytest.mark.files
