@@ -25,12 +25,12 @@ install:
 
 script: tox
 
-# after_success:
-#   - |
-#     if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
-#       coverage combine
-#       coverage xml --ignore-errors
-#       coverage report -m --ignore-errors
-#       codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
-#       coveralls
-#     fi
+after_success:
+  - |
+    if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
+      coverage combine
+      coverage xml --ignore-errors
+      coverage report -m --ignore-errors
+      codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
+      coveralls
+    fi
