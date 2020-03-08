@@ -72,7 +72,6 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
     return key
 
 
-
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     assert digest == 'sha256'
     assert cycles <= 0x3f
@@ -82,12 +81,14 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
         rounds = 1 << cycles
         m = hashlib.sha256()
         length = len(salt) + len(password)
+
         class RoundBuf(ctypes.LittleEndianStructure):
             _pack_ = 1
             _fields_ = [
                 ('saltpassword', ctypes.c_ubyte * length),
                 ('round', ctypes.c_uint64)
             ]
+
         buf = RoundBuf()
         for i, c in enumerate(salt + password):
             buf.saltpassword[i] = c
