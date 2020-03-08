@@ -50,14 +50,22 @@ class DeflateDecompressor:
 
 class CopyDecompressor:
 
+    def __init__(self):
+        self.buf = b''
+
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
         if max_length is None:
             length = len(data)
         else:
             length = min(len(data), max_length)
-        buf = self.unused_data + data
-        self.unused_data = buf[length:]
-        return buf[:length]
+        buflen = len(self.buf)
+        if length > buflen:
+            res = self.buf + data[:length - buflen]
+            self.buf = data[length - buflen:]
+        else:
+            res = self.buf[:length]
+            self.buf = self.buf[length:] + data
+        return res
 
 
 class AESDecompressor:
