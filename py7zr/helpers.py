@@ -54,14 +54,11 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
 
 
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+    """Calculate 7zip AES encryption key."""
     assert digest == 'sha256'
     assert cycles <= 0x3f
     if cycles == 0x3f:
-        ba = bytearray()
-        ba.extend(salt)
-        ba.extend(password)
-        for i in range(32):
-            ba.append(0)
+        ba = bytearray(salt + password + bytes(32))
         key = bytes(ba[:32])  # type: bytes
     else:
         rounds = 1 << cycles
@@ -73,6 +70,8 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
 
 
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
+    """Calculate 7zip AES encryption key.
+    It utilize ctypes and memoryview buffer and zero-copy technology on Python."""
     assert digest == 'sha256'
     assert cycles <= 0x3f
     if cycles == 0x3f:
@@ -93,7 +92,7 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
         for i, c in enumerate(salt + password):
             buf.saltpassword[i] = c
         buf.round = 0
-        mv = memoryview(buf)
+        mv = memoryview(buf)  # type: ignore # noqa
         while buf.round < rounds:
             m.update(mv)
             buf.round += 1
@@ -101,7 +100,7 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     return key
 
 
-calculate_key = _calculate_key1
+calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
 EPOCH_AS_FILETIME = 116444736000000000
 
 

@@ -566,7 +566,9 @@ def test_calculate_key1(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
     salt = b''
-    benchmark(py7zr.helpers.calculate_key, password, cycles, salt, 'sha256')
+    expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
+    key = benchmark(py7zr.helpers._calculate_key1, password, cycles, salt, 'sha256')
+    assert key == expected
 
 
 @pytest.mark.unit
@@ -575,7 +577,6 @@ def test_calculate_key2(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
     salt = b''
-    # expected =py7zr.helpers.calculate_key(password, cycles, salt, 'sha256')
     expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
     key = benchmark(py7zr.helpers._calculate_key2, password, cycles, salt, 'sha256')
     assert key == expected
