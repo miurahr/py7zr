@@ -29,7 +29,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import Optional
+from typing import Optional, Union
 
 if sys.platform == "win32":
     from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,
@@ -319,13 +319,13 @@ class BufferOverflow(Exception):
 
 class Buffer:
 
-    def __init__(self, size=16):
+    def __init__(self, size: int = 16):
         self._size = size
         self._buf = bytearray(size)
         self._buflen = 0
         self.view = memoryview(self._buf[0:0])
 
-    def add(self, data):
+    def add(self, data: Union[bytes, bytearray, memoryview]):
         length = len(data)
         if length + self._buflen > self._size:
             raise BufferOverflow()
@@ -333,11 +333,11 @@ class Buffer:
         self._buflen += length
         self.view = memoryview(self._buf[0:self._buflen])
 
-    def reset(self):
+    def reset(self) -> None:
         self._buflen = 0
         self.view = memoryview(self._buf[0:0])
 
-    def set(self, data):
+    def set(self, data: Union[bytes, bytearray, memoryview]) -> None:
         length = len(data)
         if length > self._size:
             raise BufferOverflow()
@@ -345,5 +345,5 @@ class Buffer:
         self._buflen = length
         self.view = memoryview(self._buf[0:length])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._buflen

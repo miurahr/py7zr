@@ -23,7 +23,7 @@
 #
 import lzma
 import zlib
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Union
 
 from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
@@ -36,13 +36,12 @@ class DeflateDecompressor:
         self.buf = b''
         self._decompressor = zlib.decompressobj(-15)
 
-    def decompress(self, data: bytes, max_length: Optional[int] = None):
-        dec = self._decompressor.decompress(data)
-        if max_length is None:
-            res = self.buf + dec
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1):
+        if max_length < 0:
+            res = self.buf + self._decompressor.decompress(data)
             self.buf = b''
         else:
-            tmp = self.buf + dec
+            tmp = self.buf + self._decompressor.decompress(data)
             res = tmp[:max_length]
             self.buf = tmp[max_length:]
         return res
@@ -51,20 +50,20 @@ class DeflateDecompressor:
 class CopyDecompressor:
 
     def __init__(self):
-        self.buf = b''
+        self._buf = bytes()
 
-    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
-        if max_length is None:
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if max_length < 0:
             length = len(data)
         else:
             length = min(len(data), max_length)
-        buflen = len(self.buf)
+        buflen = len(self._buf)
         if length > buflen:
-            res = self.buf + data[:length - buflen]
-            self.buf = data[length - buflen:]
+            res = self._buf + data[:length - buflen]
+            self._buf = data[length - buflen:]
         else:
-            res = self.buf[:length]
-            self.buf = self.buf[length:] + data
+            res = self._buf[:length]
+            self._buf = self._buf[length:] + data
         return res
 
 
@@ -101,7 +100,7 @@ class AESDecompressor:
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
-            self.lzma_decompressor = self._set_lzma_decompressor(coders)
+            self.lzma_decompressor = self._set_lzma_decompressor(coders)  # type: lzma.LZMADecompressor
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
             self.flushed = False
@@ -109,7 +108,7 @@ class AESDecompressor:
             raise UnsupportedCompressionMethodError
 
     # set pipeline decompressor
-    def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]):
+    def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]) -> lzma.LZMADecompressor:
         filters = []  # type: List[Dict[str, Any]]
         for coder in coders:
             filter = self.lzma_methods_map.get(coder['method'], None)
@@ -123,7 +122,7 @@ class AESDecompressor:
                 raise UnsupportedCompressionMethodError
         return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
-    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if len(data) == 0 and len(self.buf) == 0:  # action flush
             return self.lzma_decompressor.decompress(b'', max_length)
         elif len(data) == 0:  # action padding
@@ -135,7 +134,7 @@ class AESDecompressor:
             #       = -offset & (16 - 1) = -offset & 15
             padlen = -len(self.buf) & 15
             self.buf.add(bytes(padlen))
-            temp = self.cipher.decrypt(self.buf.view)
+            temp = self.cipher.decrypt(self.buf.view)  # type: bytes
             self.buf.reset()
             return self.lzma_decompressor.decompress(temp, max_length)
         else:
