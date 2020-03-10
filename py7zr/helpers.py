@@ -21,6 +21,7 @@
 #
 #
 
+import ctypes
 import hashlib
 import os
 import stat
@@ -52,26 +53,54 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
     return value & 0xffffffff
 
 
-def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+    """Calculate 7zip AES encryption key."""
     assert digest == 'sha256'
+    assert cycles <= 0x3f
     if cycles == 0x3f:
-        ba = bytearray()
-        ba.extend(salt)
-        ba.extend(password)
-        for i in range(32):
-            ba.append(0)
+        ba = bytearray(salt + password + bytes(32))
         key = bytes(ba[:32])  # type: bytes
     else:
         rounds = 1 << cycles
         m = hashlib.sha256()
         for round in range(rounds):
-            m.update(salt)
-            m.update(password)
-            m.update(round.to_bytes(8, byteorder='little', signed=False))
+            m.update(salt + password + round.to_bytes(8, byteorder='little', signed=False))
         key = m.digest()[:32]
     return key
 
 
+def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
+    """Calculate 7zip AES encryption key.
+    It utilize ctypes and memoryview buffer and zero-copy technology on Python."""
+    assert digest == 'sha256'
+    assert cycles <= 0x3f
+    if cycles == 0x3f:
+        key = bytes(bytearray(salt + password + bytes(32))[:32])  # type: bytes
+    else:
+        rounds = 1 << cycles
+        m = hashlib.sha256()
+        length = len(salt) + len(password)
+
+        class RoundBuf(ctypes.LittleEndianStructure):
+            _pack_ = 1
+            _fields_ = [
+                ('saltpassword', ctypes.c_ubyte * length),
+                ('round', ctypes.c_uint64)
+            ]
+
+        buf = RoundBuf()
+        for i, c in enumerate(salt + password):
+            buf.saltpassword[i] = c
+        buf.round = 0
+        mv = memoryview(buf)  # type: ignore # noqa
+        while buf.round < rounds:
+            m.update(mv)
+            buf.round += 1
+        key = m.digest()[:32]
+    return key
+
+
+calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
 EPOCH_AS_FILETIME = 116444736000000000
 
 

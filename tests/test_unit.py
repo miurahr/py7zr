@@ -493,18 +493,6 @@ def test_simple_compress_and_decompress():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("password, cycle, salt, expected",
-                         [('secret', 19, b'',
-                           b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'),
-                          ('secret^&', 0x3f, b'i@#ri#Ildajfdk',
-                           b'i@#ri#Ildajfdks\x00e\x00c\x00r\x00e\x00t\x00^\x00&\x00\x00\x00')
-                          ])
-def test_calculate_key(password: str, cycle: int, salt: bytes, expected: bytes):
-    key = py7zr.helpers.calculate_key(password.encode('utf-16LE'), cycle, salt, 'sha256')
-    assert key == expected
-
-
-@pytest.mark.unit
 def test_aescipher():
     key = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
     iv = b'|&\xae\x94do\x8a4\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -558,3 +546,37 @@ def test_archive_password():
     assert b.get() == 'secret'
     b.set('password')
     assert b.get() == 'password'
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("password, cycle, salt, expected",
+                         [('secret', 19, b'',
+                           b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'),
+                          ('secret^&', 0x3f, b'i@#ri#Ildajfdk',
+                           b'i@#ri#Ildajfdks\x00e\x00c\x00r\x00e\x00t\x00^\x00&\x00\x00\x00')
+                          ])
+def test_calculate_key(password: str, cycle: int, salt: bytes, expected: bytes):
+    key = py7zr.helpers.calculate_key(password.encode('utf-16LE'), cycle, salt, 'sha256')
+    assert key == expected
+
+
+@pytest.mark.unit
+@pytest.mark.benchmark
+def test_calculate_key1(benchmark):
+    password = 'secret'.encode('utf-16LE')
+    cycles = 19
+    salt = b''
+    expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
+    key = benchmark(py7zr.helpers._calculate_key1, password, cycles, salt, 'sha256')
+    assert key == expected
+
+
+@pytest.mark.unit
+@pytest.mark.benchmark
+def test_calculate_key2(benchmark):
+    password = 'secret'.encode('utf-16LE')
+    cycles = 19
+    salt = b''
+    expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
+    key = benchmark(py7zr.helpers._calculate_key2, password, cycles, salt, 'sha256')
+    assert key == expected
