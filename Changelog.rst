@@ -10,6 +10,27 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.6rc`_
+=========
+
+Added
+-----
+
 * Test: SevenZipFile.archiveinfo() for various archives.
 * Test: extraction of LZMA+BCJ archive become fails as marked known issue.
 * Support deflate decompression method.
@@ -33,16 +54,6 @@ Fixed
 * Fix SevenZipFIle.archiveinfo() crash for LZMA+BCJ archive.(#100)
 * Fix SevenZipFile.test() method defeated from v0.6b2 (#103)
 * Fix SevenZipFile.solid() method to return proper value. (#72,#97)
-
-
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 
 `v0.6b8`_
@@ -671,7 +682,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6b7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6rc...HEAD
+.. _v0.6rc: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6rc
 .. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
 .. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
 .. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
