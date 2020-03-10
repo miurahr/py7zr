@@ -21,6 +21,11 @@ Changed
 * Re-enable coverage report.
 * Refactoring SevenZipFile._write_archive() method to move
   core chunk into compression module Worker.archive() method.
+* Update calculate_key helper to improve performance.
+* Introduce zero-copy buffer helper.
+* Change decompressor class interface
+    - change max_length type to int and defualt to -1.
+* Update decryption function to improve performance.
 
 Fixed
 -----
