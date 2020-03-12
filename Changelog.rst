@@ -25,8 +25,8 @@ Removed
 Security
 --------
 
-`v0.6rc`_
-=========
+`v0.6`_
+=======
 
 Added
 -----
@@ -682,8 +682,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6rc...HEAD
-.. _v0.6rc: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6rc
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6...HEAD
+.. _v0.6: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6
 .. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
 .. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
 .. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
