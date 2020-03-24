@@ -123,7 +123,7 @@ Here is a code snippet how to produce archive.
 
     import py7zr
 
-    archvie = py7zr.SevenZipFile('target.7z', 'w')
+    archive = py7zr.SevenZipFile('target.7z', 'w')
     archive.writeall('./base_dir')
     archive.close()
 
