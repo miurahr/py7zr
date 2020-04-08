@@ -455,3 +455,11 @@ def test_compress_directories(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.xfail(reason="Not implemented yet.")
+def test_compress_files_with_password(tmp_path):
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, mode='w', password='secret')

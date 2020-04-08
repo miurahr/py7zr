@@ -257,6 +257,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         if password is not None:
+            if mode not in ('r'):
+                raise NotImplementedError("It has not been implemented to create archive with password.")
             ArchivePassword(password)
             self.password_protected = True
         else:
