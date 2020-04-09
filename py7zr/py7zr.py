@@ -644,15 +644,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Test archive using CRC digests."""
         return self._test_digests()
 
-    def extractall(self, path: Optional[Any] = None) -> None:
+    def extractall(self, path: Optional[Any] = None, return_dict: bool = False) -> None:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        return self.extract(path)
+        return self.extract(path, return_dict=return_dict)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None, return_dict: bool = False) -> None:
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -724,7 +724,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
-        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+
+        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), return_dict=return_dict)
+        if return_dict:
+            return self.worker._dict
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.

@@ -63,12 +63,31 @@ def test_github_14(tmp_path):
 
 
 @pytest.mark.files
+def test_github_14__return_dict():
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
+    assert archive.getnames() == ['github_14']
+    _dict = archive.extractall(return_dict=True)
+    actual = _dict('github_14').read()
+    assert actual == bytes('Hello GitHub issue #14.\n', 'ascii')
+
+
+@pytest.mark.files
 def _test_umlaut_archive(filename: str, target: pathlib.Path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
     archive.extractall(path=target)
     archive.close()
     actual = target.joinpath('t\xe4st.txt').open().read()
+    assert actual == 'This file contains a german umlaut in the filename.'
+
+
+@pytest.mark.files
+def _test_umlaut_archive__return_dict(filename: str, target: pathlib.Path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
+    assert sorted(archive.getnames()) == ['t\xe4st.txt']
+    _dict = archive.extractall(return_dict=True)
+    archive.close()
+    actual = _dict('t\xe4st.txt').read()
     assert actual == 'This file contains a german umlaut in the filename.'
 
 
