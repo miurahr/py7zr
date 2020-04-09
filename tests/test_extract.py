@@ -67,7 +67,7 @@ def test_github_14__return_dict():
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     _dict = archive.extractall(return_dict=True)
-    actual = _dict('github_14').read()
+    actual = _dict['github_14'].read()
     assert actual == bytes('Hello GitHub issue #14.\n', 'ascii')
 
 
@@ -87,7 +87,7 @@ def _test_umlaut_archive__return_dict(filename: str, target: pathlib.Path):
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
     _dict = archive.extractall(return_dict=True)
     archive.close()
-    actual = _dict('t\xe4st.txt').read()
+    actual = _dict['t\xe4st.txt'].read()
     assert actual == 'This file contains a german umlaut in the filename.'
 
 
