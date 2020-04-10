@@ -54,6 +54,14 @@ def test_empty():
 
 
 @pytest.mark.files
+def test_empty__return_dict():
+    # decompress empty archive to dict
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
+    _dict = archive.extractall(return_dict=True)
+    assert _dict == {}
+
+
+@pytest.mark.files
 def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
