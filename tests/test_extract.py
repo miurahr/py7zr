@@ -36,6 +36,7 @@ def check_archive(archive, tmp_path):
     archive.extractall(path=tmp_path)
     assert tmp_path.joinpath('test/test2.txt').open('rb').read() == bytes('This file is located in a folder.', 'ascii')
     assert tmp_path.joinpath('test1.txt').open('rb').read() == bytes('This file is located in the root.', 'ascii')
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     actual = _dict['test/test2.txt'].read()
     assert actual == bytes('This file is located in a folder.', 'ascii')
@@ -56,6 +57,7 @@ def test_empty():
     # decompress empty archive
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
     assert archive.getnames() == []
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     assert _dict == {}
 
@@ -77,6 +79,7 @@ def _test_umlaut_archive(filename: str, target: pathlib.Path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
     archive.extractall(path=target)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     actual = target.joinpath('t\xe4st.txt').open().read()
@@ -128,6 +131,7 @@ def test_extract_symlink(tmp_path):
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
                                           'lib/libabc.so.1.2.3', 'lib64']
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -139,6 +143,7 @@ def test_lzma2bcj(tmp_path):
     assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
                                   '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     m = hashlib.sha256()
@@ -160,6 +165,7 @@ def test_extract_lzmabcj_archiveinfo():
 def test_extract_lzmabcj(tmp_path):
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzmabcj.7z'), 'r') as ar:
         ar.extractall(path=tmp_path)
+        ar.reset()
         _dict = ar.extractall(return_dict=True)
 
 
@@ -167,6 +173,7 @@ def test_extract_lzmabcj(tmp_path):
 def test_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'zerosize.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -208,6 +215,7 @@ def test_github_14_multi(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'github_14_multi.7z'), 'r')
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
@@ -224,6 +232,7 @@ def test_github_14_multi(tmp_path):
 def test_multiblock(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     m = hashlib.sha256()
@@ -243,6 +252,7 @@ def test_multiblock_unlink(tmp_path):
     archive = py7zr.SevenZipFile(open(str(src), 'rb'))
     os.unlink(str(src))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -251,6 +261,7 @@ def test_multiblock_unlink(tmp_path):
 def test_multiblock_zerosize(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_2.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -260,6 +271,7 @@ def test_multiblock_zerosize(tmp_path):
 def test_multiblock_lzma_bug(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_3.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     m = hashlib.sha256()
@@ -281,6 +293,7 @@ def test_close_unlink(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
     archive = py7zr.SevenZipFile(tmp_path.joinpath('test_1.7z'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
     tmp_path.joinpath('test_1.7z').unlink()
@@ -303,6 +316,7 @@ def test_asyncio_executor(tmp_path):
 def test_no_main_streams(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -311,6 +325,7 @@ def test_no_main_streams(tmp_path):
 def test_extract_encrypted_1(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_1.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -320,6 +335,7 @@ def test_extract_encrypted_1(tmp_path):
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -328,6 +344,7 @@ def test_extract_encrypted_2(tmp_path):
 def test_extract_bzip2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -336,6 +353,7 @@ def test_extract_bzip2(tmp_path):
 def test_extract_bzip2_2(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'bzip2_2.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
 
@@ -345,6 +363,7 @@ def test_extract_ppmd(tmp_path):
     with pytest.raises(UnsupportedCompressionMethodError):
         archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'ppmd.7z'), 'rb'))
         archive.extractall(path=tmp_path)
+        archive.reset()
         _dict = archive.extractall(return_dict=True)
         archive.close()
 
@@ -353,6 +372,7 @@ def test_extract_ppmd(tmp_path):
 def test_extract_deflate(tmp_path):
     with py7zr.SevenZipFile(open(os.path.join(testdata_path, 'deflate.7z'), 'rb')) as archive:
         archive.extractall(path=tmp_path)
+        archive.reset()
         _dict = archive.extractall(return_dict=True)
 
 
@@ -363,6 +383,7 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
     os.chdir(str(tmp_path))
     os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
     archive.extractall(path='target')
+    archive.reset()
     _dict = archive.extractall(path='target', return_dict=True)
     assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
     actual = _dict["target/lib/libabc.so.1.2"].read()
@@ -375,5 +396,6 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
 def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     archive.close()
