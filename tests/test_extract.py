@@ -86,7 +86,7 @@ def _test_umlaut_archive(filename: str, target: pathlib.Path):
     actual = target.joinpath('t\xe4st.txt').open().read()
     assert actual == 'This file contains a german umlaut in the filename.'
     actual = _dict['t\xe4st.txt'].read()
-    assert actual == 'This file contains a german umlaut in the filename.'
+    assert actual == b'This file contains a german umlaut in the filename.'
 
 
 @pytest.mark.files
