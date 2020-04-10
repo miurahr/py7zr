@@ -51,12 +51,6 @@ def test_empty():
     # decompress empty archive
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
     assert archive.getnames() == []
-
-
-@pytest.mark.files
-def test_empty__return_dict():
-    # decompress empty archive to dict
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
     _dict = archive.extractall(return_dict=True)
     assert _dict == {}
 
@@ -66,15 +60,9 @@ def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     archive.extractall(path=tmp_path)
+    _dict = archive.extractall(return_dict=True)
     with tmp_path.joinpath('github_14').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
-
-
-@pytest.mark.files
-def test_github_14__return_dict():
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
-    assert archive.getnames() == ['github_14']
-    _dict = archive.extractall(return_dict=True)
     actual = _dict['github_14'].read()
     assert actual == bytes('Hello GitHub issue #14.\n', 'ascii')
 
@@ -84,17 +72,10 @@ def _test_umlaut_archive(filename: str, target: pathlib.Path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     assert sorted(archive.getnames()) == ['t\xe4st.txt']
     archive.extractall(path=target)
+    _dict = archive.extractall(return_dict=True)
     archive.close()
     actual = target.joinpath('t\xe4st.txt').open().read()
     assert actual == 'This file contains a german umlaut in the filename.'
-
-
-@pytest.mark.files
-def _test_umlaut_archive__return_dict(filename: str, target: pathlib.Path):
-    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
-    assert sorted(archive.getnames()) == ['t\xe4st.txt']
-    _dict = archive.extractall(return_dict=True)
-    archive.close()
     actual = _dict['t\xe4st.txt'].read()
     assert actual == 'This file contains a german umlaut in the filename.'
 
@@ -215,20 +196,29 @@ def test_github_14_multi(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'github_14_multi.7z'), 'r')
     assert archive.getnames() == ['github_14_multi', 'github_14_multi']
     archive.extractall(path=tmp_path)
+    _dict = archive.extractall(return_dict=True)
     archive.close()
     with tmp_path.joinpath('github_14_multi').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
     with tmp_path.joinpath('github_14_multi_0').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
+    actual_1 = _dict['github_14_multi'].read()
+    assert actual_1 == bytes('Hello GitHub issue #14 1/2.\n', 'ascii')
+    actual_2 = _dict['github_14_multi_0'].read()
+    assert actual_2 == bytes('Hello GitHub issue #14 2/2.\n', 'ascii')
 
 
 @pytest.mark.files
 def test_multiblock(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'mblock_1.7z'), 'rb'))
     archive.extractall(path=tmp_path)
+    _dict = archive.extractall(return_dict=True)
     archive.close()
     m = hashlib.sha256()
     m.update(tmp_path.joinpath('bin/7zdec.exe').open('rb').read())
+    assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
+    m = hashlib.sha256()
+    m.update(_dict["bin/7zdec.exe"].read())
     assert m.digest() == binascii.unhexlify('e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5')
 
 
@@ -241,6 +231,7 @@ def test_multiblock_unlink(tmp_path):
     archive = py7zr.SevenZipFile(open(str(src), 'rb'))
     os.unlink(str(src))
     archive.extractall(path=tmp_path)
+    _dict = archive.extractall(return_dict=True)
     archive.close()
 
 
