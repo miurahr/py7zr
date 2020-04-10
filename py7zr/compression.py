@@ -117,17 +117,17 @@ class Worker:
         fp.seek(src_start)
         for f in files:
             fileish = self.target_filepath.get(f.id, None)
-            self._dict[str(fileish)] = io.BytesIO()
             if fileish is not None:
+                self._dict[str(fileish)] = io.BytesIO()
                 if not f.emptystream:
                     # extract to file
                     self.decompress(fp, f.folder, self._dict[str(fileish)], f.uncompressed[-1], f.compressed, src_end)
                 else:
                     pass  # just create empty file
+                self._dict[str(fileish)].seek(0)
             elif not f.emptystream:
                 # read and bin off a data but check crc
-                self.decompress(fp, f.folder, self._dict[str(fileish)], f.uncompressed[-1], f.compressed, src_end)
-            self._dict[str(fileish)].seek(0)
+                self.decompress(fp, f.folder, io.BytesIO(), f.uncompressed[-1], f.compressed, src_end)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
