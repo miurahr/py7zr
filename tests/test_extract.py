@@ -67,6 +67,7 @@ def test_github_14(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'github_14.7z'), 'rb'))
     assert archive.getnames() == ['github_14']
     archive.extractall(path=tmp_path)
+    archive.reset()
     _dict = archive.extractall(return_dict=True)
     with tmp_path.joinpath('github_14').open('rb') as f:
         assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
