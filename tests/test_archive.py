@@ -1,4 +1,5 @@
 import binascii
+import ctypes
 import filecmp
 import hashlib
 import lzma
@@ -333,7 +334,7 @@ def test_compress_files_2(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0), reason="Administrator rights is required to make symlink on windows")
 def test_compress_files_3(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -353,7 +354,7 @@ def test_compress_files_3(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Administrator rights is required to make symlink on windows")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0), reason="Administrator rights is required to make symlink on windows")
 def test_compress_symlink(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()

@@ -1,5 +1,6 @@
 import asyncio
 import binascii
+import ctypes
 import hashlib
 import os
 import pathlib
@@ -109,7 +110,7 @@ def test_bugzilla_16(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0), reason="Administrator rights is required to make symlink on windows")
 def test_extract_symlink(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     assert sorted(archive.getnames()) == ['lib', 'lib/libabc.so', 'lib/libabc.so.1', 'lib/libabc.so.1.2',
@@ -314,7 +315,7 @@ def test_extract_deflate(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0), reason="Administrator rights is required to make symlink on windows")
 def test_extract_symlink_with_relative_target_path(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'symlink.7z'), 'rb'))
     os.chdir(str(tmp_path))
@@ -325,7 +326,7 @@ def test_extract_symlink_with_relative_target_path(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="Normal user is not permitted to create symlinks.")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0), reason="Administrator rights is required to make symlink on windows")
 def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'test_6.7z'), 'r')
     archive.extractall(path=tmp_path)
