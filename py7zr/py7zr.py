@@ -725,7 +725,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise Exception("Directory making fails on unknown condition.")
 
-        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), return_dict=return_dict)
+        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed),
+                            return_dict=return_dict)
         if return_dict:
             return self.worker._dict
 

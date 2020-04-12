@@ -70,7 +70,7 @@ class Worker:
                     extract_single(fp, empty_files, 0, 0)
                     for i in range(numfolders):
                         extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                            self.src_start + positions[i + 1])
+                                       self.src_start + positions[i + 1])
                 else:
                     filename = getattr(fp, 'name', None)
                     extract_single(open(filename, 'rb'), empty_files, 0, 0)
