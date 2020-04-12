@@ -5,7 +5,7 @@ strategy:
   matrix:
     Python36:
       python.version: '3.6'
-      addopts: "--remote-data"
+      addopts: ""
     Python37:
       python.version: '3.7'
       addopts: ""
