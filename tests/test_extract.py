@@ -21,7 +21,6 @@ testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
 
 
-@pytest.mark.parametrize('return_dict', [False, True])
 def check_archive(archive, tmp_path, return_dict: bool):
     assert sorted(archive.getnames()) == ['test', 'test/test2.txt', 'test1.txt']
     expected = []
@@ -49,10 +48,11 @@ def check_archive(archive, tmp_path, return_dict: bool):
 
 
 @pytest.mark.files
-def test_solid(tmp_path):
+@pytest.mark.parametrize('return_dict', [False, True])
+def test_solid(tmp_path, return_dict: bool):
     f = 'solid.7z'
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, '%s' % f), 'rb'))
-    check_archive(archive, tmp_path)
+    check_archive(archive, tmp_path, return_dict)
 
 
 @pytest.mark.files
@@ -83,7 +83,6 @@ def test_github_14(tmp_path, return_dict: bool):
 
 
 @pytest.mark.files
-@pytest.mark.parametrize('return_dict', [False, True])
 def _test_umlaut_archive(filename: str, target: pathlib.Path, return_dict: bool):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, filename), 'rb'))
     if not return_dict:
@@ -314,9 +313,10 @@ def test_multiblock_lzma_bug(tmp_path, return_dict: bool):
 
 
 @pytest.mark.files
-def test_copy(tmp_path):
+@pytest.mark.parametrize('return_dict', [False, True])
+def test_copy(tmp_path, return_dict: bool):
     """ test loading of copy compressed files.(help wanted)"""
-    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path)
+    check_archive(py7zr.SevenZipFile(open(os.path.join(testdata_path, 'copy.7z'), 'rb')), tmp_path, return_dict)
 
 
 @pytest.mark.files
