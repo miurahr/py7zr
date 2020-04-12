@@ -274,8 +274,8 @@ def test_multiblock_unlink(tmp_path, return_dict: bool):
     """When passing opened file object, even after unlink it should work."""
     shutil.copy(os.path.join(testdata_path, 'mblock_1.7z'), str(tmp_path))
     src = tmp_path.joinpath('mblock_1.7z')
+    archive = py7zr.SevenZipFile(open(str(src), 'rb'))
     if not return_dict:
-        archive = py7zr.SevenZipFile(open(str(src), 'rb'))
         os.unlink(str(src))
         archive.extractall(path=tmp_path, return_dict=return_dict)
     else:
