@@ -52,42 +52,39 @@ class Worker:
 
     def extract(self, fp: BinaryIO, parallel: bool, return_dict: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
-        if return_dict:
-            extract_single = self.extract_single_to_dict
-        else:
-            extract_single = self.extract_single
-
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
             numfolders = self.header.main_streams.unpackinfo.numfolders
             if numfolders == 1:
-                extract_single(fp, self.files, self.src_start, src_end)
+                self.extract_single(fp, self.files, self.src_start, src_end, return_dict)
             else:
                 folders = self.header.main_streams.unpackinfo.folders
                 positions = self.header.main_streams.packinfo.packpositions
                 empty_files = [f for f in self.files if f.emptystream]
                 if not parallel:
-                    extract_single(fp, empty_files, 0, 0)
+                    self.extract_single(fp, empty_files, 0, 0)
                     for i in range(numfolders):
-                        extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                       self.src_start + positions[i + 1])
+                        self.extract_single(fp, folders[i].files, self.src_start + positions[i],
+                                            self.src_start + positions[i + 1], return_dict)
                 else:
                     filename = getattr(fp, 'name', None)
-                    extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0, return_dict)
                     extract_threads = []
                     for i in range(numfolders):
-                        p = threading.Thread(target=extract_single,
+                        p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
-                                                   self.src_start + positions[i], self.src_start + positions[i + 1]))
+                                                   self.src_start + positions[i], self.src_start + positions[i + 1],
+                                                   return_dict))
                         p.start()
                         extract_threads.append((p))
                     for p in extract_threads:
                         p.join()
         else:
             empty_files = [f for f in self.files if f.emptystream]
-            extract_single(fp, empty_files, 0, 0)
+            self.extract_single(fp, empty_files, 0, 0, return_dict)
 
-    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
+                       return_dict: bool = False) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
@@ -97,38 +94,28 @@ class Worker:
         for f in files:
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
-                with fileish.open(mode='wb') as ofp:
+                try:
+                    if return_dict:
+                        fname = str(fileish).replace("\\", "/")
+                        self._dict[fname] = io.BytesIO()
+                        ofp = self._dict[fname]
+                    else:
+                        ofp = fileish.open(mode='wb')
                     if not f.emptystream:
                         # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
                     else:
                         pass  # just create empty file
+                finally:
+                    if return_dict:
+                        self._dict[fname].seek(0)
+                    else:
+                        ofp.close()
+
             elif not f.emptystream:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
                     self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
-
-    def extract_single_to_dict(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
-        """Single thread extractor that takes file lists in single 7zip folder. Extract files into self._dict."""
-        if files is None:
-            return
-        if isinstance(fp, str):
-            fp = open(fp, 'rb')
-        fp.seek(src_start)
-        for f in files:
-            fileish = self.target_filepath.get(f.id, None)
-            if fileish is not None:
-                fname = str(fileish).replace("\\", "/")
-                self._dict[fname] = io.BytesIO()
-                if not f.emptystream:
-                    # extract to file
-                    self.decompress(fp, f.folder, self._dict[fname], f.uncompressed[-1], f.compressed, src_end)
-                else:
-                    pass  # just create empty file
-                self._dict[fname].seek(0)
-            elif not f.emptystream:
-                # read and bin off a data but check crc
-                self.decompress(fp, f.folder, io.BytesIO(), f.uncompressed[-1], f.compressed, src_end)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
