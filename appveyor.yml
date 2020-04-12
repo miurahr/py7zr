@@ -5,10 +5,13 @@ environment:
   matrix:
     - PYTHON: "C:\\Python36-x64"
       TOXENV: py36
+      PYTEST_ADDOPTS: ""
     - PYTHON: "C:\\Python37-x64"
       TOXENV: py37
+      PYTEST_ADDOPTS: ""
     - PYTHON: "C:\\Python38-x64"
       TOXENV: py38
+      PYTEST_ADDOPTS: ""
 
 install:
   - "%PYTHON%\\python.exe -m pip install wheel tox"
