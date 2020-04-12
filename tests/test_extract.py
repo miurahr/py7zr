@@ -152,8 +152,8 @@ def test_extract_symlink(tmp_path, return_dict: bool):
 
 
 @pytest.mark.files
-def test_lzma2bcj(tmp_path, return_dict: bool):
 @pytest.mark.parametrize('return_dict', [False, True])
+def test_lzma2bcj(tmp_path, return_dict: bool):
     """Test extract archive compressed with LZMA2 and BCJ methods."""
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'lzma2bcj.7z'), 'rb'))
     assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
