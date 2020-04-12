@@ -62,7 +62,7 @@ class Worker:
                 positions = self.header.main_streams.packinfo.packpositions
                 empty_files = [f for f in self.files if f.emptystream]
                 if not parallel:
-                    self.extract_single(fp, empty_files, 0, 0)
+                    self.extract_single(fp, empty_files, 0, 0, return_dict)
                     for i in range(numfolders):
                         self.extract_single(fp, folders[i].files, self.src_start + positions[i],
                                             self.src_start + positions[i + 1], return_dict)
@@ -94,23 +94,23 @@ class Worker:
         for f in files:
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
-                try:
-                    if return_dict:
-                        fname = str(fileish).replace("\\", "/")
-                        self._dict[fname] = io.BytesIO()
-                        ofp = self._dict[fname]
-                    else:
-                        ofp = fileish.open(mode='wb')
+                if return_dict:
+                    fname = str(fileish).replace("\\", "/")
+                    self._dict[fname] = io.BytesIO()
+                    ofp = self._dict[fname]
                     if not f.emptystream:
                         # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        ofp.seek(0)
                     else:
                         pass  # just create empty file
-                finally:
-                    if return_dict:
-                        self._dict[fname].seek(0)
-                    else:
-                        ofp.close()
+                else:
+                    with fileish.open(mode='wb') as ofp:
+                        if not f.emptystream:
+                            # extract to file
+                            self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        else:
+                            pass  # just create empty file
 
             elif not f.emptystream:
                 # read and bin off a data but check crc

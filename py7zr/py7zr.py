@@ -730,8 +730,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
                             return_dict=return_dict)
         if return_dict:
             return self.worker._dict
-        else:
-            return None
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.
@@ -753,6 +751,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
         for o, p in target_files:
             self._set_file_property(o, p)
+        return None
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
