@@ -61,7 +61,7 @@ def test_empty(return_dict: bool):
     # decompress empty archive
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'empty.7z'), 'rb'))
     if not return_dict:
-        assert archive.getnames(return_dict=return_dict) == []
+        assert archive.getnames() == []
     else:
         _dict = archive.extractall(return_dict=return_dict)
         assert _dict == {}
@@ -74,10 +74,10 @@ def test_github_14(tmp_path, return_dict: bool):
     if not return_dict:
         assert archive.getnames() == ['github_14']
         archive.extractall(path=tmp_path)
-    else:
-        _dict = archive.extractall(return_dict=return_dict)
         with tmp_path.joinpath('github_14').open('rb') as f:
             assert f.read() == bytes('Hello GitHub issue #14.\n', 'ascii')
+    else:
+        _dict = archive.extractall(return_dict=return_dict)
         actual = _dict['github_14'].read()
         assert actual == bytes('Hello GitHub issue #14.\n', 'ascii')
 
@@ -346,6 +346,7 @@ def test_asyncio_executor(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.parametrize('return_dict', [False, True])
 def test_no_main_streams(tmp_path, return_dict: bool):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_folder.7z'), 'rb'))
     if not return_dict:
