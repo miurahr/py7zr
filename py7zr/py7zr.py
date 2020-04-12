@@ -32,7 +32,7 @@ import os
 import stat
 import sys
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
@@ -644,7 +644,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Test archive using CRC digests."""
         return self._test_digests()
 
-    def extractall(self, path: Optional[Any] = None, return_dict: bool = False) -> None:
+    def extractall(self, path: Optional[Any] = None, return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
@@ -652,7 +652,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         return self.extract(path, return_dict=return_dict)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None, return_dict: bool = False) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
+                return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -729,6 +730,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                             return_dict=return_dict)
         if return_dict:
             return self.worker._dict
+        else:
+            return None
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.
