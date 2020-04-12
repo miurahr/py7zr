@@ -48,7 +48,7 @@ class Worker:
         self.files = files
         self.src_start = src_start
         self.header = header
-        self._dict = {}
+        self._dict = {}  # type: Dict[str, io.TextIOBase]
 
     def extract(self, fp: BinaryIO, parallel: bool, return_dict: bool = False) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
