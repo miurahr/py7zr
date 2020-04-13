@@ -1,5 +1,5 @@
 language: python
-dist: bionic
+dist: xenial
 sudo: false
 cache: pip
 language: python
@@ -17,8 +17,6 @@ matrix:
       env: TOXENV=py37 PYTEST_ADDOPTS=""
     - python: 3.8
       env: TOXENV=py38 PYTEST_ADDOPTS=""
-    - python: pypy3.6-7.1.1
-      env: TOXENV=pypy3 PYTEST_ADDOPTS=""
 
 install:
   - pip install tox-travis codecov coveralls

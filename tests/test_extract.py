@@ -369,6 +369,8 @@ def test_extract_encrypted_1(tmp_path, return_dict: bool):
 
 @pytest.mark.files
 @pytest.mark.timeout(30)
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
 @pytest.mark.parametrize('return_dict', [False, True])
 def test_extract_encrypted_2(tmp_path, return_dict: bool):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, 'encrypted_2.7z'), 'rb'), password='secret')
