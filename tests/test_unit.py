@@ -3,6 +3,7 @@ import datetime
 import io
 import lzma
 import os
+import platform
 import stat
 import struct
 import sys
@@ -579,6 +580,7 @@ def test_benchmark_calculate_key1(benchmark):
 
 
 @pytest.mark.benchmark
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Pypy has a bug around ctypes")
 def test_benchmark_calculate_key2(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19

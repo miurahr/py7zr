@@ -24,6 +24,7 @@
 import ctypes
 import hashlib
 import os
+import platform
 import stat
 import struct
 import sys
@@ -100,7 +101,10 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     return key
 
 
-calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
+if platform.python_implementation() == "PyPy":
+    calculate_key = _calculate_key1  # Avoid https://foss.heptapod.net/pypy/pypy/issues/3209
+else:
+    calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
 EPOCH_AS_FILETIME = 116444736000000000
 
 
