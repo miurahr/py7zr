@@ -21,8 +21,8 @@
 #
 #
 
+import _hashlib  # type: ignore  # noqa
 import ctypes
-import hashlib
 import os
 import platform
 import stat
@@ -56,14 +56,15 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
 
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     """Calculate 7zip AES encryption key."""
-    assert digest == 'sha256'
+    if digest not in ('sha256'):
+        raise ValueError('Unknown digest method for password protection.')
     assert cycles <= 0x3f
     if cycles == 0x3f:
         ba = bytearray(salt + password + bytes(32))
         key = bytes(ba[:32])  # type: bytes
     else:
         rounds = 1 << cycles
-        m = hashlib.sha256()
+        m = _hashlib.new(digest)
         for round in range(rounds):
             m.update(salt + password + round.to_bytes(8, byteorder='little', signed=False))
         key = m.digest()[:32]
@@ -73,13 +74,14 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     """Calculate 7zip AES encryption key.
     It utilize ctypes and memoryview buffer and zero-copy technology on Python."""
-    assert digest == 'sha256'
+    if digest not in ('sha256'):
+        raise ValueError('Unknown digest method for password protection.')
     assert cycles <= 0x3f
     if cycles == 0x3f:
         key = bytes(bytearray(salt + password + bytes(32))[:32])  # type: bytes
     else:
         rounds = 1 << cycles
-        m = hashlib.sha256()
+        m = _hashlib.new(digest)
         length = len(salt) + len(password)
 
         class RoundBuf(ctypes.LittleEndianStructure):
@@ -105,11 +107,11 @@ if platform.python_implementation() == "PyPy":
     calculate_key = _calculate_key1  # Avoid https://foss.heptapod.net/pypy/pypy/issues/3209
 else:
     calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
-EPOCH_AS_FILETIME = 116444736000000000
 
 
 def filetime_to_dt(ft):
     """Convert Windows NTFS file time into python datetime object."""
+    EPOCH_AS_FILETIME = 116444736000000000
     us = (ft - EPOCH_AS_FILETIME) // 10
     return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=us)
 
