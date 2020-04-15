@@ -569,6 +569,16 @@ def test_calculate_key2(password: str, cycle: int, salt: bytes, expected: bytes)
     assert key == expected
 
 
+def test_calculate_key1_nohash():
+    with pytest.raises(ValueError):
+        py7zr.helpers._calculate_key1('secret'.encode('utf-16LE'), 16, b'', 'sha123')
+
+
+def test_calculate_key2_nohash():
+    with pytest.raises(ValueError):
+        py7zr.helpers._calculate_key2('secret'.encode('utf-16LE'), 16, b'', 'sha123')
+
+
 @pytest.mark.benchmark
 def test_benchmark_calculate_key1(benchmark):
     password = 'secret'.encode('utf-16LE')
