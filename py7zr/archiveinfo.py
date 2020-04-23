@@ -173,7 +173,7 @@ def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> List[boo
 
 
 def write_boolean(file: BinaryIO, booleans: List[bool], all_defined: bool = False):
-    if all_defined and reduce(and_, booleans):
+    if all_defined and reduce(and_, booleans, True):
         file.write(b'\x01')
         return
     elif all_defined:
@@ -768,7 +768,7 @@ class FilesInfo:
                     defined.append(True)
                     num_defined += 1
         size = num_defined * 8 + 2
-        if not reduce(and_, defined):
+        if not reduce(and_, defined, True):
             size += bits_to_bytes(num_defined)
         write_uint64(fp, size)
         write_boolean(fp, defined, all_defined=True)
@@ -786,7 +786,7 @@ class FilesInfo:
     @staticmethod
     def _are_there(vector) -> bool:
         if vector is not None:
-            if functools.reduce(or_, vector):
+            if functools.reduce(or_, vector, False):
                 return True
         return False
 
