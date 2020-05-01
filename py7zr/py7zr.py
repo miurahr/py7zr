@@ -644,16 +644,35 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Test archive using CRC digests."""
         return self._test_digests()
 
-    def extractall(self, path: Optional[Any] = None, return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
+    def readall(self) -> Optional[Dict[str, IO[Any]]]:
+        return self._extract(path=None, return_dict=True)
+
+    def extractall(self, path: Optional[Any] = None) -> bool:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        return self.extract(path, return_dict=return_dict)
+        try:
+            self._extract(path=path, return_dict=False)
+        except Exception:
+            return False
+        else:
+            return True
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
-                return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
+    def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+        return self._extract(path=None, targets=targets, return_dict=True)
+
+    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> bool:
+        try:
+            self._extract(path, targets, return_dict=False)
+        except Exception:
+            return False
+        else:
+            return True
+
+    def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
+                 return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -730,6 +749,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                             return_dict=return_dict)
         if return_dict:
             return self.worker._dict
+        else:
+            return None
 
         # create symbolic links on target path as a working directory.
         # if path is None, work on current working directory.

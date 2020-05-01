@@ -9,8 +9,6 @@ matrix:
       env: TOXENV=check PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
     - python: 3.7
       env: TOXENV=mypy  PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
-    - python: 3.5
-      env: TOXENV=py35 PYTEST_ADDOPTS=""
     - python: 3.6
       env: TOXENV=py36 PYTEST_ADDOPTS=""
     - python: 3.7
