@@ -205,10 +205,6 @@ class ArchiveTimestamp(int):
         return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)
 
 
-def _check_bit(val, flag):
-    return bool(val & flag == flag)
-
-
 def islink(path):
     """
     Cross-platform islink implementation.
@@ -216,8 +212,7 @@ def islink(path):
     """
     if sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
         return os.path.islink(path)
-    return os.path.exists(path) and _check_bit(py7zr.win32compat.GetFileAttributes(path),
-                                               stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    return os.path.exists(path) and py7zr.win32compat.is_reparse_point(path)
 
 
 def readlink(path: str, *, dir_fd=None) -> str:

@@ -9,7 +9,7 @@ if sys.platform == "win32":
     CloseHandle = _stdcall_libraries['kernel32'].CloseHandle
     CreateFileW = _stdcall_libraries['kernel32'].CreateFileW
     DeviceIoControl = _stdcall_libraries['kernel32'].DeviceIoControl
-    GetFileAttributes = _stdcall_libraries['kernel32'].GetFileAttributes
+    GetFileAttributesW = _stdcall_libraries['kernel32'].GetFileAttributesW
     OPEN_EXISTING = 3
     GENERIC_READ = 2147483648
     FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
@@ -19,6 +19,9 @@ if sys.platform == "win32":
     IO_REPARSE_TAG_MOUNT_POINT = stat.IO_REPARSE_TAG_MOUNT_POINT
     IO_REPARSE_TAG_SYMLINK = stat.IO_REPARSE_TAG_SYMLINK
     MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024
+
+    def _check_bit(val, flag):
+        return bool(val & flag == flag)
 
     def _parse_reparse_buffer(buf):
         """ Implementing the below in Python:
@@ -76,6 +79,9 @@ if sys.platform == "win32":
         # Using the offset and lengths grabbed, we'll set the buffer.
         data['buffer'] = buf
         return data
+
+    def is_reparse_point(path):
+        return _check_bit(GetFileAttributesW(path), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
     def readlink(path):
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
