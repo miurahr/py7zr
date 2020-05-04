@@ -1,18 +1,17 @@
 import pathlib
 import stat
-import struct
 import sys
-from typing import Dict, Union
+from typing import Union
 
 from py7zr.exceptions import InternalError
 
 if sys.platform == "win32" and sys.version_info < (3, 8):
     import ctypes
-    from ctypes import WinDLL
+    import ctypes.byref as byref
     import ctypes.wintypes as wintypes
 
     _stdcall_libraries = {}
-    _stdcall_libraries['kernel32'] = WinDLL('kernel32')
+    _stdcall_libraries['kernel32'] = ctypes.WinDLL('kernel32')
     CloseHandle = _stdcall_libraries['kernel32'].CloseHandle
     CreateFileW = _stdcall_libraries['kernel32'].CreateFileW
     DeviceIoControl = _stdcall_libraries['kernel32'].DeviceIoControl
@@ -29,7 +28,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
     def _check_bit(val: int, flag: int) -> bool:
         return bool(val & flag == flag)
 
-    def _parse_reparse_buffer(buf) -> Dict[str, bytes]:
+    class SymbolicLinkReparseBuffer(ctypes.Structure):
         """ Implementing the below in Python:
 
         typedef struct _REPARSE_DATA_BUFFER {
@@ -59,32 +58,34 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
         """
         # See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/ns-ntifs-_reparse_data_buffer
+        _fields_ = [
+            ('flags', ctypes.c_ulong),
+            ('path_buffer', ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 20))
+        ]
 
-        data = {'tag': struct.unpack('<I', buf[:4])[0],
-                'data_length': struct.unpack('<H', buf[4:6])[0],
-                'reserved': struct.unpack('<H', buf[6:8])[0]}
-        buf = buf[8:]
+    class MountReparseBuffer(ctypes.Structure):
+        _fields_ = [
+            ('path_buffer', ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 16)),
+        ]
 
-        if data['tag'] in (IO_REPARSE_TAG_MOUNT_POINT, IO_REPARSE_TAG_SYMLINK):
-            keys = ['substitute_name_offset',
-                    'substitute_name_length',
-                    'print_name_offset',
-                    'print_name_length']
-            if data['tag'] == IO_REPARSE_TAG_SYMLINK:
-                keys.append('flags')
+    class ReparseBufferField(ctypes.Union):
+        _fields_ = [
+            ('symlink', SymbolicLinkReparseBuffer),
+            ('mount', MountReparseBuffer)
+        ]
 
-            # Parsing
-            for k in keys:
-                if k == 'flags':
-                    fmt, sz = '<I', 4
-                else:
-                    fmt, sz = '<H', 2
-                data[k] = struct.unpack(fmt, buf[:sz])[0]
-                buf = buf[sz:]
-
-        # Using the offset and lengths grabbed, we'll set the buffer.
-        data['buffer'] = buf
-        return data
+    class ReparseBuffer(ctypes.Structure):
+        _anonymous_ = ("u",)
+        _fields_ = [
+            ('reparse_tag', ctypes.c_ulong),
+            ('reparse_data_length', ctypes.c_ushort),
+            ('reserved', ctypes.c_ushort),
+            ('substitute_name_offset', ctypes.c_ushort),
+            ('substitute_name_length', ctypes.c_ushort),
+            ('print_name_offset', ctypes.c_ushort),
+            ('print_name_length', ctypes.c_ushort),
+            ('u', ReparseBufferField)
+        ]
 
     def is_reparse_point(path: Union[str, pathlib.Path]) -> bool:
         GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
@@ -100,22 +101,33 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
             target = str(str(path.resolve()))
         else:
             target = str(path)
-        handle = CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
-                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)  # first arg is c_wchar_p
-        buf = ctypes.create_string_buffer(MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
-        status, _ = _DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, buf, MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
+        CreateFileW.argtypes = [
+            wintypes.LPWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE]
+        CreateFileW.restype = wintypes.HANDLE
+        handle = wintypes.HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
+                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
+        buf = ReparseBuffer()
+        status, _ = _DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, byref(buf), MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
         CloseHandle(handle)
         if not status:
-            raise InternalError("Failed to access reparse point.")
-        result = _parse_reparse_buffer(bytes(buf))
-        if result['tag'] in (IO_REPARSE_TAG_MOUNT_POINT, IO_REPARSE_TAG_SYMLINK):
-            offset = result['substitute_name_offset']
-            ending = offset + result['substitute_name_length']
-            rpath = result['buffer'][offset:ending].decode('UTF-16-LE')
-        else:
-            rpath = result['buffer']
-        if result['tag'] == IO_REPARSE_TAG_MOUNT_POINT:
+            raise InternalError("Failed IOCTL access to get REPARSE_POINT.")
+        if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
+            offset = buf.substitute_name_offset
+            ending = offset + buf.substitute_name_length
+            rpath = buf.symlink.path_buffer[offset:ending].decode('UTF-16-LE')
+        elif buf.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT:
+            offset = buf.substitute_name_offset
+            ending = offset + buf.substitute_name_length
+            rpath = buf.mount.path_buffer[offset:ending].decode('UTF-16-LE')
             rpath[:0] = '\\??\\'
+        else:
+            rpath = ''
         return rpath
 
     def _DeviceIoControl(devhandle, ioctl, inbuf, inbufsiz, outbuf, outbufsiz):
