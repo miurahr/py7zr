@@ -30,7 +30,7 @@ def test_hardlink_readlink(tmp_path):
     hard = tmp_path / "target" / "link"
     hard.parent.mkdir(parents=True, exist_ok=True)
     os.system('mklink /H %s %s' % (str(hard), str(target.resolve())))
-    assert py7zr.win32compat.readlink(hard) == str(target.resolve())
+    assert py7zr.win32compat.readlink(hard) == "\\??\\" + str(target.resolve())
     assert hard.open('r').read() == 'Original'
 
 
