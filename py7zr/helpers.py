@@ -25,7 +25,6 @@ import _hashlib  # type: ignore  # noqa
 import ctypes
 import os
 import platform
-import stat
 import sys
 import time as _time
 import zlib
@@ -210,7 +209,7 @@ def islink(path):
     Cross-platform islink implementation.
     Supports Windows NT symbolic links and reparse points.
     """
-    if  sys.version_info >= (3, 8) or sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
+    if sys.version_info >= (3, 8) or sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
         return os.path.islink(path)
     return os.path.exists(path) and py7zr.win32compat.is_reparse_point(path)
 

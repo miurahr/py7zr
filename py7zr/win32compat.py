@@ -2,7 +2,7 @@ import stat
 import struct
 import sys
 
-if sys.platform == "win32" and sys.version_info < (3, 8) :
+if sys.platform == "win32" and sys.version_info < (3, 8):
     from ctypes import WinDLL
 
     _stdcall_libraries = {}
