@@ -1,9 +1,15 @@
+import pathlib
 import stat
 import struct
 import sys
+from typing import Dict, Union
+
+from py7zr.exceptions import InternalError
 
 if sys.platform == "win32" and sys.version_info < (3, 8):
+    import ctypes
     from ctypes import WinDLL
+    import ctypes.wintypes as wintypes
 
     _stdcall_libraries = {}
     _stdcall_libraries['kernel32'] = WinDLL('kernel32')
@@ -20,10 +26,10 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
     IO_REPARSE_TAG_SYMLINK = 0xA000000C
     MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024
 
-    def _check_bit(val, flag):
+    def _check_bit(val: int, flag: int) -> bool:
         return bool(val & flag == flag)
 
-    def _parse_reparse_buffer(buf):
+    def _parse_reparse_buffer(buf) -> Dict[str, bytes]:
         """ Implementing the below in Python:
 
         typedef struct _REPARSE_DATA_BUFFER {
@@ -80,19 +86,28 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         data['buffer'] = buf
         return data
 
-    def is_reparse_point(path):
-        return _check_bit(GetFileAttributesW(path), stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    def is_reparse_point(path: Union[str, pathlib.Path]) -> bool:
+        GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
+        GetFileAttributesW.restype = wintypes.DWORD
+        return _check_bit(GetFileAttributesW(str(path)), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
-    def readlink(path):
+    def readlink(path: Union[str, pathlib.Path]) -> str:
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
         # is a symbolic link to a directory or a NTFS junction.
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea
-        handle = CreateFileW(path, GENERIC_READ, 0, None, OPEN_EXISTING,
-                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)
-        buf = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
+        if isinstance(path, pathlib.Path):
+            target = str(str(path.resolve()))
+        else:
+            target = str(path)
+        handle = CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
+                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)  # first arg is c_wchar_p
+        buf = ctypes.create_string_buffer(MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
+        status, _ = _DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, buf, MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
         CloseHandle(handle)
-        result = _parse_reparse_buffer(buf)
+        if not status:
+            raise InternalError("Failed to access reparse point.")
+        result = _parse_reparse_buffer(bytes(buf))
         if result['tag'] in (IO_REPARSE_TAG_MOUNT_POINT, IO_REPARSE_TAG_SYMLINK):
             offset = result['substitute_name_offset']
             ending = offset + result['substitute_name_length']
@@ -102,3 +117,53 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         if result['tag'] == IO_REPARSE_TAG_MOUNT_POINT:
             rpath[:0] = '\\??\\'
         return rpath
+
+    def _DeviceIoControl(devhandle, ioctl, inbuf, inbufsiz, outbuf, outbufsiz):
+        # The MIT License (MIT)
+        #
+        # Copyright © 2014-2016 Santoso Wijaya <santoso.wijaya@gmail.com>
+        #
+        # Permission is hereby granted, free of charge, to any person
+        # obtaining a copy of this software and associated documentation files
+        # (the "Software"), to deal in the Software without restriction,
+        # including without limitation the rights to use, copy, modify, merge,
+        # publish, distribute, sub-license, and/or sell copies of the Software,
+        # and to permit persons to whom the Software is furnished to do so,
+        # subject to the following conditions:
+        #
+        # The above copyright notice and this permission notice shall be
+        # included in all copies or substantial portions of the Software.
+        #
+        # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+        # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+        # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+        # BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+        # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+        # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        # SOFTWARE.
+        """See: DeviceIoControl function
+        http://msdn.microsoft.com/en-us/library/aa363216(v=vs.85).aspx
+        """
+        DeviceIoControl.argtypes = [
+                wintypes.HANDLE,                    # _In_          HANDLE hDevice
+                wintypes.DWORD,                     # _In_          DWORD dwIoControlCode
+                wintypes.LPVOID,                    # _In_opt_      LPVOID lpInBuffer
+                wintypes.DWORD,                     # _In_          DWORD nInBufferSize
+                wintypes.LPVOID,                    # _Out_opt_     LPVOID lpOutBuffer
+                wintypes.DWORD,                     # _In_          DWORD nOutBufferSize
+                wintypes.LPDWORD,                   # _Out_opt_     LPDWORD lpBytesReturned
+                wintypes.LPVOID]                    # _Inout_opt_   LPOVERLAPPED lpOverlapped
+        DeviceIoControl.restype = wintypes.BOOL
+        # allocate a DWORD, and take its reference
+        dwBytesReturned = wintypes.DWORD(0)
+        lpBytesReturned = ctypes.byref(dwBytesReturned)
+        status = DeviceIoControl(devhandle,
+                      ioctl,
+                      inbuf,
+                      inbufsiz,
+                      outbuf,
+                      outbufsiz,
+                      lpBytesReturned,
+                      None)
+        return status, dwBytesReturned

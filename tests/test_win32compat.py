@@ -7,7 +7,7 @@ import pytest
 import py7zr.win32compat
 
 
-@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+@pytest.mark.skipif(not sys.platform.startswith("win") or (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_symlink_readlink(tmp_path):
     target = tmp_path / 'parent' / 'original.txt'
