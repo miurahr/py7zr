@@ -2,8 +2,9 @@ import stat
 import struct
 import sys
 
-if sys.platform == "win32":
+if sys.platform == "win32" and sys.version_info < (3, 8) :
     from ctypes import WinDLL
+
     _stdcall_libraries = {}
     _stdcall_libraries['kernel32'] = WinDLL('kernel32')
     CloseHandle = _stdcall_libraries['kernel32'].CloseHandle
