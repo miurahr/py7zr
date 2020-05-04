@@ -13,6 +13,9 @@ Added
 Changed
 -------
 
+* Drop pywin32 dependency
+* Introduce internal win32compat.py
+
 Fixed
 -----
 

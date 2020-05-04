@@ -36,7 +36,6 @@ Minimum required version is Python 3.5.
 Two additional library is required only on Python3.5; contextlib2 and pathlib2.
 
 Compression is supported on Python 3.6 and later.
-pywin32 module is required on Windows platform.
 
 There are other runtime requrements; texttable, pycryptodome
 

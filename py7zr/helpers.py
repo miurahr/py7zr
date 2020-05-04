@@ -26,17 +26,13 @@ import ctypes
 import os
 import platform
 import stat
-import struct
 import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Optional, Union
 
-if sys.platform == "win32":
-    from win32file import (CloseHandle, CreateFileW, DeviceIoControl, GENERIC_READ, GetFileAttributes,
-                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT)  # type: ignore
-    from winioctlcon import FSCTL_GET_REPARSE_POINT  # type: ignore
+import py7zr.win32compat
 
 
 def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1024 * 1024) -> int:
@@ -220,66 +216,8 @@ def islink(path):
     """
     if sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
         return os.path.islink(path)
-    return os.path.exists(path) and _check_bit(GetFileAttributes(path), stat.FILE_ATTRIBUTE_REPARSE_POINT)
-
-
-def _parse_reparse_buffer(buf):
-    """ Implementing the below in Python:
-
-    typedef struct _REPARSE_DATA_BUFFER {
-        ULONG  ReparseTag;
-        USHORT ReparseDataLength;
-        USHORT Reserved;
-        union {
-            struct {
-                USHORT SubstituteNameOffset;
-                USHORT SubstituteNameLength;
-                USHORT PrintNameOffset;
-                USHORT PrintNameLength;
-                ULONG Flags;
-                WCHAR PathBuffer[1];
-            } SymbolicLinkReparseBuffer;
-            struct {
-                USHORT SubstituteNameOffset;
-                USHORT SubstituteNameLength;
-                USHORT PrintNameOffset;
-                USHORT PrintNameLength;
-                WCHAR PathBuffer[1];
-            } MountPointReparseBuffer;
-            struct {
-                UCHAR  DataBuffer[1];
-            } GenericReparseBuffer;
-        } DUMMYUNIONNAME;
-    } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
-    """
-    # See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/ns-ntifs-_reparse_data_buffer
-
-    data = {'tag': struct.unpack('<I', buf[:4])[0],
-            'data_length': struct.unpack('<H', buf[4:6])[0],
-            'reserved': struct.unpack('<H', buf[6:8])[0]}
-    buf = buf[8:]
-
-    if data['tag'] in (stat.IO_REPARSE_TAG_MOUNT_POINT, stat.IO_REPARSE_TAG_SYMLINK):
-        keys = ['substitute_name_offset',
-                'substitute_name_length',
-                'print_name_offset',
-                'print_name_length']
-        if data['tag'] == stat.IO_REPARSE_TAG_SYMLINK:
-            keys.append('flags')
-
-        # Parsing
-        for k in keys:
-            if k == 'flags':
-                fmt, sz = '<I', 4
-            else:
-                fmt, sz = '<H', 2
-            data[k] = struct.unpack(fmt, buf[:sz])[0]
-            buf = buf[sz:]
-
-    # Using the offset and lengths grabbed, we'll set the buffer.
-    data['buffer'] = buf
-
-    return data
+    return os.path.exists(path) and _check_bit(py7zr.win32compat.GetFileAttributes(path),
+                                               stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
 
 def readlink(path: str, *, dir_fd=None) -> str:
@@ -296,25 +234,7 @@ def readlink(path: str, *, dir_fd=None) -> str:
         return os.readlink(path, dir_fd=dir_fd)
 
     if sys.platform == "win32":
-        # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
-        # is a symbolic link to a directory or a NTFS junction.
-        # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
-        # See https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea
-        handle = CreateFileW(path, GENERIC_READ, 0, None, OPEN_EXISTING,
-                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0)
-        MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024
-        buf = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
-        CloseHandle(handle)
-        result = _parse_reparse_buffer(buf)
-        if result['tag'] in (stat.IO_REPARSE_TAG_MOUNT_POINT, stat.IO_REPARSE_TAG_SYMLINK):
-            offset = result['substitute_name_offset']
-            ending = offset + result['substitute_name_length']
-            rpath = result['buffer'][offset:ending].decode('UTF-16-LE')
-        else:
-            rpath = result['buffer']
-        if result['tag'] == stat.IO_REPARSE_TAG_MOUNT_POINT:
-            rpath[:0] = '\\??\\'
-        return rpath
+        return py7zr.win32compat.readlink(path)
 
 
 class NullIO:
