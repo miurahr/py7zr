@@ -107,7 +107,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
         DeviceIoControl.restype = BOOL
         handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
-                                             FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
+                                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
         buf = ReparseBuffer()
         ret = DWORD(0)
         status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
