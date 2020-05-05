@@ -117,7 +117,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
 
         if not status:
             logger = getLogger(__file__)
-            logger.warning("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret))
+            logger.warning("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret.value))
             return None
 
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
