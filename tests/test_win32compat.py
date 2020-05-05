@@ -17,12 +17,13 @@ def test_symlink_readlink(tmp_path):
         f.write("Original")
     slink = tmp_path / "target" / "link"
     slink.parent.mkdir(parents=True, exist_ok=True)
-    slink.symlink_to(tmp_path / "original.txt", False)
+    slink.symlink_to(target, False)
     assert py7zr.win32compat.readlink(slink) == '\\??\\' + str(target)
     assert slink.open('r').read() == 'Original'
     # check if os.readlink() returns a value as same as compat function.
     if sys.version_info >= (3, 8):
         assert os.readlink(str(slink)) == '\\??\\' + str(target)
+
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="test on windows")
 def test_hardlink_readlink(tmp_path):
