@@ -1,6 +1,7 @@
 import pathlib
 import stat
 import sys
+from logging import getLogger
 from typing import Optional, Union
 
 from py7zr.exceptions import InternalError
@@ -100,21 +101,27 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
             target = str(path.resolve())
         else:
             target = str(path)
-        if not is_reparse_point(target):
+
+        try:
+            CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
+            CreateFileW.restype = HANDLE
+            DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
+            DeviceIoControl.restype = BOOL
+            handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
+                                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
+            buf = ReparseBuffer()
+            ret = DWORD(0)
+            status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
+                                     MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
+            CloseHandle(handle)
+        except Exception:
             return None
-        CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
-        CreateFileW.restype = HANDLE
-        DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
-        DeviceIoControl.restype = BOOL
-        handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
-                                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
-        buf = ReparseBuffer()
-        ret = DWORD(0)
-        status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
-                                 MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
-        CloseHandle(handle)
+
         if not status:
-            raise InternalError("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret))
+            logger = getLogger(__file__)
+            logger.warning("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret))
+            return None
+
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
