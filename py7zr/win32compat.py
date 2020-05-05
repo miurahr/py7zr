@@ -95,11 +95,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         # is a symbolic link to a directory or a NTFS junction.
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea
-        if isinstance(path, pathlib.Path):
-            target = str(path.resolve())
-        else:
-            target = str(path)
-
+        target = str(path)
         try:
             CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
             CreateFileW.restype = HANDLE
