@@ -7,7 +7,7 @@ from py7zr.exceptions import InternalError
 
 if sys.platform == "win32" and sys.version_info < (3, 8):
     import ctypes
-    import ctypes.wintypes as wintypes
+    from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPDWORD, LPVOID, LPWSTR
 
     _stdcall_libraries = {}
     _stdcall_libraries['kernel32'] = ctypes.WinDLL('kernel32')
@@ -87,8 +87,8 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         ]
 
     def is_reparse_point(path: Union[str, pathlib.Path]) -> bool:
-        GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
-        GetFileAttributesW.restype = wintypes.DWORD
+        GetFileAttributesW.argtypes = [LPCWSTR]
+        GetFileAttributesW.restype = DWORD
         return _check_bit(GetFileAttributesW(str(path)), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
     def readlink(path: Union[str, pathlib.Path]) -> Optional[str]:
@@ -102,22 +102,19 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
             target = str(path)
         if not is_reparse_point(target):
             return None
-        CreateFileW.argtypes = [wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID, wintypes.DWORD,
-                                wintypes.DWORD, wintypes.HANDLE]
-        CreateFileW.restype = wintypes.HANDLE
-        DeviceIoControl.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPVOID, wintypes.DWORD, wintypes.LPVOID,
-                                    wintypes.DWORD, wintypes.LPDWORD, wintypes.LPVOID]
-        DeviceIoControl.restype = wintypes.BOOL
-        handle = wintypes.HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
+        CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
+        CreateFileW.restype = HANDLE
+        DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
+        DeviceIoControl.restype = BOOL
+        handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
                                              FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
         buf = ReparseBuffer()
-        dwBytesRet = wintypes.DWORD(0)
-        lpBytesRet = ctypes.byref(dwBytesRet)
+        ret = DWORD(0)
         status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
-                                 MAXIMUM_REPARSE_DATA_BUFFER_SIZE, lpBytesRet, None)
+                                 MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
         CloseHandle(handle)
         if not status:
-            raise InternalError("Failed IOCTL access to get REPARSE_POINT.")
+            raise InternalError("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret))
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
