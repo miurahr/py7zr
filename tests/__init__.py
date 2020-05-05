@@ -24,7 +24,7 @@ def check_output(expected, tmpdir):
                     "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mode, exp['mode'])
         if exp.get('mtime', None):
             assert target.stat().st_mtime == exp['mtime'],\
-                "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mtime, exp['mode'])
+                "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mtime, exp['mtime'])
         m = hashlib.sha256()
         m.update(target.open('rb').read())
         assert m.digest() == binascii.unhexlify(exp['digest']), "Fails digest for %s" % exp['filename']
