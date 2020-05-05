@@ -4,8 +4,6 @@ import sys
 from logging import getLogger
 from typing import Optional, Union
 
-from py7zr.exceptions import InternalError
-
 if sys.platform == "win32" and sys.version_info < (3, 8):
     import ctypes
     from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPDWORD, LPVOID, LPWSTR
