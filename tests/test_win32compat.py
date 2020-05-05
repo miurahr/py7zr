@@ -30,8 +30,10 @@ def test_hardlink_readlink(tmp_path):
     hard = tmp_path / "target" / "link"
     hard.parent.mkdir(parents=True, exist_ok=True)
     os.system('mklink /H %s %s' % (str(hard), str(target.resolve())))
-    assert py7zr.win32compat.readlink(hard) == "\\??\\" + str(target.resolve())
     assert hard.open('r').read() == 'Original'
+    assert os.path.samefile(hard, target.resolve())
+    assert not py7zr.helpers.islink(str(hard))
+    assert py7zr.win32compat.readlink(hard) is None
 
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="test on windows")
@@ -44,5 +46,5 @@ def test_junction_readlink(tmp_path):
     junction.parent.mkdir(parents=True, exist_ok=True)
     os.system('mklink /J %s %s' % (str(junction), str(target.resolve())))
     assert py7zr.win32compat.is_reparse_point(junction)
-    assert py7zr.win32compat.readlink(junction) == str(target.resolve())
-    assert junction.open('r').read() == 'Original'
+    assert py7zr.win32compat.readlink(str(junction)) == '\\??\\' + str(target.resolve())
+    assert py7zr.helpers.readlink(str(junction)) == '\\??\\' + str(target.resolve())

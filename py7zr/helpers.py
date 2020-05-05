@@ -224,7 +224,7 @@ def readlink(path: str, *, dir_fd=None) -> str:
 
     if not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
-    elif islink(path):  # may be a symbolic link.
+    elif os.path.islink(path):  # may be a symbolic link.
         return os.readlink(path, dir_fd=dir_fd)
 
     if sys.platform == "win32":
