@@ -121,11 +121,11 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
-            rpath = b''.join(buf.symlink.path_buffer[offset:ending]).decode('UTF-16-LE')
+            rpath = bytearray(buf.symlink.path_buffer)[offset:ending].decode('UTF-16-LE')
         elif buf.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
-            rpath = b''.join([i.to_bytes(1, byteorder='little') for i in buf.mount.path_buffer[offset:ending]]).decode('UTF-16-LE')
+            rpath = bytearray(buf.mount.path_buffer)[offset:ending].decode('UTF-16-LE')
         else:
             rpath = ''
         return rpath
