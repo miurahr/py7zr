@@ -118,25 +118,21 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         #  - the size of two NUL terminators in bytes */
 
         target = str(path)
-        try:
-            CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
-            CreateFileW.restype = HANDLE
-            DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
-            DeviceIoControl.restype = BOOL
-            handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
-                                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
-            buf = ReparseBuffer()
-            ret = DWORD(0)
-            status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
-                                     MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
-            CloseHandle(handle)
-        except Exception:
-            return None
-
+        CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
+        CreateFileW.restype = HANDLE
+        DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
+        DeviceIoControl.restype = BOOL
+        handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
+                                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
+        buf = ReparseBuffer()
+        ret = DWORD(0)
+        status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
+                                 MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
+        CloseHandle(handle)
         if not status:
             logger = getLogger(__file__)
-            logger.warning("Failed IOCTL access to REPARSE_POINT {}. (0X{:08X})".format(target, ret.value))
-            return None
+            logger.error("Failed IOCTL access to REPARSE_POINT {})".format(target))
+            raise ValueError("not a symbolic link or access permission violation")
 
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
             offset = buf.substitute_name_offset
@@ -146,14 +142,26 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
             rpath = bytearray(buf.mount.path_buffer)[offset:ending].decode('UTF-16-LE')
-            # on posixmodule.c:7870 in py38, we do that
-            #         if (nameLen > 4 && wcsncmp(name, L"\\??\\", 4) == 0) {
-            #             /* Our buffer is mutable, so this is okay */
-            #             name[1] = L'\\';
-            #         }
-            # so substitute prefix here
-            if rpath.startswith('\\??\\'):
-                rpath = '\\\\' + rpath[2:]
         else:
-            rpath = ''
+            raise ValueError("not a symbolic link")
+        # on posixmodule.c:7859 in py38, we do that
+        # ```
+        # else if (rdb->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+        # {
+        #    name = (wchar_t *)((char*)rdb->MountPointReparseBuffer.PathBuffer +
+        #                       rdb->MountPointReparseBuffer.SubstituteNameOffset);
+        #    nameLen = rdb->MountPointReparseBuffer.SubstituteNameLength / sizeof(wchar_t);
+        # }
+        # else
+        # {
+        #    PyErr_SetString(PyExc_ValueError, "not a symbolic link");
+        # }
+        # if (nameLen > 4 && wcsncmp(name, L"\\??\\", 4) == 0) {
+        #             /* Our buffer is mutable, so this is okay */
+        #             name[1] = L'\\';
+        #         }
+        # ```
+        # so substitute prefix here.
+        if rpath.startswith('\\??\\'):
+            rpath = '\\\\' + rpath[2:]
         return rpath
