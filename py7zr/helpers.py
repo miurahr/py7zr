@@ -209,10 +209,14 @@ def islink(path):
     Cross-platform islink implementation.
     Supports Windows NT symbolic links and reparse points.
     """
+    is_symlink = os.path.islink(path)
     if sys.version_info >= (3, 8) or sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
-        return os.path.islink(path)
-    return os.path.exists(path) and py7zr.win32compat.is_reparse_point(path)
-
+        return is_symlink
+    # special check for directory junctions which py38 does.
+    if is_symlink:
+        if py7zr.win32compat.is_reparse_point(path):
+            is_symlink = False
+    return is_symlink
 
 def readlink(path: str, *, dir_fd=None) -> str:
     """
