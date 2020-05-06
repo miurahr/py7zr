@@ -24,7 +24,6 @@
 import bz2
 import io
 import lzma
-import os
 import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
