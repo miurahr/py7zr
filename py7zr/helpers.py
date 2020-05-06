@@ -29,7 +29,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import Optional, Union
+from typing import BinaryIO, Optional, Union
 
 import py7zr.win32compat
 
@@ -231,6 +231,36 @@ def readlink(path: str, *, dir_fd=None) -> str:
     return py7zr.win32compat.readlink(path)
 
 
+class MemIO:
+    """IO class to write memory(io.Bytes)"""
+    def __init__(self, buf: BinaryIO):
+        self._buf = buf
+
+    def write(self, data: bytes) -> int:
+        return self._buf.write(data)
+
+    def read(self, length: Optional[int] = None) -> bytes:
+        return self._buf.read(length)
+
+    def close(self) -> None:
+        self._buf.seek(0)
+
+    def flush(self) -> None:
+        pass
+
+    def seek(self, position: int) -> None:
+        self._buf.seek(position)
+
+    def open(self, mode=None):
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class NullIO:
     """IO class of /dev/null"""
 
@@ -252,8 +282,8 @@ class NullIO:
     def flush(self):
         pass
 
-    def open(self):
-        pass
+    def open(self, mode=None):
+        return self
 
     def __enter__(self):
         return self
