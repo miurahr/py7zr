@@ -26,7 +26,7 @@ def test_symlink_readlink_absolute(tmp_path):
     if sys.version_info < (3, 8):
         assert py7zr.win32compat.readlink(str(tmp_path / "target" / "link")) == PATH_PREFIX + str(target)
     assert slink.open('r').read() == 'Original'
-    assert py7zr.helpers.readlink(str(slink)) ==  PATH_PREFIX + str(target)
+    assert py7zr.helpers.readlink(str(slink)) == PATH_PREFIX + str(target)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
@@ -44,7 +44,7 @@ def test_symlink_readlink_relative(tmp_path):
     if sys.version_info < (3, 8):
         assert py7zr.win32compat.readlink(str(tmp_path / "target" / "link")) == str(target)
     assert slink.open('r').read() == 'Original'
-    assert py7zr.helpers.readlink(str(slink)) ==  str(target)
+    assert py7zr.helpers.readlink(str(slink)) == str(target)
 
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="test on windows")
