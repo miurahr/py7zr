@@ -32,12 +32,13 @@ import os
 import stat
 import sys
 from io import BytesIO
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import ArchiveTimestamp, calculate_crc32, filetime_to_dt
+from py7zr.helpers import (ArchiveTimestamp, MemIO, calculate_crc32,
+                           filetime_to_dt)
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
@@ -320,6 +321,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._fpclose()
             raise e
         self.encoded_header_mode = False
+        self._dict = {}  # type: Dict[str, IO[Any]]
 
     def __enter__(self):
         return self
@@ -644,15 +646,25 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Test archive using CRC digests."""
         return self._test_digests()
 
+    def readall(self) -> Optional[Dict[str, IO[Any]]]:
+        return self._extract(path=None, return_dict=True)
+
     def extractall(self, path: Optional[Any] = None) -> None:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        return self.extract(path)
+        self._extract(path=path, return_dict=False)
+
+    def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+        return self._extract(path=None, targets=targets, return_dict=True)
 
     def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
+        self._extract(path, targets, return_dict=False)
+
+    def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
+                 return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -704,6 +716,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
             elif f.is_socket:
                 pass
+            elif return_dict:
+                fname = outfilename.as_posix()
+                _buf = io.BytesIO()
+                self._dict[fname] = _buf
+                self.worker.register_filelike(f.id, MemIO(_buf))
             elif f.is_symlink:
                 target_sym.append(outfilename)
                 self.worker.register_filelike(f.id, outfilename)
@@ -724,28 +741,31 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     raise Exception("Directory name is existed as a normal file.")
                 else:
                     raise Exception("Directory making fails on unknown condition.")
+
         self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
-
-        # create symbolic links on target path as a working directory.
-        # if path is None, work on current working directory.
-        for t in target_sym:
-            sym_dst = t.resolve()
-            with sym_dst.open('rb') as b:
-                sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-            sym_dst.unlink()  # unlink after close().
-            sym_dst.symlink_to(pathlib.Path(sym_src))
-
-        # create junction point only on windows platform
-        if sys.platform.startswith('win'):
-            for t in target_junction:
-                junction_dst = t.resolve()
-                with junction_dst.open('rb') as b:
-                    junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
-                    junction_dst.unlink()
-                    _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
-
-        for o, p in target_files:
-            self._set_file_property(o, p)
+        if return_dict:
+            return self._dict
+        else:
+            # create symbolic links on target path as a working directory.
+            # if path is None, work on current working directory.
+            for t in target_sym:
+                sym_dst = t.resolve()
+                with sym_dst.open('rb') as b:
+                    sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+                sym_dst.unlink()  # unlink after close().
+                sym_dst.symlink_to(pathlib.Path(sym_src))
+            # create junction point only on windows platform
+            if sys.platform.startswith('win'):
+                for t in target_junction:
+                    junction_dst = t.resolve()
+                    with junction_dst.open('rb') as b:
+                        junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                        junction_dst.unlink()
+                        _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
+            # set file properties
+            for o, p in target_files:
+                self._set_file_property(o, p)
+            return None
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""

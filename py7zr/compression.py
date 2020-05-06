@@ -31,7 +31,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor
-from py7zr.helpers import NullIO, calculate_crc32, readlink
+from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
 if sys.version_info < (3, 6):
@@ -44,7 +44,7 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header) -> None:
-        self.target_filepath = {}  # type: Dict[int, Optional[pathlib.Path]]
+        self.target_filepath = {}  # type: Dict[int, Union[MemIO, pathlib.Path, None]]
         self.files = files
         self.src_start = src_start
         self.header = header
@@ -95,6 +95,7 @@ class Worker:
                     if not f.emptystream:
                         # extract to file
                         self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        ofp.seek(0)
                     else:
                         pass  # just create empty file
             elif not f.emptystream:
@@ -202,7 +203,7 @@ class Worker:
         folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
 
-    def register_filelike(self, id: int, fileish: Optional[pathlib.Path]) -> None:
+    def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
         self.target_filepath[id] = fileish
 
