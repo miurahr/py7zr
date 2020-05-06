@@ -226,14 +226,9 @@ def readlink(path: str, *, dir_fd=None) -> str:
     """
     if sys.version_info >= (3, 8) or sys.platform != "win32":
         return os.readlink(path, dir_fd=dir_fd)
-
     if not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
-    elif os.path.islink(path):  # may be a symbolic link.
-        return os.readlink(path, dir_fd=dir_fd)
-
-    if sys.platform == "win32":
-        return py7zr.win32compat.readlink(path)
+    return py7zr.win32compat.readlink(path)
 
 
 class NullIO:
