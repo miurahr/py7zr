@@ -580,7 +580,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
-            f['filename'] = arcname
+            f['filename'] = pathlib.Path(arcname).as_posix()
         else:
             f['filename'] = target.as_posix()
         if os.name == 'nt':
@@ -588,6 +588,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -599,7 +600,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
                 f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_dir():
