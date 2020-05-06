@@ -717,7 +717,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif f.is_socket:
                 pass
             elif return_dict:
-                fname = os.path.normpath(outfilename)
+                fname = outfilename.as_posix()
                 _buf = io.BytesIO()
                 self._dict[fname] = _buf
                 self.worker.register_filelike(f.id, MemIO(_buf))
