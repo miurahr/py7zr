@@ -44,7 +44,7 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header) -> None:
-        self.target_filepath = {}  # type: Dict[int, Optional[pathlib.Path]]
+        self.target_filepath = {}  # type: Dict[int, Union[MemIO, pathlib.Path, None]]
         self.files = files
         self.src_start = src_start
         self.header = header
@@ -203,7 +203,7 @@ class Worker:
         folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
 
-    def register_filelike(self, id: int, fileish: Optional[Union[MemIO, pathlib.Path]]) -> None:
+    def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
         self.target_filepath[id] = fileish
 

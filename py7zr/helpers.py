@@ -240,7 +240,10 @@ class MemIO:
         return self._buf.write(data)
 
     def read(self, length: Optional[int] = None) -> bytes:
-        return self._buf.read(length)
+        if length is not None:
+            return self._buf.read(length)
+        else:
+            return self._buf.read()
 
     def close(self) -> None:
         self._buf.seek(0)
