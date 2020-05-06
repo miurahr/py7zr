@@ -44,7 +44,7 @@ def test_symlink_readlink_relative(tmp_path):
     if sys.version_info < (3, 8):
         assert py7zr.win32compat.readlink(str(tmp_path / "target" / "link")) == str(target)
     assert slink.open('r').read() == 'Original'
-    assert py7zr.helpers.readlink(str(slink)) == str(target)
+    assert py7zr.helpers.readlink(slink) == str(target)
 
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="test on windows")
@@ -58,10 +58,10 @@ def test_hardlink_readlink(tmp_path):
     os.system('mklink /H %s %s' % (str(hard), str(target.resolve())))
     assert hard.open('r').read() == 'Original'
     assert os.path.samefile(str(hard), str(target.resolve()))
-    assert not py7zr.helpers.islink(str(hard))
+    assert not py7zr.helpers.islink(hard)
     if sys.version_info < (3, 8):
         with pytest.raises(ValueError):
-            py7zr.win32compat.readlink(hard)
+            py7zr.win32compat.readlink(str(hard))
 
 
 @pytest.mark.skipif(not sys.platform.startswith("win"), reason="test on windows")
@@ -74,7 +74,7 @@ def test_junction_readlink(tmp_path):
     junction.parent.mkdir(parents=True, exist_ok=True)
     os.system('mklink /J %s %s' % (str(junction), str(target.resolve())))
     if sys.version_info < (3, 8):
-        assert py7zr.win32compat.is_reparse_point(junction)
+        assert py7zr.win32compat.is_reparse_point(str(junction))
         assert py7zr.win32compat.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
     assert not os.path.islink(str(junction))
-    assert py7zr.helpers.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
+    assert py7zr.helpers.readlink(junction) == PATH_PREFIX + str(target.resolve())
