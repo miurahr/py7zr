@@ -218,6 +218,7 @@ def islink(path):
             is_symlink = False
     return is_symlink
 
+
 def readlink(path: str, *, dir_fd=None) -> str:
     """
     Cross-platform implementation of readlink for Python < 3.8
