@@ -582,7 +582,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             f['filename'] = target.as_posix()
         if os.name == 'nt':
-            fstat = target.stat()
+            fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -594,7 +594,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['uncompressed'] = fstat.st_size
         else:
-            fstat = target.stat()
+            fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
