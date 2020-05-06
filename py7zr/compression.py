@@ -31,7 +31,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor
-from py7zr.helpers import NullIO, calculate_crc32, readlink, MemIO
+from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
 if sys.version_info < (3, 6):
