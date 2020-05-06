@@ -29,6 +29,6 @@ after_success:
       coverage combine
       coverage xml --ignore-errors
       coverage report -m --ignore-errors
-      codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux
+      codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } linux || true
       coveralls
     fi
