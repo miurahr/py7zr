@@ -228,7 +228,11 @@ def readlink(path: pathlib.Path, *, dir_fd=None) -> str:
     if sys.version_info >= (3, 9) and dir_fd is None:
         return path.readlink()
     elif sys.version_info >= (3, 8) or sys.platform != "win32":
-        return os.readlink(path, dir_fd=dir_fd)
+        res = os.readlink(path, dir_fd=dir_fd)
+        if isinstance(res, bytes):
+            return res.decode('UTF-8')
+        else:
+            return res
     elif not os.path.exists(path):
         raise OSError(22, 'Invalid argument', path)
     return py7zr.win32compat.readlink(path)
