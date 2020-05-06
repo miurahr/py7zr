@@ -235,6 +235,8 @@ def test_compress_files_1(tmp_path):
     assert archive.header.files_info.files[3]['attributes'] == expected_attributes
     assert archive.header.files_info.files[3]['maxsize'] == 441
     assert archive.header.files_info.files[3]['uncompressed'] == 559
+    assert archive.header.files_info.files[1]['filename'] == "scripts/py7zr"
+    assert archive.header.files_info.files[3]['filename'] == "setup.py"
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.packinfo.packsizes == [441]
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [3]

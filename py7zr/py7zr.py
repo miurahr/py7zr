@@ -90,7 +90,7 @@ class ArchiveFile:
             return None
 
     @property
-    def origin(self) -> str:
+    def origin(self) -> pathlib.Path:
         return self._get_property('origin')
 
     @property
@@ -578,13 +578,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = str(target)
+        f['origin'] = target
         if arcname is not None:
             f['filename'] = arcname
         else:
-            f['filename'] = str(target)
+            f['filename'] = target.as_posix()
         if os.name == 'nt':
-            fstat = os.stat(str(target), follow_symlinks=False)
+            fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -596,7 +596,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['uncompressed'] = fstat.st_size
         else:
-            fstat = target.stat()
+            fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa

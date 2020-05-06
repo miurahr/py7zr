@@ -24,7 +24,6 @@
 import bz2
 import io
 import lzma
-import os
 import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
@@ -157,9 +156,7 @@ class Worker:
             if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                dirname = os.path.dirname(f.origin)
-                basename = os.path.basename(f.origin)
-                link_target = readlink(str(pathlib.Path(dirname) / basename))  # type: str
+                link_target = readlink(f.origin)  # type: str
                 tgt = link_target.encode('utf-8')  # type: bytes
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)  # type: int
@@ -175,7 +172,7 @@ class Worker:
                 last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
-                with pathlib.Path(f.origin).open(mode='rb') as fd:
+                with f.origin.open(mode='rb') as fd:
                     data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
                     crc = 0
