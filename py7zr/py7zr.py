@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+import collections.abc
 import datetime
 import errno
 import functools
@@ -197,7 +198,7 @@ class ArchiveFile:
         return None
 
 
-class ArchiveFileList:
+class ArchiveFileList(collections.abc.Iterable):
     """Iteratable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
@@ -211,15 +212,29 @@ class ArchiveFileList:
     def __len__(self) -> int:
         return len(self.files_list)
 
-    def __iter__(self) -> 'ArchiveFileList':
-        self.index = 0
-        return self
+    def __iter__(self) -> 'ArchiveFileListIterator':
+        return ArchiveFileListIterator(self)
+
+    def __getitem__(self, index):
+        if index > len(self.files_list):
+            raise IndexError
+        if index < 0:
+            raise IndexError
+        res = ArchiveFile(index + self.offset, self.files_list[index])
+        return res
+
+
+class ArchiveFileListIterator(collections.abc.Iterator):
+
+    def __init__(self, archive_file_list):
+        self._archive_file_list = archive_file_list
+        self._index = 0
 
     def __next__(self) -> ArchiveFile:
-        if self.index == len(self.files_list):
+        if self._index == len(self._archive_file_list):
             raise StopIteration
-        res = ArchiveFile(self.index + self.offset, self.files_list[self.index])
-        self.index += 1
+        res = self._archive_file_list[self._index]
+        self._index += 1
         return res
 
 
