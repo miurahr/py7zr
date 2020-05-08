@@ -30,8 +30,8 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.extra import (AESDecompressor, BrotliDecompressor, CopyDecompressor,
-                         DeflateDecompressor, LZ4Decompressor,
-                         ZstdDecompressor)
+                         DeflateDecompressor, ISevenZipDecompressor,
+                         LZ4Decompressor, ZstdDecompressor)
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
@@ -40,15 +40,15 @@ if sys.version_info < (3, 6):
 else:
     import pathlib
 try:
-    import zstandard as Zstd
+    import zstandard as Zstd  # type: ignore
 except ImportError:
     Zstd = None
 try:
-    import lz4.stream as LZ4
+    import lz4.stream as LZ4  # type: ignore
 except ImportError:
     LZ4 = None
 try:
-    import brotli as Brotli
+    import brotli as Brotli  # type: ignore
 except ImportError:
     Brotli = None
 
@@ -284,7 +284,7 @@ class SevenZipDecompressor:
                 filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
             else:
                 filters[:0] = [{'id': filter_id}]
-        self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, AESDecompressor, CopyDecompressor, DeflateDecompressor]  # noqa
+        self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
 
     def _set_alternative_decompressor(self, coders: List[Dict[str, Any]]) -> None:
         filter_id = self.alt_methods_map.get(coders[0]['method'], None)
@@ -322,7 +322,9 @@ class SevenZipDecompressor:
         return self.crc == self.digest
 
 
-class SevenZipCompressor():
+class SevenZipCompressor:
+
+    """Main compressor object to configured for each 7zip folder."""
     """Main compressor object to configured for each 7zip folder."""
 
     __slots__ = ['filters', 'compressor', 'coders']

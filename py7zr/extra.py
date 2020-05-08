@@ -23,6 +23,7 @@
 #
 import lzma
 import zlib
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union
 
 from Crypto.Cipher import AES
@@ -31,20 +32,36 @@ from py7zr.helpers import Buffer, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
 
 try:
-    import zstandard as Zstd
+    import zstandard as Zst  # type: ignore
 except ImportError:
     Zstd = None
 try:
-    import lz4.stream as LZ4
+    import lz4.stream as LZ4  # type: ignore
 except ImportError:
     LZ4 = None
 try:
-    import brotli as Brotli
+    import brotli as Brotli  # type: ignore
 except ImportError:
     Brotli = None
 
 
-class DeflateDecompressor:
+class ISevenZipCompressor(ABC):
+    @abstractmethod
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        pass
+
+    @abstractmethod
+    def flush(self) -> bytes:
+        pass
+
+
+class ISevenZipDecompressor(ABC):
+    @abstractmethod
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        pass
+
+
+class DeflateDecompressor(ISevenZipDecompressor):
     def __init__(self):
         self.buf = b''
         self._decompressor = zlib.decompressobj(-15)
@@ -60,7 +77,7 @@ class DeflateDecompressor:
         return res
 
 
-class CopyDecompressor:
+class CopyDecompressor(ISevenZipDecompressor):
 
     def __init__(self):
         self._buf = bytes()
@@ -80,7 +97,7 @@ class CopyDecompressor:
         return res
 
 
-class AESDecompressor:
+class AESDecompressor(ISevenZipDecompressor):
 
     lzma_methods_map = {
         CompressionMethod.LZMA: lzma.FILTER_LZMA1,
@@ -167,16 +184,16 @@ class AESDecompressor:
                 return self.lzma_decompressor.decompress(temp, max_length)
 
 
-class ZstdDecompressor:
+class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self.buf = b''
-        self._ctc = Zstd.ZstdDecompressor()
+        self.buf = b''  # type: bytes
+        self._ctc = Zstd.ZstdDecompressor()  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        dobj = self._ctc.decompressobj()
+        dobj = self._ctc.decompressobj()  # type: ignore
         if max_length < 0:
             res = self.buf + dobj.decompress(data)
             self.buf = b''
@@ -187,21 +204,21 @@ class ZstdDecompressor:
         return res
 
 
-class ZstdCompressor:
+class ZstdCompressor(ISevenZipCompressor):
 
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self._ctc = Zstd.ZstdCompressor()
+        self._ctc = Zstd.ZstdCompressor()  # type: ignore
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._ctc.compress(data)
+        return self._ctc.compress(data)  # type: ignore
 
     def flush(self):
         pass
 
 
-class LZ4Decompressor:
+class LZ4Decompressor(ISevenZipDecompressor):
 
     def __init__(self):
         if LZ4 is None:
@@ -222,7 +239,7 @@ class LZ4Decompressor:
         return res
 
 
-class BrotliDecompressor:
+class BrotliDecompressor(ISevenZipDecompressor):
 
     def __init__(self):
         if Brotli is None:
@@ -243,4 +260,4 @@ class BrotliDecompressor:
                 tmp = self.buf + self._decompressor.process(data)
             res = tmp[:max_length]
             self.buf = tmp[max_length:]
-            return res
+        return res
