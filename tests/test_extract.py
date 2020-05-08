@@ -415,3 +415,9 @@ def test_extract_emptystream_mix(tmp_path):
     archive = py7zr.SevenZipFile(str(testdata_path.joinpath('test_6.7z')), 'r')
     archive.extractall(path=tmp_path)
     archive.close()
+
+
+@pytest.mark.files
+def test_extract_longpath_file(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('longpath.7z').open('rb')) as archive:
+        archive.extractall(path=tmp_path)
