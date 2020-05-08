@@ -12,7 +12,6 @@ import pytest
 
 import py7zr
 from py7zr import unpack_7zarchive
-from py7zr.exceptions import UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -395,34 +394,6 @@ def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_2.7z').open(mode='rb'), password='secret')
     archive.extractall(path=tmp_path)
     archive.close()
-
-
-@pytest.mark.files
-def test_extract_bzip2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('bzip2.7z').open(mode='rb'))
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_extract_bzip2_2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('bzip2_2.7z').open(mode='rb'))
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_extract_ppmd(tmp_path):
-    with pytest.raises(UnsupportedCompressionMethodError):
-        archive = py7zr.SevenZipFile(testdata_path.joinpath('ppmd.7z').open(mode='rb'))
-        archive.extractall(path=tmp_path)
-        archive.close()
-
-
-@pytest.mark.files
-def test_extract_deflate(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('deflate.7z').open(mode='rb')) as archive:
-        archive.extractall(path=tmp_path)
 
 
 @pytest.mark.files

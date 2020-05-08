@@ -23,15 +23,46 @@
 #
 import lzma
 import zlib
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union
 
 from Crypto.Cipher import AES
+
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
 
+try:
+    import zstandard as Zstd  # type: ignore
+except ImportError:
+    Zstd = None
+try:
+    import lz4.stream as LZ4  # type: ignore
+except ImportError:
+    LZ4 = None
+try:
+    import brotli as Brotli  # type: ignore
+except ImportError:
+    Brotli = None
 
-class DeflateDecompressor:
+
+class ISevenZipCompressor(ABC):
+    @abstractmethod
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        pass
+
+    @abstractmethod
+    def flush(self) -> bytes:
+        pass
+
+
+class ISevenZipDecompressor(ABC):
+    @abstractmethod
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        pass
+
+
+class DeflateDecompressor(ISevenZipDecompressor):
     def __init__(self):
         self.buf = b''
         self._decompressor = zlib.decompressobj(-15)
@@ -47,7 +78,7 @@ class DeflateDecompressor:
         return res
 
 
-class CopyDecompressor:
+class CopyDecompressor(ISevenZipDecompressor):
 
     def __init__(self):
         self._buf = bytes()
@@ -67,7 +98,7 @@ class CopyDecompressor:
         return res
 
 
-class AESDecompressor:
+class AESDecompressor(ISevenZipDecompressor):
 
     lzma_methods_map = {
         CompressionMethod.LZMA: lzma.FILTER_LZMA1,
@@ -152,3 +183,82 @@ class AESDecompressor:
                 temp = self.cipher.decrypt(self.buf.view)
                 self.buf.set(temp2)
                 return self.lzma_decompressor.decompress(temp, max_length)
+
+
+class ZstdDecompressor(ISevenZipDecompressor):
+
+    def __init__(self):
+        if Zstd is None:
+            raise UnsupportedCompressionMethodError
+        self.buf = b''  # type: bytes
+        self._ctc = Zstd.ZstdDecompressor()  # type: ignore
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        dobj = self._ctc.decompressobj()  # type: ignore
+        if max_length < 0:
+            res = self.buf + dobj.decompress(data)
+            self.buf = b''
+        else:
+            tmp = self.buf + dobj.decompress(data)
+            res = tmp[:max_length]
+            self.buf = tmp[max_length:]
+        return res
+
+
+class ZstdCompressor(ISevenZipCompressor):
+
+    def __init__(self):
+        if Zstd is None:
+            raise UnsupportedCompressionMethodError
+        self._ctc = Zstd.ZstdCompressor()  # type: ignore
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._ctc.compress(data)  # type: ignore
+
+    def flush(self):
+        pass
+
+
+class LZ4Decompressor(ISevenZipDecompressor):
+
+    def __init__(self):
+        if LZ4 is None:
+            raise UnsupportedCompressionMethodError
+        page_size = 8192
+        block_size_length = 2
+        self._buf = b''
+        self._decompressor = LZ4.LZ4StreamDecompressor("double_buffer", page_size, store_comp_size=block_size_length)
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if max_length < 0:
+            res = self._buf + self._decompressor.decompress(data)
+            self.buf = b''
+        else:
+            tmp = self._buf + self._decompressor.decompress(data)
+            res = tmp[:max_length]
+            self._buf = tmp[max_length:]
+        return res
+
+
+class BrotliDecompressor(ISevenZipDecompressor):
+
+    def __init__(self):
+        if Brotli is None:
+            raise UnsupportedCompressionMethodError
+        self.buf = b''
+        self._decompressor = Brotli.Decompressor()
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if max_length < 0:
+            if self._decompressor.is_finished():
+                res = self.buf
+            res = self.buf + self._decompressor.process(data)
+            self.buf = b''
+        else:
+            if self._decompressor.is_finished():
+                tmp = self.buf
+            else:
+                tmp = self.buf + self._decompressor.process(data)
+            res = tmp[:max_length]
+            self.buf = tmp[max_length:]
+        return res
