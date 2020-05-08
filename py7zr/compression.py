@@ -143,7 +143,12 @@ class Worker:
         """Find the target member of a symlink or hardlink member in the archive.
         """
         targetname = target.as_posix()  # type: str
-        linkname = pathlib.Path(readlink(target)).as_posix()  # type: str
+        linkname = readlink(target)
+        # Check windows full path symlinks
+        if linkname.startswith("\\\\?\\"):
+            linkname = linkname[4:]
+        # normalize as posix style
+        linkname = pathlib.Path(linkname).as_posix()  # type: str
         member = None
         for j in range(len(self.files)):
             if linkname == self.files[j].origin.as_posix():
