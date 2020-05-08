@@ -29,7 +29,8 @@ import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor
+from py7zr.extra import (AESDecompressor, BrotliDecompressor, CopyDecompressor,
+                         DeflateDecompressor, LZ4Decompressor, ZstdDecompressor)
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
@@ -37,6 +38,18 @@ if sys.version_info < (3, 6):
     import pathlib2 as pathlib
 else:
     import pathlib
+try:
+    import zstandard as Zstd
+except ImportError:
+    Zstd = None
+try:
+    import lz4.stream as LZ4
+except ImportError:
+    LZ4 = None
+try:
+    import brotli as Brotli
+except ImportError:
+    Brotli = None
 
 
 class Worker:
@@ -225,11 +238,17 @@ class SevenZipDecompressor:
     FILTER_ZIP = 0x32
     FILTER_COPY = 0x33
     FILTER_AES = 0x34
+    FILTER_ZSTD = 0x35
+    FILTER_LZ4 = 0x36
+    FILTER_BROTLI = 0x37
     alt_methods_map = {
         CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
         CompressionMethod.MISC_DEFLATE: FILTER_ZIP,
         CompressionMethod.COPY: FILTER_COPY,
         CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
+        CompressionMethod.MISC_ZSTD: FILTER_ZSTD,
+        CompressionMethod.MISC_LZ4: FILTER_LZ4,
+        CompressionMethod.MISC_BROTLI: FILTER_BROTLI,
     }
 
     def __init__(self, coders: List[Dict[str, Any]], size: int, crc: Optional[int]) -> None:
@@ -238,10 +257,18 @@ class SevenZipDecompressor:
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        try:
+        if self._check_lzma_coders(coders):
             self._set_lzma_decompressor(coders)
-        except UnsupportedCompressionMethodError:
+        else:
             self._set_alternative_decompressor(coders)
+
+    def _check_lzma_coders(self, coders:List[Dict[str, Any]]) -> bool:
+        res = True
+        for coder in coders:
+            if self.lzma_methods_map.get(coder['method'], None) is None:
+                res = False
+                break
+        return res
 
     def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]) -> None:
         filters = []  # type: List[Dict[str, Any]]
@@ -266,6 +293,12 @@ class SevenZipDecompressor:
             self.decompressor = DeflateDecompressor()
         elif filter_id == self.FILTER_COPY:
             self.decompressor = CopyDecompressor()
+        elif filter_id == self.FILTER_ZSTD and Zstd:
+            self.decompressor = ZstdDecompressor()
+        elif filter_id == self.FILTER_LZ4 and LZ4:
+            self.decompressor = LZ4Decompressor()
+        elif filter_id == self.FILTER_BROTLI and Brotli:
+            self.decompressor = BrotliDecompressor()
         elif filter_id == self.FILTER_AES:
             password = ArchivePassword().get()
             properties = coders[0].get('properties', None)
