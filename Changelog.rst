@@ -10,6 +10,27 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.7.0b1`_
+=======
+
+Added
+-----
+
 * Support memory API.(#111, #119)
   Introduce read(filter) and readall() method for SevenZipFile class.
 * Support ZStandard codec compression algorithm for extraction.(#124, #125)
@@ -22,20 +43,12 @@ Changed
 * Archive: Looking for symbolic link object in the archived list,
   and if found, record as relative link.(#112, #113, #122)
 
-Fixed
------
-
-Deprecated
-----------
-
 Removed
 -------
 
 * Revmoed requirements.txt. When you want to install dependencies for development
   you can do it with 'pip install -e path/to/py7zr_project'
 
-Security
---------
 
 `v0.6`_
 =======
@@ -694,7 +707,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b1...HEAD
+.. _v0.7.0b1: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0b1
 .. _v0.6: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6
 .. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
 .. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
