@@ -325,7 +325,6 @@ class SevenZipDecompressor:
 class SevenZipCompressor:
 
     """Main compressor object to configured for each 7zip folder."""
-    """Main compressor object to configured for each 7zip folder."""
 
     __slots__ = ['filters', 'compressor', 'coders']
 
