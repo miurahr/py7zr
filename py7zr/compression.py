@@ -30,7 +30,8 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.extra import (AESDecompressor, BrotliDecompressor, CopyDecompressor,
-                         DeflateDecompressor, LZ4Decompressor, ZstdDecompressor)
+                         DeflateDecompressor, LZ4Decompressor,
+                         ZstdDecompressor)
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
@@ -262,7 +263,7 @@ class SevenZipDecompressor:
         else:
             self._set_alternative_decompressor(coders)
 
-    def _check_lzma_coders(self, coders:List[Dict[str, Any]]) -> bool:
+    def _check_lzma_coders(self, coders: List[Dict[str, Any]]) -> bool:
         res = True
         for coder in coders:
             if self.lzma_methods_map.get(coder['method'], None) is None:

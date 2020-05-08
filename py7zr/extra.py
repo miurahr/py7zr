@@ -29,6 +29,7 @@ from Crypto.Cipher import AES
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
+
 try:
     import zstandard as Zstd
 except ImportError:
@@ -219,6 +220,7 @@ class LZ4Decompressor:
             res = tmp[:max_length]
             self._buf = tmp[max_length:]
         return res
+
 
 class BrotliDecompressor:
 
