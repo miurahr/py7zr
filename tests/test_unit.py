@@ -15,8 +15,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-from py7zr.py7zr import (FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFile,
-                         ArchiveFileList)
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFileList
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib

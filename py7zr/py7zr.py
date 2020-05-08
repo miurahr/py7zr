@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+import collections.abc
 import datetime
 import errno
 import functools
@@ -197,7 +198,7 @@ class ArchiveFile:
         return None
 
 
-class ArchiveFileList:
+class ArchiveFileList(collections.abc.Iterable):
     """Iteratable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
@@ -211,15 +212,29 @@ class ArchiveFileList:
     def __len__(self) -> int:
         return len(self.files_list)
 
-    def __iter__(self) -> 'ArchiveFileList':
-        self.index = 0
-        return self
+    def __iter__(self) -> 'ArchiveFileListIterator':
+        return ArchiveFileListIterator(self)
+
+    def __getitem__(self, index):
+        if index > len(self.files_list):
+            raise IndexError
+        if index < 0:
+            raise IndexError
+        res = ArchiveFile(index + self.offset, self.files_list[index])
+        return res
+
+
+class ArchiveFileListIterator(collections.abc.Iterator):
+
+    def __init__(self, archive_file_list):
+        self._archive_file_list = archive_file_list
+        self._index = 0
 
     def __next__(self) -> ArchiveFile:
-        if self.index == len(self.files_list):
+        if self._index == len(self._archive_file_list):
             raise StopIteration
-        res = ArchiveFile(self.index + self.offset, self.files_list[self.index])
-        self.index += 1
+        res = self._archive_file_list[self._index]
+        self._index += 1
         return res
 
 
@@ -580,7 +595,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
-            f['filename'] = arcname
+            f['filename'] = pathlib.Path(arcname).as_posix()
         else:
             f['filename'] = target.as_posix()
         if os.name == 'nt':
@@ -588,6 +603,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if target.is_symlink():
                 f['emptystream'] = False
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -599,7 +615,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             fstat = target.lstat()
             if target.is_symlink():
                 f['emptystream'] = False
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
                 f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_dir():
