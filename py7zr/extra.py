@@ -32,7 +32,7 @@ from py7zr.helpers import Buffer, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
 
 try:
-    import zstandard as Zst  # type: ignore
+    import zstandard as Zstd  # type: ignore
 except ImportError:
     Zstd = None
 try:
