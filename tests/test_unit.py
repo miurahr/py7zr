@@ -15,7 +15,7 @@ import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFileList
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -382,13 +382,6 @@ def test_read_crcs():
     assert crcs[0] == data0
     assert crcs[1] == data1
     assert crcs[2] == data2
-
-
-@pytest.mark.unit
-def test_file_list_length():
-    file_list = ArchiveFileList()
-    file_list.append(ArchiveFile(0, None))
-    assert len(file_list) == 1
 
 
 @pytest.mark.unit
