@@ -17,10 +17,15 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 from . import ltime
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
+
+
+def check_bit(val, mask):
+    return val & mask == mask
 
 
 @pytest.mark.unit
@@ -379,6 +384,13 @@ def test_compress_symlink(tmp_path):
     assert archive.header.files_info.files[5]['maxsize'] == 1543
     assert archive.header.main_streams.packinfo.packsizes == [1543]
     assert archive.header.files_info.files[4]['uncompressed'] == 6536
+    assert archive.header.files_info.files[1]['filename'] == 'lib/libabc.so'
+    assert archive.header.files_info.files[2]['filename'] == 'lib/libabc.so.1'
+    if os.name == 'nt':
+        assert check_bit(archive.header.files_info.files[2]['attributes'], stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    else:
+        assert check_bit(archive.header.files_info.files[2]['attributes'], FILE_ATTRIBUTE_UNIX_EXTENSION)
+        assert stat.S_ISLNK(archive.header.files_info.files[2]['attributes'] >> 16)
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.substreamsinfo.digestsdefined == [True, True, True, True, True]
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [11, 13, 15, 6536, 3]
@@ -468,3 +480,31 @@ def test_compress_directories(tmp_path):
 def test_compress_files_with_password(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, mode='w', password='secret')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_compress_absolute_symlink_as_relative(tmp_path):
+    # test case derived by github issue#112
+    src = tmp_path / "src"
+    # create symbolic link and actual file
+    src.mkdir()
+    src.joinpath("rel").mkdir()
+    origin = src / "Original1.txt"
+    with origin.open('w') as f:
+        f.write("Original1.txt")
+    s = src / "rel" / "link_to_Original1.txt"
+    s.symlink_to(origin, False)
+    # create archive with symlink
+    target = tmp_path / "symb_2.7z"
+    with py7zr.SevenZipFile(target, 'w') as archive:
+        for fname, arcname in [(origin, "Original1.txt"), (s.parent, "rel"), (s, "rel/link_to_Original1.txt")]:
+            archive.write(fname, arcname)
+    # extract archive
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path.joinpath('tgt'))
+    # check link
+    tpath = py7zr.helpers.readlink(tmp_path / 'tgt' / "rel" / "link_to_Original1.txt")
+    assert pathlib.Path(tpath).as_posix() == "../Original1.txt"
