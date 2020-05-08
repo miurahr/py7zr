@@ -105,6 +105,8 @@ class Worker:
         for f in files:
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
+                if isinstance(fileish, pathlib.Path) and not fileish.parent.exists():
+                    os.makedirs(fileish.parent)
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
                         # extract to file
