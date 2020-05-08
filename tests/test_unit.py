@@ -9,13 +9,13 @@ import struct
 import sys
 
 import pytest
+from Crypto.Cipher import AES
 
 import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-from Crypto.Cipher import AES
-from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFileList
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -382,43 +382,6 @@ def test_read_crcs():
     assert crcs[0] == data0
     assert crcs[1] == data1
     assert crcs[2] == data2
-
-
-@pytest.mark.unit
-def test_file_list_length():
-    file_list = ArchiveFileList()
-    item = {}
-    file_list.append(item)
-    assert len(file_list) == 1
-
-
-@pytest.mark.unit
-def test_file_list_iteratable():
-    offset = 3
-    file_list = ArchiveFileList(offset=offset)
-    item0 = {'origin': 0}
-    item1 = {'origin': 1}
-    file_list.append(item0)
-    file_list.append(item1)
-    for i, v in enumerate(file_list):
-        assert v.id == i + offset
-        assert v.origin == i
-
-
-@pytest.mark.unit
-def test_file_list_iteratable_double():
-    offset = 3
-    file_list = ArchiveFileList(offset=offset)
-    item0 = {'origin': 0}
-    item1 = {'origin': 1}
-    file_list.append(item0)
-    file_list.append(item1)
-    for i, v in enumerate(file_list):
-        assert v.id == i + offset
-        assert v.origin == i
-        for j, w in enumerate(file_list):
-            assert w.id == j + offset
-            assert w.origin == j
 
 
 @pytest.mark.unit

@@ -24,8 +24,9 @@ import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, Optional
 
-import py7zr
 import texttable  # type: ignore
+
+import py7zr
 from py7zr.helpers import Local
 from py7zr.properties import SupportedMethods
 

@@ -100,6 +100,12 @@ class CompressionMethod(ByteEnum):
     MISC_LZH = binascii.unhexlify('0406')
     NSIS_DEFLATE = binascii.unhexlify('040901')
     NSIS_BZIP2 = binascii.unhexlify('040902')
+    #
+    MISC_ZSTD = binascii.unhexlify('04f71101')
+    MISC_BROTLI = binascii.unhexlify('04f71102')
+    MISC_LZ4 = binascii.unhexlify('04f71104')
+    MISC_LZS = binascii.unhexlify('04f71105')
+    MISC_LIZARD = binascii.unhexlify('04f71106')
     # CRYPTO 06..
     CRYPT_ZIPCRYPT = binascii.unhexlify('06f10101')
     CRYPT_RAR29AES = binascii.unhexlify('06f10303')
