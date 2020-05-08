@@ -24,6 +24,7 @@
 import bz2
 import io
 import lzma
+import os
 import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
@@ -138,6 +139,26 @@ class Worker:
                 print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
         return
 
+    def _find_link_target(self, target):
+        """Find the target member of a symlink or hardlink member in the archive.
+        """
+        targetname = target.as_posix()  # type: str
+        linkname = readlink(target)
+        # Check windows full path symlinks
+        if linkname.startswith("\\\\?\\"):
+            linkname = linkname[4:]
+        # normalize as posix style
+        linkname = pathlib.Path(linkname).as_posix()  # type: str
+        member = None
+        for j in range(len(self.files)):
+            if linkname == self.files[j].origin.as_posix():
+                # FIXME: when API user specify arcname, it will break
+                member = os.path.relpath(linkname, os.path.dirname(targetname))
+                break
+        if member is None:
+            member = linkname
+        return member
+
     def archive(self, fp: BinaryIO, folder):
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
@@ -156,7 +177,7 @@ class Worker:
             if f.is_symlink:
                 last_file_index = i
                 num_unpack_streams += 1
-                link_target = readlink(f.origin)  # type: str
+                link_target = self._find_link_target(f.origin)  # type: str
                 tgt = link_target.encode('utf-8')  # type: bytes
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)  # type: int
