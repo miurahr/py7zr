@@ -27,6 +27,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union
 
 from Crypto.Cipher import AES
+
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_key
 from py7zr.properties import READ_BLOCKSIZE, CompressionMethod

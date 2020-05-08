@@ -9,12 +9,12 @@ import struct
 import sys
 
 import pytest
+from Crypto.Cipher import AES
 
 import py7zr.archiveinfo
 import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
-from Crypto.Cipher import AES
 from py7zr.py7zr import (FILE_ATTRIBUTE_UNIX_EXTENSION, ArchiveFile,
                          ArchiveFileList)
 
