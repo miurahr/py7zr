@@ -12,3 +12,4 @@ Contributors, listed alphabetically, are:
 * Joachim Bauch -- pylzma orginator
 * Kazuya Fujioka -- fix zero file problem
 * Kyle Altendorf -- fix multithreading problem (#82)
+* @Zoynels -- Mmeory IO API(#111, #119)

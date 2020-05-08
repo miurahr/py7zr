@@ -138,8 +138,47 @@ SevenZipFile Object
 
 .. method:: SevenZipFile.extractall(path=None)
 
-   Extract all members from the archive to the current working directory.  *path*
+   Extract all members from the archive to current working directory.  *path*
    specifies a different directory to extract to.
+
+
+.. method:: SevenZipFile.extract(path=None, targets=None)
+
+   Extract specified pathspec archived files to current working directory.
+   'path' specifies a differenct directory to extract to.
+
+   'targets' is a list of archived files to be extracted. py7zr looks for files
+   and directories as same as specified in 'targets'.
+
+   **CAUTION** when specifying files and not specifying parent directory,
+   py7zr will fails with no such directory. When you want to extract file
+   'somedir/somefile' then pass a list: ['somedirectory', 'somedir/somefile']
+   as a target argument.
+
+   Please see 'tests/test_basic.py: test_py7zr_extract_and_getnames()' for
+   example code.
+
+
+.. method:: SevenZipFile.readall()
+
+   Extract all members from the archive to memory and returns dictionary object.
+   Returned dictionary has a form of Dict[filename: str, BinaryIO: io.ByteIO object].
+   So you can get extracted data from dictionary value as such
+
+.. code-block:: python
+
+   with SevenZipFile('archive.7z', 'r') as zip:
+        archives = zip.readall()
+        for fname in archives:
+            bio = archives[fname]
+            data = bio.read()
+
+
+.. method:: SevenZipFile.read(target=None)
+
+   Extract specified pathspec archived files to dictionary object.
+   'targets' is a list of archived files to be extracted. py7zr looks for files
+   and directories as same as specified in 'targets'.
 
 
 .. method:: SevenZipFile.list()

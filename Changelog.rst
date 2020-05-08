@@ -10,11 +10,17 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support memory API.(#111, #119)
+  Introduce read(filter) and readall() method for SevenZipFile class.
+* Support ZStandard codec compression algorithm for extraction.(#124, #125)
+
 Changed
 -------
 
 * Drop pywin32 dependency
 * Introduce internal win32compat.py
+* Archive: Looking for symbolic link object in the archived list,
+  and if found, record as relative link.(#112, #113, #122)
 
 Fixed
 -----
@@ -24,6 +30,9 @@ Deprecated
 
 Removed
 -------
+
+* Revmoed requirements.txt. When you want to install dependencies for development
+  you can do it with 'pip install -e path/to/py7zr_project'
 
 Security
 --------
