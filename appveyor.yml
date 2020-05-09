@@ -15,8 +15,7 @@ environment:
 
 init:
   - ps: |
-      Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem -Name 'LongPathsEnabled'
-      New-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem -Name 'LongPathsEnabled' -Type DWord -Value 1 -Force
+      New-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem -Name 'LongPathsEnabled' -Type DWord -Value 1
 
 install:
   - "%PYTHON%\\python.exe -m pip install wheel tox"
