@@ -1,4 +1,5 @@
 import getpass
+import io
 import lzma
 import os
 import re
@@ -8,6 +9,7 @@ import pytest
 
 import py7zr
 import py7zr.archiveinfo
+import py7zr.callbacks
 import py7zr.cli
 import py7zr.compression
 import py7zr.properties
@@ -439,3 +441,31 @@ def test_context_manager_2(tmp_path):
     target = tmp_path.joinpath('target.7z')
     with py7zr.SevenZipFile(target, 'w') as z:
         z.writeall(os.path.join(testdata_path, "src"), "src")
+
+
+@pytest.mark.api
+def test_extract_callback(tmp_path):
+
+    class ECB(py7zr.callbacks.ExtractCallback):
+
+        def __init__(self, ofd):
+            self.ofd = ofd
+
+        def report_start_preparation(self):
+            self.ofd.write('got start preparation event.\n')
+
+        def report_start(self, processing_file_path, processing_bytes):
+            self.ofd.write('got start event: start extraction of {} (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
+
+        def report_end(self, processing_file_path, wrote_bytes):
+            self.ofd.write('got end event: {:s} extracted to {:d} bytes\n'.format(processing_file_path, wrote_bytes))
+
+        def report_postprocess(self):
+            self.ofd.write('got post processing event.\n')
+
+        def report_warning(self, message):
+            self.ofd.write('got warning event: {:s}\n'.format(message))
+
+    cb = ECB(sys.stdout)
+    with py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb')) as archive:
+        archive.extractall(path=tmp_path, callback=cb)

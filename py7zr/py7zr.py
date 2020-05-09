@@ -30,12 +30,15 @@ import functools
 import io
 import operator
 import os
+import queue
 import stat
 import sys
+import threading
 from io import BytesIO
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
+from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import (ArchiveTimestamp, MemIO, calculate_crc32,
@@ -665,13 +668,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
         return self._extract(path=None, return_dict=True)
 
-    def extractall(self, path: Optional[Any] = None) -> None:
+    def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        self._extract(path=path, return_dict=False)
+        self._extract(path=path, return_dict=False, callback=callback)
 
     def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
         return self._extract(path=None, targets=targets, return_dict=True)
@@ -680,7 +683,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path, targets, return_dict=False)
 
     def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
-                 return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
+                 return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
+        if callback is not None and not isinstance(callback, ExtractCallback):
+            raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -762,7 +767,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise Exception("Directory making fails on unknown condition.")
 
-        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+        if callback is not None:
+            q = queue.Queue()
+            r = threading.Thread(target=self.reporter, args=(q, callback), daemon=True)
+            r.start()
+            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=q)
+            q.join()
+            r.join()
+        else:
+            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
         if return_dict:
             return self._dict
         else:
@@ -786,6 +799,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             for o, p in target_files:
                 self._set_file_property(o, p)
             return None
+
+    def reporter(self, q: queue.Queue, callback: ExtractCallback):
+        while True:
+            item: Tuple[str, str, str]  = q.get()
+            if item[0] == 's':
+                callback.report_start(item[1], item[2])
+            elif item[1] == 'e':
+                callback.report_end(item[1], item[2])
+            else:
+                pass
+            q.task_done()
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
