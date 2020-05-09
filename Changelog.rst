@@ -25,6 +25,16 @@ Removed
 Security
 --------
 
+`v0.7.0b2`_
+===========
+
+Fixed
+-----
+
+* Support extraction of file onto a place where path length is > 260 bytes on Windows 10, Windows Server 2016R2
+  and later. (Windows Vista, 7 and Windows Server 2012 still have a limitation of path length as a OS spec)(#116, #126)
+
+
 `v0.7.0b1`_
 ===========
 
@@ -707,7 +717,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b2...HEAD
+.. _v0.7.0b2: https://github.com/miurahr/py7zr/compare/v0.7.0b1...v0.7.0b2
 .. _v0.7.0b1: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0b1
 .. _v0.6: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6
 .. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
