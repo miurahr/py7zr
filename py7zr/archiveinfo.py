@@ -25,7 +25,6 @@
 import functools
 import io
 import os
-import pathlib
 import struct
 from binascii import unhexlify
 from functools import reduce

@@ -105,8 +105,13 @@ class Worker:
         for f in files:
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
-                if isinstance(fileish, pathlib.Path) and not fileish.parent.exists():
-                    os.makedirs(fileish.parent)
+                if isinstance(fileish, pathlib.Path):
+                    if os.name == 'nt':
+                        if fileish.is_absolute():
+                            # hack for microsoft windows path length limit < 255
+                            fileish = pathlib.WindowsPath('\\\\?\\' + str(fileish))
+                    if not fileish.parent.exists():
+                        os.makedirs(fileish.parent)
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
                         # extract to file
