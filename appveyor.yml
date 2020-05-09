@@ -13,6 +13,10 @@ environment:
       TOXENV: py38
       PYTEST_ADDOPTS: ""
 
+init:
+  - ps: |
+      New-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem -Name 'LongPathsEnabled' -Type DWord -Value 1
+
 install:
   - "%PYTHON%\\python.exe -m pip install wheel tox"
   - "%PYTHON%\\python.exe -m pip install codecov coveralls"
@@ -24,10 +28,10 @@ test_script:
 
 after_test:
   - ps: |
-      "%PYTHON%\\python.exe setup.py bdist_wheel"
-      if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode)  }
-      "%PYTHON%\\Scripts\\codecov -X gcov pycov search --file coverage.xml --flags %TOXENV:-= % windows"
       "%PYTHON%\\Scripts\\coverage xml --ignore-errors"
+      "%PYTHON%\\Scripts\\codecov -X gcov pycov search --file coverage.xml --flags %TOXENV:-= % windows"
+      "%PYTHON%\\Scripts\\coveralls"
+      "%PYTHON%\\python.exe setup.py bdist_wheel"
 
 artifacts:
   - path: dist\*

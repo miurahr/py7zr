@@ -721,6 +721,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = path.joinpath(outname)
             else:
                 outfilename = pathlib.Path(outname)
+            if os.name == 'nt':
+                if outfilename.is_absolute():
+                    # hack for microsoft windows path length limit < 255
+                    outfilename = pathlib.WindowsPath('\\\\?\\' + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
