@@ -239,7 +239,7 @@ def readlink(path: pathlib.Path, *, dir_fd=None) -> str:
 
 
 class MemIO:
-    """IO class to write memory(io.Bytes)"""
+    """pathlib.Path-like IO class to write memory(io.Bytes)"""
     def __init__(self, buf: BinaryIO):
         self._buf = buf
 
@@ -264,6 +264,13 @@ class MemIO:
     def open(self, mode=None):
         return self
 
+    @property
+    def parent(self):
+        return self
+
+    def mkdir(self, parents=None, exist_ok=False):
+        return None
+
     def __enter__(self):
         return self
 
@@ -272,7 +279,7 @@ class MemIO:
 
 
 class NullIO:
-    """IO class of /dev/null"""
+    """pathlib.Path-like IO class of /dev/null"""
 
     def __init__(self):
         pass
@@ -294,6 +301,13 @@ class NullIO:
 
     def open(self, mode=None):
         return self
+
+    @property
+    def parent(self):
+        return self
+
+    def mkdir(self):
+        return None
 
     def __enter__(self):
         return self
