@@ -1,7 +1,4 @@
 environment:
-  COVERALLS_PARALLEL: true
-  COVERALLS_REPO_TOKEN:
-    secure: dZWaKkr6xvP+aDksWLreF0p0L7LLiybUY2bUgGAqc3m/uVWHszncQcsXe5X1+rrf
   matrix:
     - PYTHON: "C:\\Python36-x64"
       TOXENV: py36
@@ -14,8 +11,8 @@ environment:
       PYTEST_ADDOPTS: ""
 
 init:
-  - ps: |
-      New-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem -Name 'LongPathsEnabled' -Type DWord -Value 1
+  - ps: New-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem `
+        -Name 'LongPathsEnabled' -Type DWord -Value 1
 
 install:
   - "%PYTHON%\\python.exe -m pip install wheel tox"
@@ -34,7 +31,7 @@ after_test:
       "%PYTHON%\\python.exe setup.py bdist_wheel"
 
 artifacts:
-  - path: dist\*
+  - path: "dist\\*"
 
 matrix:
   fast_finish: false
