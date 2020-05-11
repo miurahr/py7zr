@@ -158,7 +158,7 @@ class Worker:
         """Find the target member of a symlink or hardlink member in the archive.
         """
         targetname = target.as_posix()  # type: str
-        linkname = readlink(target)
+        linkname = readlink(targetname)
         # Check windows full path symlinks
         if linkname.startswith("\\\\?\\"):
             linkname = linkname[4:]

@@ -220,20 +220,27 @@ def islink(path):
     return is_symlink
 
 
-def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> str:
+def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathlib.Path]:
     """
-    Cross-platform implementation of readlink for Python < 3.8
+    Cross-platform compat implementation of os.readlink and Path.readlink().
     Supports Windows NT symbolic links and reparse points.
+    When called with path argument as pathlike(str), return result as a pathlike(str).
+    When called with Path object, return also Path object.
+    When called with path argument as bytes, return result as a bytes.
     """
+    is_path_pathlib = isinstance(path, pathlib.Path)
     if sys.version_info >= (3, 9):
-        if isinstance(path, pathlib.Path) and dir_fd is None:
+        if is_path_pathlib and dir_fd is None:
             return path.readlink()
         else:
-            return os.readlink(str(path), dir_fd=dir_fd)
+            return os.readlink(path, dir_fd=dir_fd)
     elif sys.version_info >= (3, 8) or sys.platform != "win32":
-        res = os.readlink(str(path), dir_fd=dir_fd)
+        res = os.readlink(path, dir_fd=dir_fd)
+        # Hack to handle a wrong type of results
         if isinstance(res, bytes):
-            return res.decode('UTF-8')
+            res = os.fsdecode(res)
+        if is_path_pathlib:
+            return pathlib.Path(res)
         else:
             return res
     elif not os.path.exists(str(path)):
