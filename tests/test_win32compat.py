@@ -73,8 +73,10 @@ def test_junction_readlink(tmp_path):
     junction = tmp_path / "target" / "link"
     junction.parent.mkdir(parents=True, exist_ok=True)
     os.system('mklink /J %s %s' % (str(junction), str(target.resolve())))
-    if sys.version_info < (3, 8):
-        assert py7zr.win32compat.is_reparse_point(str(junction))
-        assert py7zr.win32compat.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
     assert not os.path.islink(str(junction))
-    assert py7zr.helpers.readlink(junction) == PATH_PREFIX + str(target.resolve())
+    assert py7zr.win32compat.is_reparse_point(str(junction))
+    assert py7zr.win32compat.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
+    assert py7zr.helpers.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
+    assert py7zr.win32compat.is_reparse_point(junction)
+    assert py7zr.win32compat.readlink(junction) == pathlib.WindowsPath(PATH_PREFIX + str(target.resolve()))
+    assert py7zr.helpers.readlink(junction) == pathlib.WindowsPath(PATH_PREFIX + str(target.resolve()))
