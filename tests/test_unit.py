@@ -593,8 +593,8 @@ def test_benchmark_calculate_key2(benchmark):
     assert key == expected
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 and 3.7")
-@pytest.mark.skipif(sys.version_info > (3, 7), reason="requires python3.6 and 3.7")
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7")
+@pytest.mark.skipif(sys.version_info > (3, 7), reason="requires python3.7")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_helpers_readlink_dirfd(tmp_path):
