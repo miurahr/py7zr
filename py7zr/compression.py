@@ -30,8 +30,7 @@ import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.extra import (AESDecompressor, CopyDecompressor, DeflateDecompressor,
-                         ISevenZipDecompressor, ZstdDecompressor)
+from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor, ISevenZipDecompressor, ZstdDecompressor
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
 
