@@ -508,3 +508,22 @@ def test_compress_absolute_symlink_as_relative(tmp_path):
     # check link
     tpath = py7zr.helpers.readlink(tmp_path / 'tgt' / "rel" / "link_to_Original1.txt")
     assert pathlib.Path(tpath).as_posix() == "../Original1.txt"
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_compress_files_deref(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    archive = py7zr.SevenZipFile(target, 'w', dereference=True)
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive.close()
+    reader = py7zr.SevenZipFile(target, 'r')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()

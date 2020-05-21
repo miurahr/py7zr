@@ -268,7 +268,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[str] = None, password: Optional[str] = None) -> None:
+                 *, filters: Optional[str] = None, dereference=False, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         if password is not None:
@@ -336,6 +336,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
+        self.dereference = dereference
 
     def __enter__(self):
         return self
@@ -574,7 +575,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header = Header.build_header([self.folder])
 
     def _write_archive(self):
-        self.worker.archive(self.fp, self.folder)
+        self.worker.archive(self.fp, self.folder, deref=self.dereference)
         # Write header and update signature header
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
                                                                  encoded=self.encoded_header_mode)
@@ -589,8 +590,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 return True
         return False
 
-    @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
+    def _make_file_info(self, target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
@@ -600,9 +600,19 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if os.name == 'nt':
             fstat = target.lstat()
             if target.is_symlink():
-                f['emptystream'] = False
-                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
-                # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                if self.dereference:
+                    fstat = target.stat()
+                    if stat.S_ISDIR(fstat.st_mode):
+                        f['emptystream'] = True
+                        f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                    else:
+                        f['emptystream'] = False
+                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f['uncompressed'] = fstat.st_size
+                else:
+                    f['emptystream'] = False
+                    f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -613,10 +623,22 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             fstat = target.lstat()
             if target.is_symlink():
-                f['emptystream'] = False
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
-                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                if self.dereference:
+                    fstat = target.stat()
+                    if stat.S_ISDIR(fstat.st_mode):
+                        f['emptystream'] = True
+                        f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                        f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                    else:
+                        f['emptystream'] = False
+                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+                else:
+                    f['emptystream'] = False
+                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
+                    f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                    f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
@@ -628,9 +650,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
-        f['creationtime'] = target.stat().st_ctime
-        f['lastwritetime'] = target.stat().st_mtime
-        f['lastaccesstime'] = target.stat().st_atime
+        f['creationtime'] = fstat.st_ctime
+        f['lastwritetime'] = fstat.st_mtime
+        f['lastaccesstime'] = fstat.st_atime
         return f
 
     # --------------------------------------------------------------------------
