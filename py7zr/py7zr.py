@@ -590,6 +590,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 return True
         return False
 
+    def _var_release(self):
+        self._dict = None
+        self.files = None
+        self.folder = None
+        self.header = None
+        self.worker = None
+        self.sig_header = None
+
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
@@ -820,6 +828,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if 'w' in self.mode:
             self._write_archive()
         self._fpclose()
+        self._var_release()
 
     def reset(self) -> None:
         """When read mode, it reset file pointer, decompress worker and decompressor"""
