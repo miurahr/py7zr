@@ -1,4 +1,5 @@
 import binascii
+import ctypes
 import datetime
 import io
 import lzma
@@ -590,3 +591,21 @@ def test_benchmark_calculate_key2(benchmark):
     expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
     key = benchmark(py7zr.helpers._calculate_key2, password, cycles, salt, 'sha256')
     assert key == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7")
+@pytest.mark.skipif(sys.version_info > (3, 7), reason="requires python3.7")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_helpers_readlink_dirfd(tmp_path):
+    origin = tmp_path / 'parent' / 'original.txt'
+    origin.parent.mkdir(parents=True, exist_ok=True)
+    with origin.open('w') as f:
+        f.write("Original")
+    slink = tmp_path / "target" / "link"
+    slink.parent.mkdir(parents=True, exist_ok=True)
+    target = pathlib.Path('../parent/original.txt')
+    slink.symlink_to(target, False)
+    dirfd = os.open(str(origin.parent), os.O_RDONLY | os.O_DIRECTORY)
+    assert py7zr.helpers.readlink(slink, dir_fd=dirfd) == target
+    os.close(dirfd)

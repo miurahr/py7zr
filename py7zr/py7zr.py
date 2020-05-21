@@ -41,8 +41,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import (ArchiveTimestamp, MemIO, calculate_crc32,
-                           filetime_to_dt)
+from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):

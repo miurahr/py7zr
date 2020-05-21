@@ -2,9 +2,9 @@ import pathlib
 import stat
 import sys
 from logging import getLogger
-from typing import Optional, Union
+from typing import Union
 
-if sys.platform == "win32" and sys.version_info < (3, 8):
+if sys.platform == "win32":
     import ctypes
     from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPDWORD, LPVOID, LPWSTR
 
@@ -90,7 +90,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         GetFileAttributesW.restype = DWORD
         return _check_bit(GetFileAttributesW(str(path)), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
-    def readlink(path: Union[str, pathlib.Path]) -> Optional[str]:
+    def readlink(path: Union[str, pathlib.Path]) -> Union[str, pathlib.WindowsPath]:
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
         # is a symbolic link to a directory or a NTFS junction.
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
@@ -117,7 +117,11 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         #  - the size of the substitute name in bytes
         #  - the size of two NUL terminators in bytes */
 
-        target = str(path)
+        target_is_path = isinstance(path, pathlib.Path)
+        if target_is_path:
+            target = str(path)
+        else:
+            target = path
         CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
         CreateFileW.restype = HANDLE
         DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
@@ -164,4 +168,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
         # so substitute prefix here.
         if rpath.startswith('\\??\\'):
             rpath = '\\\\' + rpath[2:]
-        return rpath
+        if target_is_path:
+            return pathlib.WindowsPath(rpath)
+        else:
+            return rpath
