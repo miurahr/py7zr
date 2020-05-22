@@ -339,6 +339,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
+        self.reporterd = None
+        self.q = queue.Queue()
 
     def __enter__(self):
         return self
@@ -767,12 +769,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     raise Exception("Directory making fails on unknown condition.")
 
         if callback is not None:
-            q = queue.Queue()
-            r = threading.Thread(target=self.reporter, args=(q, callback), daemon=True)
-            r.start()
-            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=q)
-            q.join()
-            r.join()
+            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True).start()
+            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
         else:
             self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
         if return_dict:
@@ -799,16 +797,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._set_file_property(o, p)
             return None
 
-    def reporter(self, q: queue.Queue, callback: ExtractCallback):
-        while True:
-            item: Tuple[str, str, str]  = q.get()
+    def reporter(self, callback: ExtractCallback):
+        while self.q is not None:
+            item: Tuple[str, str, str]  = self.q.get()
             if item[0] == 's':
                 callback.report_start(item[1], item[2])
-            elif item[1] == 'e':
+            elif item[0] == 'e':
                 callback.report_end(item[1], item[2])
             else:
                 pass
-            q.task_done()
+            self.q.task_done()
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
@@ -842,6 +840,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         if 'w' in self.mode:
             self._write_archive()
+        if 'r' in self.mode:
+            if self.reporterd is not None:
+                self.q = None
+                self.reporterd.join()
+                self.reporterd = None
         self._fpclose()
 
     def reset(self) -> None:

@@ -72,7 +72,7 @@ class Worker:
                                             self.src_start + positions[i + 1], q)
                 else:
                     filename = getattr(fp, 'name', None)
-                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
                     extract_threads = []
                     for i in range(numfolders):
                         p = threading.Thread(target=self.extract_single,
@@ -95,7 +95,7 @@ class Worker:
         fp.seek(src_start)
         for f in files:
             if q is not None:
-                q.put(('s', str(f.origin), str(f.compressed)))
+                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is None else '0'))
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
                 fileish.parent.mkdir(parents=True, exist_ok=True)
@@ -111,7 +111,7 @@ class Worker:
                 with NullIO() as ofp:
                     self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
             if q is not None and not f.emptystream:
-                q.put(('e', str(f.origin), str(f.uncompressed[-1])))
+                q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
