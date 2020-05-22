@@ -590,7 +590,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 return True
         return False
 
-    def _make_file_info(self, target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
+    @staticmethod
+    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
@@ -600,7 +601,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if os.name == 'nt':
             fstat = target.lstat()
             if target.is_symlink():
-                if self.dereference:
+                if dereference:
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f['emptystream'] = True
@@ -623,7 +624,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             fstat = target.lstat()
             if target.is_symlink():
-                if self.dereference:
+                if dereference:
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f['emptystream'] = True
@@ -831,7 +832,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             path = file
         else:
             raise ValueError("Unsupported file type.")
-        file_info = self._make_file_info(path, arcname)
+        file_info = self._make_file_info(path, arcname, self.dereference)
         self.files.append(file_info)
 
     def close(self):
