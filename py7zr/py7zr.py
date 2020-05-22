@@ -246,13 +246,14 @@ class ArchiveFileListIterator(collections.abc.Iterator):
 class ArchiveInfo:
     """Hold archive information"""
 
-    def __init__(self, filename, size, header_size, method_names, solid, blocks):
+    def __init__(self, filename, size, header_size, method_names, solid, blocks, uncompressed):
         self.filename = filename
         self.size = size
         self.header_size = header_size
         self.method_names = method_names
         self.solid = solid
         self.blocks = blocks
+        self.uncompressed = uncompressed
 
 
 class FileInfo:
@@ -648,8 +649,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
+        uncompressed = 0
+        for f in self.files:
+            uncompressed += f.uncompressed_size
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
-                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders))
+                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
+                           uncompressed)
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
@@ -812,6 +817,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 callback.report_start_preparation()
             elif item[0] == 'post':
                 callback.report_postprocess()
+            elif item[0] == 'w':
+                callback.report_warning(item[1])
             else:
                 pass
             self.q.task_done()
