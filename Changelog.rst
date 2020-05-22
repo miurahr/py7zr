@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support dereference option of SevenZipFile class.
+  If dereference is False, add symbolic and hard links to the archive.
+  If it is True, add the content of the target files to the archive.
+  This has no effect on systems that do not support symbolic links.
+
+
 Changed
 -------
 
