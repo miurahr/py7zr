@@ -95,7 +95,7 @@ class Worker:
         fp.seek(src_start)
         for f in files:
             if q is not None:
-                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is None else '0'))
+                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
                 fileish.parent.mkdir(parents=True, exist_ok=True)
@@ -110,7 +110,7 @@ class Worker:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
                     self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
-            if q is not None and not f.emptystream:
+            if q is not None:
                 q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],

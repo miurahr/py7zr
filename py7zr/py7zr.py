@@ -687,6 +687,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                  return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
         if callback is not None and not isinstance(callback, ExtractCallback):
             raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
+        elif callback is not None:
+            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True).start()
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -705,6 +707,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise e
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
+        self.q.put(('pre', None, None))
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -769,10 +772,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     raise Exception("Directory making fails on unknown condition.")
 
         if callback is not None:
-            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True).start()
             self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
         else:
             self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+
+        self.q.put(('post', None, None))
         if return_dict:
             return self._dict
         else:
@@ -804,6 +808,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 callback.report_start(item[1], item[2])
             elif item[0] == 'e':
                 callback.report_end(item[1], item[2])
+            elif item[0] == 'pre':
+                callback.report_start_preparation()
+            elif item[0] == 'post':
+                callback.report_postprocess()
             else:
                 pass
             self.q.task_done()
