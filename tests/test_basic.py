@@ -455,10 +455,10 @@ def test_extract_callback(tmp_path):
             self.ofd.write('got start preparation event.\n')
 
         def report_start(self, processing_file_path, processing_bytes):
-            self.ofd.write('got start event: start extraction of {} (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
+            self.ofd.write('got start event: start extraction of \"{}\" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
 
         def report_end(self, processing_file_path, wrote_bytes):
-            self.ofd.write('got end event: {:s} extracted to {:d} bytes\n'.format(processing_file_path, wrote_bytes))
+            self.ofd.write('got end event: \"{}\" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
 
         def report_postprocess(self):
             self.ofd.write('got post processing event.\n')
