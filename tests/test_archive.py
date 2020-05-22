@@ -527,3 +527,6 @@ def test_compress_files_deref(tmp_path):
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
+    assert tmp_path.joinpath('tgt').joinpath('lib64').is_dir()
+    assert tmp_path.joinpath('tgt').joinpath('lib/libabc.so').is_file()
+    assert tmp_path.joinpath('tgt').joinpath('lib64/libabc.so').is_file()

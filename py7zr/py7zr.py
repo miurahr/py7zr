@@ -812,7 +812,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if path.is_symlink():
+        if path.is_symlink() and not self.dereference:
             self.write(path, arcname)
         elif path.is_file():
             self.write(path, arcname)
