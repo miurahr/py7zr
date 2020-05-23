@@ -371,6 +371,7 @@ def get_methods_names(coders: List[dict]) -> List[str]:
         CompressionMethod.BCJ_IA64: "BCJ(IA64)",
         CompressionMethod.BCJ_PPC: "BCJ(POWERPC)",
         CompressionMethod.BCJ_SPARC: "BCJ(SPARC)",
+        CompressionMethod.CRYPT_AES256_SHA256: "7zAES",
     }
     methods_names = []  # type: List[str]
     for coder in coders:
