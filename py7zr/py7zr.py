@@ -40,7 +40,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
-from py7zr.exceptions import Bad7zFile
+from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
@@ -693,7 +693,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if callback is not None and not isinstance(callback, ExtractCallback):
             raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
         elif callback is not None:
-            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True).start()
+            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
+            self.reporterd.start()
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -712,7 +713,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise e
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
-        self.q.put(('pre', None, None))
+        if self.q is not None:
+            self.q.put(('pre', None, None))
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -781,7 +783,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
 
-        self.q.put(('post', None, None))
+        if self.q is not None:
+            self.q.put(('post', None, None))
         if return_dict:
             return self._dict
         else:
@@ -807,21 +810,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
             return None
 
     def reporter(self, callback: ExtractCallback):
-        while self.q is not None:
-            item: Tuple[str, str, str]  = self.q.get()
-            if item[0] == 's':
-                callback.report_start(item[1], item[2])
-            elif item[0] == 'e':
-                callback.report_end(item[1], item[2])
-            elif item[0] == 'pre':
-                callback.report_start_preparation()
-            elif item[0] == 'post':
-                callback.report_postprocess()
-            elif item[0] == 'w':
-                callback.report_warning(item[1])
-            else:
+        while True:
+            try:
+                item: Optional[Tuple[str, str, str]] = self.q.get(timeout=1)
+            except queue.Empty:
                 pass
-            self.q.task_done()
+            else:
+                if item is None:
+                    break
+                elif item[0] == 's':
+                    callback.report_start(item[1], item[2])
+                elif item[0] == 'e':
+                    callback.report_end(item[1], item[2])
+                elif item[0] == 'pre':
+                    callback.report_start_preparation()
+                elif item[0] == 'post':
+                    callback.report_postprocess()
+                elif item[0] == 'w':
+                    callback.report_warning(item[1])
+                else:
+                    pass
+                self.q.task_done()
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
@@ -857,8 +866,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._write_archive()
         if 'r' in self.mode:
             if self.reporterd is not None:
+                self.q.put_nowait(None)
+                self.reporterd.join(1)
+                if self.reporterd.is_alive():
+                    raise InternalError("Progress report thread terminate error.")
                 self.q = None
-                self.reporterd.join()
                 self.reporterd = None
         self._fpclose()
 
