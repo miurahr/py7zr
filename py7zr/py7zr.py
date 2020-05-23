@@ -813,8 +813,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
+        if not path.exists():
+            raise ValueError("specified path does not exist.")
+        if path.is_dir() or path.is_file():
+            self._writeall(path, arcname)
+        else:
+            raise ValueError("specified path is not a directory or a file")
+
+    def _writeall(self, path, arcname):
         try:
-            if path.is_symlink()and not self.dereference:
+            if path.is_symlink() and not self.dereference:
                 self.write(path, arcname)
             elif path.is_file():
                 self.write(path, arcname)
@@ -823,15 +831,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     self.write(path, arcname)
                 for nm in sorted(os.listdir(str(path))):
                     arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self.writeall(path.joinpath(nm), arc)
+                    self._writeall(path.joinpath(nm), arc)
             else:
-                pass  # pathlib may ignore ELOOP and other errors.
+                return  # pathlib ignores ELOOP and return False for is_*().
         except OSError as ose:
             if self.dereference and ose.errno in [errno.ELOOP]:
-                # ignore ELOOP here, this resulted to stop looped symlink reference.
-                return
+                return  # ignore ELOOP here, this resulted to stop looped symlink reference.
+            elif self.dereference and sys.platform == 'win32' and ose.errno in [errno.ENOENT]:
+                return  # ignore ENOENT which is happened when a case of ELOOP on windows.
             else:
-                raise ose
+                raise
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
