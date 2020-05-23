@@ -17,7 +17,6 @@ import py7zr.compression
 import py7zr.helpers
 import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
-from py7zr.exceptions import ArchiveError
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 from . import ltime
