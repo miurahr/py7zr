@@ -789,6 +789,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.worker.register_filelike(f.id, MemIO(_buf))
             elif f.is_symlink:
                 target_sym.append(outfilename)
+                pathlib.Path(outfilename).unlink(missing_ok=True)
                 self.worker.register_filelike(f.id, outfilename)
             elif f.is_junction:
                 target_junction.append(outfilename)
