@@ -30,14 +30,17 @@ import functools
 import io
 import operator
 import os
+import queue
 import stat
 import sys
+import threading
 from io import BytesIO
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
+from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
-from py7zr.exceptions import Bad7zFile
+from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
@@ -243,13 +246,14 @@ class ArchiveFileListIterator(collections.abc.Iterator):
 class ArchiveInfo:
     """Hold archive information"""
 
-    def __init__(self, filename, size, header_size, method_names, solid, blocks):
+    def __init__(self, filename, size, header_size, method_names, solid, blocks, uncompressed):
         self.filename = filename
         self.size = size
         self.header_size = header_size
         self.method_names = method_names
         self.solid = solid
         self.blocks = blocks
+        self.uncompressed = uncompressed
 
 
 class FileInfo:
@@ -337,6 +341,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
+        self.reporterd = None  # type: Optional[threading.Thread]
+        self.q = queue.Queue()  # type: queue.Queue[Any]
 
     def __enter__(self):
         return self
@@ -590,6 +596,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 return True
         return False
 
+    def _var_release(self):
+        self._dict = None
+        self.files = None
+        self.folder = None
+        self.header = None
+        self.worker = None
+        self.sig_header = None
+
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
@@ -666,8 +680,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
+        uncompressed = 0
+        for f in self.files:
+            uncompressed += f.uncompressed_size
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
-                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders))
+                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
+                           uncompressed)
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
@@ -687,13 +705,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
         return self._extract(path=None, return_dict=True)
 
-    def extractall(self, path: Optional[Any] = None) -> None:
+    def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
            directory and set owner, modification time and permissions on
            directories afterwards. `path' specifies a different directory
            to extract to.
         """
-        self._extract(path=path, return_dict=False)
+        self._extract(path=path, return_dict=False, callback=callback)
 
     def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
         return self._extract(path=None, targets=targets, return_dict=True)
@@ -702,7 +720,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path, targets, return_dict=False)
 
     def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
-                 return_dict: bool = False) -> Optional[Dict[str, IO[Any]]]:
+                 return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
+        if callback is not None and not isinstance(callback, ExtractCallback):
+            raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
+        elif callback is not None:
+            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
+            self.reporterd.start()
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
         target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
@@ -721,12 +744,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise e
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
+        self.q.put(('pre', None, None))
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
             if f.filename.startswith('../'):
                 raise Bad7zFile
-            # When archive has a multiple files which have same name.
+            # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
@@ -784,7 +808,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise Exception("Directory making fails on unknown condition.")
 
-        self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+        if callback is not None:
+            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
+        else:
+            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+
+        self.q.put(('post', None, None))
         if return_dict:
             return self._dict
         else:
@@ -808,6 +837,29 @@ class SevenZipFile(contextlib.AbstractContextManager):
             for o, p in target_files:
                 self._set_file_property(o, p)
             return None
+
+    def reporter(self, callback: ExtractCallback):
+        while True:
+            try:
+                item: Optional[Tuple[str, str, str]] = self.q.get(timeout=1)
+            except queue.Empty:
+                pass
+            else:
+                if item is None:
+                    break
+                elif item[0] == 's':
+                    callback.report_start(item[1], item[2])
+                elif item[0] == 'e':
+                    callback.report_end(item[1], item[2])
+                elif item[0] == 'pre':
+                    callback.report_start_preparation()
+                elif item[0] == 'post':
+                    callback.report_postprocess()
+                elif item[0] == 'w':
+                    callback.report_warning(item[1])
+                else:
+                    pass
+                self.q.task_done()
 
     def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write files in target path into archive."""
@@ -859,7 +911,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         if 'w' in self.mode:
             self._write_archive()
+        if 'r' in self.mode:
+            if self.reporterd is not None:
+                self.q.put_nowait(None)
+                self.reporterd.join(1)
+                if self.reporterd.is_alive():
+                    raise InternalError("Progress report thread terminate error.")
+                self.reporterd = None
         self._fpclose()
+        self._var_release()
 
     def reset(self) -> None:
         """When read mode, it reset file pointer, decompress worker and decompressor"""

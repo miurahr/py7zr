@@ -20,6 +20,7 @@
 import argparse
 import getpass
 import os
+import shutil
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, Optional
@@ -27,8 +28,43 @@ from typing import Any, Optional
 import texttable  # type: ignore
 
 import py7zr
+from py7zr.callbacks import ExtractCallback
 from py7zr.helpers import Local
 from py7zr.properties import SupportedMethods
+
+
+class CliExtractCallback(ExtractCallback):
+
+    def __init__(self, total_bytes, ofd=sys.stdout):
+        self.ofd = ofd
+        self.archive_total = total_bytes
+        self.total_bytes = 0
+        self.columns, _ = shutil.get_terminal_size(fallback=(80, 24))
+        self.pwidth = 0
+
+    def report_start_preparation(self):
+        pass
+
+    def report_start(self, processing_file_path, processing_bytes):
+        self.ofd.write('- {}'.format(processing_file_path))
+        self.pwidth += len(processing_file_path) + 2
+
+    def report_end(self, processing_file_path, wrote_bytes):
+        self.total_bytes += int(wrote_bytes)
+        plest = self.columns - self.pwidth
+        progress = self.total_bytes / self.archive_total
+        msg = '({:.0%})\n'.format(progress)
+        if plest - len(msg) > 0:
+            self.ofd.write(msg.rjust(plest))
+        else:
+            self.ofd.write(msg)
+        self.pwidth = 0
+
+    def report_postprocess(self):
+        pass
+
+    def report_warning(self, message):
+        pass
 
 
 class Cli():
@@ -54,6 +90,7 @@ class Cli():
         extract_parser.add_argument("odir", nargs="?", help="output directory")
         extract_parser.add_argument("-P", "--password", action="store_true",
                                     help="Password protected archive(you will be asked a password).")
+        extract_parser.add_argument("--verbose", action="store_true", help="verbose output")
         create_parser = subparsers.add_parser('c')
         create_parser.set_defaults(func=self.run_create)
         create_parser.add_argument("arcfile", help="7z archive file")
@@ -192,6 +229,7 @@ class Cli():
 
     def run_extract(self, args: argparse.Namespace) -> int:
         target = args.arcfile
+        verbose = args.verbose
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
             return(1)
@@ -204,10 +242,14 @@ class Cli():
                 sys.stderr.write('Warning: your password may be shown.\n')
                 return(1)
         a = py7zr.SevenZipFile(target, 'r', password=password)
+        cb = None  # Optional[ExtractCallback]
+        if verbose:
+            archive_info = a.archiveinfo()
+            cb = CliExtractCallback(total_bytes=archive_info.uncompressed, ofd=sys.stderr)
         if args.odir:
-            a.extractall(path=args.odir)
+            a.extractall(path=args.odir, callback=cb)
         else:
-            a.extractall()
+            a.extractall(callback=cb)
         return(0)
 
     def run_create(self, args):

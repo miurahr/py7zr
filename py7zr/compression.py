@@ -25,6 +25,7 @@ import bz2
 import io
 import lzma
 import os
+import queue
 import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
@@ -53,39 +54,40 @@ class Worker:
         self.src_start = src_start
         self.header = header
 
-    def extract(self, fp: BinaryIO, parallel: bool) -> None:
+    def extract(self, fp: BinaryIO, parallel: bool, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
             numfolders = self.header.main_streams.unpackinfo.numfolders
             if numfolders == 1:
-                self.extract_single(fp, self.files, self.src_start, src_end)
+                self.extract_single(fp, self.files, self.src_start, src_end, q)
             else:
                 folders = self.header.main_streams.unpackinfo.folders
                 positions = self.header.main_streams.packinfo.packpositions
                 empty_files = [f for f in self.files if f.emptystream]
                 if not parallel:
-                    self.extract_single(fp, empty_files, 0, 0)
+                    self.extract_single(fp, empty_files, 0, 0, q)
                     for i in range(numfolders):
                         self.extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                            self.src_start + positions[i + 1])
+                                            self.src_start + positions[i + 1], q)
                 else:
                     filename = getattr(fp, 'name', None)
-                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0)
+                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
                     extract_threads = []
                     for i in range(numfolders):
                         p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
-                                                   self.src_start + positions[i], self.src_start + positions[i + 1]))
+                                                   self.src_start + positions[i], self.src_start + positions[i + 1], q))
                         p.start()
                         extract_threads.append((p))
                     for p in extract_threads:
                         p.join()
         else:
             empty_files = [f for f in self.files if f.emptystream]
-            self.extract_single(fp, empty_files, 0, 0)
+            self.extract_single(fp, empty_files, 0, 0, q)
 
-    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
+                       q: Optional[queue.Queue]) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
@@ -93,6 +95,8 @@ class Worker:
             fp = open(fp, 'rb')
         fp.seek(src_start)
         for f in files:
+            if q is not None:
+                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
             fileish = self.target_filepath.get(f.id, None)
             if fileish is not None:
                 fileish.parent.mkdir(parents=True, exist_ok=True)
@@ -107,6 +111,8 @@ class Worker:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
                     self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+            if q is not None:
+                q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> None:
@@ -371,6 +377,7 @@ def get_methods_names(coders: List[dict]) -> List[str]:
         CompressionMethod.BCJ_IA64: "BCJ(IA64)",
         CompressionMethod.BCJ_PPC: "BCJ(POWERPC)",
         CompressionMethod.BCJ_SPARC: "BCJ(SPARC)",
+        CompressionMethod.CRYPT_AES256_SHA256: "7zAES",
     }
     methods_names = []  # type: List[str]
     for coder in coders:

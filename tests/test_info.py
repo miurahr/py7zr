@@ -83,6 +83,13 @@ def test_archiveinfo_lzma_bcj_sparc():
 
 
 @pytest.mark.files
+def test_archiveinfo_7zaes_lzma():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r') as ar:
+        ai = ar.archiveinfo()
+        assert ai.method_names == '7zAES, LZMA'
+
+
+@pytest.mark.files
 def test_archivetest_deflate():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
         assert ar.test()
@@ -142,4 +149,10 @@ def test_archivetest_lzma_bcj_ppc():
 @pytest.mark.files
 def test_archivetest_lzma_bcj_sparc():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_sparc.7z'), 'r') as ar:
+        assert ar.test()
+
+
+@pytest.mark.files
+def test_archivetest_7zaes():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r', password='secret') as ar:
         assert ar.test()
