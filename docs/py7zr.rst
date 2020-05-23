@@ -107,7 +107,7 @@ SevenZipFile Object
 -------------------
 
 
-.. class:: SevenZipFile(file, mode='r', filters=None)
+.. class:: SevenZipFile(file, mode='r', filters=None, dereference=False, password=None)
 
    Open a 7z file, where *file* can be a path to a file (a string), a
    file-like object or a :term:`path-like object`.
@@ -125,10 +125,17 @@ SevenZipFile Object
    SevenZipFile class has a capability as context manager. It can handle
    'with' statement.
 
+   If dereference is False, add symbolic and hard links to the archive.
+   If it is True, add the content of the target files to the archive.
+   This has no effect on systems that do not support symbolic links.
+
+   When password given, py7zr handles an archive as an encrypted one.
+
 .. method:: SevenZipFile.close()
 
-   Close the archive file.  You must call :meth:`close` before exiting your program
-   or most records will not be written.
+   Close the archive file and release internal buffers.  You must
+   call :meth:`close` before exiting your program or most records will
+   not be written.
 
 
 .. method:: SevenZipFile.getnames()
@@ -169,7 +176,7 @@ SevenZipFile Object
 
    with SevenZipFile('archive.7z', 'r') as zip:
         archives = zip.readall()
-        for fname in archives:
+        for fname in zip.readall():
             bio = archives[fname]
             data = bio.read()
 

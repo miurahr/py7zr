@@ -170,7 +170,7 @@ class Worker:
             member = linkname
         return member
 
-    def archive(self, fp: BinaryIO, folder):
+    def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
         outsize = 0
@@ -185,7 +185,7 @@ class Worker:
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(f.emptystream)
             foutsize = 0
-            if f.is_symlink:
+            if f.is_symlink and not deref:
                 last_file_index = i
                 num_unpack_streams += 1
                 link_target = self._find_link_target(f.origin)  # type: str

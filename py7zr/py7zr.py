@@ -272,7 +272,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[str] = None, password: Optional[str] = None) -> None:
+                 *, filters: Optional[str] = None, dereference=False, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         if password is not None:
@@ -340,6 +340,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
+        self.dereference = dereference
         self.reporterd = None  # type: Optional[threading.Thread]
         self.q = queue.Queue()  # type: queue.Queue[Any]
 
@@ -580,7 +581,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header = Header.build_header([self.folder])
 
     def _write_archive(self):
-        self.worker.archive(self.fp, self.folder)
+        self.worker.archive(self.fp, self.folder, deref=self.dereference)
         # Write header and update signature header
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
                                                                  encoded=self.encoded_header_mode)
@@ -604,7 +605,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header = None
 
     @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None) -> Dict[str, Any]:
+    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
         f['origin'] = target
         if arcname is not None:
@@ -614,9 +615,19 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if os.name == 'nt':
             fstat = target.lstat()
             if target.is_symlink():
-                f['emptystream'] = False
-                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
-                # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                if dereference:
+                    fstat = target.stat()
+                    if stat.S_ISDIR(fstat.st_mode):
+                        f['emptystream'] = True
+                        f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                    else:
+                        f['emptystream'] = False
+                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f['uncompressed'] = fstat.st_size
+                else:
+                    f['emptystream'] = False
+                    f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
@@ -627,10 +638,22 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             fstat = target.lstat()
             if target.is_symlink():
-                f['emptystream'] = False
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
-                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                if dereference:
+                    fstat = target.stat()
+                    if stat.S_ISDIR(fstat.st_mode):
+                        f['emptystream'] = True
+                        f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                        f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                    else:
+                        f['emptystream'] = False
+                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+                else:
+                    f['emptystream'] = False
+                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
+                    f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                    f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_dir():
                 f['emptystream'] = True
                 f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
@@ -642,9 +665,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
-        f['creationtime'] = target.stat().st_ctime
-        f['lastwritetime'] = target.stat().st_mtime
-        f['lastaccesstime'] = target.stat().st_atime
+        f['creationtime'] = fstat.st_ctime
+        f['lastwritetime'] = fstat.st_mtime
+        f['lastaccesstime'] = fstat.st_atime
         return f
 
     # --------------------------------------------------------------------------
@@ -842,16 +865,34 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if path.is_symlink():
-            self.write(path, arcname)
-        elif path.is_file():
-            self.write(path, arcname)
-        elif path.is_dir():
-            if not path.samefile('.'):
+        if not path.exists():
+            raise ValueError("specified path does not exist.")
+        if path.is_dir() or path.is_file():
+            self._writeall(path, arcname)
+        else:
+            raise ValueError("specified path is not a directory or a file")
+
+    def _writeall(self, path, arcname):
+        try:
+            if path.is_symlink() and not self.dereference:
                 self.write(path, arcname)
-            for nm in sorted(os.listdir(str(path))):
-                arc = os.path.join(arcname, nm) if arcname is not None else None
-                self.writeall(path.joinpath(nm), arc)
+            elif path.is_file():
+                self.write(path, arcname)
+            elif path.is_dir():
+                if not path.samefile('.'):
+                    self.write(path, arcname)
+                for nm in sorted(os.listdir(str(path))):
+                    arc = os.path.join(arcname, nm) if arcname is not None else None
+                    self._writeall(path.joinpath(nm), arc)
+            else:
+                return  # pathlib ignores ELOOP and return False for is_*().
+        except OSError as ose:
+            if self.dereference and ose.errno in [errno.ELOOP]:
+                return  # ignore ELOOP here, this resulted to stop looped symlink reference.
+            elif self.dereference and sys.platform == 'win32' and ose.errno in [errno.ENOENT]:
+                return  # ignore ENOENT which is happened when a case of ELOOP on windows.
+            else:
+                raise
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
@@ -861,7 +902,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             path = file
         else:
             raise ValueError("Unsupported file type.")
-        file_info = self._make_file_info(path, arcname)
+        file_info = self._make_file_info(path, arcname, self.dereference)
         self.files.append(file_info)
 
     def close(self):

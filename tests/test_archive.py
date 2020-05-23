@@ -508,3 +508,38 @@ def test_compress_absolute_symlink_as_relative(tmp_path):
     # check link
     tpath = py7zr.helpers.readlink(tmp_path / 'tgt' / "rel" / "link_to_Original1.txt")
     assert pathlib.Path(tpath).as_posix() == "../Original1.txt"
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_compress_files_deref(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
+        archive.writeall('.')
+    with py7zr.SevenZipFile(target, 'r') as reader:
+        reader.extractall(path=tmp_path.joinpath('tgt'))
+    assert tmp_path.joinpath('tgt').joinpath('lib64').is_dir()
+    assert tmp_path.joinpath('tgt').joinpath('lib/libabc.so').is_file()
+    assert tmp_path.joinpath('tgt').joinpath('lib64/libabc.so').is_file()
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_compress_files_deref_loop(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(tmp_path.joinpath('src'))
+    # create symlink loop
+    tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
+    with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
+        archive.writeall('.')
