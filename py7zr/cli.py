@@ -241,8 +241,8 @@ class Cli():
                 sys.stderr.write('Warning: your password may be shown.\n')
                 return(1)
         a = py7zr.SevenZipFile(target, 'r', password=password)
-        archive_info = a.archiveinfo()
         if verbose:
+            archive_info = a.archiveinfo()
             cb = CliExtractCallback(total_bytes=archive_info.uncompressed, ofd=sys.stderr)
         else:
             cb = None
