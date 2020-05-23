@@ -542,6 +542,5 @@ def test_compress_files_deref_loop(tmp_path):
     os.chdir(tmp_path.joinpath('src'))
     # create symlink loop
     tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
-    with pytest.raises(ArchiveError):
-        with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
-            archive.writeall('.')
+    with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
+        archive.writeall('.')

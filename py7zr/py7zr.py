@@ -814,16 +814,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if isinstance(path, str):
             path = pathlib.Path(path)
         try:
-            if path.is_symlink():
-                if not self.dereference:
-                    self.write(path, arcname)
-                elif self.dereference and path.is_dir():
-                    self.write(path, arcname)
-                    for nm in sorted(os.listdir(str(path))):
-                        arc = os.path.join(arcname, nm) if arcname is not None else None
-                        self.writeall(path.joinpath(nm), arc)
-                else:
-                    self.write(path, arcname)
+            if path.is_symlink()and not self.dereference:
+                self.write(path, arcname)
             elif path.is_file():
                 self.write(path, arcname)
             elif path.is_dir():
@@ -833,13 +825,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     arc = os.path.join(arcname, nm) if arcname is not None else None
                     self.writeall(path.joinpath(nm), arc)
             else:
-                # FIXME: should not come here
-                pass
+                pass  # pathlib may ignore ELOOP and other errors.
         except OSError as ose:
-            if ose.errno == errno.ELOOP and self.dereference:
-                msg = 'Seems trying make archive with dereference against looped symlinks, so caused OSError:'
-                msg += f'[Errno {errno.ELOOP}] {os.strerror(errno.ELOOP)}: \'{str(path)}\''
-                raise ArchiveError(msg)
+            if self.dereference and ose.errno in [errno.ELOOP]:
+                # ignore ELOOP here, this resulted to stop looped symlink reference.
+                return
             else:
                 raise ose
 
