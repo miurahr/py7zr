@@ -1,5 +1,4 @@
 import getpass
-import io
 import lzma
 import os
 import re
@@ -452,19 +451,19 @@ def test_extract_callback(tmp_path):
             self.ofd = ofd
 
         def report_start_preparation(self):
-            self.ofd.write('got start preparation event.\n')
+            self.ofd.write('preparation.\n')
 
         def report_start(self, processing_file_path, processing_bytes):
-            self.ofd.write('got start event: start extraction of \"{}\" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
+            self.ofd.write('start \"{}\" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
 
         def report_end(self, processing_file_path, wrote_bytes):
-            self.ofd.write('got end event: \"{}\" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
+            self.ofd.write('end \"{}\" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
 
         def report_postprocess(self):
-            self.ofd.write('got post processing event.\n')
+            self.ofd.write('post processing.\n')
 
         def report_warning(self, message):
-            self.ofd.write('got warning event: {:s}\n'.format(message))
+            self.ofd.write('warning: {:s}\n'.format(message))
 
     cb = ECB(sys.stdout)
     with py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb')) as archive:

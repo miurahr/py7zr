@@ -340,8 +340,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
-        self.reporterd = None
-        self.q = queue.Queue()
+        self.reporterd = None  # type: Optional[threading.Thread]
+        self.q = queue.Queue()  # type: Optional[queue.Queue]
 
     def __enter__(self):
         return self
@@ -720,7 +720,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             # check whether f.filename with invalid characters: '../'
             if f.filename.startswith('../'):
                 raise Bad7zFile
-            # When archive has a multiple files which have same name.
+            # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.

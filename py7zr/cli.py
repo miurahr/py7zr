@@ -28,12 +28,12 @@ from typing import Any, Optional
 import texttable  # type: ignore
 
 import py7zr
-import py7zr.callbacks
+from py7zr.callbacks import ExtractCallback
 from py7zr.helpers import Local
 from py7zr.properties import SupportedMethods
 
 
-class CliExtractCallback(py7zr.callbacks.ExtractCallback):
+class CliExtractCallback(ExtractCallback):
 
     def __init__(self, total_bytes, ofd=sys.stdout):
         self.ofd = ofd
@@ -65,6 +65,7 @@ class CliExtractCallback(py7zr.callbacks.ExtractCallback):
 
     def report_warning(self, message):
         pass
+
 
 class Cli():
     def __init__(self):
@@ -241,11 +242,10 @@ class Cli():
                 sys.stderr.write('Warning: your password may be shown.\n')
                 return(1)
         a = py7zr.SevenZipFile(target, 'r', password=password)
+        cb = None  # Optional[ExtractCallback]
         if verbose:
             archive_info = a.archiveinfo()
             cb = CliExtractCallback(total_bytes=archive_info.uncompressed, ofd=sys.stderr)
-        else:
-            cb = None
         if args.odir:
             a.extractall(path=args.odir, callback=cb)
         else:

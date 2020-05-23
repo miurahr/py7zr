@@ -28,7 +28,7 @@ import os
 import queue
 import sys
 import threading
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Union, Tuple
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor, ISevenZipDecompressor, ZstdDecompressor
@@ -86,7 +86,8 @@ class Worker:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0, q)
 
-    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int, q: Optional[queue.Queue]) -> None:
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
+                       q: Optional[queue.Queue]) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
