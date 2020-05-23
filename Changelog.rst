@@ -10,12 +10,6 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Support dereference option of SevenZipFile class.
-  If dereference is False, add symbolic and hard links to the archive.
-  If it is True, add the content of the target files to the archive.
-  This has no effect on systems that do not support symbolic links.
-
-
 Changed
 -------
 
@@ -30,6 +24,30 @@ Removed
 
 Security
 --------
+
+`v0.7.0b3`_
+===========
+
+Added
+-----
+
+* Support dereference option of SevenZipFile class. (#131)
+  If dereference is False, add symbolic and hard links to the archive.
+  If it is True, add the content of the target files to the archive.
+  This has no effect on systems that do not support symbolic links.
+* Introduce progress callback mechanism (#130)
+
+Changed
+-------
+
+* CLI: add --verbose option for extraction
+* win32: update win32compat
+
+Fixed
+-----
+
+* Fix archiveinfo() for 7zAES archives
+* Release variables when close() (#129)
 
 `v0.7.0b2`_
 ===========
@@ -54,7 +72,7 @@ Added
 Changed
 -------
 
-* Drop pywin32 dependency
+* Drop pywin32 dependency(#120)
 * Introduce internal win32compat.py
 * Archive: Looking for symbolic link object in the archived list,
   and if found, record as relative link.(#112, #113, #122)
@@ -723,7 +741,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b3...HEAD
+.. _v0.7.0b3: https://github.com/miurahr/py7zr/compare/v0.7.0b2...v0.7.0b3
 .. _v0.7.0b2: https://github.com/miurahr/py7zr/compare/v0.7.0b1...v0.7.0b2
 .. _v0.7.0b1: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0b1
 .. _v0.6: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6
