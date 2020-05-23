@@ -37,7 +37,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
-from py7zr.exceptions import Bad7zFile
+from py7zr.exceptions import Bad7zFile, ArchiveError
 from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
@@ -813,16 +813,24 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if path.is_symlink() and not self.dereference:
-            self.write(path, arcname)
-        elif path.is_file():
-            self.write(path, arcname)
-        elif path.is_dir():
-            if not path.samefile('.'):
+        try:
+            if path.is_symlink() and not self.dereference:
                 self.write(path, arcname)
-            for nm in sorted(os.listdir(str(path))):
-                arc = os.path.join(arcname, nm) if arcname is not None else None
-                self.writeall(path.joinpath(nm), arc)
+            elif path.is_file():
+                self.write(path, arcname)
+            elif path.is_dir():
+                if not path.samefile('.'):
+                    self.write(path, arcname)
+                for nm in sorted(os.listdir(str(path))):
+                    arc = os.path.join(arcname, nm) if arcname is not None else None
+                    self.writeall(path.joinpath(nm), arc)
+        except OSError as ose:
+            if ose.errno == errno.ELOOP and self.dereference:
+                msg = 'Seems trying make archive with dereference against looped symlinks, so caused OSError:'
+                msg += f'[Errno {errno.ELOOP}] {os.strerror(errno.ELOOP)}: \'{str(path)}\''
+                raise ArchiveError(msg)
+            else:
+                raise ose
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
