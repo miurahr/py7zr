@@ -341,7 +341,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.encoded_header_mode = False
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.reporterd = None  # type: Optional[threading.Thread]
-        self.q = queue.Queue()  # type: Optional[queue.Queue]
+        self.q = queue.Queue()  # type: queue.Queue[Any]
 
     def __enter__(self):
         return self
@@ -713,8 +713,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise e
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
-        if self.q is not None:
-            self.q.put(('pre', None, None))
+        self.q.put(('pre', None, None))
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
@@ -783,8 +782,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
 
-        if self.q is not None:
-            self.q.put(('post', None, None))
+        self.q.put(('post', None, None))
         if return_dict:
             return self._dict
         else:
@@ -870,7 +868,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.reporterd.join(1)
                 if self.reporterd.is_alive():
                     raise InternalError("Progress report thread terminate error.")
-                self.q = None
                 self.reporterd = None
         self._fpclose()
 
