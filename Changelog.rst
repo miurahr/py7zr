@@ -25,6 +25,16 @@ Removed
 Security
 --------
 
+`v0.7.0`_
+=========
+
+Changed
+-------
+
+* Extraction: Unlink output file if exist when it become a symbolic link.
+  When overwrite extracted files and there are symlinks, it may cause an unexpected result.
+  Unlinking it may help it.
+
 `v0.7.0b3`_
 ===========
 
@@ -741,7 +751,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0b3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0...HEAD
+.. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.7.0b3...v0.7.0
 .. _v0.7.0b3: https://github.com/miurahr/py7zr/compare/v0.7.0b2...v0.7.0b3
 .. _v0.7.0b2: https://github.com/miurahr/py7zr/compare/v0.7.0b1...v0.7.0b2
 .. _v0.7.0b1: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0b1
