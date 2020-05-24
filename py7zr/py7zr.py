@@ -789,7 +789,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.worker.register_filelike(f.id, MemIO(_buf))
             elif f.is_symlink:
                 target_sym.append(outfilename)
-                pathlib.Path(outfilename).unlink(missing_ok=True)
+                try:
+                    if outfilename.exists():
+                        outfilename.unlink()
+                except OSError as ose:
+                    if ose.errno not in [errno.ENOENT]:
+                        raise
                 self.worker.register_filelike(f.id, outfilename)
             elif f.is_junction:
                 target_junction.append(outfilename)
