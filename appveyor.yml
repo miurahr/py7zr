@@ -22,13 +22,11 @@ build: off
 
 test_script:
   - "%PYTHON%\\python.exe -m tox"
-  - "%PYTHON%\\python.exe setup.py bdist_wheel"
-  - "%PYTHON%\\python.exe -m coverage xml --ignore-errors"
-  - "%PYTHON%\\python.exe -m codecov -X gcov pycov search --file coverage.xml --flags ${env:TOXENV},windows"
-  - "%PYTHON%\\python.exe -m coveralls"
 
-artifacts:
-  - path: "dist\\*"
+after_test:
+  - "%PYTHON%\\python.exe -m coverage xml --ignore-errors"
+  - "%PYTHON%\\python.exe -m codecov -X gcov pycov search --file coverage.xml --flags %TOXENV%,windows"
+  - "%PYTHON%\\python.exe -m coveralls"
 
 matrix:
   fast_finish: false
