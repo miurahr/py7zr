@@ -5,12 +5,15 @@ strategy:
   matrix:
     Python36:
       python.version: '3.6'
+      TOXENV: py36
       addopts: ""
     Python37:
       python.version: '3.7'
+      TOXENV: py37
       addopts: ""
     Python38:
       python.version: '3.8'
+      TOXENV: py38
       addopts: ""
 
 steps:
@@ -30,6 +33,6 @@ steps:
     coverage combine
     coverage xml --ignore-errors
     coverage report -m --ignore-errors
-    env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV//-/ } mac
+    env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV},mac
   displayName: 'Converage report'
   continueOnError: true
