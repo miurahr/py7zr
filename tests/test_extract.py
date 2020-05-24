@@ -421,3 +421,16 @@ def test_extract_emptystream_mix(tmp_path):
 def test_extract_longpath_file(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('longpath.7z').open('rb')) as archive:
         archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_extract_symlink_overwrite(tmp_path):
+    os.chdir(str(tmp_path))
+    os.makedirs(str(tmp_path.joinpath('target')))  # py35 need str() against pathlib.Path
+    with py7zr.SevenZipFile(testdata_path.joinpath('symlink.7z').open(mode='rb')) as archive:
+        archive.extractall(path='target')
+    with py7zr.SevenZipFile(testdata_path.joinpath('symlink.7z').open(mode='rb')) as archive:
+        archive.extractall(path='target')
+    assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
