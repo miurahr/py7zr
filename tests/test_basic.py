@@ -343,6 +343,29 @@ def test_non7z_list(capsys):
     assert out == expected
 
 
+@pytest.mark.cli
+def test_archive_creation(tmp_path, capsys):
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = str(tmp_path / "target.7z")
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    cli.run(['c', target, source])
+    out, err = capsys.readouterr()
+
+
+@pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.6 or higher")
+def test_volume_creation(tmp_path, capsys):
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'lzma2bcj.7z'), path=tmp_path.joinpath('src'))
+    target = str(tmp_path / "target.7z")
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    cli.run(['c', target, source, '-v', '2m'])
+    out, err = capsys.readouterr()
+
+
 @pytest.mark.unit
 def test_py7zr_write_mode(tmp_path):
     target = tmp_path.joinpath('target.7z')
