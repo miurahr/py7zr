@@ -561,6 +561,16 @@ def test_calculate_key2(password: str, cycle: int, salt: bytes, expected: bytes)
     assert key == expected
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("password, cycle, salt, expected",
+                         [('secret^&', 0x3f, b'i@#ri#Ildajfdk',
+                           b'i@#ri#Ildajfdks\x00e\x00c\x00r\x00e\x00t\x00^\x00&\x00\x00\x00')
+                          ])
+def test_calculate_key3(password: str, cycle: int, salt: bytes, expected: bytes):
+    key = py7zr.helpers._calculate_key3(password.encode('utf-16LE'), cycle, salt, 'sha256')
+    assert key == expected
+
+
 def test_calculate_key1_nohash():
     with pytest.raises(ValueError):
         py7zr.helpers._calculate_key1('secret'.encode('utf-16LE'), 16, b'', 'sha123')
@@ -569,6 +579,11 @@ def test_calculate_key1_nohash():
 def test_calculate_key2_nohash():
     with pytest.raises(ValueError):
         py7zr.helpers._calculate_key2('secret'.encode('utf-16LE'), 16, b'', 'sha123')
+
+
+def test_calculate_key3_nohash():
+    with pytest.raises(ValueError):
+        py7zr.helpers._calculate_key3('secret'.encode('utf-16LE'), 16, b'', 'sha123')
 
 
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7")
