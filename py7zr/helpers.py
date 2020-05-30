@@ -51,7 +51,7 @@ def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1
 
 
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-    """Calculate 7zip AES encryption key."""
+    """Calculate 7zip AES encryption key. Base implementation. """
     if digest not in ('sha256'):
         raise ValueError('Unknown digest method for password protection.')
     assert cycles <= 0x3f
@@ -99,10 +99,45 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     return key
 
 
-if platform.python_implementation() == "PyPy":
-    calculate_key = _calculate_key1  # Avoid https://foss.heptapod.net/pypy/pypy/issues/3209
+def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+    """Calculate 7zip AES encryption key.
+    Concat values in order to reduce number of calls of Hash.update()."""
+    if digest not in ('sha256'):
+        raise ValueError('Unknown digest method for password protection.')
+    assert cycles <= 0x3f
+    if cycles == 0x3f:
+        ba = bytearray(salt + password + bytes(32))
+        key = bytes(ba[:32])  # type: bytes
+    else:
+        cat_cycle = 6
+        if cycles > cat_cycle:
+            rounds = 1 << cat_cycle
+            stages = 1 << (cycles - cat_cycle)
+        else:
+            rounds = 1 << cycles
+            stages = 1 << 0
+        m = _hashlib.new(digest)
+        saltpassword = salt + password
+        s = 0  # type: int  # (0..stages) * rounds
+        if platform.python_implementation() == "PyPy":
+            for _ in range(stages):
+                m.update(memoryview(b''.join([saltpassword + (s + i).to_bytes(8, byteorder='little', signed=False)
+                                              for i in range(rounds)])))
+                s += rounds
+        else:
+            for _ in range(stages):
+                m.update(b''.join([saltpassword + (s + i).to_bytes(8, byteorder='little', signed=False)
+                                   for i in range(rounds)]))
+                s += rounds
+        key = m.digest()[:32]
+
+    return key
+
+
+if platform.python_implementation() == "PyPy" or sys.version_info > (3, 6):
+    calculate_key = _calculate_key3
 else:
-    calculate_key = _calculate_key2  # ver2 is 1.7-2.0 times faster than ver1
+    calculate_key = _calculate_key2  # it is faster when CPython 3.6.x
 
 
 def filetime_to_dt(ft):

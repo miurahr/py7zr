@@ -4,7 +4,6 @@ import datetime
 import io
 import lzma
 import os
-import platform
 import stat
 import struct
 import sys
@@ -570,27 +569,6 @@ def test_calculate_key1_nohash():
 def test_calculate_key2_nohash():
     with pytest.raises(ValueError):
         py7zr.helpers._calculate_key2('secret'.encode('utf-16LE'), 16, b'', 'sha123')
-
-
-@pytest.mark.benchmark
-def test_benchmark_calculate_key1(benchmark):
-    password = 'secret'.encode('utf-16LE')
-    cycles = 19
-    salt = b''
-    expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
-    key = benchmark(py7zr.helpers._calculate_key1, password, cycles, salt, 'sha256')
-    assert key == expected
-
-
-@pytest.mark.benchmark
-@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Pypy has a bug around ctypes")
-def test_benchmark_calculate_key2(benchmark):
-    password = 'secret'.encode('utf-16LE')
-    cycles = 19
-    salt = b''
-    expected = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
-    key = benchmark(py7zr.helpers._calculate_key2, password, cycles, salt, 'sha256')
-    assert key == expected
 
 
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7")
