@@ -556,9 +556,7 @@ def test_calculate_key1(password: str, cycle: int, salt: bytes, expected: bytes)
 @pytest.mark.unit
 @pytest.mark.parametrize("password, cycle, salt, expected",
                          [('secret^&', 0x3f, b'i@#ri#Ildajfdk',
-                           b'i@#ri#Ildajfdks\x00e\x00c\x00r\x00e\x00t\x00^\x00&\x00\x00\x00'),
-                          ('secret', 5, b'', b'(6\xa7\xf0\xcc"\t\x9dod\xe2\x8d\xd2\xe9\x08^s\x9c\x99-\xa3N\x08\x10'
-                                             b'\x9e\\~\x89<\x1cR\xc2')
+                           b'i@#ri#Ildajfdks\x00e\x00c\x00r\x00e\x00t\x00^\x00&\x00\x00\x00')
                           ])
 def test_calculate_key2(password: str, cycle: int, salt: bytes, expected: bytes):
     key = py7zr.helpers._calculate_key2(password.encode('utf-16LE'), cycle, salt, 'sha256')
