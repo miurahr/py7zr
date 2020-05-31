@@ -25,6 +25,21 @@ Removed
 Security
 --------
 
+`v0.7.1`_
+=========
+
+Changed
+-------
+
+* Decryption: performance improvement.
+  Introduce helpers.calculate_key3(), which utilize list comprehension expression, bytes generation
+  with join(). It reduces a number of calls of hash library and improve decryption performance.
+
+Fixed
+-----
+
+* Fix overwrite behavior of symbolic link which may break linked contents.
+
 `v0.7.0`_
 =========
 
@@ -751,7 +766,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.1...HEAD
+.. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1
 .. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.7.0b3...v0.7.0
 .. _v0.7.0b3: https://github.com/miurahr/py7zr/compare/v0.7.0b2...v0.7.0b3
 .. _v0.7.0b2: https://github.com/miurahr/py7zr/compare/v0.7.0b1...v0.7.0b2
