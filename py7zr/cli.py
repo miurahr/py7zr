@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #    Pure python p7zr implementation
-#    Copyright (C) 2019 Hiroshi Miura
+#    Copyright (C) 2019, 2020 Hiroshi Miura
 #
 #    This library is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU Lesser General Public
@@ -20,17 +20,19 @@
 import argparse
 import getpass
 import os
+import pathlib
+import re
 import shutil
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import texttable  # type: ignore
 
 import py7zr
 from py7zr.callbacks import ExtractCallback
 from py7zr.helpers import Local
-from py7zr.properties import SupportedMethods
+from py7zr.properties import READ_BLOCKSIZE, SupportedMethods
 
 
 class CliExtractCallback(ExtractCallback):
@@ -68,8 +70,13 @@ class CliExtractCallback(ExtractCallback):
 
 
 class Cli():
+
+    dunits = {'b': 1, 'B': 1, 'k': 1024, 'K': 1024, 'm': 1024 * 1024, 'M': 1024 * 1024,
+              'g': 1024 * 1024 * 1024, 'G': 1024 * 1024 * 1024}
+
     def __init__(self):
         self.parser = self._create_parser()
+        self.unit_pattern = re.compile(r'^([0-9]+)([bkmg]?)$', re.IGNORECASE)
 
     def run(self, arg: Optional[Any] = None) -> int:
         args = self.parser.parse_args(arg)
@@ -94,7 +101,8 @@ class Cli():
         create_parser = subparsers.add_parser('c')
         create_parser.set_defaults(func=self.run_create)
         create_parser.add_argument("arcfile", help="7z archive file")
-        create_parser.add_argument("filenames", nargs="*", help="filenames to archive")
+        create_parser.add_argument("filenames", nargs="+", help="filenames to archive")
+        create_parser.add_argument("-v", "--volume", nargs=1, help="Create volumes.")
         test_parser = subparsers.add_parser('t')
         test_parser.set_defaults(func=self.run_test)
         test_parser.add_argument("arcfile", help="7z archive file")
@@ -252,15 +260,58 @@ class Cli():
             a.extractall(callback=cb)
         return(0)
 
+    def _check_volumesize_valid(self, size: str) -> bool:
+        if self.unit_pattern.match(size):
+            return True
+        else:
+            return False
+
+    def _volumesize_unitconv(self, size: str) -> int:
+        m = self.unit_pattern.match(size)
+        num = m.group(1)
+        unit = m.group(2)
+        return int(num) if unit is None else int(num) * self.dunits[unit]
+
     def run_create(self, args):
-        sztarget = args.arcfile
-        with py7zr.SevenZipFile(sztarget, 'w') as szf:
-            for path in args.filenames:
-                zippath = os.path.basename(path)
-                if not zippath:
-                    zippath = os.path.basename(os.path.dirname(path))
-                if zippath in ('', os.curdir, os.pardir):
-                    zippath = ''
-                szf.writeall(path, zippath)
-            szf.close()
+        sztarget = args.arcfile  # type: str
+        filenames = args.filenames  # type: List[str]
+        volume_size = args.volume[0] if getattr(args, 'volume', None) is not None else None
+        if volume_size is not None and not self._check_volumesize_valid(volume_size):
+            sys.stderr.write('Error: Specified volume size is invalid.\n')
+            self.show_help(args)
+            exit(1)
+        if not sztarget.endswith('.7z'):
+            sztarget += '.7z'
+        target = pathlib.Path(sztarget)
+        if target.exists():
+            sys.stderr.write('Archive file exists!\n')
+            self.show_help(args)
+            exit(1)
+        with py7zr.SevenZipFile(target, 'w') as szf:
+            for path in filenames:
+                src = pathlib.Path(path)
+                if src.is_dir():
+                    szf.writeall(src)
+                else:
+                    szf.write(src)
+        if volume_size is None:
+            return (0)
+        size = self._volumesize_unitconv(volume_size)
+        self._split_file(target, size)
+        target.unlink()
         return(0)
+
+    def _split_file(self, filepath, size):
+        chapters = 0
+        written = [0, 0]
+        total_size = filepath.stat().st_size
+        with filepath.open('rb') as src:
+            while written[0] <= total_size:
+                with open(str(filepath) + '.%03d' % chapters, 'wb') as tgt:
+                    written[1] = 0
+                    while written[1] < size:
+                        read_size = min(READ_BLOCKSIZE, size - written[1])
+                        tgt.write(src.read(read_size))
+                        written[1] += read_size
+                        written[0] += read_size
+                chapters += 1
