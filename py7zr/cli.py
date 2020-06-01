@@ -76,7 +76,7 @@ class Cli():
 
     def __init__(self):
         self.parser = self._create_parser()
-        self.unit_pattern = re.compile(r'([0-9]+)([bkmg]?)', re.IGNORECASE)
+        self.unit_pattern = re.compile(r'^([0-9]+)([bkmg]?)$', re.IGNORECASE)
 
     def run(self, arg: Optional[Any] = None) -> int:
         args = self.parser.parse_args(arg)
@@ -275,15 +275,18 @@ class Cli():
     def run_create(self, args):
         sztarget = args.arcfile  # type: str
         filenames = args.filenames  # type: List[str]
+        volume_size = args.volume[0] if getattr(args, 'volume', None) is not None else None
+        if volume_size is not None and not self._check_volumesize_valid(volume_size):
+            sys.stderr.write('Error: Specified volume size is invalid.\n')
+            self.show_help(args)
+            exit(1)
         if not sztarget.endswith('.7z'):
             sztarget += '.7z'
         target = pathlib.Path(sztarget)
         if target.exists():
-            sys.stderr.write('Archive file exists!')
+            sys.stderr.write('Archive file exists!\n')
+            self.show_help(args)
             exit(1)
-        if len(filenames) == 0:
-            sys.stderr.write('Error: Specified target filenames are empty.\n')
-            return (1)
         with py7zr.SevenZipFile(target, 'w') as szf:
             for path in filenames:
                 src = pathlib.Path(path)
@@ -291,13 +294,8 @@ class Cli():
                     szf.writeall(src)
                 else:
                     szf.write(src)
-        # handle multi volume option
-        volume_size = args.volume[0] if getattr(args, 'volume', None) is not None else None
         if volume_size is None:
             return (0)
-        elif not self._check_volumesize_valid(volume_size):
-            sys.stderr.write('Error: Specified volume size is invalid.\n')
-            return (1)
         size = self._volumesize_unitconv(volume_size)
         self._split_file(target, size)
         target.unlink()

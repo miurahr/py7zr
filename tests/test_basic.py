@@ -354,6 +354,33 @@ def test_archive_creation(tmp_path, capsys):
     out, err = capsys.readouterr()
 
 
+
+@pytest.mark.cli
+def test_archive_already_exist(tmp_path, capsys):
+    expected = 'Archive file exists!\n'
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path / "target.7z"
+    with target.open('w') as f:
+        f.write('Already exist!')
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    with pytest.raises(SystemExit):
+        cli.run(['c', str(target), source])
+    out, err = capsys.readouterr()
+    assert err == expected
+
+
+@pytest.mark.cli
+def test_archive_without_extension(tmp_path, capsys):
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = str(tmp_path / "target")
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    cli.run(['c', target, source])
+    expected_target = tmp_path / "target.7z"
+    assert expected_target.exists()
+
+
 @pytest.mark.cli
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.6 or higher")
 def test_volume_creation(tmp_path, capsys):
@@ -364,6 +391,20 @@ def test_volume_creation(tmp_path, capsys):
     cli = py7zr.cli.Cli()
     cli.run(['c', target, source, '-v', '2m'])
     out, err = capsys.readouterr()
+
+
+@pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.6 or higher")
+def test_volume_creation_wrong_volume_unit(tmp_path, capsys):
+    expected = 'Error: Specified volume size is invalid.\n'
+    target = str(tmp_path / "target.7z")
+    source = tmp_path / 'src'
+    source.mkdir()
+    cli = py7zr.cli.Cli()
+    with pytest.raises(SystemExit):
+        cli.run(['c', target, str(source), '-v', '2P'])
+    out, err = capsys.readouterr()
+    assert err == expected
 
 
 @pytest.mark.unit
