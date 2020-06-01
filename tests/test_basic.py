@@ -544,11 +544,11 @@ def test_py7zr_list_values():
     assert file_list[1].uncompressed == 111
     assert file_list[2].uncompressed == 58
     assert file_list[3].uncompressed == 559
-    assert file_list[0].is_directory == True
-    assert file_list[1].archivable == True
-    assert file_list[2].archivable == True
-    assert file_list[3].archivable == True
+    assert file_list[0].is_directory is True
+    assert file_list[1].archivable is True
+    assert file_list[2].archivable is True
+    assert file_list[3].archivable is True
     assert file_list[1].compressed == 441
-    assert file_list[1].crc == 3010113243
-    assert file_list[2].crc == 3703540999
-    assert file_list[3].crc == 2164028094
+    assert file_list[1].crc32 == 3010113243
+    assert file_list[2].crc32 == 3703540999
+    assert file_list[3].crc32 == 2164028094

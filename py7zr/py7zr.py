@@ -125,7 +125,7 @@ class ArchiveFile:
         return self._get_property('compressed')
 
     @property
-    def crc(self) -> Optional[int]:
+    def crc32(self) -> Optional[int]:
         """CRC of archived file(optional)"""
         return self._get_property('digest')
 
@@ -264,14 +264,14 @@ class ArchiveInfo:
 class FileInfo:
     """Hold archived file information."""
 
-    def __init__(self, filename, compressed, uncompressed, archivable, is_directory, creationtime, crc):
+    def __init__(self, filename, compressed, uncompressed, archivable, is_directory, creationtime, crc32):
         self.filename = filename
         self.compressed = compressed
         self.uncompressed = uncompressed
         self.archivable = archivable
         self.is_directory = is_directory
         self.creationtime = creationtime
-        self.crc = crc
+        self.crc32 = crc32
 
 
 class SevenZipFile(contextlib.AbstractContextManager):
@@ -701,7 +701,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if f.lastwritetime is not None:
                 creationtime = filetime_to_dt(f.lastwritetime)
             alist.append(FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory,
-                                  creationtime, f.crc))
+                                  creationtime, f.crc32))
         return alist
 
     def test(self) -> bool:
