@@ -305,18 +305,15 @@ class Cli():
 
     def _split_file(self, filepath, size):
         chapters = 0
-        leakbuf = ''
+        written = [0, 0]
+        total_size = filepath.stat().st_size
         with filepath.open('rb') as src:
-            while True:
+            while written[0] <= total_size:
                 with open(str(filepath) + '.%03d' % chapters, 'wb') as tgt:
-                    written = 0
-                    while written < size:
-                        if len(leakbuf) > 0:
-                            tgt.write(leakbuf)
-                        read_size = min(READ_BLOCKSIZE, size - written)
+                    written[1] = 0
+                    while written[1] < size:
+                        read_size = min(READ_BLOCKSIZE, size - written[1])
                         tgt.write(src.read(read_size))
-                        written += read_size
-                        leakbuf = src.read(1)
-                        if len(leakbuf) == 0:
-                            break
+                        written[1] += read_size
+                        written[0] += read_size
                 chapters += 1
