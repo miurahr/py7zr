@@ -354,7 +354,6 @@ def test_archive_creation(tmp_path, capsys):
     out, err = capsys.readouterr()
 
 
-
 @pytest.mark.cli
 def test_archive_already_exist(tmp_path, capsys):
     expected = 'Archive file exists!\n'
