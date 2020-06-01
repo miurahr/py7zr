@@ -89,20 +89,52 @@ Here is a readthedocs `manual`_ document.
 .. _`manual`: https://py7zr.readthedocs.io/en/latest/
 
 
-Usage
-=====
+CLI Usage
+=========
 
 You can run command script py7zr like as follows;
+
+* List archive contents
 
 .. code-block::
 
     $ py7zr l test.7z
+
+* Extract archive
+
+.. code-block::
+
     $ py7zr x test.7z
+
+* Extract archive with password
+
+.. code-block::
+
     $ py7zr x -P test.7z
       password?: ****
-    $ py7zr w target.7z test_dir
+
+* Create and compress to archive
+
+.. code-block::
+
+    $ py7zr c target.7z test_dir
+
+* Create multi-volume archive
+
+.. code-block::
+
+    $ py7zr c -v 500k target.7z test_dir
+
+
+* Show help
+
+.. code-block::
+
     $ py7zr help
 
+
+SevenZipFile Class Usage
+========================
 
 py7zr is a library which can use in your python application.
 Here is a code snippet how to decompress some file in your applicaiton.
@@ -165,6 +197,8 @@ py7zr support an extraction of password protected archive.(v0.6 and later)
         z.extractall()
 
 
+shutil helper
+=============
 
 py7zr also support `shutil`  interface.
 

@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.7.2`_
+=========
+
+Added
+-----
+
+* CLI: '-v {size}[b|k|m|g]' multi volume creation option.
+
 `v0.7.1`_
 =========
 
@@ -766,7 +774,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.2...HEAD
+.. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
 .. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1
 .. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.7.0b3...v0.7.0
 .. _v0.7.0b3: https://github.com/miurahr/py7zr/compare/v0.7.0b2...v0.7.0b3
