@@ -389,14 +389,8 @@ class Folder:
         if self.decompressor is not None and not reset:
             return self.decompressor
         else:
-            try:
-                self.decompressor = SevenZipDecompressor(self.coders, size, self.crc)
-            except Exception as e:
-                raise e
-            if self.decompressor is not None:
-                return self.decompressor
-            else:
-                raise
+            self.decompressor = SevenZipDecompressor(self.coders, size, self.crc)
+            return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:
         if self.compressor is not None:
