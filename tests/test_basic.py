@@ -531,3 +531,29 @@ def test_extract_callback(tmp_path):
     cb = ECB(sys.stdout)
     with py7zr.SevenZipFile(open(os.path.join(testdata_path, 'test_1.7z'), 'rb')) as archive:
         archive.extractall(path=tmp_path, callback=cb)
+
+
+@pytest.mark.api
+def test_py7zr_list_values():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'test_1.7z'), 'r') as z:
+        file_list = z.list()
+    assert file_list[0].filename == 'scripts'
+    assert file_list[1].filename == 'scripts/py7zr'
+    assert file_list[2].filename == 'setup.cfg'
+    assert file_list[3].filename == 'setup.py'
+    assert file_list[0].uncompressed == 0
+    assert file_list[1].uncompressed == 111
+    assert file_list[2].uncompressed == 58
+    assert file_list[3].uncompressed == 559
+    assert file_list[0].is_directory is True
+    assert file_list[1].archivable is True
+    assert file_list[2].archivable is True
+    assert file_list[3].archivable is True
+    assert file_list[0].compressed == 0
+    assert file_list[1].compressed == 441
+    assert file_list[2].compressed is None
+    assert file_list[3].compressed is None
+    assert file_list[0].crc32 is None
+    assert file_list[1].crc32 == 0xb36aaedb
+    assert file_list[2].crc32 == 0xdcbf8d07
+    assert file_list[3].crc32 == 0x80fc72be
