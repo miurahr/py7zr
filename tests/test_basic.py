@@ -233,7 +233,7 @@ Everything is Ok
     cli = py7zr.cli.Cli()
     cli.run(["t", arcfile])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.cli
@@ -310,16 +310,16 @@ def test_cli_encrypted_extract(monkeypatch, tmp_path):
 def test_digests():
     arcfile = os.path.join(testdata_path, "test_2.7z")
     archive = py7zr.SevenZipFile(arcfile)
-    assert archive.test()
+    assert archive.test() is None
     assert archive.testzip() is None
 
 
 @pytest.mark.basic
 def test_digests_corrupted():
     arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
-    archive = py7zr.SevenZipFile(arcfile)
-    assert archive.test()
-    assert archive.testzip().endswith('src/scripts/py7zr')
+    with py7zr.SevenZipFile(arcfile) as archive:
+        assert archive.test() is None
+        assert archive.testzip().endswith('src/scripts/py7zr')
 
 
 @pytest.mark.cli

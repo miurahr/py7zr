@@ -40,7 +40,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
-from py7zr.exceptions import Bad7zFile, CrcError, InternalError
+from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
@@ -782,17 +782,19 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 target_dir.mkdir()
             except FileExistsError:
                 if target_dir.is_dir():
-                    # skip rare case
                     pass
                 elif target_dir.is_file():
-                    raise Exception("Directory name is existed as a normal file.")
+                    raise DecompressionError("Directory {} is existed as a normal file.".format(str(target_dir)))
                 else:
-                    raise Exception("Directory making fails on unknown condition.")
+                    raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
 
-        if callback is not None:
-            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
-        else:
-            self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+        try:
+            if callback is not None:
+                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
+            else:
+                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+        except CrcError as ce:
+            raise Bad7zFile("CRC32 error on archived file {}.".format(str(ce)))
 
         self.q.put(('post', None, None))
         if return_dict:
@@ -908,14 +910,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._reset_worker()
             self._reset_decompressor()
 
-    def test(self) -> bool:
+    def test(self) -> Optional[bool]:
         self._reset_worker()
-        crcs = self.header.main_streams.packinfo.crcs
-        if crcs is not None and len(crcs) > 0:
-            # check packed stream's crc
-            for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
-                if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
-                    return False
+        crcs = self.header.main_streams.packinfo.crcs  # type: Optional[List[int]]
+        if crcs is None or len(crcs) == 0:
+            return None
+        # check packed stream's crc
+        assert len(crcs) == len(self.header.main_streams.packinfo.packpositions)
+        for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
+            if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
+                return False
         return True
 
     def testzip(self) -> Optional[str]:

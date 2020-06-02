@@ -228,7 +228,7 @@ class Cli():
             file.write("Testing archive: {}\n".format(a.filename))
             self.print_archiveinfo(archive=a, file=file)
             file.write('\n')
-            if a.test():
+            if a.testzip() is None:
                 file.write('Everything is Ok\n')
                 return(0)
             else:

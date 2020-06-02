@@ -201,13 +201,15 @@ SevenZipFile Object
 .. method:: SevenZipFile.test()
 
    Read all the archive file and check a packed CRC.
-   Return True if there is no bad file, otherwise return False.
+   Return ``True`` if CRC check passed, and return ``False`` when detect defeat,
+   or return ``None`` when the archive don't have a CRC record.
 
 
 -.. method:: SevenZipFile.testzip()
 
     Read all the files in the archive and check their CRCs.
     Return the name of the first bad file, or else return ``None``.
+    When the archive don't have a CRC record, it return ``None``.
 
 
 .. method:: SevenZipFile.write(filename, arcname=None)
