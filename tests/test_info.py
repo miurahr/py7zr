@@ -92,67 +92,67 @@ def test_archiveinfo_7zaes_lzma():
 @pytest.mark.files
 def test_archivetest_deflate():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_deflate64():
     with pytest.raises(UnsupportedCompressionMethodError):
         with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate64.7z'), 'r') as ar:
-            assert ar.test()
+            assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj2():
     with pytest.raises(UnsupportedCompressionMethodError):
         with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2.7z'), 'r') as ar:
-            assert ar.test()
+            assert ar.testzip() is None
 
 
 @pytest.mark.files
 @pytest.mark.xfail(reason="Known issue to raise exception")
 def test_archivetest_lzma_bcj():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma2_bcj():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2bcj.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj_arm():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_arm.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj_armt():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_armt.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj_ia64():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ia64.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj_ppc():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ppc.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj_sparc():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_sparc.7z'), 'r') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
 def test_archivetest_7zaes():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r', password='secret') as ar:
-        assert ar.test()
+        assert ar.testzip() is None
