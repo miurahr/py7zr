@@ -198,10 +198,16 @@ SevenZipFile Object
     Return a ArchiveInfo object.
 
 
-.. method:: SevenZipFile.testzip()
+.. method:: SevenZipFile.test()
 
-   Read all the files in the archive and check their CRC's and file headers.
-   Return the name of the first bad file, or else return ``None``. [#f3]_
+   Read all the archive file and check a packed CRC.
+   Return True if there is no bad file, otherwise return False.
+
+
+-.. method:: SevenZipFile.testzip()
+
+    Read all the files in the archive and check their CRCs.
+    Return the name of the first bad file, or else return ``None``.
 
 
 .. method:: SevenZipFile.write(filename, arcname=None)

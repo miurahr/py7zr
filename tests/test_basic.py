@@ -310,7 +310,16 @@ def test_cli_encrypted_extract(monkeypatch, tmp_path):
 def test_digests():
     arcfile = os.path.join(testdata_path, "test_2.7z")
     archive = py7zr.SevenZipFile(arcfile)
-    assert archive._test_digests()
+    assert archive.test()
+    assert archive.testzip() is None
+
+
+@pytest.mark.basic
+def test_digests_corrupted():
+    arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
+    archive = py7zr.SevenZipFile(arcfile)
+    assert archive.test()
+    assert archive.testzip() is not None
 
 
 @pytest.mark.cli

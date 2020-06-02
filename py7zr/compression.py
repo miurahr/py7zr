@@ -30,7 +30,7 @@ import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
-from py7zr import UnsupportedCompressionMethodError
+from py7zr.exceptions import Bad7zFile, CrcError, UnsupportedCompressionMethodError
 from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor, ISevenZipDecompressor, ZstdDecompressor
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
 from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
@@ -103,19 +103,25 @@ class Worker:
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
                         # extract to file
-                        self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        result = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        if not result:
+                            raise CrcError("{}".format(f.filename))
                         ofp.seek(0)
                     else:
                         pass  # just create empty file
             elif not f.emptystream:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
-                    self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                    result = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                    if not result:
+                        raise Bad7zFile("Folder CRC error")
+                    if f.crc is not None:
+
             if q is not None:
                 q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
-                   size: int, compressed_size: Optional[int], src_end: int) -> None:
+                   size: int, compressed_size: Optional[int], src_end: int) -> bool:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer
@@ -146,9 +152,10 @@ class Worker:
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:
+            # Check folder.digest integrity.
             if decompressor.crc is not None and not decompressor.check_crc():
-                print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
-        return
+                return False
+        return True
 
     def _find_link_target(self, target):
         """Find the target member of a symlink or hardlink member in the archive.

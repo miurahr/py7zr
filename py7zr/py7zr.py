@@ -40,7 +40,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
-from py7zr.exceptions import Bad7zFile, InternalError
+from py7zr.exceptions import Bad7zFile, CrcError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
@@ -549,33 +549,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             remaining_size -= block
         return digest == crc
 
-    def _test_pack_digest(self) -> bool:
-        self._reset_worker()
-        crcs = self.header.main_streams.packinfo.crcs
-        if crcs is not None and len(crcs) > 0:
-            # check packed stream's crc
-            for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
-                if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
-                    return False
-        return True
-
-    def _test_unpack_digest(self) -> bool:
-        self._reset_worker()
-        for f in self.files:
-            self.worker.register_filelike(f.id, None)
-        try:
-            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
-        except Bad7zFile:
-            return False
-        else:
-            return True
-
-    def _test_digests(self) -> bool:
-        if self._test_pack_digest():
-            if self._test_unpack_digest():
-                return True
-        return False
-
     def _prepare_write(self) -> None:
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
@@ -703,10 +676,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             alist.append(FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory,
                                   creationtime, f.crc32))
         return alist
-
-    def test(self) -> bool:
-        """Test archive using CRC digests."""
-        return self._test_digests()
 
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
         return self._extract(path=None, return_dict=True)
@@ -938,6 +907,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.mode == 'r':
             self._reset_worker()
             self._reset_decompressor()
+
+    def test(self) -> bool:
+        self._reset_worker()
+        crcs = self.header.main_streams.packinfo.crcs
+        if crcs is not None and len(crcs) > 0:
+            # check packed stream's crc
+            for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
+                if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
+                    return False
+        return True
+
+    def testzip(self) -> Optional[str]:
+        self._reset_worker()
+        for f in self.files:
+            self.worker.register_filelike(f.id, None)
+        try:
+            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
+        except CrcError as crce:
+            return str(crce)
+        else:
+            return None
 
 
 # --------------------
