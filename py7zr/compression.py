@@ -103,25 +103,23 @@ class Worker:
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
                         # extract to file
-                        result = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
-                        if not result:
-                            raise CrcError("{}".format(f.filename))
+                        crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
                         ofp.seek(0)
+                        if f.crc32 is not None and crc32 != f.crc32:
+                            raise CrcError("{}".format(f.filename))
                     else:
                         pass  # just create empty file
             elif not f.emptystream:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
-                    result = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
-                    if not result:
-                        raise Bad7zFile("Folder CRC error")
-                    if f.crc is not None:
-
+                    crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                if f.crc32 is not None and crc32 != f.crc32:
+                    raise CrcError("{}".format(f.filename))
             if q is not None:
                 q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
-                   size: int, compressed_size: Optional[int], src_end: int) -> bool:
+                   size: int, compressed_size: Optional[int], src_end: int) -> int:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer
@@ -130,9 +128,10 @@ class Worker:
            :parameter size: uncompressed size of target file.
            :parameter compressed_size: compressed size of target file.
            :parameter src_end: end position of the folder
-           :returns None
+           :returns CRC32 of the file
         """
         assert folder is not None
+        crc32 = 0
         out_remaining = size
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
@@ -149,13 +148,14 @@ class Worker:
             if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fq.write(tmp)
+                crc32 = calculate_crc32(tmp, crc32)
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:
             # Check folder.digest integrity.
             if decompressor.crc is not None and not decompressor.check_crc():
-                return False
-        return True
+                raise Bad7zFile("Folder CRC32 error.")
+        return crc32
 
     def _find_link_target(self, target):
         """Find the target member of a symlink or hardlink member in the archive.
