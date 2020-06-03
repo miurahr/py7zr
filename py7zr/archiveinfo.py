@@ -907,9 +907,6 @@ class Header:
         buffer = io.BytesIO()
         src_start = self._start_pos
         for folder in streams.unpackinfo.folders:
-            if folder.is_encrypted():
-                raise UnsupportedCompressionMethodError()
-
             uncompressed = folder.unpacksizes
             if not isinstance(uncompressed, (list, tuple)):
                 uncompressed = [uncompressed] * len(folder.coders)

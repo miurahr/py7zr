@@ -159,7 +159,6 @@ def test_archivetest_7zaes():
 
 
 @pytest.mark.files
-@pytest.mark.xfails(reason="Not implemented yet")
 def test_list_filename_encryption(tmp_path):
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'filename_encryption.7z'), 'r', password='hello') as ar:
         file_list = ar.list()

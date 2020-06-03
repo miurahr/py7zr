@@ -123,7 +123,10 @@ class AESDecompressor(ISevenZipDecompressor):
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
-            self.lzma_decompressor = self._set_lzma_decompressor(coders)  # type: lzma.LZMADecompressor
+            if len(coders) > 0:
+                self.lzma_decompressor = self._set_lzma_decompressor(coders)  # type: lzma.LZMADecompressor
+            else:
+                self.lzma_decompressor = CopyDecompressor()
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
             self.flushed = False
