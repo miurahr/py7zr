@@ -13,7 +13,7 @@ from datetime import datetime
 import pytest
 
 import py7zr.archiveinfo
-import py7zr.compression
+import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
 from py7zr import SevenZipFile, pack_7zarchive
@@ -30,7 +30,7 @@ def check_bit(val, mask):
 
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
+    sevenzip_compressor = py7zr.compressor.SevenZipCompressor()
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -46,7 +46,7 @@ def test_simple_compress_and_decompress():
     #
     coders = sevenzip_compressor.coders
     crc = py7zr.helpers.calculate_crc32(result)
-    decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, crc)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
 

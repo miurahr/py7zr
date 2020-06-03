@@ -10,7 +10,6 @@ import py7zr
 import py7zr.archiveinfo
 import py7zr.callbacks
 import py7zr.cli
-import py7zr.compression
 import py7zr.properties
 
 from . import check_output, decode_all, ltime2
@@ -319,6 +318,7 @@ def test_digests_corrupted():
     arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
     with py7zr.SevenZipFile(arcfile) as archive:
         assert archive.test() is None
+        assert archive.testzip() is not None
         assert archive.testzip().endswith('src/scripts/py7zr')
 
 

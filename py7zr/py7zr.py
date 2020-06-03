@@ -39,9 +39,9 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
-from py7zr.compression import SevenZipCompressor, Worker, get_methods_names
+from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
-from py7zr.helpers import ArchiveTimestamp, MemIO, calculate_crc32, filetime_to_dt
+from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
 
 if sys.version_info < (3, 6):
@@ -972,3 +972,201 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
     archive = SevenZipFile(target_name, mode='w')
     archive.writeall(path=base_dir)
     archive.close()
+
+
+class Worker:
+    """Extract worker class to invoke handler"""
+
+    def __init__(self, files, src_start: int, header) -> None:
+        self.target_filepath = {}  # type: Dict[int, Union[MemIO, pathlib.Path, None]]
+        self.files = files
+        self.src_start = src_start
+        self.header = header
+
+    def extract(self, fp: BinaryIO, parallel: bool, q=None) -> None:
+        """Extract worker method to handle 7zip folder and decompress each files."""
+        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
+            src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
+            numfolders = self.header.main_streams.unpackinfo.numfolders
+            if numfolders == 1:
+                self.extract_single(fp, self.files, self.src_start, src_end, q)
+            else:
+                folders = self.header.main_streams.unpackinfo.folders
+                positions = self.header.main_streams.packinfo.packpositions
+                empty_files = [f for f in self.files if f.emptystream]
+                if not parallel:
+                    self.extract_single(fp, empty_files, 0, 0, q)
+                    for i in range(numfolders):
+                        self.extract_single(fp, folders[i].files, self.src_start + positions[i],
+                                            self.src_start + positions[i + 1], q)
+                else:
+                    filename = getattr(fp, 'name', None)
+                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
+                    extract_threads = []
+                    for i in range(numfolders):
+                        p = threading.Thread(target=self.extract_single,
+                                             args=(filename, folders[i].files,
+                                                   self.src_start + positions[i], self.src_start + positions[i + 1], q))
+                        p.start()
+                        extract_threads.append((p))
+                    for p in extract_threads:
+                        p.join()
+        else:
+            empty_files = [f for f in self.files if f.emptystream]
+            self.extract_single(fp, empty_files, 0, 0, q)
+
+    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
+                       q: Optional[queue.Queue]) -> None:
+        """Single thread extractor that takes file lists in single 7zip folder."""
+        if files is None:
+            return
+        if isinstance(fp, str):
+            fp = open(fp, 'rb')
+        fp.seek(src_start)
+        for f in files:
+            if q is not None:
+                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
+            fileish = self.target_filepath.get(f.id, None)
+            if fileish is not None:
+                fileish.parent.mkdir(parents=True, exist_ok=True)
+                with fileish.open(mode='wb') as ofp:
+                    if not f.emptystream:
+                        # extract to file
+                        crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        ofp.seek(0)
+                        if f.crc32 is not None and crc32 != f.crc32:
+                            raise CrcError("{}".format(f.filename))
+                    else:
+                        pass  # just create empty file
+            elif not f.emptystream:
+                # read and bin off a data but check crc
+                with NullIO() as ofp:
+                    crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                if f.crc32 is not None and crc32 != f.crc32:
+                    raise CrcError("{}".format(f.filename))
+            if q is not None:
+                q.put(('e', str(f.filename), str(f.uncompressed[-1])))
+
+    def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
+                   size: int, compressed_size: Optional[int], src_end: int) -> None:
+        """decompressor wrapper called from extract method.
+
+           :parameter fp: archive source file pointer
+           :parameter folder: Folder object that have decompressor object.
+           :parameter fq: output file pathlib.Path
+           :parameter size: uncompressed size of target file.
+           :parameter compressed_size: compressed size of target file.
+           :parameter src_end: end position of the folder
+           :returns None
+        """
+        assert folder is not None
+        out_remaining = size
+        crc32 = 0
+        decompressor = folder.get_decompressor(compressed_size)
+        while out_remaining > 0:
+            max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
+            rest_size = src_end - fp.tell()
+            read_size = min(READ_BLOCKSIZE, rest_size)
+            if read_size == 0:
+                tmp = decompressor.decompress(b'', max_length)
+                if len(tmp) == 0:
+                    raise Exception("decompression get wrong: no output data.")
+            else:
+                inp = fp.read(read_size)
+                tmp = decompressor.decompress(inp, max_length)
+            if len(tmp) > 0 and out_remaining >= len(tmp):
+                out_remaining -= len(tmp)
+                fq.write(tmp)
+                crc32 = calculate_crc32(tmp, crc32)
+            if out_remaining <= 0:
+                break
+        if fp.tell() >= src_end:
+            if decompressor.crc is not None and not decompressor.check_crc():
+                print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
+        return crc32
+
+    def _find_link_target(self, target):
+        """Find the target member of a symlink or hardlink member in the archive.
+        """
+        targetname = target.as_posix()  # type: str
+        linkname = readlink(targetname)
+        # Check windows full path symlinks
+        if linkname.startswith("\\\\?\\"):
+            linkname = linkname[4:]
+        # normalize as posix style
+        linkname = pathlib.Path(linkname).as_posix()  # type: str
+        member = None
+        for j in range(len(self.files)):
+            if linkname == self.files[j].origin.as_posix():
+                # FIXME: when API user specify arcname, it will break
+                member = os.path.relpath(linkname, os.path.dirname(targetname))
+                break
+        if member is None:
+            member = linkname
+        return member
+
+    def archive(self, fp: BinaryIO, folder, deref=False):
+        """Run archive task for specified 7zip folder."""
+        compressor = folder.get_compressor()
+        outsize = 0
+        self.header.main_streams.packinfo.numstreams = 1
+        num_unpack_streams = 0
+        self.header.main_streams.substreamsinfo.digests = []
+        self.header.main_streams.substreamsinfo.digestsdefined = []
+        last_file_index = 0
+        foutsize = 0
+        for i, f in enumerate(self.files):
+            file_info = f.file_properties()
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(f.emptystream)
+            foutsize = 0
+            if f.is_symlink and not deref:
+                last_file_index = i
+                num_unpack_streams += 1
+                link_target = self._find_link_target(f.origin)  # type: str
+                tgt = link_target.encode('utf-8')  # type: bytes
+                insize = len(tgt)
+                crc = calculate_crc32(tgt, 0)  # type: int
+                out = compressor.compress(tgt)
+                outsize += len(out)
+                foutsize += len(out)
+                fp.write(out)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+            elif not f.emptystream:
+                last_file_index = i
+                num_unpack_streams += 1
+                insize = 0
+                with f.origin.open(mode='rb') as fd:
+                    data = fd.read(READ_BLOCKSIZE)
+                    insize += len(data)
+                    crc = 0
+                    while data:
+                        crc = calculate_crc32(data, crc)
+                        out = compressor.compress(data)
+                        outsize += len(out)
+                        foutsize += len(out)
+                        fp.write(out)
+                        data = fd.read(READ_BLOCKSIZE)
+                        insize += len(data)
+                    self.header.main_streams.substreamsinfo.digests.append(crc)
+                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                    self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+        else:
+            out = compressor.flush()
+            outsize += len(out)
+            foutsize += len(out)
+            fp.write(out)
+            if len(self.files) > 0:
+                self.header.files_info.files[last_file_index]['maxsize'] = foutsize
+        # Update size data in header
+        self.header.main_streams.packinfo.packsizes = [outsize]
+        folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
+
+    def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
+        """register file-ish to worker."""
+        self.target_filepath[id] = fileish
