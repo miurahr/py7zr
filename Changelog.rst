@@ -13,6 +13,8 @@ Added
 Changed
 -------
 
+* Refactoring compression algorythm related modules.
+
 Fixed
 -----
 
@@ -21,6 +23,8 @@ Deprecated
 
 Removed
 -------
+
+* remove final_header definition.
 
 Security
 --------
