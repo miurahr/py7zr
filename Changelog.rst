@@ -10,11 +10,15 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support for encrypted header (#139, #140)
+
 Changed
 -------
 
 Fixed
 -----
+
+* Allow decryption of data which is encrypted without any compression.(#140)
 
 Deprecated
 ----------

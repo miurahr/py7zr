@@ -156,3 +156,10 @@ def test_archivetest_lzma_bcj_sparc():
 def test_archivetest_7zaes():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r', password='secret') as ar:
         assert ar.testzip() is None
+
+
+@pytest.mark.files
+def test_list_filename_encryption(tmp_path):
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'filename_encryption.7z'), 'r', password='hello') as ar:
+        file_list = ar.list()
+        assert file_list[0].filename == "New Text Document.TXT"
