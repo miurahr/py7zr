@@ -33,6 +33,11 @@ Added
 
 * Support for encrypted header (#139, #140)
 
+Changed
+-------
+
+* Fix CRC32 check and introduce test and testzip methods (#138)
+
 Fixed
 -----
 
