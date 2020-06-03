@@ -10,15 +10,11 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Support for encrypted header (#139, #140)
-
 Changed
 -------
 
 Fixed
 -----
-
-* Allow decryption of data which is encrypted without any compression.(#140)
 
 Deprecated
 ----------
@@ -28,6 +24,19 @@ Removed
 
 Security
 --------
+
+`v0.7.3`_
+=========
+
+Added
+-----
+
+* Support for encrypted header (#139, #140)
+
+Fixed
+-----
+
+* Allow decryption of data which is encrypted without any compression.(#140)
 
 `v0.7.2`_
 =========
@@ -778,7 +787,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.3...HEAD
+.. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
 .. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1
 .. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.7.0b3...v0.7.0
