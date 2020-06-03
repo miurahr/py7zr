@@ -11,7 +11,7 @@ from datetime import datetime
 import pytest
 
 import py7zr
-from py7zr import unpack_7zarchive
+from py7zr import Bad7zFile, unpack_7zarchive
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -434,3 +434,11 @@ def test_extract_symlink_overwrite(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('symlink.7z').open(mode='rb')) as archive:
         archive.extractall(path='target')
     assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
+
+
+@pytest.mark.file
+def test_py7zr_extract_corrupted(tmp_path):
+    with pytest.raises(Bad7zFile):
+        archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'crc_corrupted.7z'), 'r')
+        archive.extract(path=tmp_path)
+        archive.close()

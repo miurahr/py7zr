@@ -30,6 +30,10 @@ class Bad7zFile(ArchiveError):
     pass
 
 
+class CrcError(ArchiveError):
+    pass
+
+
 class UnsupportedCompressionMethodError(ArchiveError):
     pass
 
