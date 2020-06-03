@@ -356,8 +356,9 @@ def test_non7z_list(capsys):
 def test_archive_creation(tmp_path, capsys):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
-    target = str(tmp_path / "target.7z")
-    source = str(tmp_path / 'src')
+    os.chdir(str(tmp_path))
+    target = "target.7z"
+    source = 'src'
     cli = py7zr.cli.Cli()
     cli.run(['c', target, source])
     out, err = capsys.readouterr()

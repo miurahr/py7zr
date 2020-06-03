@@ -437,7 +437,6 @@ def test_extract_symlink_overwrite(tmp_path):
 
 
 @pytest.mark.file
-@pytest.mark.skip(reason="test data is absolute")
 def test_py7zr_extract_corrupted(tmp_path):
     with pytest.raises(Bad7zFile):
         archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'crc_corrupted.7z'), 'r')
