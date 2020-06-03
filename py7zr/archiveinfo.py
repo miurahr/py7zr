@@ -33,8 +33,8 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
-from py7zr.compression import SevenZipCompressor, SevenZipDecompressor
-from py7zr.exceptions import Bad7zFile, UnsupportedCompressionMethodError
+from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
+from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import MAGIC_7Z, CompressionMethod, Property
 
@@ -1073,22 +1073,3 @@ class SignatureHeader:
         write_real_uint64(file, 2)
         write_real_uint64(file, 3)
         write_uint32(file, 4)
-
-
-class FinishHeader():
-    """Finish header for multi-volume 7z file."""
-
-    def __init__(self):
-        self.archive_start_offset = None  # data offset from end of the finish header
-        self.additional_start_block_size = None  # start  signature & start header size
-        self.finish_header_size = 20 + 16
-
-    @classmethod
-    def retrieve(cls, file):
-        obj = cls()
-        obj._read(file)
-        return obj
-
-    def _read(self, file):
-        self.archive_start_offset = read_uint64(file)
-        self.additional_start_block_size = read_uint64(file)

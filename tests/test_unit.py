@@ -12,7 +12,7 @@ import pytest
 from Crypto.Cipher import AES
 
 import py7zr.archiveinfo
-import py7zr.compression
+import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
@@ -464,7 +464,7 @@ def test_make_file_info2():
 
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compression.SevenZipCompressor()
+    sevenzip_compressor = py7zr.compressor.SevenZipCompressor()
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -480,7 +480,7 @@ def test_simple_compress_and_decompress():
     #
     coders = sevenzip_compressor.coders
     crc = py7zr.helpers.calculate_crc32(result)
-    decompressor = py7zr.compression.SevenZipDecompressor(coders, size, crc)
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, crc)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
 
@@ -501,23 +501,10 @@ def test_aescipher():
 @pytest.mark.unit
 def test_aesdecrypt(monkeypatch):
 
-    class Passthrough:
-        def __init__(self):
-            pass
-
-        def decompress(self, data, len):
-            return data
-
-        def need_input(self):
-            return True
-
-        def eof(self):
-            return False
-
     def lzmamock(self, coders):
-        return Passthrough()
+        self._decompressor = py7zr.compressor.CopyDecompressor()
 
-    monkeypatch.setattr(py7zr.compression.AESDecompressor, "_set_lzma_decompressor", lzmamock)
+    monkeypatch.setattr(py7zr.compressor.AESDecompressor, "_set_decompressor", lzmamock)
 
     properties = b'S\x07|&\xae\x94do\x8a4'
     password = 'secret'
@@ -526,7 +513,7 @@ def test_aesdecrypt(monkeypatch):
     expected = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2" \
                b"\xf7\\m\xe0t\xa6$yF_-\xa0\x0b8f "
 
-    decompressor = py7zr.compression.AESDecompressor(properties, password, [{'hoge': None}])
+    decompressor = py7zr.compressor.AESDecompressor(properties, password, [{'hoge': None}])
     assert decompressor.decompress(indata) == expected
 
 

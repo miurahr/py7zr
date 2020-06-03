@@ -22,6 +22,7 @@
 #
 
 import binascii
+import lzma
 from enum import Enum
 from typing import Optional
 
@@ -153,3 +154,45 @@ class ArchivePassword:
             return self._password
         else:
             return ''
+
+
+lzma_methods_map = {
+    CompressionMethod.LZMA: lzma.FILTER_LZMA1,
+    CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
+    CompressionMethod.DELTA: lzma.FILTER_DELTA,
+    CompressionMethod.P7Z_BCJ: lzma.FILTER_X86,
+    CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
+    CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
+    CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
+    CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
+    CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
+}
+lzma_methods_map_r = {
+    lzma.FILTER_LZMA2: CompressionMethod.LZMA2,
+    lzma.FILTER_DELTA: CompressionMethod.DELTA,
+    lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
+}
+FILTER_BZIP2 = 0x31
+FILTER_ZIP = 0x32
+FILTER_COPY = 0x33
+FILTER_AES = 0x34
+FILTER_ZSTD = 0x35
+alt_methods_map = {
+    CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
+    CompressionMethod.MISC_DEFLATE: FILTER_ZIP,
+    CompressionMethod.COPY: FILTER_COPY,
+    CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
+    CompressionMethod.MISC_ZSTD: FILTER_ZSTD,
+}
+methods_name_map = {
+    CompressionMethod.LZMA2: "LZMA2",
+    CompressionMethod.LZMA: "LZMA",
+    CompressionMethod.DELTA: "delta",
+    CompressionMethod.P7Z_BCJ: "BCJ",
+    CompressionMethod.BCJ_ARM: "BCJ(ARM)",
+    CompressionMethod.BCJ_ARMT: "BCJ(ARMT)",
+    CompressionMethod.BCJ_IA64: "BCJ(IA64)",
+    CompressionMethod.BCJ_PPC: "BCJ(POWERPC)",
+    CompressionMethod.BCJ_SPARC: "BCJ(SPARC)",
+    CompressionMethod.CRYPT_AES256_SHA256: "7zAES",
+}
