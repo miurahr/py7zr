@@ -30,10 +30,11 @@ import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Union
 
+from py7zr import UnsupportedCompressionMethodError
 from py7zr.exceptions import Bad7zFile, CrcError, UnsupportedCompressionMethodError
-from py7zr.extra import AESDecompressor, CopyDecompressor, DeflateDecompressor, ISevenZipDecompressor, ZstdDecompressor
+from py7zr.extra import ISevenZipDecompressor, check_lzma_coders, get_alternative_decompressor, get_lzma_decompressor
 from py7zr.helpers import MemIO, NullIO, calculate_crc32, readlink
-from py7zr.properties import READ_BLOCKSIZE, ArchivePassword, CompressionMethod
+from py7zr.properties import READ_BLOCKSIZE, CompressionMethod
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
@@ -248,81 +249,16 @@ class SevenZipDecompressor:
     """Main decompressor object which is properly configured and bind to each 7zip folder.
     because 7zip folder can have a custom compression method"""
 
-    lzma_methods_map = {
-        CompressionMethod.LZMA: lzma.FILTER_LZMA1,
-        CompressionMethod.LZMA2: lzma.FILTER_LZMA2,
-        CompressionMethod.DELTA: lzma.FILTER_DELTA,
-        CompressionMethod.P7Z_BCJ: lzma.FILTER_X86,
-        CompressionMethod.BCJ_ARM: lzma.FILTER_ARM,
-        CompressionMethod.BCJ_ARMT: lzma.FILTER_ARMTHUMB,
-        CompressionMethod.BCJ_IA64: lzma.FILTER_IA64,
-        CompressionMethod.BCJ_PPC: lzma.FILTER_POWERPC,
-        CompressionMethod.BCJ_SPARC: lzma.FILTER_SPARC,
-    }
-
-    FILTER_BZIP2 = 0x31
-    FILTER_ZIP = 0x32
-    FILTER_COPY = 0x33
-    FILTER_AES = 0x34
-    FILTER_ZSTD = 0x35
-    alt_methods_map = {
-        CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
-        CompressionMethod.MISC_DEFLATE: FILTER_ZIP,
-        CompressionMethod.COPY: FILTER_COPY,
-        CompressionMethod.CRYPT_AES256_SHA256: FILTER_AES,
-        CompressionMethod.MISC_ZSTD: FILTER_ZSTD,
-    }
-
     def __init__(self, coders: List[Dict[str, Any]], size: int, crc: Optional[int]) -> None:
         # Get password which was set when creation of py7zr.SevenZipFile object.
         self.input_size = size
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        if self._check_lzma_coders(coders):
-            self._set_lzma_decompressor(coders)
+        if check_lzma_coders(coders):
+            self.decompressor = get_lzma_decompressor(coders)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
         else:
-            self._set_alternative_decompressor(coders)
-
-    def _check_lzma_coders(self, coders: List[Dict[str, Any]]) -> bool:
-        res = True
-        for coder in coders:
-            if self.lzma_methods_map.get(coder['method'], None) is None:
-                res = False
-                break
-        return res
-
-    def _set_lzma_decompressor(self, coders: List[Dict[str, Any]]) -> None:
-        filters = []  # type: List[Dict[str, Any]]
-        for coder in coders:
-            if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
-                raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
-            filter_id = self.lzma_methods_map.get(coder['method'], None)
-            if filter_id is None:
-                raise UnsupportedCompressionMethodError
-            properties = coder.get('properties', None)
-            if properties is not None:
-                filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
-            else:
-                filters[:0] = [{'id': filter_id}]
-        self.decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
-
-    def _set_alternative_decompressor(self, coders: List[Dict[str, Any]]) -> None:
-        filter_id = self.alt_methods_map.get(coders[0]['method'], None)
-        if filter_id == self.FILTER_BZIP2:
-            self.decompressor = bz2.BZ2Decompressor()
-        elif filter_id == self.FILTER_ZIP:
-            self.decompressor = DeflateDecompressor()
-        elif filter_id == self.FILTER_COPY:
-            self.decompressor = CopyDecompressor()
-        elif filter_id == self.FILTER_ZSTD and Zstd:
-            self.decompressor = ZstdDecompressor()
-        elif filter_id == self.FILTER_AES:
-            password = ArchivePassword().get()
-            properties = coders[0].get('properties', None)
-            self.decompressor = AESDecompressor(properties, password, coders[1:])
-        else:
-            raise UnsupportedCompressionMethodError
+            self.decompressor = get_alternative_decompressor(coders)
 
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
         self.consumed += len(data)

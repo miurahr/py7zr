@@ -13,6 +13,7 @@ from Crypto.Cipher import AES
 
 import py7zr.archiveinfo
 import py7zr.compression
+import py7zr.extra
 import py7zr.helpers
 import py7zr.properties
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
@@ -517,7 +518,7 @@ def test_aesdecrypt(monkeypatch):
     def lzmamock(self, coders):
         return Passthrough()
 
-    monkeypatch.setattr(py7zr.compression.AESDecompressor, "_set_lzma_decompressor", lzmamock)
+    monkeypatch.setattr(py7zr.extra.AESDecompressor, "_set_lzma_decompressor", lzmamock)
 
     properties = b'S\x07|&\xae\x94do\x8a4'
     password = 'secret'
