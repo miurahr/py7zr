@@ -23,7 +23,7 @@ from py7zr.cli import Cli
 from py7zr.exceptions import Bad7zFile, DecompressionError, UnsupportedCompressionMethodError
 from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7zarchive, unpack_7zarchive
 
-__copyright__ = 'Copyright (C) 2019 Hiroshi Miura'
+__copyright__ = 'Copyright (C) 2019,2020 Hiroshi Miura'
 
 try:
     __version__ = get_distribution(__name__).version
