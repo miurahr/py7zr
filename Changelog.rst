@@ -13,8 +13,6 @@ Added
 Changed
 -------
 
-* Refactoring compression algorythm related modules.
-
 Fixed
 -----
 
@@ -24,10 +22,24 @@ Deprecated
 Removed
 -------
 
-* remove final_header definition.
-
 Security
 --------
+
+`v0.8.0a1`_
+===========
+
+Changed
+-------
+
+* Refactoring compression algorythm related modules.
+
+
+Removed
+-------
+
+* remove final_header definition.
+
+
 
 `v0.7.3`_
 =========
@@ -796,7 +808,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a1...HEAD
+.. _v0.8.0a1: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0a1
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
 .. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1
