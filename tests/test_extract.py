@@ -340,17 +340,6 @@ def test_multiblock_zerosize_mem():
 
 
 @pytest.mark.files
-@pytest.mark.timeout(10, method='thread')
-def test_multiblock_lzma_bug(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('mblock_3.7z').open(mode='rb'))
-    archive.extractall(path=tmp_path)
-    m = hashlib.sha256()
-    m.update(tmp_path.joinpath('5.13.0/mingw73_64/plugins/canbus/qtvirtualcanbusd.dll').open('rb').read())
-    assert m.digest() == binascii.unhexlify('98985de41ddba789d039bb10d86ea3015bf0d8d9fa86b25a0490044c247233d3')
-    archive.close()
-
-
-@pytest.mark.files
 def test_copy(tmp_path):
     """ test loading of copy compressed files.(help wanted)"""
     check_archive(py7zr.SevenZipFile(testdata_path.joinpath('copy.7z').open(mode='rb')), tmp_path, False)
