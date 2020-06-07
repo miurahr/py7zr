@@ -943,10 +943,11 @@ class Header:
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
         folder = Folder()
         folder.prepare_coderinfo(compressor=SevenZipCompressor(filters=filters))
+        assert folder.compressor is not None
         streams = HeaderStreamsInfo()
         streams.unpackinfo.folders = [folder]
         streams.packinfo.packpos = packpos
-        folder.crc = [raw_crc]
+        folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
         compressed_len = 0
         buf.seek(0, 0)
@@ -1039,10 +1040,10 @@ class SignatureHeader:
 
     def __init__(self) -> None:
         self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
-        self.startheadercrc = None  # type: Optional[int]
-        self.nextheaderofs = None  # type: Optional[int]
-        self.nextheadersize = None  # type: Optional[int]
-        self.nextheadercrc = None  # type: Optional[int]
+        self.startheadercrc = -1  # type: int
+        self.nextheaderofs = -1  # type: int
+        self.nextheadersize = -1  # type: int
+        self.nextheadercrc = -1  # type: int
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -1066,7 +1067,6 @@ class SignatureHeader:
     def calccrc(self, length: int, header_crc: int):
         self.nextheadersize = length
         self.nextheadercrc = header_crc
-        assert self.nextheaderofs is not None
         buf = io.BytesIO()
         write_real_uint64(buf, self.nextheaderofs)
         write_real_uint64(buf, self.nextheadersize)
@@ -1075,10 +1075,10 @@ class SignatureHeader:
         self.startheadercrc = calculate_crc32(startdata)
 
     def write(self, file: BinaryIO):
-        assert self.startheadercrc is not None
-        assert self.nextheadercrc is not None
-        assert self.nextheaderofs is not None
-        assert self.nextheadersize is not None
+        assert self.startheadercrc >= 0
+        assert self.nextheadercrc >= 0
+        assert self.nextheaderofs >= 0
+        assert self.nextheadersize > 0
         file.seek(0, 0)
         write_bytes(file, MAGIC_7Z)
         write_byte(file, self.version[0])

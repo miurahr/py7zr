@@ -24,7 +24,7 @@ else:
     import pathlib
 try:
     import zstd as Zstd
-except:
+except ImportError:
     Zstd = None
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
@@ -591,7 +591,7 @@ def test_aes_encrypt_data():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data + plain_data
     password = 'secret'
-    filters=[{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}]
+    filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}]
     compressor = py7zr.compressor.AESCompressor(filters=filters, password=password)
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()

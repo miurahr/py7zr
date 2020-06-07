@@ -132,7 +132,7 @@ class AESCompressor(ISevenZipCompressor):
         saltsize = len(salt)
         ivfirst = 1 if ivsize > 15 else 0
         saltfirst = 1 if saltsize > 15 else 0
-        firstbyte = (cycles + (ivfirst << 6)  + (saltfirst << 7)).to_bytes(1, 'little')
+        firstbyte = (cycles + (ivfirst << 6) + (saltfirst << 7)).to_bytes(1, 'little')
         secondbyte = (((ivsize - ivfirst) & 0x0f) + (((saltsize - saltfirst) << 4) & 0xf0)).to_bytes(1, 'little')
         self.method = CompressionMethod.CRYPT_AES256_SHA256
         self.properties = firstbyte + secondbyte + salt + iv
@@ -415,7 +415,8 @@ class SevenZipCompressor:
                     if filter['id'] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2]:
                         method = lzma_methods_map_r[filter['id']]
                         properties = lzma._encode_filter_properties(filter)
-                        self.coders.append({'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
+                        self.coders.append({'method': method, 'properties': properties,
+                                            'numinstreams': 1, 'numoutstreams': 1})
                     else:
                         method = lzma_methods_map_r[filter['id']]
                         self.coders.append({'method': method, 'properties': None, 'numinstreams': 1, 'numoutstreams': 1})

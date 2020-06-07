@@ -28,7 +28,6 @@ import datetime
 import errno
 import functools
 import io
-import operator
 import os
 import queue
 import stat

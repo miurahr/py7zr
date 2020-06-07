@@ -31,7 +31,8 @@ def check_bit(val, mask):
 
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compressor.SevenZipCompressor([{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ])
+    sevenzip_compressor = py7zr.compressor.SevenZipCompressor([{"id": lzma.FILTER_LZMA2,
+                                                                "preset": 7 | lzma.PRESET_DEFAULT}, ])
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -629,7 +630,7 @@ def test_compress_lzma2_bcj(tmp_path):
 
 
 @pytest.mark.basic
-def  test_compress_multi_filter_delta(tmp_path):
+def test_compress_multi_filter_delta(tmp_path):
     my_filters = [{"id": py7zr.FILTER_DELTA, "dist": 5},
                   {"id": py7zr.FILTER_LZMA2, "preset": 7}]
     target = tmp_path.joinpath('target.7z')
