@@ -12,6 +12,7 @@ import pytest
 
 import py7zr
 from py7zr import Bad7zFile, unpack_7zarchive
+from py7zr.exceptions import UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -167,12 +168,17 @@ def test_extract_symlink_mem():
 def test_lzma2bcj(tmp_path):
     """Test extract archive compressed with LZMA2 and BCJ methods."""
     archive = py7zr.SevenZipFile(testdata_path.joinpath('lzma2bcj.7z').open(mode='rb'))
-    assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
-                                  '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
+    assert archive.getnames() == ['mingw64', 'mingw64/bin', 'mingw64/include', 'mingw64/lib', 'mingw64/share',
+                                  'mingw64/share/doc', 'mingw64/share/doc/szip', 'mingw64/include/SZconfig.h',
+                                  'mingw64/include/ricehdf.h', 'mingw64/include/szip_adpt.h', 'mingw64/include/szlib.h',
+                                  'mingw64/lib/libszip.a', 'mingw64/lib/libszip.dll.a', 'mingw64/share/doc/szip/COPYING',
+                                  'mingw64/share/doc/szip/HISTORY.txt', 'mingw64/share/doc/szip/INSTALL',
+                                  'mingw64/share/doc/szip/README', 'mingw64/share/doc/szip/RELEASE.txt',
+                                  'mingw64/bin/libszip-0.dll']
     archive.extractall(path=tmp_path)
     m = hashlib.sha256()
-    m.update(tmp_path.joinpath('5.12.1/msvc2017_64/bin/opengl32sw.dll').open('rb').read())
-    assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
+    m.update(tmp_path.joinpath('mingw64/bin/libszip-0.dll').open('rb').read())
+    assert m.digest() == binascii.unhexlify('13926e3f080c9ca557165864ce5722acc4f832bb52a92d8d86c7f6e583708c4d')
     archive.close()
 
 
@@ -180,13 +186,27 @@ def test_lzma2bcj(tmp_path):
 def test_lzma2bcj_mem():
     """Test extract archive compressed with LZMA2 and BCJ methods."""
     archive = py7zr.SevenZipFile(testdata_path.joinpath('lzma2bcj.7z').open(mode='rb'))
-    assert archive.getnames() == ['5.12.1', '5.12.1/msvc2017_64',
-                                  '5.12.1/msvc2017_64/bin', '5.12.1/msvc2017_64/bin/opengl32sw.dll']
+    assert archive.getnames() == ['mingw64', 'mingw64/bin', 'mingw64/include', 'mingw64/lib', 'mingw64/share',
+                                  'mingw64/share/doc', 'mingw64/share/doc/szip', 'mingw64/include/SZconfig.h',
+                                  'mingw64/include/ricehdf.h', 'mingw64/include/szip_adpt.h', 'mingw64/include/szlib.h',
+                                  'mingw64/lib/libszip.a', 'mingw64/lib/libszip.dll.a', 'mingw64/share/doc/szip/COPYING',
+                                  'mingw64/share/doc/szip/HISTORY.txt', 'mingw64/share/doc/szip/INSTALL',
+                                  'mingw64/share/doc/szip/README', 'mingw64/share/doc/szip/RELEASE.txt',
+                                  'mingw64/bin/libszip-0.dll']
     _dict = archive.readall()
     m = hashlib.sha256()
-    m.update(_dict['5.12.1/msvc2017_64/bin/opengl32sw.dll'].read())
-    assert m.digest() == binascii.unhexlify('963641a718f9cae2705d5299eae9b7444e84e72ab3bef96a691510dd05fa1da4')
+    m.update(_dict['mingw64/bin/libszip-0.dll'].read())
+    assert m.digest() == binascii.unhexlify('13926e3f080c9ca557165864ce5722acc4f832bb52a92d8d86c7f6e583708c4d')
     archive.close()
+
+
+@pytest.mark.files
+def test_lzma2bcj2(tmp_path):
+    """Test extract archive compressed with LZMA2 and BCJ2 methods."""
+    with pytest.raises(UnsupportedCompressionMethodError):
+        archive = py7zr.SevenZipFile(testdata_path.joinpath('lzma2bcj2.7z').open(mode='rb'))
+        archive.extractall(path=tmp_path)
+        archive.close()
 
 
 @pytest.mark.files
