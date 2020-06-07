@@ -372,6 +372,7 @@ class Folder:
             self.bindpairs.append(Bond(incoder=i + 1, outcoder=i))
         assert len(self.bindpairs) == num_bindpairs
         num_packedstreams = self.totalin - num_bindpairs
+        assert num_packedstreams == 1
         if num_packedstreams > 1:
             # FIXME
             self.packed_indices.append(0)
@@ -529,13 +530,14 @@ class UnpackInfo:
 class SubstreamsInfo:
     """ defines the substreams of a folder """
 
-    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders']
+    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders', 'write_unpacksizes']
 
     def __init__(self):
         self.digests = []  # type: List[int]
         self.digestsdefined = []  # type: List[bool]
         self.unpacksizes = None  # type: Optional[List[int]]
         self.num_unpackstreams_folders = []  # type: List[int]
+        self.write_unpacksizes = False
 
     @classmethod
     def retrieve(cls, file: BinaryIO, numfolders: int, folders: List[Folder]):
@@ -601,14 +603,15 @@ class SubstreamsInfo:
             write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
-        write_byte(file, Property.SIZE)
-        idx = 0
-        for i in range(numfolders):
-            for j in range(1, self.num_unpackstreams_folders[i]):
-                size = self.unpacksizes[idx]
-                write_uint64(file, size)
+        if self.write_unpacksizes:
+            write_byte(file, Property.SIZE)
+            idx = 0
+            for i in range(numfolders):
+                for j in range(1, self.num_unpackstreams_folders[i]):
+                    size = self.unpacksizes[idx]
+                    write_uint64(file, size)
+                    idx += 1
                 idx += 1
-            idx += 1
         if functools.reduce(lambda x, y: x or y, self.digestsdefined, False):
             write_byte(file, Property.CRC)
             write_boolean(file, self.digestsdefined, all_defined=True)
