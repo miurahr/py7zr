@@ -1094,6 +1094,7 @@ class Worker:
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
         outsize = 0
+        unpacksize = 0
         self.header.main_streams.packinfo.numstreams = 1
         num_unpack_streams = 0
         self.header.main_streams.substreamsinfo.digests = []
@@ -1121,7 +1122,7 @@ class Worker:
                 self.header.files_info.files[i]['digest'] = crc
                 self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                folder.unpacksizes.append(insize)
+                unpacksize += insize
             elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
@@ -1143,7 +1144,7 @@ class Worker:
                 self.header.files_info.files[i]['digest'] = crc
                 self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                folder.unpacksizes.append(insize)
+                unpacksize += insize
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -1154,6 +1155,8 @@ class Worker:
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
+        for _ in folder.coders:  # FIXME: need to add values of each coders.
+            folder.unpacksizes.append(unpacksize)
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""

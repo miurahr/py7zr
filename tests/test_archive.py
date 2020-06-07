@@ -145,7 +145,7 @@ def test_compress_files_encoded_header(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [111, 58, 559]
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -256,7 +256,7 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [111, 58, 559]  # 728 = 111 + 58 + 559
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -587,7 +587,7 @@ def test_compress_lzma2_bcj(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(tmp_path / "src", "src")
     archive._write_archive()
-    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [12]
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
@@ -601,7 +601,7 @@ def test_compress_lzma2_bcj(tmp_path):
     archive._fpclose()
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
-        assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+        assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [12]
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1

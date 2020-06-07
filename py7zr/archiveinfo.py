@@ -496,15 +496,6 @@ class UnpackInfo:
         #   write_byte(file, b'\x01')
         #   assert self.datastreamidx is not None
         #   write_uint64(file, self.datastreamidx)
-        self._write_coders_info(file)
-
-    def _write_coders_info(self, file: BinaryIO):
-        ''' write out following information
-            UnPackSize[Folders][Folders.NumOutstreams]
-            CRCs[NumFolders]
-        :param file: target file to write
-        :return: None
-        '''
         write_byte(file, Property.CODERS_UNPACK_SIZE)
         for folder in self.folders:
             for s in folder.unpacksizes:
@@ -588,15 +579,14 @@ class SubstreamsInfo:
             write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
-        if numfolders == len(self.unpacksizes):  # FIXME: when non-solid compression.
-            write_byte(file, Property.SIZE)
-            idx = 0
-            for i in range(numfolders):
-                for j in range(1, self.num_unpackstreams_folders[i]):
-                    size = self.unpacksizes[idx]
-                    write_uint64(file, size)
-                    idx += 1
+        write_byte(file, Property.SIZE)
+        idx = 0
+        for i in range(numfolders):
+            for j in range(1, self.num_unpackstreams_folders[i]):
+                size = self.unpacksizes[idx]
+                write_uint64(file, size)
                 idx += 1
+            idx += 1
         if functools.reduce(lambda x, y: x or y, self.digestsdefined, False):
             write_byte(file, Property.CRC)
             write_boolean(file, self.digestsdefined, all_defined=True)
