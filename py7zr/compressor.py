@@ -412,7 +412,7 @@ class SevenZipCompressor:
                 raise UnsupportedCompressionMethodError
             else:
                 for filter in self.filters:
-                    if filter['id'] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2]:
+                    if filter['id'] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2, lzma.FILTER_DELTA]:
                         method = lzma_methods_map_r[filter['id']]
                         properties = lzma._encode_filter_properties(filter)
                         self.coders.append({'method': method, 'properties': properties,
