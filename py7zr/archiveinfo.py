@@ -36,8 +36,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compressor import Bond, SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import (MAGIC_7Z, FILTER_CRYPTO_AES256_SHA256, PRESET_DEFAULT, FILTER_LZMA2,
-                              CompressionMethod, Property)
+from py7zr.properties import FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA2, MAGIC_7Z, PRESET_DEFAULT, CompressionMethod, Property
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b'\x00'
