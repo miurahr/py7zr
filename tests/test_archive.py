@@ -146,7 +146,7 @@ def test_compress_files_encoded_header(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
     assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
     assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [111, 58, 559]
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
