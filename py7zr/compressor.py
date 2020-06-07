@@ -445,7 +445,7 @@ class SevenZipCompressor:
         elif self.filters[-1]['id'] in alt_methods_map_r:
             if len(self.filters) != 1:
                 raise UnsupportedCompressionMethodError
-            self.compressor = get_alternative_compressor(self.filters)
+            self.compressor = get_alternative_compressor(self.filters[0])
             self.coders.append({'method': alt_methods_map_r[self.filters[0]['id']], 'properties': None, 'numinstreams': 1,
                                 'numoutstreams': 1})
 

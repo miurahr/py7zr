@@ -538,45 +538,6 @@ def test_compress_files_deref(tmp_path):
     assert tmp_path.joinpath('tgt').joinpath('lib64/libabc.so').is_file()
 
 
-@pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
-                    reason="Administrator rights is required to make symlink on windows")
-def test_compress_files_deref_loop(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(str(tmp_path.joinpath('src')))
-    # create symlink loop
-    tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
-    with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
-        archive.writeall('.')
-
-
-@pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.xfail(reason="Work in progress")
-def test_encrypt_file_0(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(str(tmp_path.joinpath('src')))
-    archive = py7zr.SevenZipFile(target, 'w', password='secret')
-    archive.set_encoded_header_mode(False)
-    archive.writeall('.')
-    archive.close()
-    reader = py7zr.SevenZipFile(target, 'r', password='secret')
-    reader.extractall(path=tmp_path.joinpath('tgt1'))
-    reader.close()
-    #
-    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
-
-
 @pytest.mark.basic
 def test_compress_lzma2_bcj(tmp_path):
     my_filters = [{"id": py7zr.FILTER_X86},
@@ -618,6 +579,73 @@ def test_compress_lzma2_bcj(tmp_path):
     if result.returncode != 0:
         print(result.stdout)
         pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+                    reason="Administrator rights is required to make symlink on windows")
+def test_compress_files_deref_loop(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'symlink.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    # create symlink loop
+    tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
+    with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
+        archive.writeall('.')
+
+
+@pytest.mark.basic
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.xfail(reason="Work in progress")
+def test_encrypt_file_0(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    archive = py7zr.SevenZipFile(target, 'w', password='secret')
+    archive.set_encoded_header_mode(False)
+    archive.writeall('.')
+    archive.close()
+    reader = py7zr.SevenZipFile(target, 'r', password='secret')
+    reader.extractall(path=tmp_path.joinpath('tgt1'))
+    reader.close()
+    #
+    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+        pytest.fail('7z command report error')
+
+
+@pytest.mark.basic
+@pytest.mark.skip(reason="Self extraction fails with unknown reason.")
+def test_compress_copy(tmp_path):
+    my_filters = [{'id': py7zr.FILTER_COPY}]
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'lzma2bcj.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.writeall(tmp_path / "src", "src")
+    archive._write_archive()
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [12]
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
+    assert archive.header.main_streams.unpackinfo.folders[0].solid
+    assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
+    assert archive.header.main_streams.unpackinfo.folders[0].crc is None
+    archive._fpclose()
+    #
+    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+        pytest.fail('7z command report error')
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
 
 
 @pytest.mark.basic

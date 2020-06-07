@@ -16,6 +16,11 @@ Changed
 Fixed
 -----
 
+* Fix archived head by multiple filter specified.
+* Fix delta filter.
+* Working with BCJ filter.
+* Fix archiveinfo to provide proper names.
+
 Deprecated
 ----------
 
