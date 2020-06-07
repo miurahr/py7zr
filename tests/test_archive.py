@@ -556,6 +556,7 @@ def test_compress_files_deref_loop(tmp_path):
 
 @pytest.mark.basic
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.xfail(reason="Work in progress")
 def test_encrypt_file_0(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -621,7 +622,7 @@ def test_compress_lzma2_bcj(tmp_path):
 
 @pytest.mark.basic
 def test_compress_multi_filter_delta(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_DELTA, "dist": 5},
+    my_filters = [{"id": py7zr.FILTER_DELTA},
                   {"id": py7zr.FILTER_LZMA2, "preset": 7}]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
@@ -653,7 +654,6 @@ def test_compress_multi_filter_delta(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         assert len(archive.header.files_info.files) == 2
         assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
-        assert len(archive.header.files_info.files) == 2
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
@@ -672,8 +672,11 @@ def test_compress_multi_filter_delta(tmp_path):
 
 
 @pytest.mark.api
-def test_encrypt_with_default_filter(tmp_path):
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.xfail(reason="Work in progress")
+def test_encrypt_with_lzma2bcj(tmp_path):
     filters = [
+        {"id": py7zr.FILTER_X86},
         {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
