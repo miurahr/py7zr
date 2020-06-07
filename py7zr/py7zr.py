@@ -42,7 +42,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword
+from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword, methods_namelist
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -537,7 +537,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         methods_names = []  # type: List[str]
         for folder in self.header.main_streams.unpackinfo.folders:
             methods_names += get_methods_names(folder.coders)
-        return ', '.join(x for x in methods_names)
+        return ', '.join(filter(lambda x: x in methods_names, methods_namelist))
 
     def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
         self.fp.seek(pos)

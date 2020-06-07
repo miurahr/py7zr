@@ -86,7 +86,7 @@ def test_archiveinfo_lzma_bcj_sparc():
 def test_archiveinfo_7zaes_lzma():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == '7zAES, LZMA'
+        assert ai.method_names == 'LZMA, 7zAES'
 
 
 @pytest.mark.files
