@@ -647,7 +647,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
-        total_uncompressed = functools.reduce(lambda f, sum=0: f.uncompressed + sum, self.files)
+        total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
                            self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
                            total_uncompressed)
