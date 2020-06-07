@@ -145,8 +145,6 @@ def test_compress_files_encoded_header(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
     assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [111, 58, 559]
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
@@ -258,9 +256,7 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [111, 58, 559]  # 728 = 111 + 58 + 559
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -418,8 +414,6 @@ def test_compress_symlink(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].solid
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 1
     assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [6578]
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
@@ -602,8 +596,6 @@ def test_compress_lzma2_bcj(tmp_path):
     assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
-    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
-    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -617,8 +609,6 @@ def test_compress_lzma2_bcj(tmp_path):
         assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
-        assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
-        assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')
@@ -653,8 +643,6 @@ def test_compress_multi_filter_delta(tmp_path):
     assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
-    assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
-    assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     expected = [True, False]
@@ -673,8 +661,6 @@ def test_compress_multi_filter_delta(tmp_path):
         assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
-        assert archive.header.main_streams.unpackinfo.folders[0].totalin == 2
-        assert archive.header.main_streams.unpackinfo.folders[0].totalout == 2
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')

@@ -295,17 +295,15 @@ class Folder:
     unpacksizes: uncompressed sizes of outstreams
     """
 
-    __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'totalin', 'totalout',
+    __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'num_bindpairs', 'num_packedstreams',
                  'bindpairs', 'packed_indices', 'crc', 'decompressor', 'compressor', 'files']
 
     def __init__(self) -> None:
-        self.unpacksizes = None  # type: Optional[List[int]]
+        self.unpacksizes = []  # type: List[int]
         self.coders = []  # type: List[Dict[str, Any]]
         self.bindpairs = []  # type: List[Bond]
         self.packed_indices = []  # type: List[int]
         # calculated values
-        self.totalin = 0  # type: int
-        self.totalout = 0  # type: int
         # internal values
         self.solid = False  # type: bool
         self.digestdefined = False  # type: bool
@@ -323,6 +321,8 @@ class Folder:
 
     def _read(self, file: BinaryIO) -> None:
         num_coders = read_uint64(file)
+        totalin = 0
+        totalout = 0
         for _ in range(num_coders):
             b = read_byte(file)
             methodsize = b & 0xf
@@ -335,24 +335,23 @@ class Folder:
             else:
                 c['numinstreams'] = 1
                 c['numoutstreams'] = 1
-            self.totalin += c['numinstreams']
-            self.totalout += c['numoutstreams']
+            totalin += c['numinstreams']
+            totalout += c['numoutstreams']
             if hasattributes:
                 proplen = read_uint64(file)
                 c['properties'] = file.read(proplen)
             self.coders.append(c)
-        num_bindpairs = self.totalout - 1
+        num_bindpairs = totalout - 1
         for i in range(num_bindpairs):
             self.bindpairs.append(Bond(read_uint64(file), read_uint64(file),))
-        num_packedstreams = self.totalin - num_bindpairs
+        num_packedstreams = totalin - num_bindpairs
         if num_packedstreams == 1:
-            for i in range(self.totalin):
+            for i in range(totalin):
                 if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
                     self.packed_indices.append(i)
         elif num_packedstreams > 1:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
-        self.unpacksizes = []
 
     def prepare_coderinfo(self, compressor):
         self.compressor = compressor
@@ -360,22 +359,10 @@ class Folder:
         assert len(self.coders) > 0
         self.solid = True
         self.digestdefined = False
-        self.bindpairs = []
-        self.totalin = 0
-        self.totalout = 0
-        for i, c in enumerate(self.coders):
-            self.totalin += c['numinstreams']
-            self.totalout += c['numoutstreams']
-        num_bindpairs = self.totalout - 1
-        for i in range(num_bindpairs):
-            self.bindpairs.append(Bond(incoder=i + 1, outcoder=i))
-        assert len(self.bindpairs) == num_bindpairs
-        num_packedstreams = self.totalin - num_bindpairs
-        assert num_packedstreams == 1
-        if num_packedstreams > 1:
-            # FIXME
-            self.packed_indices.append(0)
-        self.unpacksizes = []
+        num_bindpairs = sum([c['numoutstreams'] for c in self.coders]) - 1
+        self.bindpairs = [Bond(incoder=i + 1, outcoder=i) for i in range(num_bindpairs)]
+        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:
+            self.packed_indices.append(0)  # FIXME
 
     def write(self, file: BinaryIO):
         num_coders = len(self.coders)
@@ -394,12 +381,10 @@ class Folder:
             if c['properties'] is not None:
                 write_uint64(file, len(c['properties']))
                 write_bytes(file, c['properties'])
-        num_bindpairs = self.totalout - 1
-        num_packedstreams = self.totalin - num_bindpairs
         for bond in self.bindpairs:
             write_uint64(file, bond.incoder)
             write_uint64(file, bond.outcoder)
-        if num_packedstreams > 1:
+        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:
             for pi in self.packed_indices:
                 write_uint64(file, pi)
 
@@ -481,7 +466,9 @@ class UnpackInfo:
         if pid != Property.CODERS_UNPACK_SIZE:
             raise Bad7zFile('coders unpack size id expected but %s found' % repr(pid))
         for folder in self.folders:
-            folder.unpacksizes = [read_uint64(file) for _ in range(folder.totalout)]
+            for c in folder.coders:
+                for _ in range(c['numoutstreams']):
+                    folder.unpacksizes.append(read_uint64(file))
         pid = file.read(1)
         if pid == Property.CRC:
             defined = read_boolean(file, self.numfolders, checkall=True)
@@ -491,7 +478,7 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but {:s} found at 0x{:08x}'.format(repr(pid), file.tell()))
+            raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))
 
     def write(self, file: BinaryIO):
         assert self.numfolders is not None
@@ -520,8 +507,8 @@ class UnpackInfo:
         '''
         write_byte(file, Property.CODERS_UNPACK_SIZE)
         for folder in self.folders:
-            for i in range(folder.totalout):
-                write_uint64(file, folder.unpacksizes[i])
+            for s in folder.unpacksizes:
+                write_uint64(file, s)
         # FIXME: write CRCs here.
         write_byte(file, Property.END)
 

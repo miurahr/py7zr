@@ -62,8 +62,6 @@ def test_py7zr_folder_retrive():
     assert external == 0x00
     folder = py7zr.archiveinfo.Folder.retrieve(header_data)
     assert folder.packed_indices == [0]
-    assert folder.totalin == 1
-    assert folder.totalout == 1
     assert folder.digestdefined is False
     coder = folder.coders[0]
     assert coder['method'] == b'\x03\x01\x01'
@@ -84,8 +82,6 @@ def test_py7zr_folder_write():
         folder.digestdefined = False
         folder.packed_indices = [0]
         folder.solid = True
-        folder.totalin = 1
-        folder.totalout = 1
         folders.append(folder)
     #
     buffer = io.BytesIO()
@@ -114,8 +110,6 @@ def test_py7zr_unpack_info():
         folder.digestdefined = False
         folder.packed_indices = [0]
         folder.solid = True
-        folder.totalin = 1
-        folder.totalout = 1
         folder.unpacksizes = [0x22]
         unpack_info.folders.append(folder)
     unpack_info.numfolders = len(unpack_info.folders)

@@ -1116,19 +1116,20 @@ class Worker:
                 outsize += len(out)
                 foutsize += len(out)
                 fp.write(out)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.digests.append(crc)
                 self.header.files_info.files[i]['digest'] = crc
+                self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                folder.unpacksizes.append(insize)
             elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
+                crc = 0
                 with f.origin.open(mode='rb') as fd:
                     data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
-                    crc = 0
                     while data:
                         crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
@@ -1137,11 +1138,12 @@ class Worker:
                         fp.write(out)
                         data = fd.read(READ_BLOCKSIZE)
                         insize += len(data)
-                    self.header.main_streams.substreamsinfo.digests.append(crc)
-                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                    self.header.files_info.files[i]['maxsize'] = foutsize
-                    self.header.files_info.files[i]['digest'] = crc
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.files_info.files[i]['digest'] = crc
+                self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                folder.unpacksizes.append(insize)
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -1151,9 +1153,6 @@ class Worker:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
-        folder_unpack_size = self.header.main_streams.substreamsinfo.unpacksizes
-        assert folder.totalout == len(folder_unpack_size)
-        folder.unpacksizes = folder_unpack_size
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
