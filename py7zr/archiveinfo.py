@@ -349,7 +349,7 @@ class Folder:
             for i in range(totalin):
                 if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
                     self.packed_indices.append(i)
-        elif num_packedstreams > 1:
+        else:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
 
@@ -516,14 +516,13 @@ class UnpackInfo:
 class SubstreamsInfo:
     """ defines the substreams of a folder """
 
-    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders', 'write_unpacksizes']
+    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders']
 
     def __init__(self):
         self.digests = []  # type: List[int]
         self.digestsdefined = []  # type: List[bool]
         self.unpacksizes = None  # type: Optional[List[int]]
         self.num_unpackstreams_folders = []  # type: List[int]
-        self.write_unpacksizes = False
 
     @classmethod
     def retrieve(cls, file: BinaryIO, numfolders: int, folders: List[Folder]):
@@ -589,7 +588,7 @@ class SubstreamsInfo:
             write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
-        if self.write_unpacksizes:
+        if numfolders == len(self.unpacksizes):  # FIXME: when non-solid compression.
             write_byte(file, Property.SIZE)
             idx = 0
             for i in range(numfolders):
