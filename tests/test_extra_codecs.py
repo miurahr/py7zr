@@ -17,13 +17,6 @@ os.umask(0o022)
 
 @pytest.mark.files
 def test_extract_bzip2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('bzip2.7z').open(mode='rb'))
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_extract_bzip2_2(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath('bzip2_2.7z').open(mode='rb'))
     archive.extractall(path=tmp_path)
     archive.close()
