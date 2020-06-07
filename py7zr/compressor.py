@@ -398,12 +398,12 @@ class SevenZipCompressor:
 
     __slots__ = ['filters', 'compressor', 'coders', 'digest']
 
-    def __init__(self, filters):
-        self.digest = None
+    def __init__(self, filters=None):
         if filters is None:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:
             self.filters = filters
+        self.digest = None
         self.coders = []
         if self.filters[-1]['id'] in lzma_methods_map_r:
             try:

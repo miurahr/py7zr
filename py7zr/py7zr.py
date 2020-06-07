@@ -43,7 +43,7 @@ from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import (FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA2, MAGIC_7Z, PRESET_DEFAULT, READ_BLOCKSIZE,
-                              ArchivePassword)
+                              ArchivePassword, methods_namelist)
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -535,7 +535,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         methods_names = []  # type: List[str]
         for folder in self.header.main_streams.unpackinfo.folders:
             methods_names += get_methods_names(folder.coders)
-        return ', '.join(x for x in methods_names)
+        return ', '.join(filter(lambda x: x in methods_names, methods_namelist))
 
     def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
         self.fp.seek(pos)
@@ -1034,7 +1034,7 @@ class Worker:
                 q.put(('e', str(f.filename), str(f.uncompressed)))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
-                   size: int, compressed_size: Optional[int], src_end: int) -> None:
+                   size: int, compressed_size: Optional[int], src_end: int) -> int:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer

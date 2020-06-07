@@ -267,21 +267,59 @@ For a list of the files in a 7z archive, use the :option:`l` subcommand:
 Command-line options
 ~~~~~~~~~~~~~~~~~~~~
 
-.. cmdoption:: l <7z file>
+.. option:: l <7z file>
 
    List files in a 7z file.
 
-.. cmdoption:: x <7z file> [<output_dir>]
+.. option:: x <7z file> [<output_dir>]
 
    Extract 7z file into target directory.
 
-.. cmdoption:: t <7z file>
+.. option:: c <7z file> <base_dir>
+
+   Create 7zip archive from base_directory
+
+.. option:: i <7z file>
+
+   Show archive information of specified 7zip archive.
+
+.. option:: t <7z file>
 
    Test whether the 7z file is valid or not.
 
-.. cmdoption:: w <7z file> <base_dir>
 
-   Create 7zip archive from base_directory
+Extract command options
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. option:: -P --password
+
+   Extract password protected archive. py7zr will prompt user input.
+
+
+.. option:: --verbose
+
+   Show verbose debug log.
+
+
+List command options
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. option:: --verbose
+
+   Show verbose debug log.
+
+
+Create command options
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. option:: -v | --volume {Size}[b|k|m|g]
+
+   Create multi-volume archive with Size. Usable with 'c' sub-command.
+
+.. option:: -P --password
+
+   Create password protected archive. py7zr will prompt user input.
+
 
 
 .. _7z_format: https://www.7-zip.org/7z.html

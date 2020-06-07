@@ -216,15 +216,23 @@ alt_methods_map_r = {
     FILTER_ZSTD: CompressionMethod.MISC_ZSTD,
 }
 
+# list of known method names with a display priority order
+methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'ZIP', 'delta', 'COPY', 'ZStandard', 'BCJ', 'BCJ(ARM)', 'BCJ(ARMT)',
+                    'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
+# map of method code and its name.
 methods_name_map = {
-    CompressionMethod.LZMA2: "LZMA2",
-    CompressionMethod.LZMA: "LZMA",
-    CompressionMethod.DELTA: "delta",
-    CompressionMethod.P7Z_BCJ: "BCJ",
-    CompressionMethod.BCJ_ARM: "BCJ(ARM)",
-    CompressionMethod.BCJ_ARMT: "BCJ(ARMT)",
-    CompressionMethod.BCJ_IA64: "BCJ(IA64)",
-    CompressionMethod.BCJ_PPC: "BCJ(POWERPC)",
-    CompressionMethod.BCJ_SPARC: "BCJ(SPARC)",
-    CompressionMethod.CRYPT_AES256_SHA256: "7zAES",
+    CompressionMethod.LZMA2: 'LZMA2',
+    CompressionMethod.LZMA: 'LZMA',
+    CompressionMethod.MISC_BZIP2: 'BZip2',
+    CompressionMethod.MISC_ZIP: 'ZIP',
+    CompressionMethod.COPY: 'COPY',
+    CompressionMethod.DELTA: 'delta',
+    CompressionMethod.P7Z_BCJ: 'BCJ',
+    CompressionMethod.BCJ_ARM: 'BCJ(ARM)',
+    CompressionMethod.BCJ_ARMT: 'BCJ(ARMT)',
+    CompressionMethod.BCJ_IA64: 'BCJ(IA64)',
+    CompressionMethod.BCJ_PPC: 'BCJ(POWERPC)',
+    CompressionMethod.BCJ_SPARC: 'BCJ(SPARC)',
+    CompressionMethod.CRYPT_AES256_SHA256: '7zAES',
+    CompressionMethod.MISC_ZSTD: 'ZStandard',
 }
