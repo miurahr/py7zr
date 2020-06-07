@@ -570,7 +570,7 @@ def test_encrypt_file_0(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
     #
-    result = subprocess.run(['7z', 't', '-p secret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
     if result.returncode != 0:
         print(result.stdout)
         pytest.fail('7z command report error')
@@ -695,7 +695,7 @@ def test_encrypt_with_default_filter(tmp_path):
     with py7zr.SevenZipFile(target, 'r', password='secret') as arc:
         arc.extractall(path=tmp_path / "tgt")
     #
-    result = subprocess.run(['7z', 't', '-p secret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
     if result.returncode != 0:
         print(result.stdout)
         pytest.fail('7z command report error')
