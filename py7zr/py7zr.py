@@ -1048,7 +1048,7 @@ class Worker:
                 q.put(('e', str(f.filename), str(f.uncompressed[-1])))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
-                   size: int, compressed_size: Optional[int], src_end: int) -> None:
+                   size: int, compressed_size: Optional[int], src_end: int) -> int:
         """decompressor wrapper called from extract method.
 
            :parameter fp: archive source file pointer

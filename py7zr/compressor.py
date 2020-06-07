@@ -30,10 +30,9 @@ from typing import Any, Dict, List, Optional, Union
 from Crypto.Cipher import AES
 
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_key, calculate_crc32
-from py7zr.properties import (FILTER_BZIP2, FILTER_ZIP, FILTER_COPY, FILTER_AES, FILTER_ZSTD, READ_BLOCKSIZE,
-                              ArchivePassword, alt_methods_map, lzma_methods_map, lzma_methods_map_r,
-                              methods_name_map)
+from py7zr.helpers import Buffer, calculate_crc32, calculate_key
+from py7zr.properties import (FILTER_AES, FILTER_BZIP2, FILTER_COPY, FILTER_ZIP, FILTER_ZSTD, READ_BLOCKSIZE,
+                              ArchivePassword, alt_methods_map, lzma_methods_map, lzma_methods_map_r, methods_name_map)
 
 try:
     import zstandard as Zstd  # type: ignore
@@ -130,13 +129,13 @@ class AESDecompressor(ISevenZipDecompressor):
             raise UnsupportedCompressionMethodError
 
     def _set_decompressor(self, coders):
-            if len(coders) == 0:
-                self._decompressor = CopyDecompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
-            else:
-                try:
-                    self._decompressor = get_lzma_decompressor(coders)
-                except UnsupportedCompressionMethodError:
-                    self._decompressor = get_alternative_decompressor(coders)
+        if len(coders) == 0:
+            self._decompressor = CopyDecompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
+        else:
+            try:
+                self._decompressor = get_lzma_decompressor(coders)
+            except UnsupportedCompressionMethodError:
+                self._decompressor = get_alternative_decompressor(coders)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if len(data) == 0 and len(self.buf) == 0:  # action flush
@@ -275,7 +274,6 @@ class SevenZipCompressor:
     """Main compressor object to configured for each 7zip folder."""
 
     __slots__ = ['filters', 'compressor', 'coders']
-
 
     def __init__(self, filters=None):
         if filters is None:
