@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Union
 from Crypto.Cipher import AES
 
 from py7zr import UnsupportedCompressionMethodError
+from py7zr.exceptions import InternalError
 from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_ZIP, FILTER_ZSTD,
                               READ_BLOCKSIZE, ArchivePassword, CompressionMethod, alt_methods_map, alt_methods_map_r,
@@ -160,15 +161,46 @@ class AESCompressor(ISevenZipCompressor):
                     self._compressor = get_alternative_compressor(filters[0])
 
     def compress(self, data):
-        if len(data) == 0:  # action padding
-            self.flushed = True
-            temp = self._compressor.flush()
-            self.buf.add(temp)
-            padlen = -len(self.buf) & 15
-            self.buf.add(bytes(padlen))
-            res = self.cipher.encrypt(self.buf.view)  # type: bytes
-            self.buf.reset()
-            return res
+        '''Compression + AES encryption with 16byte alignment.'''
+
+        # The size is < 16 which should be only last chunk.
+        # From p7zip/CPP/7zip/common/FilterCoder.cpp
+        # /*
+        # AES filters need 16-bytes alignment for HARDWARE-AES instructions.
+        # So we call IFilter::Filter(, size), where (size != 16 * N) only for last data block.
+        # AES-CBC filters need data size aligned for 16-bytes.
+        # So the encoder can add zeros to the end of original stream.
+        # Some filters (BCJ and others) don't process data at the end of stream in some cases.
+        # So the encoder and decoder write such last bytes without change.
+        # */
+        #
+        # From p7zip/CPP/7zip/Crypto/MyAes.cpp
+        # STDMETHODIMP_(UInt32) CAesCbcCoder::Filter(Byte *data, UInt32 size)
+        # {
+        #  if (!_keyIsSet)
+        #    return 0;
+        #  if (size == 0)
+        #    return 0;
+        #  if (size < AES_BLOCK_SIZE)
+        #    return AES_BLOCK_SIZE;
+        #  size >>= 4;
+        #  _codeFunc(_aes + _offset, data, size);
+        #  return size << 4;
+        # }
+        #
+        if len(data) == 0:
+            if len(self.buf) > 0:
+                raise InternalError('Unintended status')
+            return b''
+            # # action padding
+            #            self.flushed = True
+            #            temp = self._compressor.flush()
+            #            self.buf.add(temp)
+            #            padlen = -len(self.buf) & 15
+            #            self.buf.add(bytes(padlen))
+            #            res = self.cipher.encrypt(self.buf.view)  # type: bytes
+            #            self.buf.reset()
+            #            return res
         else:
             compressed = self._compressor.compress(data)
             if len(compressed) == 0:
@@ -180,7 +212,8 @@ class AESCompressor(ISevenZipCompressor):
                 res = self.cipher.encrypt(self.buf.view)
                 self.buf.reset()
             elif nextpos < 16:
-                return b''
+                self.flushed = True
+                res = self.buf.get() + bytes(16 - nextpos)
             else:
                 buflen = len(self.buf)
                 self.buf.add(compressed[:nextpos - buflen])
