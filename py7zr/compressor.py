@@ -125,19 +125,21 @@ class AESCompressor(ISevenZipCompressor):
 
     def __init__(self, filters, password: str) -> None:
         byte_password = password.encode('utf-16LE')
-        cycles = secrets.SystemRandom().randint(1, 23)
-        ivsize = 16
+        cycles = 19  # FIXME
+        # cycles = secrets.SystemRandom().randint(1, 23)
+        ivsize = 8  # FIXME: currently magic constant
         iv = secrets.token_bytes(ivsize)
         salt = b''
         saltsize = len(salt)
-        ivfirst = 1 if ivsize > 15 else 0
-        saltfirst = 1 if saltsize > 15 else 0
+        ivfirst = 1  # FIXME: it should always 1
+        saltfirst = 1 if len(salt) > 0 else 0
         firstbyte = (cycles + (ivfirst << 6) + (saltfirst << 7)).to_bytes(1, 'little')
         secondbyte = (((ivsize - ivfirst) & 0x0f) + (((saltsize - saltfirst) << 4) & 0xf0)).to_bytes(1, 'little')
         self.method = CompressionMethod.CRYPT_AES256_SHA256
         self.properties = firstbyte + secondbyte + salt + iv
         key = calculate_key(byte_password, cycles, salt, 'sha256')
-        self.cipher = AES.new(key, AES.MODE_CBC, bytes(iv))
+        iv += bytes(16 - ivsize)
+        self.cipher = AES.new(key, AES.MODE_CBC, iv)
         self._set_compressor(filters)
         self.flushed = False
         self.buf = Buffer(size=READ_BLOCKSIZE + 16)

@@ -1,7 +1,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov

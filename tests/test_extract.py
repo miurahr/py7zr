@@ -381,29 +381,6 @@ def test_no_main_streams_mem():
     archive.close()
 
 
-@pytest.mark.files
-def test_extract_encrypted_1(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password='secret')
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_extract_encrypted_1_mem():
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password='secret')
-    _dict = archive.readall()
-    archive.close()
-
-
-@pytest.mark.files
-@pytest.mark.timeout(30)
-@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
-                    reason="Administrator rights is required to make symlink on windows")
-def test_extract_encrypted_2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_2.7z').open(mode='rb'), password='secret')
-    archive.extractall(path=tmp_path)
-    archive.close()
-
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),

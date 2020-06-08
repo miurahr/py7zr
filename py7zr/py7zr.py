@@ -325,7 +325,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._reset_worker()
             elif mode in 'w':
                 if password is not None and filters is None:
-                    filters = [{'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT},
+                    filters = [{'id': FILTER_LZMA1},
                                {'id': FILTER_CRYPTO_AES256_SHA256}]
                 elif filters is None:
                     filters = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, ]

@@ -603,30 +603,6 @@ def test_compress_files_deref_loop(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.xfail(reason="Work in progress")
-def test_encrypt_file_0(tmp_path):
-    tmp_path.joinpath('src').mkdir()
-    tmp_path.joinpath('tgt').mkdir()
-    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
-    target = tmp_path.joinpath('target.7z')
-    os.chdir(str(tmp_path.joinpath('src')))
-    archive = py7zr.SevenZipFile(target, 'w', password='secret')
-    archive.set_encoded_header_mode(False)
-    archive.writeall('.')
-    archive.close()
-    reader = py7zr.SevenZipFile(target, 'r', password='secret')
-    reader.extractall(path=tmp_path.joinpath('tgt1'))
-    reader.close()
-    #
-    if shutil.which('7z'):
-        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-        if result.returncode != 0:
-            print(result.stdout)
-            pytest.fail('7z command report error')
-
-
-@pytest.mark.basic
 @pytest.mark.skip(reason="Self extraction fails with unknown reason.")
 def test_compress_copy(tmp_path):
     my_filters = [{'id': py7zr.FILTER_COPY}]
@@ -707,35 +683,3 @@ def test_compress_multi_filter_delta(tmp_path):
             pytest.fail('7z command report error')
 
 
-@pytest.mark.api
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.xfail(reason="Work in progress")
-def test_encrypt_with_lzma2bcj(tmp_path):
-    filters = [
-        {"id": py7zr.FILTER_X86},
-        {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
-        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
-    ]
-    target = tmp_path.joinpath('target.7z')
-    archive = py7zr.SevenZipFile(target, 'w', filters=filters, password='secret')
-    archive.writeall(os.path.join(testdata_path, "src"), "src")
-    archive.set_encoded_header_mode(False)
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties'] is not None
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties']) == 18
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['properties'] == b'\x16'
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[1]['properties']) == 1
-    archive._write_archive()
-    archive._fpclose()
-    #
-    with py7zr.SevenZipFile(target, 'r', password='secret') as arc:
-        arc.extractall(path=tmp_path / "tgt")
-    #
-    if shutil.which('7z'):
-        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-        if result.returncode != 0:
-            print(result.stdout)
-            pytest.fail('7z command report error')
