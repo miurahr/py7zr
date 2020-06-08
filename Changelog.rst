@@ -16,11 +16,6 @@ Changed
 Fixed
 -----
 
-* Fix archived head by multiple filter specified.
-* Fix delta filter.
-* Working with BCJ filter.
-* Fix archiveinfo to provide proper names.
-
 Deprecated
 ----------
 
@@ -29,6 +24,16 @@ Removed
 
 Security
 --------
+`v0.8.0a2`_
+===========
+
+Fixed
+-----
+
+* Fix archived head by multiple filter specified.
+* Fix delta filter.
+* Working with BCJ filter.
+* Fix archiveinfo to provide proper names.
 
 `v0.8.0a1`_
 ===========
@@ -813,7 +818,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a2...HEAD
+.. _v0.8.0a2: https://github.com/miurahr/py7zr/compare/v0.8.0a1...v0.8.0a2
 .. _v0.8.0a1: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0a1
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
