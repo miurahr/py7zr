@@ -93,7 +93,7 @@ def test_compress_directory_encoded_header(tmp_path):
     assert archive.header.main_streams.packinfo.packsizes == [17]
     assert archive.header.main_streams.unpackinfo.numfolders == 1
     assert len(archive.header.main_streams.unpackinfo.folders) == 1
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 2
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [11]
@@ -138,14 +138,14 @@ def test_compress_files_encoded_header(tmp_path):
     assert archive.header.main_streams.substreamsinfo.digests == [3010113243, 3703540999, 2164028094]
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
     assert len(archive.header.main_streams.unpackinfo.folders) == 1
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 2
     assert archive.header.main_streams.unpackinfo.numfolders == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
+    assert len(archive.header.main_streams.unpackinfo.folders[0].bindpairs) == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728, 728]  # 728 = 111 + 58 + 559
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -202,7 +202,7 @@ def test_compress_directory(tmp_path):
     assert archive.header.main_streams.packinfo.packsizes == [17]
     assert archive.header.main_streams.unpackinfo.numfolders == 1
     assert len(archive.header.main_streams.unpackinfo.folders) == 1
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 2
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [11]
@@ -249,14 +249,14 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.substreamsinfo.digests == [3010113243, 3703540999, 2164028094]
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [111, 58, 559]
     assert len(archive.header.main_streams.unpackinfo.folders) == 1
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 1
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders) == 2
     assert archive.header.main_streams.unpackinfo.numfolders == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert archive.header.main_streams.unpackinfo.folders[0].bindpairs == []
+    assert len(archive.header.main_streams.unpackinfo.folders[0].bindpairs) == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid is True
-    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728]  # 728 = 111 + 58 + 559
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [728, 728]  # 728 = 111 + 58 + 559
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
@@ -681,5 +681,3 @@ def test_compress_multi_filter_delta(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
-
-

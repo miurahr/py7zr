@@ -11,7 +11,7 @@ import py7zr.archiveinfo
 import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
-
+from py7zr.properties import CompressionMethod
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
@@ -37,11 +37,11 @@ def test_extract_encrypted_1_mem():
                     reason="Administrator rights is required to make symlink on windows")
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_2.7z').open(mode='rb'), password='secret')
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['method'] == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['method'] == py7zr.properties.CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[0]['method'] == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[1]['method'] == py7zr.properties.CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[2]['method'] == py7zr.properties.CompressionMethod.P7Z_BCJ
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['method'] == CompressionMethod.CRYPT_AES256_SHA256
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['method'] == CompressionMethod.LZMA2
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[0]['method'] == CompressionMethod.CRYPT_AES256_SHA256
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[1]['method'] == CompressionMethod.LZMA2
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[2]['method'] == CompressionMethod.P7Z_BCJ
     archive.extractall(path=tmp_path)
     archive.close()
 

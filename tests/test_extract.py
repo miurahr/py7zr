@@ -381,7 +381,6 @@ def test_no_main_streams_mem():
     archive.close()
 
 
-
 @pytest.mark.files
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
@@ -422,7 +421,7 @@ def test_extract_symlink_overwrite(tmp_path):
     assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
 
 
-@pytest.mark.file
+@pytest.mark.files
 def test_py7zr_extract_corrupted(tmp_path):
     with pytest.raises(Bad7zFile):
         archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'crc_corrupted.7z'), 'r')
