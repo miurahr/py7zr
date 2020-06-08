@@ -665,7 +665,7 @@ def test_compress_multi_filter_delta(tmp_path):
     assert archive.files is not None
     assert len(archive.files) == 2
     for f in archive.files:
-        assert f.filename in ('src', os.path.join('src', 'bra.txt'))
+        assert f.filename in ('src', pathlib.Path('src').joinpath('bra.txt').as_posix())
     archive.set_encoded_header_mode(False)
     archive._write_archive()
     assert len(archive.header.files_info.files) == 2
