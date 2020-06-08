@@ -15,12 +15,17 @@ import py7zr.archiveinfo
 import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
+from py7zr.properties import ArchivePassword
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 if sys.version_info < (3, 6):
     import pathlib2 as pathlib
 else:
     import pathlib
+try:
+    import zstd as Zstd
+except ImportError:
+    Zstd = None
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -57,8 +62,6 @@ def test_py7zr_folder_retrive():
     assert external == 0x00
     folder = py7zr.archiveinfo.Folder.retrieve(header_data)
     assert folder.packed_indices == [0]
-    assert folder.totalin == 1
-    assert folder.totalout == 1
     assert folder.digestdefined is False
     coder = folder.coders[0]
     assert coder['method'] == b'\x03\x01\x01'
@@ -79,8 +82,6 @@ def test_py7zr_folder_write():
         folder.digestdefined = False
         folder.packed_indices = [0]
         folder.solid = True
-        folder.totalin = 1
-        folder.totalout = 1
         folders.append(folder)
     #
     buffer = io.BytesIO()
@@ -109,8 +110,6 @@ def test_py7zr_unpack_info():
         folder.digestdefined = False
         folder.packed_indices = [0]
         folder.solid = True
-        folder.totalin = 1
-        folder.totalout = 1
         folder.unpacksizes = [0x22]
         unpack_info.folders.append(folder)
     unpack_info.numfolders = len(unpack_info.folders)
@@ -464,7 +463,8 @@ def test_make_file_info2():
 
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
-    sevenzip_compressor = py7zr.compressor.SevenZipCompressor()
+    filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ]
+    sevenzip_compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
     lzc = sevenzip_compressor.compressor
     out1 = lzc.compress(b"Some data\n")
     out2 = lzc.compress(b"Another piece of data\n")
@@ -486,7 +486,7 @@ def test_simple_compress_and_decompress():
 
 
 @pytest.mark.unit
-def test_aescipher():
+def test_aes_cipher():
     key = b'e\x11\xf1Pz<*\x98*\xe6\xde\xf4\xf6X\x18\xedl\xf2Be\x1a\xca\x19\xd1\\\xeb\xc6\xa6z\xe2\x89\x1d'
     iv = b'|&\xae\x94do\x8a4\x00\x00\x00\x00\x00\x00\x00\x00'
     indata = b"T\x9f^\xb5\xbf\xdc\x08/\xfe<\xe6i'\x84A^\x83\xdc\xdd5\xe9\xd5\xd0b\xa9\x7fH$\x11\x82\x8d" \
@@ -499,7 +499,100 @@ def test_aescipher():
 
 
 @pytest.mark.unit
-def test_aesdecrypt(monkeypatch):
+def test_deflate_compressor():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    compressor = py7zr.compressor.DeflateCompressor()
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) < len(plain_data)
+
+
+@pytest.mark.unit
+def test_copy_compressor():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    compressor = py7zr.compressor.CopyCompressor()
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert outdata == plain_data
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
+def test_zstd_compressor():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    compressor = py7zr.compressor.ZstdCompressor()
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) < len(plain_data)
+
+
+@pytest.mark.unit
+def test_aescompressor():
+    compressor = py7zr.compressor.AESCompressor(filters=[{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}],
+                                                password='secret')
+    assert compressor.method == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
+    assert len(compressor.properties) == 2 + 16
+
+
+@pytest.mark.unit
+def test_sevenzipcompressor_aes_only():
+    ArchivePassword('secret')
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    filters = [
+        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
+    ]
+    compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) == 64
+    assert outdata != plain_data
+
+
+@pytest.mark.unit
+def test_sevenzipcompressor_aes_lzma2():
+    ArchivePassword('secret')
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data + plain_data
+    filters = [
+        {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
+        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
+    ]
+    compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) < 96
+    coders = compressor.coders
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, size=len(outdata), crc=None)
+    revert_data = decompressor.decompress(outdata)
+    assert revert_data == plain_data
+
+
+@pytest.mark.unit
+def test_sevenzipcompressor_default():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    compressor = py7zr.compressor.SevenZipCompressor(filters=None)
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) > 1
+
+
+@pytest.mark.unit
+def test_aes_encrypt_data():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data + plain_data
+    password = 'secret'
+    filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}]
+    compressor = py7zr.compressor.AESCompressor(filters=filters, password=password)
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) <= len(plain_data)
+
+
+@pytest.mark.unit
+def test_aes_decrypt(monkeypatch):
 
     def lzmamock(self, coders):
         self._decompressor = py7zr.compressor.CopyDecompressor()
@@ -593,3 +686,20 @@ def test_helpers_readlink_dirfd(tmp_path):
     dirfd = os.open(str(origin.parent), os.O_RDONLY | os.O_DIRECTORY)
     assert py7zr.helpers.readlink(slink, dir_fd=dirfd) == target
     os.close(dirfd)
+
+
+@pytest.mark.unit
+def test_compressor_lzma2bcj(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_X86},
+                  {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    compressor = py7zr.compressor.SevenZipCompressor(filters=my_filters)
+    outdata = compressor.compress(plain_data)
+    outdata += compressor.flush()
+    assert len(outdata) > 1
+    coders = [{'method': b'!', 'properties': b'\x18', 'numinstreams': 1, 'numoutstreams': 1},
+              {'method': b'\x03\x03\x01\x03', 'numinstreams': 1, 'numoutstreams': 1}]
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, size=len(plain_data), crc=None)
+    revert_data = decompressor.decompress(outdata, max_length=len(plain_data))
+    assert revert_data == plain_data

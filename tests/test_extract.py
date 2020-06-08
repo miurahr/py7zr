@@ -451,3 +451,9 @@ def test_py7zr_extract_corrupted(tmp_path):
         archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'crc_corrupted.7z'), 'r')
         archive.extract(path=tmp_path)
         archive.close()
+
+
+@pytest.mark.files
+def test_extract_lzma2delta(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2delta.7z').open('rb')) as archive:
+        archive.extractall(path=tmp_path)

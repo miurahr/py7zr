@@ -95,11 +95,6 @@ def test_basic_not_implemented_yet1(tmp_path):
 
 
 @pytest.mark.api
-def test_write_mode(tmp_path):
-    py7zr.SevenZipFile(tmp_path.joinpath('test_w.7z'), mode='w')
-
-
-@pytest.mark.api
 def test_basic_not_implemented_yet3(tmp_path):
     with tmp_path.joinpath('test_a.7z').open('w') as f:
         f.write('foo')

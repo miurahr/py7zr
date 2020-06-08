@@ -28,7 +28,6 @@ import datetime
 import errno
 import functools
 import io
-import operator
 import os
 import queue
 import stat
@@ -42,7 +41,8 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword, methods_namelist
+from py7zr.properties import (FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA2, MAGIC_7Z, PRESET_DEFAULT, READ_BLOCKSIZE,
+                              ArchivePassword, methods_namelist)
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -113,11 +113,6 @@ class ArchiveFile:
     @property
     def uncompressed(self) -> List[int]:
         return self._get_property('uncompressed')
-
-    @property
-    def uncompressed_size(self) -> int:
-        """Uncompressed file size."""
-        return functools.reduce(operator.add, self.uncompressed)
 
     @property
     def compressed(self) -> Optional[int]:
@@ -278,12 +273,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[str] = None, dereference=False, password: Optional[str] = None) -> None:
+                 *, filters: Optional[List[Dict[str, int]]] = None,
+                 dereference=False, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         if password is not None:
-            if mode not in ('r'):
-                raise NotImplementedError("It has not been implemented to create archive with password.")
             ArchivePassword(password)
             self.password_protected = True
         else:
@@ -330,10 +324,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._real_get_contents(self.fp)
                 self._reset_worker()
             elif mode in 'w':
-                # FIXME: check filters here
-                self.folder = self._create_folder(filters)
+                if password is not None and filters is None:
+                    filters = [{'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT},
+                               {'id': FILTER_CRYPTO_AES256_SHA256}]
+                elif filters is None:
+                    filters = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, ]
+                else:
+                    pass
+                self.folder = Folder()
+                self.folder.prepare_coderinfo(compressor=SevenZipCompressor(filters))
                 self.files = ArchiveFileList()
-                self._prepare_write()
+                self.sig_header = SignatureHeader()
+                self.sig_header._write_skelton(self.fp)
+                self.afterheader = self.fp.tell()
+                self.header = Header.build_header([self.folder])
                 self._reset_worker()
             elif mode in 'x':
                 raise NotImplementedError
@@ -355,17 +359,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-
-    def _create_folder(self, filters):
-        folder = Folder()
-        folder.compressor = SevenZipCompressor(filters)
-        folder.coders = folder.compressor.coders
-        folder.solid = True
-        folder.digestdefined = False
-        folder.bindpairs = []
-        folder.totalin = 1
-        folder.totalout = 1
-        return folder
 
     def _fpclose(self) -> None:
         assert self._fileRefCnt > 0
@@ -422,8 +415,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
         maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
         uncompressed = unpacksizes[pstat.outstreams]
-        if not isinstance(uncompressed, (list, tuple)):
-            uncompressed = [uncompressed] * len(folder.coders)
         if file_in_solid > 0:
             compressed = None
         elif pstat.stream < len(packsizes):  # file is compressed
@@ -433,6 +424,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
+    def _get_unpack_filesizes(self):
+        folders = self.header.main_streams.unpackinfo.folders
+        subinfo = self.header.main_streams.substreamsinfo
+        unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
+        return unpacksizes
+
     def _filelist_retrieve(self) -> None:
         # Initialize references for convenience
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
@@ -440,7 +437,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             packinfo = self.header.main_streams.packinfo
             subinfo = self.header.main_streams.substreamsinfo
             packsizes = packinfo.packsizes
-            unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes for x in folders]
+            unpacksizes = self._get_unpack_filesizes()
         else:
             subinfo = None
             folders = None
@@ -487,7 +484,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 file_info['folder'] = None
                 file_info['maxsize'] = 0
                 file_info['compressed'] = 0
-                file_info['uncompressed'] = [0]
+                file_info['uncompressed'] = 0
                 file_info['packsizes'] = [0]
 
             if 'filename' not in file_info:
@@ -548,16 +545,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest == crc
-
-    def _prepare_write(self) -> None:
-        self.sig_header = SignatureHeader()
-        self.sig_header._write_skelton(self.fp)
-        self.afterheader = self.fp.tell()
-        self.folder.totalin = 1
-        self.folder.totalout = 1
-        self.folder.bindpairs = []
-        self.folder.unpacksizes = []
-        self.header = Header.build_header([self.folder])
 
     def _write_archive(self):
         self.worker.archive(self.fp, self.folder, deref=self.dereference)
@@ -659,12 +646,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
-        uncompressed = 0
-        for f in self.files:
-            uncompressed += f.uncompressed_size
+        total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
                            self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
-                           uncompressed)
+                           total_uncompressed)
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
@@ -673,7 +658,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         for f in self.files:
             if f.lastwritetime is not None:
                 creationtime = filetime_to_dt(f.lastwritetime)
-            alist.append(FileInfo(f.filename, f.compressed, f.uncompressed_size, f.archivable, f.is_directory,
+            alist.append(FileInfo(f.filename, f.compressed, f.uncompressed, f.archivable, f.is_directory,
                                   creationtime, f.crc32))
         return alist
 
@@ -1032,7 +1017,7 @@ class Worker:
                 with fileish.open(mode='wb') as ofp:
                     if not f.emptystream:
                         # extract to file
-                        crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                        crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                         ofp.seek(0)
                         if f.crc32 is not None and crc32 != f.crc32:
                             raise CrcError("{}".format(f.filename))
@@ -1041,11 +1026,11 @@ class Worker:
             elif not f.emptystream:
                 # read and bin off a data but check crc
                 with NullIO() as ofp:
-                    crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed[-1], f.compressed, src_end)
+                    crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                 if f.crc32 is not None and crc32 != f.crc32:
                     raise CrcError("{}".format(f.filename))
             if q is not None:
-                q.put(('e', str(f.filename), str(f.uncompressed[-1])))
+                q.put(('e', str(f.filename), str(f.uncompressed)))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> int:
@@ -1109,6 +1094,7 @@ class Worker:
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
         outsize = 0
+        unpacksize = 0
         self.header.main_streams.packinfo.numstreams = 1
         num_unpack_streams = 0
         self.header.main_streams.substreamsinfo.digests = []
@@ -1131,18 +1117,20 @@ class Worker:
                 outsize += len(out)
                 foutsize += len(out)
                 fp.write(out)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.files_info.files[i]['digest'] = crc
                 self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                unpacksize += insize
             elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
                 insize = 0
+                crc = 0
                 with f.origin.open(mode='rb') as fd:
                     data = fd.read(READ_BLOCKSIZE)
                     insize += len(data)
-                    crc = 0
                     while data:
                         crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
@@ -1151,10 +1139,12 @@ class Worker:
                         fp.write(out)
                         data = fd.read(READ_BLOCKSIZE)
                         insize += len(data)
-                    self.header.main_streams.substreamsinfo.digests.append(crc)
-                    self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                    self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+                self.header.main_streams.substreamsinfo.digests.append(crc)
+                self.header.files_info.files[i]['digest'] = crc
+                self.header.files_info.files[i]['maxsize'] = foutsize
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+                unpacksize += insize
         else:
             out = compressor.flush()
             outsize += len(out)
@@ -1164,8 +1154,9 @@ class Worker:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
-        folder.unpacksizes = [sum(self.header.main_streams.substreamsinfo.unpacksizes)]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
+        for _ in folder.coders:  # FIXME: need to add values of each coders.
+            folder.unpacksizes.append(unpacksize)
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
