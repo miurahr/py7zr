@@ -273,10 +273,11 @@ def test_compress_files_1(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.api
@@ -341,10 +342,11 @@ def test_compress_files_2(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -450,10 +452,11 @@ def test_compress_zerofile(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -485,10 +488,11 @@ def test_compress_directories(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -575,10 +579,11 @@ def test_compress_lzma2_bcj(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -614,10 +619,11 @@ def test_encrypt_file_0(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
     #
-    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.basic
@@ -639,10 +645,11 @@ def test_compress_copy(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
@@ -693,10 +700,11 @@ def test_compress_multi_filter_delta(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')
     #
-    result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.api
@@ -726,7 +734,8 @@ def test_encrypt_with_lzma2bcj(tmp_path):
     with py7zr.SevenZipFile(target, 'r', password='secret') as arc:
         arc.extractall(path=tmp_path / "tgt")
     #
-    result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stdout)
-        pytest.fail('7z command report error')
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
