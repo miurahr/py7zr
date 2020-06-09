@@ -1048,15 +1048,18 @@ class Worker:
         out_remaining = size
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
+        zero_request = False
         while out_remaining > 0:
             max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
             rest_size = src_end - fp.tell()
-            read_size = min(READ_BLOCKSIZE, rest_size)
-            if read_size == 0:
+            if rest_size == 0:
+                # now we come to end of folder.
                 tmp = decompressor.decompress(b'', max_length)
-                if len(tmp) == 0:
+                if len(tmp) == 0 and zero_request:  # detect infinite loop
                     raise Exception("decompression get wrong: no output data.")
+                zero_request = True
             else:
+                read_size = min(READ_BLOCKSIZE, rest_size)
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):

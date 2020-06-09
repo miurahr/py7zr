@@ -124,6 +124,8 @@ class AESCompressor(ISevenZipCompressor):
     '''AES Compression(Encryption) class.
     It accept pre-processing filter which may be a LZMA compression.'''
 
+    AES_CBC_BLOCKSIZE = 16
+
     def __init__(self, filters, password: str) -> None:
         byte_password = password.encode('utf-16LE')
         cycles = 19  # FIXME
@@ -139,11 +141,11 @@ class AESCompressor(ISevenZipCompressor):
         self.method = CompressionMethod.CRYPT_AES256_SHA256
         self.properties = firstbyte + secondbyte + salt + iv
         key = calculate_key(byte_password, cycles, salt, 'sha256')
-        iv += bytes(16 - ivsize)
+        iv += bytes(self.AES_CBC_BLOCKSIZE - ivsize)  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, iv)
         self._set_compressor(filters)
         self.flushed = False
-        self.buf = Buffer(size=READ_BLOCKSIZE + 16)
+        self.buf = Buffer(size=READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE)
 
     def _set_compressor(self, filters):
         if len(filters) == 0:
@@ -162,7 +164,8 @@ class AESCompressor(ISevenZipCompressor):
 
     def compress(self, data):
         '''Compression + AES encryption with 16byte alignment.'''
-
+        if len(data) == 0:
+            raise InternalError('It should call compress with data length > 0')
         # The size is < 16 which should be only last chunk.
         # From p7zip/CPP/7zip/common/FilterCoder.cpp
         # /*
@@ -173,53 +176,22 @@ class AESCompressor(ISevenZipCompressor):
         # Some filters (BCJ and others) don't process data at the end of stream in some cases.
         # So the encoder and decoder write such last bytes without change.
         # */
-        #
-        # From p7zip/CPP/7zip/Crypto/MyAes.cpp
-        # STDMETHODIMP_(UInt32) CAesCbcCoder::Filter(Byte *data, UInt32 size)
-        # {
-        #  if (!_keyIsSet)
-        #    return 0;
-        #  if (size == 0)
-        #    return 0;
-        #  if (size < AES_BLOCK_SIZE)
-        #    return AES_BLOCK_SIZE;
-        #  size >>= 4;
-        #  _codeFunc(_aes + _offset, data, size);
-        #  return size << 4;
-        # }
-        #
-        if len(data) == 0:
-            if len(self.buf) > 0:
-                raise InternalError('Unintended status')
-            return b''
-            # # action padding
-            #            self.flushed = True
-            #            temp = self._compressor.flush()
-            #            self.buf.add(temp)
-            #            padlen = -len(self.buf) & 15
-            #            self.buf.add(bytes(padlen))
-            #            res = self.cipher.encrypt(self.buf.view)  # type: bytes
-            #            self.buf.reset()
-            #            return res
+        compressed = self._compressor.compress(data)
+        currentlen = len(self.buf) + len(compressed)
+        nextpos = (currentlen // self.AES_CBC_BLOCKSIZE) * self.AES_CBC_BLOCKSIZE
+        if currentlen == nextpos:
+            self.buf.add(compressed)
+            res = self.cipher.encrypt(self.buf.view)
+            self.buf.reset()
+        elif nextpos < 16:
+            self.buf.add(compressed)
+            res = b''
         else:
-            compressed = self._compressor.compress(data)
-            if len(compressed) == 0:
-                return b''
-            currentlen = len(self.buf) + len(compressed)
-            nextpos = (currentlen // 16) * 16
-            if currentlen == nextpos:
-                self.buf.add(compressed)
-                res = self.cipher.encrypt(self.buf.view)
-                self.buf.reset()
-            elif nextpos < 16:
-                self.flushed = True
-                res = self.buf.get() + bytes(16 - nextpos)
-            else:
-                buflen = len(self.buf)
-                self.buf.add(compressed[:nextpos - buflen])
-                res = self.cipher.encrypt(self.buf.view)
-                self.buf.set(compressed[nextpos - buflen:])
-            return res
+            buflen = len(self.buf)
+            self.buf.add(compressed[:nextpos - buflen])
+            res = self.cipher.encrypt(self.buf.view)
+            self.buf.set(compressed[nextpos - buflen:])
+        return res
 
     def flush(self):
         if self.flushed:
@@ -227,7 +199,7 @@ class AESCompressor(ISevenZipCompressor):
         compressed = self._compressor.flush()
         self.buf.add(compressed)
         currentlen = len(self.buf)
-        padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
+        padlen = -currentlen & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
         self.buf.add(bytes(padlen))
         res = self.cipher.encrypt(self.buf.view)
         self.buf.reset()
