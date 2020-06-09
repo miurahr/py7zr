@@ -23,12 +23,12 @@
 #
 import bz2
 import lzma
-import secrets
 import zlib
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
 from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.exceptions import InternalError
@@ -128,14 +128,14 @@ class AESCompressor(ISevenZipCompressor):
         byte_password = password.encode('utf-16LE')
         cycles = 19  # FIXME
         # cycles = secrets.SystemRandom().randint(1, 23)
-        ivsize = 8  # FIXME: currently magic constant
-        iv = secrets.token_bytes(ivsize)
+        ivsize = 16
+        iv = get_random_bytes(ivsize)
         salt = b''
         saltsize = len(salt)
         ivfirst = 1  # FIXME: it should always 1
         saltfirst = 1 if len(salt) > 0 else 0
         firstbyte = (cycles + (ivfirst << 6) + (saltfirst << 7)).to_bytes(1, 'little')
-        secondbyte = (((ivsize - ivfirst) & 0x0f) + (((saltsize - saltfirst) << 4) & 0xf0)).to_bytes(1, 'little')
+        secondbyte = (((ivsize - 1) & 0x0f) + (((saltsize - saltfirst) << 4) & 0xf0)).to_bytes(1, 'little')
         self.method = CompressionMethod.CRYPT_AES256_SHA256
         self.properties = firstbyte + secondbyte + salt + iv
         key = calculate_key(byte_password, cycles, salt, 'sha256')

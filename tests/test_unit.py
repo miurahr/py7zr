@@ -532,7 +532,7 @@ def test_aescompressor():
     compressor = py7zr.compressor.AESCompressor(filters=[{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}],
                                                 password='secret')
     assert compressor.method == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
-    assert len(compressor.properties) == 2 + 8
+    assert len(compressor.properties) == 2 + 16
 
 
 @pytest.mark.unit
