@@ -36,7 +36,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compressor import Bond, SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA2, MAGIC_7Z, PRESET_DEFAULT, CompressionMethod, Property
+from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, CompressionMethod, Property
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b'\x00'
@@ -948,11 +948,10 @@ class Header:
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
         startpos = file.tell()
         if encrypted:
-            filters = [{'id': FILTER_CRYPTO_AES256_SHA256}]
+            filters = ENCRYPTED_HEADER_DEFAULT
             startpos = self._encode_header(file, afterheader, filters)
         elif encoded:
-            filters = [
-                {"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, ]
+            filters = ENCODED_HEADER_DEFAULT
             startpos = self._encode_header(file, afterheader, filters)
         else:
             write_byte(file, Property.HEADER)

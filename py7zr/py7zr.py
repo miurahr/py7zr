@@ -41,8 +41,8 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import (FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA1, FILTER_LZMA2, FILTER_X86, MAGIC_7Z, PRESET_DEFAULT,
-                              READ_BLOCKSIZE, ArchivePassword, methods_namelist)
+from py7zr.properties import (ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword,
+                              methods_namelist)
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -325,10 +325,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._reset_worker()
             elif mode in 'w':
                 if password is not None and filters is None:
-                    filters = [{'id': FILTER_LZMA1},
-                               {'id': FILTER_CRYPTO_AES256_SHA256}]
+                    filters = ENCRYPTED_ARCHIVE_DEFAULT
                 elif filters is None:
-                    filters = [{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}]
+                    filters = ARCHIVE_DEFAULT
                 else:
                     pass
                 self.folder = Folder()
