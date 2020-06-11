@@ -77,12 +77,8 @@ def test_encrypt_file_0(tmp_path):
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_1(tmp_path):
-    filters = [
-        {"id": py7zr.FILTER_LZMA2, 'preset': 7},
-        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
-    ]
     target = tmp_path.joinpath('target.7z')
-    archive = py7zr.SevenZipFile(target, 'w', filters=filters, password='secret')
+    archive = py7zr.SevenZipFile(target, 'w', password='secret')
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.set_encoded_header_mode(False)
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
