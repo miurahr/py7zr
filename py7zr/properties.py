@@ -200,6 +200,11 @@ lzma_methods_map_r = {
     lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
 }
 
+lzma_native_compressors = [FILTER_LZMA1, FILTER_LZMA2]
+lzma_native_filters = [FILTER_X86, FILTER_ARM, FILTER_DELTA, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
+crypto_methods = [FILTER_CRYPTO_AES256_SHA256]
+extra_compressors = [FILTER_ZSTD, FILTER_BZIP2, FILTER_ZIP]
+
 alt_methods_map = {
     CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
     CompressionMethod.MISC_DEFLATE: FILTER_ZIP,

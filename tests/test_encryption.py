@@ -76,8 +76,7 @@ def test_encrypt_file_0(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
-@pytest.mark.xfail(reason="Work in progress, should pass")
-def test_encrypt_file1(tmp_path):
+def test_encrypt_file_1(tmp_path):
     filters = [
         {"id": py7zr.FILTER_LZMA2, 'preset': 7},
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
@@ -88,8 +87,11 @@ def test_encrypt_file1(tmp_path):
     archive.set_encoded_header_mode(False)
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
-    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties']) == 10
     archive._write_archive()
+    assert len(archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties']) == 18
+    assert archive.header.main_streams.substreamsinfo.unpacksizes == [11]
+    assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [17, 11]
+    assert archive.header.main_streams.packinfo.packsizes == [32]
     archive._fpclose()
     #
     with py7zr.SevenZipFile(target, 'r', password='secret') as arc:

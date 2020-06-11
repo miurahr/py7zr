@@ -1158,8 +1158,7 @@ class Worker:
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
-        for _ in folder.coders:  # FIXME: need to add values of each coders.
-            folder.unpacksizes.append(unpacksize)
+        folder.unpacksizes = compressor.unpacksizes
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
