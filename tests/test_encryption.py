@@ -98,3 +98,51 @@ def test_encrypt_file_1(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_encrypt_file_2(tmp_path):
+    filters = [{"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    archive = py7zr.SevenZipFile(target, 'w', password='secret', filters=filters)
+    archive.writeall('.')
+    archive.close()
+    #
+    tmp_path.joinpath('tgt').mkdir()
+    reader = py7zr.SevenZipFile(target, 'r', password='secret')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_encrypt_file_3(tmp_path):
+    filters = [{"id": py7zr.FILTER_DELTA}, {"id": py7zr.FILTER_LZMA2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    archive = py7zr.SevenZipFile(target, 'w', password='secret', filters=filters)
+    archive.writeall('.')
+    archive.close()
+    #
+    tmp_path.joinpath('tgt').mkdir()
+    reader = py7zr.SevenZipFile(target, 'r', password='secret')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', '-psecret', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
