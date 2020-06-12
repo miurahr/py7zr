@@ -448,7 +448,7 @@ class SevenZipCompressor:
                 self.methods_map.append(False)
             else:
                 raise UnsupportedCompressionMethodError
-        # FIXME: Following complex if-else block has many duplicated code.
+        # FIXME: Following complex if-else block has many duplicated code and missing filter combination cases.
         self.cchain = CompressorChain(self.methods_map)
         if all(self.methods_map):
             if self.filters[-1]['id'] in lzma_native_compressors:
