@@ -39,7 +39,7 @@ __all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile'
            'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError',
            'FILTER_LZMA', 'FILTER_LZMA2', 'FILTER_DELTA', 'FILTER_COPY', 'FILTER_CRYPTO_AES256_SHA256',
            'FILTER_X86', 'FILTER_ARM', 'FILTER_SPARC', 'FILTER_POWERPC', 'FILTER_IA64', 'FILTER_ARMTHUMB',
-           'FILTER_BZIP2', 'FILTER_DEFLATE',
+           'FILTER_BZIP2', 'FILTER_DEFLATE', 'FILTER_ZSTD',
            'CHECK_SHA256', 'CHECK_CRC64', 'CHECK_CRC32', 'CHECK_NONE', 'PRESET_DEFAULT', 'PRESET_EXTREME']
 
 
