@@ -50,7 +50,7 @@ def test_extract_encrypted_2(tmp_path):
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_0(tmp_path):
     filters = [
-        {"id": py7zr.FILTER_LZMA1},
+        {"id": py7zr.FILTER_LZMA},
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
     tmp_path.joinpath('src').mkdir()

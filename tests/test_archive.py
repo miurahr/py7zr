@@ -660,22 +660,21 @@ def test_compress_multi_filter_delta(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skip(reason="It produce a broken archive.")
 def test_compress_deflate(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_ZIP}]
+    my_filters = [{"id": py7zr.FILTER_DEFLATE}]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
     #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
-    #
-    with py7zr.SevenZipFile(target, 'r') as archive:
-        archive.extractall(path=tmp_path / 'tgt')
 
 
 @pytest.mark.basic

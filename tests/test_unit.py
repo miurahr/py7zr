@@ -501,6 +501,7 @@ def test_aes_cipher():
 @pytest.mark.unit
 def test_deflate_compressor():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
     compressor = py7zr.compressor.DeflateCompressor()
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
