@@ -32,7 +32,7 @@ READ_BLOCKSIZE = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
 
 # Esposed constants
-FILTER_LZMA1 = lzma.FILTER_LZMA1
+FILTER_LZMA = lzma.FILTER_LZMA1
 FILTER_LZMA2 = lzma.FILTER_LZMA2
 FILTER_DELTA = lzma.FILTER_DELTA
 FILTER_ARM = lzma.FILTER_ARM
@@ -54,7 +54,7 @@ FILTER_CRYPTO_ZIP = 0x06F10101
 FILTER_CRYPTO_RAR29 = 0x06F10303
 
 FILTER_BZIP2 = 0x31
-FILTER_ZIP = 0x32
+FILTER_DEFLATE = 0x32
 FILTER_COPY = 0x33
 FILTER_ZSTD = 0x35
 
@@ -205,14 +205,14 @@ lzma_methods_map_r = {
     lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
 }
 
-lzma_native_compressors = [FILTER_LZMA1, FILTER_LZMA2]
+lzma_native_compressors = [FILTER_LZMA, FILTER_LZMA2]
 lzma_native_filters = [FILTER_X86, FILTER_ARM, FILTER_DELTA, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
 crypto_methods = [FILTER_CRYPTO_AES256_SHA256]
-extra_compressors = [FILTER_ZSTD, FILTER_BZIP2, FILTER_ZIP]
+extra_compressors = [FILTER_ZSTD, FILTER_BZIP2, FILTER_DEFLATE]
 
 alt_methods_map = {
     CompressionMethod.MISC_BZIP2: FILTER_BZIP2,
-    CompressionMethod.MISC_DEFLATE: FILTER_ZIP,
+    CompressionMethod.MISC_DEFLATE: FILTER_DEFLATE,
     CompressionMethod.COPY: FILTER_COPY,
     CompressionMethod.CRYPT_AES256_SHA256: FILTER_CRYPTO_AES256_SHA256,
     CompressionMethod.MISC_ZSTD: FILTER_ZSTD,
@@ -220,21 +220,21 @@ alt_methods_map = {
 
 alt_methods_map_r = {
     FILTER_BZIP2: CompressionMethod.MISC_BZIP2,
-    FILTER_ZIP: CompressionMethod.MISC_DEFLATE,
+    FILTER_DEFLATE: CompressionMethod.MISC_DEFLATE,
     FILTER_COPY: CompressionMethod.COPY,
     FILTER_CRYPTO_AES256_SHA256: CompressionMethod.CRYPT_AES256_SHA256,
     FILTER_ZSTD: CompressionMethod.MISC_ZSTD,
 }
 
 # list of known method names with a display priority order
-methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'ZIP', 'delta', 'COPY', 'ZStandard', 'BCJ', 'BCJ(ARM)', 'BCJ(ARMT)',
+methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'delta', 'COPY', 'ZStandard', 'BCJ', 'BCJ(ARM)', 'BCJ(ARMT)',
                     'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
 # map of method code and its name.
 methods_name_map = {
     CompressionMethod.LZMA2: 'LZMA2',
     CompressionMethod.LZMA: 'LZMA',
     CompressionMethod.MISC_BZIP2: 'BZip2',
-    CompressionMethod.MISC_ZIP: 'ZIP',
+    CompressionMethod.MISC_ZIP: 'DEFLATE',
     CompressionMethod.COPY: 'COPY',
     CompressionMethod.DELTA: 'delta',
     CompressionMethod.P7Z_BCJ: 'BCJ',

@@ -32,7 +32,7 @@ from Crypto.Random import get_random_bytes
 
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_crc32, calculate_key
-from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_ZIP, FILTER_ZSTD,
+from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_ZSTD,
                               READ_BLOCKSIZE, ArchivePassword, CompressionMethod, alt_methods_map, alt_methods_map_r,
                               crypto_methods, extra_compressors, lzma_methods_map, lzma_methods_map_r,
                               lzma_native_compressors, lzma_native_filters, methods_name_map)
@@ -63,7 +63,7 @@ def get_alternative_compressor(filter):
     filter_id = filter['id']
     if filter_id == FILTER_BZIP2:
         compressor = bz2.BZ2Compressor()
-    elif filter_id == FILTER_ZIP:
+    elif filter_id == FILTER_DEFLATE:
         compressor = DeflateCompressor()
     elif filter_id == FILTER_COPY:
         compressor = CopyCompressor()
@@ -80,7 +80,7 @@ def get_alternative_decompressor(coders: List[Dict[str, Any]]):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coders[0]['method']))
     if filter_id == FILTER_BZIP2:
         decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
-    elif filter_id == FILTER_ZIP:
+    elif filter_id == FILTER_DEFLATE:
         decompressor = DeflateDecompressor()
     elif filter_id == FILTER_COPY:
         decompressor = CopyDecompressor()
@@ -263,16 +263,31 @@ class DeflateCompressor(ISevenZipCompressor):
         return self._compressor.compress(data)
 
     def flush(self):
-        return b''
+        return self._compressor.flush()
 
 
 class DeflateDecompressor(ISevenZipDecompressor):
     def __init__(self):
         self.buf = b''
-        self._decompressor = zlib.decompressobj(-15)
+        self.flushed = False
+        self._decompressor = zlib.decompressobj(wbits=-15)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1):
-        if max_length < 0:
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = 0):
+        if len(data) == 0:
+            if self.flushed:
+                tmp = self.buf
+                self.buf = b''
+                return tmp
+            else:
+                tmp = self.buf + self._decompressor.flush()
+                self.flushed = True
+            if max_length == 0:
+                res = tmp
+                self.buf = b''
+            else:
+                res = tmp[:max_length]
+                self.buf = tmp[max_length:]
+        elif max_length == 0:
             res = self.buf + self._decompressor.decompress(data)
             self.buf = b''
         else:
