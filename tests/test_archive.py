@@ -21,6 +21,10 @@ from py7zr import SevenZipFile, pack_7zarchive
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 from . import ltime
+try:
+    import zstd as Zstd
+except ImportError:
+    Zstd = None
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -678,6 +682,7 @@ def test_compress_deflate(tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
 def test_compress_zstd(tmp_path):
     my_filters = [{"id": py7zr.FILTER_ZSTD}]
     target = tmp_path.joinpath('target.7z')
