@@ -465,10 +465,10 @@ def test_make_file_info2():
 def test_simple_compress_and_decompress():
     filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ]
     sevenzip_compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
-    lzc = sevenzip_compressor.compressor
-    out1 = lzc.compress(b"Some data\n")
-    out2 = lzc.compress(b"Another piece of data\n")
-    out3 = lzc.compress(b"Even more data\n")
+    lzc = sevenzip_compressor.cchain
+    out1 = lzc.encode(b"Some data\n")
+    out2 = lzc.encode(b"Another piece of data\n")
+    out3 = lzc.encode(b"Even more data\n")
     out4 = lzc.flush()
     result = b"".join([out1, out2, out3, out4])
     size = len(result)
@@ -501,6 +501,7 @@ def test_aes_cipher():
 @pytest.mark.unit
 def test_deflate_compressor():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
     compressor = py7zr.compressor.DeflateCompressor()
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
@@ -529,10 +530,9 @@ def test_zstd_compressor():
 
 @pytest.mark.unit
 def test_aescompressor():
-    compressor = py7zr.compressor.AESCompressor(filters=[{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}],
-                                                password='secret')
+    compressor = py7zr.compressor.AESCompressor(password='secret')
     assert compressor.method == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
-    assert len(compressor.properties) == 2 + 16
+    assert len(compressor.encode_filter_properties()) == 2 + 16
 
 
 @pytest.mark.unit
@@ -581,14 +581,13 @@ def test_sevenzipcompressor_default():
 
 @pytest.mark.unit
 def test_aes_encrypt_data():
-    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB"
     plain_data += plain_data + plain_data
     password = 'secret'
-    filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}]
-    compressor = py7zr.compressor.AESCompressor(filters=filters, password=password)
+    compressor = py7zr.compressor.AESCompressor(password=password)
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
-    assert len(outdata) <= len(plain_data)
+    assert len(outdata) == 96  # 96 = 16 * 6 = len(plain_data) + 3
 
 
 @pytest.mark.unit

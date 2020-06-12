@@ -382,30 +382,6 @@ def test_no_main_streams_mem():
 
 
 @pytest.mark.files
-def test_extract_encrypted_1(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password='secret')
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_extract_encrypted_1_mem():
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password='secret')
-    _dict = archive.readall()
-    archive.close()
-
-
-@pytest.mark.files
-@pytest.mark.timeout(30)
-@pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
-                    reason="Administrator rights is required to make symlink on windows")
-def test_extract_encrypted_2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_2.7z').open(mode='rb'), password='secret')
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_extract_symlink_with_relative_target_path(tmp_path):
@@ -445,7 +421,7 @@ def test_extract_symlink_overwrite(tmp_path):
     assert os.readlink(str(tmp_path.joinpath('target/lib/libabc.so.1.2'))) == 'libabc.so.1.2.3'
 
 
-@pytest.mark.file
+@pytest.mark.files
 def test_py7zr_extract_corrupted(tmp_path):
     with pytest.raises(Bad7zFile):
         archive = py7zr.SevenZipFile(os.path.join(testdata_path, 'crc_corrupted.7z'), 'r')

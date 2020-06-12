@@ -68,13 +68,13 @@ Here is a table of algorithms.
 +---------------------------------+----------------------------------------+
 | Category                        | Algorithms                             |
 +=================================+========================================+
-| Compress/Decompress Supported   | LZMA2, COPY, Delta, BCJ(X86)           |
+| Compress/Decompress Supported   | LZMA2, Delta, BCJ(X86)                 |
+| (Encrypt)                       | LZMA, Bzip2, Deflate, ZStandard, AES   |
 +---------------------------------+----------------------------------------+
-| Decompress(Decryption) only     | LZMA, Bzip2, Deflate, Deflate64,       |
-|                                 | ZStandard, AES                         |
+| Decompress(Decryption) only     | COPY                                   |
 |                                 | BCJ(IA64, ARM, ARMT, PPC, POWERPC)     |
 +---------------------------------+----------------------------------------+
-| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ                   |
+| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ, Deflate64        |
 +---------------------------------+----------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,

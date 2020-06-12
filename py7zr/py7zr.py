@@ -41,8 +41,8 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SevenZipCompressor, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import (FILTER_CRYPTO_AES256_SHA256, FILTER_LZMA2, MAGIC_7Z, PRESET_DEFAULT, READ_BLOCKSIZE,
-                              ArchivePassword, methods_namelist)
+from py7zr.properties import (ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE, ArchivePassword,
+                              methods_namelist)
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -325,10 +325,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._reset_worker()
             elif mode in 'w':
                 if password is not None and filters is None:
-                    filters = [{'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT},
-                               {'id': FILTER_CRYPTO_AES256_SHA256}]
+                    filters = ENCRYPTED_ARCHIVE_DEFAULT
                 elif filters is None:
-                    filters = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, ]
+                    filters = ARCHIVE_DEFAULT
                 else:
                     pass
                 self.folder = Folder()
@@ -1048,15 +1047,18 @@ class Worker:
         out_remaining = size
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
+        zero_request = False
         while out_remaining > 0:
             max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
             rest_size = src_end - fp.tell()
-            read_size = min(READ_BLOCKSIZE, rest_size)
-            if read_size == 0:
+            if rest_size == 0:
+                # now we come to end of folder.
                 tmp = decompressor.decompress(b'', max_length)
-                if len(tmp) == 0:
+                if len(tmp) == 0 and zero_request:  # detect infinite loop
                     raise Exception("decompression get wrong: no output data.")
+                zero_request = True
             else:
+                read_size = min(READ_BLOCKSIZE, rest_size)
                 inp = fp.read(read_size)
                 tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):
@@ -1155,8 +1157,7 @@ class Worker:
         # Update size data in header
         self.header.main_streams.packinfo.packsizes = [outsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
-        for _ in folder.coders:  # FIXME: need to add values of each coders.
-            folder.unpacksizes.append(unpacksize)
+        folder.unpacksizes = compressor.unpacksizes
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
