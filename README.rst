@@ -63,17 +63,30 @@ Compression Methods
 It also support algorithms that is implemented in python core such as Bzip2.
 It does not support one which `lzma module`_ and `liblzma`_ can not handle such as BCJ2.
 
-Here is a table of algorithms.
+Here is a table of algorithms supported.
 
 +---------------------------------+------------------------------------------+
-| Category                        | Algorithms                               |
+| Category                        | Algorithm combination                    |
 +=================================+==========================================+
-| Compress/Decompress Supported   | LZMA2, Delta, BCJ(X86, ARM, PPC)         |
-| (Encryption/Decryption)         | LZMA, Bzip2, Deflate, ZStandard, 7zAES   |
+| Compress/Decompress Supported   | LZMA2 + Delta or BCJ(X86, ARM, PPC)      |
+|                                 +------------------------------------------+
+| (Encryption/Decryption)         | LZMA                                     |
+|                                 +------------------------------------------+
+|                                 | Bzip2, Deflate, ZStandard                |
+|                                 +------------------------------------------+
+|                                 | 7zAES + LZMA2 + Delta or BCJ             |
+|                                 +------------------------------------------+
+|                                 | 7zAES + LZMA                             |
+|                                 +------------------------------------------+
+|                                 | 7zAES + Bzip2, Deflate or ZStandard      |
 +---------------------------------+------------------------------------------+
 | Decompress(Decryption) only     | COPY, BCJ(IA64, ARMT)                    |
 +---------------------------------+------------------------------------------+
-| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ, Deflate64          |
+| Unsupported or not worked       | PPMd, BCJ2, Deflate64                    |
+|                                 +------------------------------------------+
+|                                 | LZMA + BCJ                               |
+|                                 +------------------------------------------+
+|                                 | Bzip2, Deflate, ZStandard + BCJ          |
 +---------------------------------+------------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
@@ -82,6 +95,11 @@ Here is a table of algorithms.
 - Decription of filename encrypted archive is supported.
 
 - CAUTION: Specifying an unsuppoted algorithm combination may produce a broken archive for compression.
+
+- Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
+  see `lzma module document`_ at python documentation.
+  
+.. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
 
 
 Document
