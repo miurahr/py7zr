@@ -24,6 +24,33 @@ Removed
 
 Security
 --------
+
+
+`v0.8.0a3`_
+===========
+
+Added
+-----
+
+* Support encryption(#145)
+* Export supported filter constants, such as FILTER_ZSTD(#145)
+
+Changed
+-------
+
+* Default compression mode is LZMA2+BCJ which is as same as
+  7zip and p7zip(#145)
+* Enhance encryption strength, IV is now 16 bytes, and generated
+  with cryptodom.random module.(#145)
+
+
+Fixed
+-----
+
+* Support combination of filters(#145)
+* Compression of Delta, BZip2, ZStandard, and Deflate(#145)
+
+
 `v0.8.0a2`_
 ===========
 
@@ -818,7 +845,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a3...HEAD
+.. _v0.8.0a3: https://github.com/miurahr/py7zr/compare/v0.8.0a2...v0.8.0a3
 .. _v0.8.0a2: https://github.com/miurahr/py7zr/compare/v0.8.0a1...v0.8.0a2
 .. _v0.8.0a1: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0a1
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
