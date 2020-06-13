@@ -11,7 +11,7 @@ recursive-include tests *.py
 recursive-include tests *.sh
 recursive-include tests *.txt
 recursive-include tests *.7z
-recursive-include tests *.so
+recursive-include tests *.0
 recursive-include docs *.bat
 recursive-include docs *.dia
 recursive-include docs *.py
