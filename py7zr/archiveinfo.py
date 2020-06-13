@@ -33,9 +33,9 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
-from py7zr.compressor import Bond, SevenZipCompressor, SevenZipDecompressor
+from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, InternalError
-from py7zr.helpers import ArchiveTimestamp, calculate_crc32
+from py7zr.helpers import ArchiveTimestamp, Bond, calculate_crc32
 from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, CompressionMethod, Property
 
 MAX_LENGTH = 65536

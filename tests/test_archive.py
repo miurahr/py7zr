@@ -540,7 +540,7 @@ def test_compress_lzma2_bcj(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -553,7 +553,7 @@ def test_compress_lzma2_bcj(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
-        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -584,7 +584,6 @@ def test_compress_files_deref_loop(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skip(reason="Self extraction fails with unknown reason.")
 def test_compress_copy(tmp_path):
     my_filters = [{'id': py7zr.FILTER_COPY}]
     tmp_path.joinpath('src').mkdir()
@@ -633,7 +632,7 @@ def test_compress_multi_filter_delta(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -650,7 +649,7 @@ def test_compress_multi_filter_delta(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
-        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.compressor.Bond)
+        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False

@@ -24,11 +24,11 @@
 import binascii
 import lzma
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
-READ_BLOCKSIZE = 32248
+READ_BLOCKSIZE: int = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
 
 # Esposed constants
@@ -228,9 +228,6 @@ alt_methods_map_r = {
     FILTER_ZSTD: CompressionMethod.MISC_ZSTD,
 }
 
-# list of known method names with a display priority order
-methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'delta', 'COPY', 'ZStandard', 'BCJ', 'BCJ(ARM)', 'BCJ(ARMT)',
-                    'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
 # map of method code and its name.
 methods_name_map = {
     CompressionMethod.LZMA2: 'LZMA2',
@@ -248,3 +245,14 @@ methods_name_map = {
     CompressionMethod.CRYPT_AES256_SHA256: '7zAES',
     CompressionMethod.MISC_ZSTD: 'ZStandard',
 }
+
+
+def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
+    # list of known method names with a display priority order
+    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'delta', 'COPY', 'ZStandard', 'LZ4', 'BCJ', 'BCJ(ARM)',
+                        'BCJ(ARMT)', 'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
+    methods_names = []
+    for coders in coders_lists:
+        for coder in coders:
+            methods_names.append(methods_name_map[coder['method']])
+    return ', '.join(filter(lambda x: x in methods_names, methods_namelist))

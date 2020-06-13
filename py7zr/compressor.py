@@ -25,7 +25,7 @@ import bz2
 import lzma
 import zlib
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -35,65 +35,12 @@ from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_ZSTD,
                               READ_BLOCKSIZE, ArchivePassword, CompressionMethod, alt_methods_map, alt_methods_map_r,
                               crypto_methods, extra_compressors, lzma_methods_map, lzma_methods_map_r,
-                              lzma_native_compressors, lzma_native_filters, methods_name_map)
+                              lzma_native_compressors, lzma_native_filters)
 
 try:
     import zstandard as Zstd  # type: ignore
 except ImportError:
     Zstd = None
-
-
-def get_lzma_decompressor(coders: List[Dict[str, Any]]):
-    filters = []  # type: List[Dict[str, Any]]
-    for coder in coders:
-        if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
-            raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
-        filter_id = lzma_methods_map.get(coder['method'], None)
-        if filter_id is None:
-            raise UnsupportedCompressionMethodError
-        properties = coder.get('properties', None)
-        if properties is not None:
-            filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
-        else:
-            filters[:0] = [{'id': filter_id}]
-    return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
-
-
-def get_alternative_compressor(filter):
-    filter_id = filter['id']
-    if filter_id == FILTER_BZIP2:
-        compressor = bz2.BZ2Compressor()
-    elif filter_id == FILTER_DEFLATE:
-        compressor = DeflateCompressor()
-    elif filter_id == FILTER_COPY:
-        compressor = CopyCompressor()
-    elif filter_id == FILTER_ZSTD and Zstd:
-        compressor = ZstdCompressor()
-    else:
-        raise UnsupportedCompressionMethodError
-    return compressor
-
-
-def get_alternative_decompressor(coders: List[Dict[str, Any]]):
-    filter_id = alt_methods_map.get(coders[0]['method'], None)
-    if filter_id is None:
-        raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coders[0]['method']))
-    if filter_id == FILTER_BZIP2:
-        decompressor = bz2.BZ2Decompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
-    elif filter_id == FILTER_DEFLATE:
-        decompressor = DeflateDecompressor()
-    elif filter_id == FILTER_COPY:
-        decompressor = CopyDecompressor()
-    elif filter_id == FILTER_ZSTD and Zstd:
-        decompressor = ZstdDecompressor()
-    elif filter_id == FILTER_CRYPTO_AES256_SHA256:
-        password = ArchivePassword().get()
-        properties = coders[0].get('properties', None)
-        assert properties is not None
-        decompressor = AESDecompressor(properties, password, coders[1:])
-    else:
-        raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
-    return decompressor
 
 
 class ISevenZipCompressor(ABC):
@@ -108,8 +55,9 @@ class ISevenZipCompressor(ABC):
 
 
 class ISevenZipDecompressor(ABC):
+
     @abstractmethod
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         pass
 
 
@@ -119,7 +67,8 @@ class AESCompressor(ISevenZipCompressor):
 
     AES_CBC_BLOCKSIZE = 16
 
-    def __init__(self, password: str) -> None:
+    def __init__(self) -> None:
+        password = ArchivePassword().get()
         byte_password = password.encode('utf-16LE')
         self.cycles = 19  # FIXME
         self.iv = get_random_bytes(16)
@@ -187,7 +136,8 @@ class AESCompressor(ISevenZipCompressor):
 
 class AESDecompressor(ISevenZipDecompressor):
 
-    def __init__(self, aes_properties: bytes, password: str, coders: List[Dict[str, Any]]) -> None:
+    def __init__(self, aes_properties) -> None:
+        password = ArchivePassword().get()
         byte_password = password.encode('utf-16LE')
         firstbyte = aes_properties[0]
         numcyclespower = firstbyte & 0x3f
@@ -206,25 +156,15 @@ class AESDecompressor(ISevenZipDecompressor):
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
-            self._set_decompressor(coders)
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
             self.flushed = False
         else:
             raise UnsupportedCompressionMethodError
 
-    def _set_decompressor(self, coders):
-        if len(coders) == 0:
-            self._decompressor = CopyDecompressor()  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
-        else:
-            try:
-                self._decompressor = get_lzma_decompressor(coders)
-            except UnsupportedCompressionMethodError:
-                self._decompressor = get_alternative_decompressor(coders)
-
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         if len(data) == 0 and len(self.buf) == 0:  # action flush
-            return self._decompressor.decompress(b'', max_length)
+            return b''
         elif len(data) == 0:  # action padding
             self.flushded = True
             # align = 16
@@ -236,7 +176,7 @@ class AESDecompressor(ISevenZipDecompressor):
             self.buf.add(bytes(padlen))
             temp = self.cipher.decrypt(self.buf.view)  # type: bytes
             self.buf.reset()
-            return self._decompressor.decompress(temp, max_length)
+            return temp
         else:
             currentlen = len(self.buf) + len(data)
             nextpos = (currentlen // 16) * 16
@@ -244,14 +184,14 @@ class AESDecompressor(ISevenZipDecompressor):
                 self.buf.add(data)
                 temp = self.cipher.decrypt(self.buf.view)
                 self.buf.reset()
-                return self._decompressor.decompress(temp, max_length)
+                return temp
             else:
                 buflen = len(self.buf)
                 temp2 = data[nextpos - buflen:]
                 self.buf.add(data[:nextpos - buflen])
                 temp = self.cipher.decrypt(self.buf.view)
                 self.buf.set(temp2)
-                return self._decompressor.decompress(temp, max_length)
+                return temp
 
 
 class DeflateCompressor(ISevenZipCompressor):
@@ -267,34 +207,19 @@ class DeflateCompressor(ISevenZipCompressor):
 
 
 class DeflateDecompressor(ISevenZipDecompressor):
+
     def __init__(self):
-        self.buf = b''
         self.flushed = False
         self._decompressor = zlib.decompressobj(wbits=-15)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = 0):
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         if len(data) == 0:
             if self.flushed:
-                tmp = self.buf
-                self.buf = b''
-                return tmp
+                return b''
             else:
-                tmp = self.buf + self._decompressor.flush()
                 self.flushed = True
-            if max_length == 0:
-                res = tmp
-                self.buf = b''
-            else:
-                res = tmp[:max_length]
-                self.buf = tmp[max_length:]
-        elif max_length == 0:
-            res = self.buf + self._decompressor.decompress(data)
-            self.buf = b''
-        else:
-            tmp = self.buf + self._decompressor.decompress(data)
-            res = tmp[:max_length]
-            self.buf = tmp[max_length:]
-        return res
+                return self._decompressor.flush()
+        return self._decompressor.decompress(data)
 
 
 class CopyCompressor(ISevenZipCompressor):
@@ -314,19 +239,8 @@ class CopyDecompressor(ISevenZipDecompressor):
     def __init__(self):
         self._buf = bytes()
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        if max_length < 0:
-            length = len(data)
-        else:
-            length = min(len(data), max_length)
-        buflen = len(self._buf)
-        if length > buflen:
-            res = self._buf + data[:length - buflen]
-            self._buf = data[length - buflen:]
-        else:
-            res = self._buf[:length]
-            self._buf = self._buf[length:] + data
-        return res
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return bytes(data)
 
 
 class ZstdDecompressor(ISevenZipDecompressor):
@@ -334,19 +248,11 @@ class ZstdDecompressor(ISevenZipDecompressor):
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self.buf = b''  # type: bytes
         self._ctc = Zstd.ZstdDecompressor()  # type: ignore
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         dobj = self._ctc.decompressobj()  # type: ignore
-        if max_length < 0:
-            res = self.buf + dobj.decompress(data)
-            self.buf = b''
-        else:
-            tmp = self.buf + dobj.decompress(data)
-            res = tmp[:max_length]
-            self.buf = tmp[max_length:]
-        return res
+        return dobj.decompress(data)
 
 
 class ZstdCompressor(ISevenZipCompressor):
@@ -363,6 +269,81 @@ class ZstdCompressor(ISevenZipCompressor):
         return b''
 
 
+algorithm_class_map = {
+    FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
+    FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
+    FILTER_COPY: (CopyCompressor, CopyDecompressor),
+    FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
+    FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
+}  # type: Dict[int, Tuple[Any, Any]]
+
+
+def get_alternative_compressor(filter):
+    filter_id = filter['id']
+    if filter_id not in algorithm_class_map:
+        raise UnsupportedCompressionMethodError
+    return algorithm_class_map[filter_id][0]()
+
+
+def get_alternative_decompressor(coder: Dict[str, Any]) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+    filter_id = alt_methods_map.get(coder['method'], None)
+    if filter_id is None:
+        raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
+    if filter_id not in algorithm_class_map:
+        raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
+    if filter_id == FILTER_CRYPTO_AES256_SHA256:
+        return algorithm_class_map[filter_id][1](coder['properties'])
+    else:
+        return algorithm_class_map[filter_id][1]()
+
+
+def get_lzma_decompressor(coders: List[Dict[str, Any]]):
+    filters = []  # type: List[Dict[str, Any]]
+    for coder in coders:
+        if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
+            raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
+        filter_id = lzma_methods_map.get(coder['method'], None)
+        if filter_id is None:
+            raise UnsupportedCompressionMethodError
+        properties = coder.get('properties', None)
+        if properties is not None:
+            filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
+        else:
+            filters[:0] = [{'id': filter_id}]
+    return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+
+
+class DecompressorChain:
+    '''decompressor filter chain'''
+
+    def __init__(self):
+        self.filters = []  # type: List[ISevenZipDecompressor]
+        self._buf = b''
+
+    def add_filter(self, filter):
+        self.filters.append(filter)
+
+    def _decompress(self, data):
+        for i, decompressor in enumerate(self.filters):
+            try:
+                data = decompressor.decompress(data)
+            except EOFError:
+                data = b''
+            except lzma.LZMAError:
+                raise
+        return data
+
+    def decompress(self, data, max_length=0):
+        if max_length == 0:
+            res = self._buf + self._decompress(data)
+            self._buf = b''
+        else:
+            tmp = self._buf + self._decompress(data)
+            res = tmp[:max_length]
+            self._buf = tmp[max_length:]
+        return res
+
+
 class SevenZipDecompressor:
     """Main decompressor object which is properly configured and bind to each 7zip folder.
     because 7zip folder can have a custom compression method"""
@@ -373,17 +354,39 @@ class SevenZipDecompressor:
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        if all([x['method'] in lzma_methods_map for x in coders]):
-            self.decompressor = get_lzma_decompressor(coders)  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]  # noqa
+        self.cchain = DecompressorChain()
+        self.methods_map = []  # type: List[bool]
+        if len(coders) > 4:
+            raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
+        for coder in coders:
+            if coder['method'] in lzma_methods_map:
+                self.methods_map.append(True)
+            elif coder['method'] in alt_methods_map:
+                self.methods_map.append(False)
+            else:
+                raise UnsupportedCompressionMethodError
+        if all(self.methods_map):
+            decompressor = get_lzma_decompressor(coders)
+            self.cchain.add_filter(decompressor)
+        elif any(self.methods_map):
+            for i in range(len(coders) - 1):
+                if (not any(self.methods_map[0:i])) and all(self.methods_map[i + 1:]):
+                    for j in range(i):
+                        self.cchain.add_filter(get_alternative_decompressor(coders[j]))
+                    self.cchain.add_filter(get_lzma_decompressor(coders[i + 1:]))
+                    break
+            else:
+                raise UnsupportedCompressionMethodError
         else:
-            self.decompressor = get_alternative_decompressor(coders)
+            for i in range(len(coders)):
+                self.cchain.add_filter(get_alternative_decompressor(coders[i]))
 
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
         self.consumed += len(data)
         if max_length is not None:
-            folder_data = self.decompressor.decompress(data, max_length=max_length)
+            folder_data = self.cchain.decompress(data, max_length=max_length)
         else:
-            folder_data = self.decompressor.decompress(data)
+            folder_data = self.cchain.decompress(data)
         # calculate CRC with uncompressed data
         if self.crc is not None:
             self.digest = calculate_crc32(folder_data, self.digest)
@@ -397,20 +400,20 @@ class CompressorChain:
     '''compressor filter chain'''
 
     def __init__(self, methods_map):
-        self.compressors = []  # type: List[ISevenZipCompressor]
+        self.filters = []  # type: List[ISevenZipCompressor]
         self.digests = []
         self.packsizes = []
         self._unpacksizes = []
         self.methods_map = methods_map
 
     def add_filter(self, filter):
-        self.compressors.append(filter)
+        self.filters.append(filter)
         self.digests.append(0)
         self.packsizes.append(0)
         self._unpacksizes.append(0)
 
-    def encode(self, data):
-        for i, compressor in enumerate(self.compressors):
+    def compress(self, data):
+        for i, compressor in enumerate(self.filters):
             self.digests[i] += calculate_crc32(data, self.digests[i])
             self._unpacksizes[i] += len(data)
             data = compressor.compress(data)
@@ -419,7 +422,7 @@ class CompressorChain:
 
     def flush(self):
         data = None
-        for i, compressor in enumerate(self.compressors):
+        for i, compressor in enumerate(self.filters):
             if data:
                 self.digests[i] += calculate_crc32(data, self.digests[i])
                 self._unpacksizes[i] += len(data)
@@ -477,9 +480,8 @@ class SevenZipCompressor:
             if self.filters[-1]['id'] in crypto_methods:
                 if all(self.methods_map[:-1]):
                     # Crypto + native compression
-                    password = ArchivePassword().get()
                     self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters[:-1]))
-                    _crypto = AESCompressor(password)
+                    _crypto = AESCompressor()
                     self.cchain.add_filter(_crypto)
                     aes_properties = _crypto.encode_filter_properties()
                     self._set_native_coders(self.filters[:-1])
@@ -516,8 +518,7 @@ class SevenZipCompressor:
                     self.cchain.add_filter(get_alternative_compressor(filter))
                     self.coders.insert(0, {'method': alt_methods_map_r[filter['id']], 'properties': None,
                                        'numinstreams': 1, 'numoutstreams': 1})
-                password = ArchivePassword().get()
-                _crypto = AESCompressor(password)
+                _crypto = AESCompressor()
                 self.cchain.add_filter(_crypto)
                 aes_properties = _crypto.encode_filter_properties()
                 self.coders.insert(0, {'method': CompressionMethod.CRYPT_AES256_SHA256,
@@ -539,7 +540,7 @@ class SevenZipCompressor:
                 self.coders.insert(0, {'method': method, 'properties': None, 'numinstreams': 1, 'numoutstreams': 1})
 
     def compress(self, data):
-        return self.cchain.encode(data)
+        return self.cchain.compress(data)
 
     def flush(self):
         return self.cchain.flush()
@@ -555,27 +556,3 @@ class SevenZipCompressor:
     @property
     def packsizes(self):
         return self.cchain.packsizes
-
-
-class Bond:
-    """Represent bindings between two methods.
-    bonds[i] = (incoder, outstream)
-    means
-    methods[i].stream[outstream] output data go to method[incoder].stream[0]
-    """
-
-    def __init__(self, incoder, outcoder):
-        self.incoder = incoder
-        self.outcoder = outcoder
-
-
-def get_methods_names(coders: List[dict]) -> List[str]:
-    """Return human readable method names for specified coders"""
-
-    methods_names = []  # type: List[str]
-    for coder in coders:
-        try:
-            methods_names.append(methods_name_map[coder['method']])
-        except KeyError:
-            raise UnsupportedCompressionMethodError("Unknown method {}".format(coder['method']))
-    return methods_names

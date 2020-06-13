@@ -400,3 +400,15 @@ class Buffer:
 
     def __len__(self) -> int:
         return self._buflen
+
+
+class Bond:
+    """Represent bindings between two methods.
+    bonds[i] = (incoder, outstream)
+    means
+    methods[i].stream[outstream] output data go to method[incoder].stream[0]
+    """
+
+    def __init__(self, incoder, outcoder):
+        self.incoder = incoder
+        self.outcoder = outcoder

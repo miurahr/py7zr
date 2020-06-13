@@ -37,7 +37,14 @@ def test_extract_deflate(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(Zstd is None, reason="No zstandard library exist.")
+@pytest.mark.skipif(Zstd is None, reason="zstandard library does not exist.")
 def test_extract_zstd(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('zstd.7z').open(mode='rb')) as archive:
+        archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.skipif(Zstd is None, reason="zstandard library does not exist.")
+def test_extract_p7zip_zstd(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('p7zip-zstd.7z').open('rb')) as archive:
         archive.extractall(path=tmp_path)
