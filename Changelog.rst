@@ -10,8 +10,6 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Support for PPC and ARM filters.
-
 Changed
 -------
 
@@ -27,6 +25,13 @@ Removed
 Security
 --------
 
+`v0.8.0b1`_
+===========
+
+Added
+-----
+
+* Support for PPC and ARM filters.
 
 `v0.8.0a3`_
 ===========
@@ -847,7 +852,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0a3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b1...HEAD
+.. _v0.8.0b1: https://github.com/miurahr/py7zr/compare/v0.8.0a3...v0.8.0b1
 .. _v0.8.0a3: https://github.com/miurahr/py7zr/compare/v0.8.0a2...v0.8.0a3
 .. _v0.8.0a2: https://github.com/miurahr/py7zr/compare/v0.8.0a1...v0.8.0a2
 .. _v0.8.0a1: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0a1
