@@ -97,9 +97,9 @@ Here is a table of algorithms supported.
 - CAUTION: Specifying an unsuppoted algorithm combination may produce a broken archive for compression.
 
 - Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
-  see `lzma module`_ at python documentation.
+  see `lzma module document`_ at python documentation.
   
-.. _`lzma module`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
+.. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
 
 
 Document
