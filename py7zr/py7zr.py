@@ -763,7 +763,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 target_files.append((outfilename, f.file_properties()))
         for target_dir in sorted(target_dirs):
             try:
-                target_dir.mkdir()
+                target_dir.mkdir(parents=True)
             except FileExistsError:
                 if target_dir.is_dir():
                     pass

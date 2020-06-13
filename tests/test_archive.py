@@ -693,3 +693,29 @@ def test_compress_zstd(tmp_path):
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
+
+
+@pytest.mark.basic
+def test_compress_arm64(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_ARM}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.write(os.path.join(testdata_path, "lib"), "lib")
+    archive.writeall(os.path.join(testdata_path, "lib", "aarch64-linux-gnu"), "lib/aarch64-linux-gnu")
+    archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+
+
+@pytest.mark.basic
+def test_compress_ppc(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_POWERPC}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.write(os.path.join(testdata_path, "lib"), "lib")
+    archive.writeall(os.path.join(testdata_path, "lib", "powerpc64le-linux-gnu"), "lib/powerpc64le-linux-gnu")
+    archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')

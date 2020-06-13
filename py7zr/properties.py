@@ -203,6 +203,8 @@ lzma_methods_map_r = {
     lzma.FILTER_LZMA2: CompressionMethod.LZMA2,
     lzma.FILTER_DELTA: CompressionMethod.DELTA,
     lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
+    lzma.FILTER_ARM: CompressionMethod.BCJ_ARM,
+    lzma.FILTER_POWERPC: CompressionMethod.BCJ_PPC,
 }
 
 lzma_native_compressors = [FILTER_LZMA, FILTER_LZMA2]

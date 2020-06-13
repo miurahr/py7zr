@@ -65,17 +65,16 @@ It does not support one which `lzma module`_ and `liblzma`_ can not handle such 
 
 Here is a table of algorithms.
 
-+---------------------------------+----------------------------------------+
-| Category                        | Algorithms                             |
-+=================================+========================================+
-| Compress/Decompress Supported   | LZMA2, Delta, BCJ(X86)                 |
-| (Encrypt)                       | LZMA, Bzip2, Deflate, ZStandard, AES   |
-+---------------------------------+----------------------------------------+
-| Decompress(Decryption) only     | COPY                                   |
-|                                 | BCJ(IA64, ARM, ARMT, PPC, POWERPC)     |
-+---------------------------------+----------------------------------------+
-| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ, Deflate64        |
-+---------------------------------+----------------------------------------+
++---------------------------------+------------------------------------------+
+| Category                        | Algorithms                               |
++=================================+==========================================+
+| Compress/Decompress Supported   | LZMA2, Delta, BCJ(X86, ARM, PPC)         |
+| (Encryption/Decryption)         | LZMA, Bzip2, Deflate, ZStandard, 7zAES   |
++---------------------------------+------------------------------------------+
+| Decompress(Decryption) only     | COPY, BCJ(IA64, ARMT)                    |
++---------------------------------+------------------------------------------+
+| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ, Deflate64          |
++---------------------------------+------------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
