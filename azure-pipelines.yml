@@ -33,4 +33,7 @@ steps:
     coverage xml --ignore-errors
     coveralls
   displayName: 'Converage report'
+  env:
+    COVERALLS_PARALLEL: true
+    COVERALLS_FLAG_NAME: $(TOXENV)-mac
   continueOnError: true
