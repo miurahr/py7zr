@@ -584,3 +584,16 @@ def test_compressor_lzma2bcj(tmp_path):
                                                          crc=None)
     revert_data = decompressor.decompress(outdata, max_length=len(plain_data))
     assert revert_data == plain_data
+
+
+@pytest.mark.unit
+def test_lzmadecompressor_lzmabcj():
+    indata = b'This file is located in the root.'
+    compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW,
+                                     filters = [{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
+    compressed = compressor.compress(indata)
+    compressed += compressor.flush()
+    decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW,
+                                         filters=[{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
+    outdata = decompressor.decompress(data=compressed)
+    assert outdata == indata

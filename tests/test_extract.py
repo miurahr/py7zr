@@ -216,14 +216,13 @@ def test_extract_lzmabcj_archiveinfo():
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason="When source file size is smaller than archived data.")
-def test_extract_lzmabcj_enlarge_size(tmp_path):
+def test_extract_lzmabcj_1(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzmabcj.7z').open(mode='rb')) as ar:
-        _dict = ar.readall()
+        ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-def test_extract_lzmabcj(tmp_path):
+def test_extract_lzmabcj_2(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzmabcj_2.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
 
