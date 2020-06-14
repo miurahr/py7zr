@@ -12,8 +12,6 @@ jobs:
         exclude:
           - os: windows-latest
             python-version: pypy3
-          - os: ubuntu-latest
-            python-version: 3.7
     name: Test on Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
@@ -32,3 +30,5 @@ jobs:
           coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_PARALLEL: true
+          COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}

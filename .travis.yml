@@ -10,11 +10,9 @@ matrix:
     - python: 3.7
       env: TOXENV=docs PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
     - python: 3.7
-      env: TOXENV=mypy  PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
-    - python: 3.7
-      env: TOXENV=py37 PYTEST_ADDOPTS=""
+      env: TOXENV=mypy PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
     - python: pypy3.6-7.2.0
-      env: TOXENV=pypy3 PYTEST_ADDOPTS=""
+      env: TOXENV=pypy3 PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
 
 install:
   - pip install tox-travis coveralls
