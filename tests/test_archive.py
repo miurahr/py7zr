@@ -701,6 +701,12 @@ def test_compress_arm64(tmp_path):
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.basic
@@ -714,3 +720,66 @@ def test_compress_ppc(tmp_path):
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
+
+
+@pytest.mark.basic
+def test_compress_ia64(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_IA64}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.write(os.path.join(testdata_path, "lib"), "lib")
+    archive.writeall(os.path.join(testdata_path, "lib", "powerpc64le-linux-gnu"), "lib/powerpc64le-linux-gnu")
+    archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
+
+
+@pytest.mark.basic
+def test_compress_sparc(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_SPARC}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.write(os.path.join(testdata_path, "lib"), "lib")
+    archive.writeall(os.path.join(testdata_path, "lib", "powerpc64le-linux-gnu"), "lib/powerpc64le-linux-gnu")
+    archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
+
+
+@pytest.mark.basic
+def test_compress_armt(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_ARMTHUMB}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.write(os.path.join(testdata_path, "lib"), "lib")
+    archive.writeall(os.path.join(testdata_path, "lib", "aarch64-linux-gnu"), "lib/aarch64-linux-gnu")
+    archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')

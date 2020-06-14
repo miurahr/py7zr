@@ -205,6 +205,9 @@ lzma_methods_map_r = {
     lzma.FILTER_X86: CompressionMethod.P7Z_BCJ,
     lzma.FILTER_ARM: CompressionMethod.BCJ_ARM,
     lzma.FILTER_POWERPC: CompressionMethod.BCJ_PPC,
+    lzma.FILTER_ARMTHUMB: CompressionMethod.BCJ_ARMT,
+    lzma.FILTER_SPARC: CompressionMethod.BCJ_SPARC,
+    lzma.FILTER_IA64: CompressionMethod.BCJ_IA64,
 }
 
 lzma_native_compressors = [FILTER_LZMA, FILTER_LZMA2]

@@ -66,21 +66,20 @@ Here is a table of algorithms supported.
 +---------------------------------+------------------------------------------+
 | Category                        | Algorithm combination                    |
 +=================================+==========================================+
-| Compress/Decompress Supported   | LZMA2 + Delta or BCJ(X86, ARM, PPC)      |
+| Compress/Decompress Supported   | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
+|                                 | IA64, ARMT, SPARC)                       |
 |                                 +------------------------------------------+
-| (Encryption/Decryption)         | LZMA + BCJ                               |
+|                                 | LZMA + BCJ                               |
 |                                 +------------------------------------------+
 |                                 | LZMA2 or LZMA only                       |
 |                                 +------------------------------------------+
 |                                 | Bzip2, Deflate, ZStandard                |
-|                                 +------------------------------------------+
-|                                 | 7zAES + LZMA2 + Delta or BCJ             |
+|---------------------------------+------------------------------------------+
+| (Encryption/Decryption)         | 7zAES + LZMA2 + Delta or BCJ             |
 |                                 +------------------------------------------+
 |                                 | 7zAES + LZMA                             |
 |                                 +------------------------------------------+
 |                                 | 7zAES + Bzip2, Deflate or ZStandard      |
-+---------------------------------+------------------------------------------+
-| Decompress(Decryption) only     | COPY, BCJ(IA64, ARMT)                    |
 +---------------------------------+------------------------------------------+
 | Unsupported or not worked       | PPMd, BCJ2, Deflate64                    |
 |                                 +------------------------------------------+
