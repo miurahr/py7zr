@@ -23,11 +23,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install tox tox-gh-actions coverage codecov coveralls
+          pip install tox tox-gh-actions coveralls
       - name: Test project with tox
         run: tox
       - name: Converage upload
         run: |
           coverage xml --ignore-errors
-          codecov --required -X gcov pycov search -f coverage.xml --flags ${{ matrix.python-version }} ${{ matrix.os }} || true
           coveralls
