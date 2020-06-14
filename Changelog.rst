@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.8.0b2`_
+===========
+
+Changed
+-------
+
+* Refactoring decompression classes to handle data precisely with folder.unpacksizes(#146)
+
+
 `v0.8.0b1`_
 ===========
 
@@ -852,7 +861,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b2...HEAD
+.. _v0.8.0b2: https://github.com/miurahr/py7zr/compare/v0.8.0b1...v0.8.0b2
 .. _v0.8.0b1: https://github.com/miurahr/py7zr/compare/v0.8.0a3...v0.8.0b1
 .. _v0.8.0a3: https://github.com/miurahr/py7zr/compare/v0.8.0a2...v0.8.0a3
 .. _v0.8.0a2: https://github.com/miurahr/py7zr/compare/v0.8.0a1...v0.8.0a2
