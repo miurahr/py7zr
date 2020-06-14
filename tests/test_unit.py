@@ -480,7 +480,7 @@ def test_simple_compress_and_decompress():
     #
     coders = sevenzip_compressor.coders
     crc = py7zr.helpers.calculate_crc32(result)
-    decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, crc)
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, [len(out5)], crc)
     out6 = decompressor.decompress(result)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
 
@@ -565,7 +565,9 @@ def test_sevenzipcompressor_aes_lzma2():
     outdata += compressor.flush()
     assert len(outdata) < 96
     coders = compressor.coders
-    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, size=len(outdata), crc=None)
+    unpacksizes = compressor.unpacksizes
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(outdata), unpacksizes=unpacksizes,
+                                                         crc=None)
     revert_data = decompressor.decompress(outdata)
     assert revert_data == plain_data
 
@@ -691,9 +693,11 @@ def test_compressor_lzma2bcj(tmp_path):
     compressor = py7zr.compressor.SevenZipCompressor(filters=my_filters)
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
+    unpacksizes = compressor.unpacksizes
     assert len(outdata) > 1
     coders = [{'method': b'!', 'properties': b'\x18', 'numinstreams': 1, 'numoutstreams': 1},
               {'method': b'\x03\x03\x01\x03', 'numinstreams': 1, 'numoutstreams': 1}]
-    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, size=len(plain_data), crc=None)
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(plain_data), unpacksizes=unpacksizes,
+                                                         crc=None)
     revert_data = decompressor.decompress(outdata, max_length=len(plain_data))
     assert revert_data == plain_data

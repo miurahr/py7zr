@@ -316,8 +316,16 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]]):
 class DecompressorChain:
     '''decompressor filter chain'''
 
-    def __init__(self):
+    def __init__(self, methods_map, unpacksizes):
         self.filters = []  # type: List[ISevenZipDecompressor]
+        self._unpacksizes = []
+        shift = 0
+        prev = False
+        for i, r in enumerate(methods_map):
+            shift += 1 if r and prev else 0
+            prev = r
+            self._unpacksizes.append(unpacksizes[i - shift])
+        self._unpacked = [0 for _ in range(len(self._unpacksizes))]
         self._buf = b''
 
     def add_filter(self, filter):
@@ -325,12 +333,13 @@ class DecompressorChain:
 
     def _decompress(self, data):
         for i, decompressor in enumerate(self.filters):
-            try:
+            if self._unpacked[i] < self._unpacksizes[i]:
                 data = decompressor.decompress(data)
-            except EOFError:
+                self._unpacked[i] += len(data)
+            elif len(data) == 0:
                 data = b''
-            except lzma.LZMAError:
-                raise
+            else:
+                raise EOFError
         return data
 
     def decompress(self, data, max_length=0):
@@ -348,13 +357,13 @@ class SevenZipDecompressor:
     """Main decompressor object which is properly configured and bind to each 7zip folder.
     because 7zip folder can have a custom compression method"""
 
-    def __init__(self, coders: List[Dict[str, Any]], size: int, crc: Optional[int]) -> None:
+    def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int]) -> None:
         # Get password which was set when creation of py7zr.SevenZipFile object.
-        self.input_size = size
+        self.input_size = packsize
+        self.unpacksizes = unpacksizes
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        self.cchain = DecompressorChain()
         self.methods_map = []  # type: List[bool]
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
@@ -365,15 +374,16 @@ class SevenZipDecompressor:
                 self.methods_map.append(False)
             else:
                 raise UnsupportedCompressionMethodError
+        self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders)
             self.cchain.add_filter(decompressor)
         elif any(self.methods_map):
-            for i in range(len(coders) - 1):
-                if (not any(self.methods_map[0:i])) and all(self.methods_map[i + 1:]):
+            for i in range(len(coders)):
+                if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
                     for j in range(i):
                         self.cchain.add_filter(get_alternative_decompressor(coders[j]))
-                    self.cchain.add_filter(get_lzma_decompressor(coders[i + 1:]))
+                    self.cchain.add_filter(get_lzma_decompressor(coders[i:]))
                     break
             else:
                 raise UnsupportedCompressionMethodError
