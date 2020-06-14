@@ -540,7 +540,6 @@ def test_compress_lzma2_bcj(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -553,7 +552,6 @@ def test_compress_lzma2_bcj(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
-        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -632,7 +630,6 @@ def test_compress_multi_filter_delta(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].solid
-    assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
     assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
@@ -649,7 +646,6 @@ def test_compress_multi_filter_delta(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numinstreams'] == 1
         assert archive.header.main_streams.unpackinfo.folders[0].coders[1]['numoutstreams'] == 1
-        assert isinstance(archive.header.main_streams.unpackinfo.folders[0].bindpairs[0], py7zr.helpers.Bond)
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].incoder == 1
         assert archive.header.main_streams.unpackinfo.folders[0].bindpairs[0].outcoder == 0
         assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
