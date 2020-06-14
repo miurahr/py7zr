@@ -7,8 +7,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8, pypy3]
+        exclude:
+          - os: windows-latest
+            python-version: pypy3
     name: Test on Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
@@ -20,6 +23,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install tox tox-gh-actions
+          pip install tox tox-gh-actions coveralls
       - name: Test project with tox
-        run: tox
+        run: |
+          tox
+          coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}

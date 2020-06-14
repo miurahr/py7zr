@@ -22,7 +22,7 @@ steps:
   inputs:
     versionSpec: '$(python.version)'
 
-- script: pip install wheel tox codecov
+- script: pip install wheel tox coveralls
   displayName: 'Install Tox'
 
 - script: tox -e py
@@ -30,9 +30,7 @@ steps:
   displayName: 'Run Tox'
 
 - script: |
-    coverage combine
     coverage xml --ignore-errors
-    coverage report -m --ignore-errors
-    env CODECOV_TOKEN="70f263ed-010f-4f42-8f95-444e5138d3ab" codecov --required -X gcov pycov search -f coverage.xml --flags ${TOXENV},mac
+    coveralls
   displayName: 'Converage report'
   continueOnError: true
