@@ -68,7 +68,9 @@ Here is a table of algorithms supported.
 +=================================+==========================================+
 | Compress/Decompress Supported   | LZMA2 + Delta or BCJ(X86, ARM, PPC)      |
 |                                 +------------------------------------------+
-| (Encryption/Decryption)         | LZMA                                     |
+| (Encryption/Decryption)         | LZMA + BCJ                               |
+|                                 +------------------------------------------+
+|                                 | LZMA2 or LZMA only                       |
 |                                 +------------------------------------------+
 |                                 | Bzip2, Deflate, ZStandard                |
 |                                 +------------------------------------------+
@@ -81,8 +83,6 @@ Here is a table of algorithms supported.
 | Decompress(Decryption) only     | COPY, BCJ(IA64, ARMT)                    |
 +---------------------------------+------------------------------------------+
 | Unsupported or not worked       | PPMd, BCJ2, Deflate64                    |
-|                                 +------------------------------------------+
-|                                 | LZMA + BCJ                               |
 |                                 +------------------------------------------+
 |                                 | Bzip2, Deflate, ZStandard + BCJ          |
 +---------------------------------+------------------------------------------+
