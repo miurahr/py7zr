@@ -25,8 +25,8 @@ jobs:
           pip install -U pip
           pip install tox tox-gh-actions coveralls
       - name: Test project with tox
-        run: tox
-      - name: Converage upload
         run: |
-          coverage xml --ignore-errors
+          tox
           coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
