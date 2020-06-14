@@ -11,8 +11,8 @@ py7zr
 .. image:: https://travis-ci.org/miurahr/py7zr.svg?branch=master
   :target: https://travis-ci.org/miurahr/py7zr
 
-.. image:: https://ci.appveyor.com/api/projects/status/966k084122lhs3i6?svg=true
-  :target: https://ci.appveyor.com/project/miurahr/py7zr/
+.. image:: https://github.com/miurahr/py7zr/workflows/Run%20Tox%20tests/badge.svg
+  :target: https://github.com/miurahr/py7zr/actions
 
 .. image:: https://dev.azure.com/miurahr/github/_apis/build/status/miurahr.py7zr?branchName=master
   :target: https://dev.azure.com/miurahr/github/_build/latest?definitionId=14&branchName=master
