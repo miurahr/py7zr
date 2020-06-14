@@ -33,7 +33,7 @@ from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
-from py7zr.compressor import Bond, SevenZipCompressor, SevenZipDecompressor
+from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, CompressionMethod, Property
@@ -286,6 +286,18 @@ class PackInfo:
         write_byte(file, Property.END)
 
 
+class Bond:
+    """Represent bindings between two methods.
+    bonds[i] = (incoder, outstream)
+    means
+    methods[i].stream[outstream] output data go to method[incoder].stream[0]
+    """
+
+    def __init__(self, incoder, outcoder):
+        self.incoder = incoder
+        self.outcoder = outcoder
+
+
 class Folder:
     """ a "Folder" represents a stream of compressed data.
     coders: list of coder
@@ -391,11 +403,11 @@ class Folder:
     def is_simple(self, coder):
         return coder['numinstreams'] == 1 and coder['numoutstreams'] == 1
 
-    def get_decompressor(self, size: int, reset: bool = False) -> SevenZipDecompressor:
+    def get_decompressor(self, packsize: int, reset: bool = False) -> SevenZipDecompressor:
         if self.decompressor is not None and not reset:
             return self.decompressor
         else:
-            self.decompressor = SevenZipDecompressor(self.coders, size, self.crc)
+            self.decompressor = SevenZipDecompressor(self.coders, packsize, self.unpacksizes, self.crc)
             return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:

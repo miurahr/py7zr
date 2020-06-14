@@ -313,7 +313,7 @@ def test_digests_corrupted():
     arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
     with py7zr.SevenZipFile(arcfile) as archive:
         assert archive.test() is None
-        assert archive.testzip() is not None
+        archive.reset()
         assert archive.testzip().endswith('src/scripts/py7zr')
 
 
