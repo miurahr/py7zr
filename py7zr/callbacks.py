@@ -28,27 +28,27 @@ class Callback(ABC):
     @abstractmethod
     def report_start_preparation(self):
         """report a start of preparation event such as making list of files and looking into its properties."""
-        pass
+        pass  # noqa
 
     @abstractmethod
     def report_start(self, processing_file_path, processing_bytes):
         """report a start event of specified archive file and its input bytes."""
-        pass
+        pass  # noqa
 
     @abstractmethod
     def report_end(self, processing_file_path, wrote_bytes):
         """report an end event of specified archive file and its output bytes."""
-        pass
+        pass  # noqa
 
     @abstractmethod
     def report_warning(self, message):
         """report an warning event with its message"""
-        pass
+        pass  # noqa
 
     @abstractmethod
     def report_postprocess(self):
         """report a start of post processing event such as set file properties and permissions or creating symlinks."""
-        pass
+        pass  # noqa
 
 
 class ExtractCallback(Callback):
