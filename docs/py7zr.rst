@@ -17,21 +17,36 @@ Compression Methods
 ===================
 
 'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
-It also support algorithms that is implemented in python core.
-`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms such as BCJ2.
+It also support BZip2 and Deflate that are implemented in python core libraries,
+and ZStandard with third party libraries.
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
+such as PPMd, BCJ2 and Deflate64.
+
 Here is a table of algorithms.
 
-+---------------------------------+----------------------------------------+
-| Category                        | Algorithms                             |
-+=================================+========================================+
-| Compress/Decompress Supported   | LZMA2                                  |
-|                                 | BCJ(X86, IA64, ARM, ARMT, PPC, POWERPC)|
-+---------------------------------+----------------------------------------+
-| Decompress only                 | LZMA, Delta, COPY, Bzip2, Deflate      |
-| (Decryption)                    | AES                                    |
-+---------------------------------+----------------------------------------+
-| Unsupported or not worked       | PPMd, BCJ2, LZMA+BCJ                   |
-+---------------------------------+----------------------------------------+
++---+----------------------+------------------------------------------+
+|  #| Category             | Algorithm combination                    |
++===+======================+==========================================+
+|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
+|   | - Decompression      | IA64, ARMT, SPARC)                       |
++---+                      +------------------------------------------+
+|  2|                      | LZMA + BCJ                               |
++---+                      +------------------------------------------+
+|  3|                      | LZMA2 or LZMA only                       |
++---+                      +------------------------------------------+
+|  4|                      | Bzip2, Deflate, ZStandard                |
++---+----------------------+------------------------------------------+
+|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
++---+ - Decryption         +------------------------------------------+
+|  6|                      | 7zAES + LZMA                             |
++---+                      +------------------------------------------+
+|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
++---+----------------------+------------------------------------------+
+|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
++---+                      +------------------------------------------+
+|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
++---+----------------------+------------------------------------------+
+
 
 The module is built upon awesome development effort and knowledge of `pylzma` module
 and its `py7zlib.py` program by Joachim Bauch. Great appreciation for Joachim!

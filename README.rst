@@ -57,34 +57,37 @@ Following fixes are included in these versions, and it is not fixed on python3.6
 Compression Methods
 ===================
 
-'py7zr' supports algorithms and filters which python3 standard `lzma module`_ and `liblzma`_ support.
-It also support algorithms that is implemented in python core such as Bzip2.
-It does not support one which `lzma module`_ and `liblzma`_ can not handle such as BCJ2.
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+It also support BZip2 and Deflate that are implemented in python core libraries,
+and ZStandard with third party libraries.
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
+such as PPMd, BCJ2 and Deflate64.
 
 Here is a table of algorithms supported.
 
-+---------------------------------+------------------------------------------+
-| Category                        | Algorithm combination                    |
-+=================================+==========================================+
-| Compression/Decompression       | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
-|                                 | IA64, ARMT, SPARC)                       |
-|                                 +------------------------------------------+
-|                                 | LZMA + BCJ                               |
-|                                 +------------------------------------------+
-|                                 | LZMA2 or LZMA only                       |
-|                                 +------------------------------------------+
-|                                 | Bzip2, Deflate, ZStandard                |
-|---------------------------------+------------------------------------------+
-| Encryption/Decryption           | 7zAES + LZMA2 + Delta or BCJ             |
-|                                 +------------------------------------------+
-|                                 | 7zAES + LZMA                             |
-|                                 +------------------------------------------+
-|                                 | 7zAES + Bzip2, Deflate or ZStandard      |
-+---------------------------------+------------------------------------------+
-| Unsupported                     | PPMd, BCJ2, Deflate64                    |
-|                                 +------------------------------------------+
-|                                 | Bzip2, Deflate, ZStandard + BCJ          |
-+---------------------------------+------------------------------------------+
++---+----------------------+------------------------------------------+
+|  #| Category             | Algorithm combination                    |
++===+======================+==========================================+
+|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
+|   | - Decompression      | IA64, ARMT, SPARC)                       |
++---+                      +------------------------------------------+
+|  2|                      | LZMA + BCJ                               |
++---+                      +------------------------------------------+
+|  3|                      | LZMA2 or LZMA only                       |
++---+                      +------------------------------------------+
+|  4|                      | Bzip2, Deflate, ZStandard                |
++---+----------------------+------------------------------------------+
+|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
++---+ - Decryption         +------------------------------------------+
+|  6|                      | 7zAES + LZMA                             |
++---+                      +------------------------------------------+
+|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
++---+----------------------+------------------------------------------+
+|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
++---+                      +------------------------------------------+
+|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
++---+----------------------+------------------------------------------+
+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
