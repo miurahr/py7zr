@@ -353,6 +353,7 @@ def test_non7z_list(capsys):
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_creation(tmp_path, capsys):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -365,6 +366,7 @@ def test_archive_creation(tmp_path, capsys):
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_already_exist(tmp_path, capsys):
     expected = 'Archive file exists!\n'
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -380,6 +382,7 @@ def test_archive_already_exist(tmp_path, capsys):
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_without_extension(tmp_path, capsys):
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
     target = str(tmp_path / "target")
@@ -391,7 +394,7 @@ def test_archive_without_extension(tmp_path, capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_volume_creation(tmp_path, capsys):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'lzma2bcj.7z'), path=tmp_path.joinpath('src'))
@@ -403,7 +406,7 @@ def test_volume_creation(tmp_path, capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_volume_creation_wrong_volume_unit(tmp_path, capsys):
     expected = 'Error: Specified volume size is invalid.\n'
     target = str(tmp_path / "target.7z")

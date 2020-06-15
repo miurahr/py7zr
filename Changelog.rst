@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Fix extraction error on python 3.5(#151)
+
 Deprecated
 ----------
 

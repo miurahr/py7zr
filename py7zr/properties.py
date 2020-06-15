@@ -28,7 +28,7 @@ from typing import List
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
-READ_BLOCKSIZE: int = 32248
+READ_BLOCKSIZE = 32248  # type: int
 QUEUELEN = READ_BLOCKSIZE * 2
 
 # Esposed constants
