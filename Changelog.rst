@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.7.4`_
+=========
+
+Fixed
+-----
+
+* Extraction fails on python 3.5.(#151)
+
 `v0.7.3`_
 =========
 
@@ -792,7 +800,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.7.4...HEAD
+.. _v0.7.4: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.7.4
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
 .. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1

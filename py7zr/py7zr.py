@@ -824,7 +824,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def reporter(self, callback: ExtractCallback):
         while True:
             try:
-                item: Optional[Tuple[str, str, str]] = self.q.get(timeout=1)
+                item = self.q.get(timeout=1)  # type: Optional[Tuple[str, str, str]]
             except queue.Empty:
                 pass
             else:
