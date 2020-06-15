@@ -597,3 +597,9 @@ def test_lzmadecompressor_lzmabcj():
                                          filters=[{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
     outdata = decompressor.decompress(data=compressed)
     assert outdata == indata
+
+
+@pytest.mark.unit
+def test_unit_is_encrypted(tmp_path):
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'encrypted_1.7z'), 'r', password='secret') as archive:
+        assert archive.header.main_streams.unpackinfo.folders[0].is_encrypted()
