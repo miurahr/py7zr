@@ -27,10 +27,6 @@ steps:
 
 - script: |
     tox -e py
-    coveralls
   env:
     PYTEST_ADDOPTS: $(addopts)
-    COVERALLS_REPO_TOKEN: $(RepoToken)
-    COVERALLS_PARALLEL: true
-    COVERALLS_FLAG_NAME: $(TOXENV)-mac
   displayName: 'Run Tox'
