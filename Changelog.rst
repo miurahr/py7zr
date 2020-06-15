@@ -25,6 +25,21 @@ Removed
 Security
 --------
 
+`v0.8.0b3`_
+===========
+
+Added
+-----
+
+* test: unit tests for Sparc, ARMT and IA64 filters.
+
+Changed
+-------
+
+* Documents: additional methods, filter examples.
+* CI configurations: Manage coverage with Coveralls.
+
+
 `v0.8.0b2`_
 ===========
 
@@ -861,7 +876,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b3...HEAD
+.. _v0.8.0b3: https://github.com/miurahr/py7zr/compare/v0.8.0b2...v0.8.0b3
 .. _v0.8.0b2: https://github.com/miurahr/py7zr/compare/v0.8.0b1...v0.8.0b2
 .. _v0.8.0b1: https://github.com/miurahr/py7zr/compare/v0.8.0a3...v0.8.0b1
 .. _v0.8.0a3: https://github.com/miurahr/py7zr/compare/v0.8.0a2...v0.8.0a3
