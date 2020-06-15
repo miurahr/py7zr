@@ -6,12 +6,15 @@ strategy:
     Python36:
       python.version: '3.6'
       TOXENV: py36
+      addopts: --benchmark-skip
     Python37:
       python.version: '3.7'
       TOXENV: py37
+      addopts: --benchmark-skip
     Python38:
       python.version: '3.8'
       TOXENV: py38
+      addopts: --benchmark-skip
 
 steps:
 - task: UsePythonVersion@0
@@ -19,14 +22,15 @@ steps:
   inputs:
     versionSpec: '$(python.version)'
 
-- script: pip install wheel tox coveralls
+- script: pip install wheel tox coveralls coverage
   displayName: 'Install Tox'
 
 - script: |
     tox -e py
     coveralls
   env:
-    COVERALLS_REPO_TOKEN: $(COVERALLS_REPO_TOKEN)
+    PYTEST_ADDOPTS: $(addopts)
+    COVERALLS_REPO_TOKEN: $(RepoToken)
     COVERALLS_PARALLEL: true
     COVERALLS_FLAG_NAME: $(TOXENV)-mac
   displayName: 'Run Tox'
