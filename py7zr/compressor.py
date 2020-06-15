@@ -31,11 +31,11 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr import UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_crc32, calculate_key
+from py7zr.helpers import ArchivePassword, Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_ZSTD,
-                              READ_BLOCKSIZE, ArchivePassword, CompressionMethod, alt_methods_map, alt_methods_map_r,
-                              crypto_methods, extra_compressors, lzma_methods_map, lzma_methods_map_r,
-                              lzma_native_compressors, lzma_native_filters)
+                              READ_BLOCKSIZE, CompressionMethod, alt_methods_map, alt_methods_map_r, crypto_methods,
+                              extra_compressors, lzma_methods_map, lzma_methods_map_r, lzma_native_compressors,
+                              lzma_native_filters)
 
 try:
     import zstandard as Zstd  # type: ignore

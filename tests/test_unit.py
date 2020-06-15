@@ -491,10 +491,10 @@ def test_sevenzipcompressor_default():
 
 @pytest.mark.unit
 def test_archive_password():
-    a = py7zr.properties.ArchivePassword('secret')
+    a = py7zr.helpers.ArchivePassword('secret')
     assert str(a) == 'secret'
     assert a.get() == 'secret'
-    b = py7zr.properties.ArchivePassword()
+    b = py7zr.helpers.ArchivePassword()
     assert b.get() == 'secret'
     b.set('password')
     assert b.get() == 'password'

@@ -131,7 +131,7 @@ class Cli():
         table.set_deco(texttable.Texttable.HEADER)
         table.set_cols_dtype(['t', 't'])
         table.set_cols_align(["l", "r"])
-        for c in SupportedMethods.codecs:
+        for c in SupportedMethods.methods:
             m = ''.join('{:02x}'.format(x) for x in c['id'])
             table.add_row([m, c['name']])
         print(table.draw())
