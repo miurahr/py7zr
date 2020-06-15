@@ -258,7 +258,7 @@ Codecs:
 03030501         ARM
 03030701        ARMT
 03030805       SPARC
-0401         DEFLATE
+040108       DEFLATE
 040202         BZip2
 04f71101   ZStandard
 06f10701       7zAES
@@ -268,7 +268,7 @@ Codecs:
     cli = py7zr.cli.Cli()
     cli.run(["i"])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.cli

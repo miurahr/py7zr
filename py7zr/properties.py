@@ -212,7 +212,7 @@ alt_methods_map_r = {
 def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
     # list of known method names with a display priority order
     methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'ZStandard', 'LZ4*', 'BCJ2*',
-                        'BCJ', 'BCJ(ARM)', 'BCJ(ARMT)', 'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
+                        'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
     unsupported_methods = {CompressionMethod.P7Z_BCJ2: 'BCJ2*',
                            CompressionMethod.MISC_LZ4: 'LZ4*',
                            CompressionMethod.MISC_DEFLATE64: 'DEFLATE64*'}

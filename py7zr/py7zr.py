@@ -41,7 +41,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SevenZipCompressor
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchivePassword, ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import (ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE, get_methods_names_string)
+from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE, get_methods_names_string
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
