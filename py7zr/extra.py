@@ -124,7 +124,7 @@ class AESDecompressor(ISevenZipDecompressor):
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
             if len(coders) > 0:
-                self.lzma_decompressor = self._set_lzma_decompressor(coders)  # type: lzma.LZMADecompressor
+                self.lzma_decompressor = self._set_lzma_decompressor(coders)  # type: Union[lzma.LZMADecompressor, CopyDecompressor]  # noqa
             else:
                 self.lzma_decompressor = CopyDecompressor()
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
