@@ -590,7 +590,7 @@ def test_compressor_lzma2bcj(tmp_path):
 def test_lzmadecompressor_lzmabcj():
     indata = b'This file is located in the root.'
     compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW,
-                                     filters = [{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
+                                     filters=[{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
     compressed = compressor.compress(indata)
     compressed += compressor.flush()
     decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW,
