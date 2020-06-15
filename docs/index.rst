@@ -5,6 +5,7 @@ py7zr documentation contents
    :maxdepth: 2
 
    py7zr
+   filters
    design_and_classes
    7zFormat
    AUTHORS
