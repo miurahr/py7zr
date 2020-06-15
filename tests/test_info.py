@@ -11,26 +11,23 @@ os.umask(0o022)
 
 @pytest.mark.files
 def test_archiveinfo_deflate():
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
-            ai = ar.archiveinfo()
-            assert ai.method_names == 'Deflate'
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate.7z'), 'r') as ar:
+        ai = ar.archiveinfo()
+        assert ai.method_names == 'DEFLATE'
 
 
 @pytest.mark.files
 def test_archiveinfo_deflate64():
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate64.7z'), 'r') as ar:
-            ai = ar.archiveinfo()
-            assert ai.method_names == 'Deflate64'
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'deflate64.7z'), 'r') as ar:
+        ai = ar.archiveinfo()
+        assert ai.method_names == 'DEFLATE64*'
 
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj2():
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2.7z'), 'r') as ar:
-            ai = ar.archiveinfo()
-            assert ai.method_names == 'LZMA, BCJ2'
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2.7z'), 'r') as ar:
+        ai = ar.archiveinfo()
+        assert ai.method_names == 'LZMA, BCJ2*'
 
 
 @pytest.mark.files
@@ -51,35 +48,35 @@ def test_archiveinfo_lzma2_bcj():
 def test_archiveinfo_lzma_bcj_arm():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_arm.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == 'LZMA2, BCJ(ARM)'
+        assert ai.method_names == 'LZMA2, ARM'
 
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj_armt():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_armt.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == 'LZMA2, BCJ(ARMT)'
+        assert ai.method_names == 'LZMA2, ARMT'
 
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj_ia64():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ia64.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == 'LZMA2, BCJ(IA64)'
+        assert ai.method_names == 'LZMA2, IA64'
 
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj_ppc():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ppc.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == 'LZMA2, BCJ(POWERPC)'
+        assert ai.method_names == 'LZMA2, PPC'
 
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj_sparc():
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_sparc.7z'), 'r') as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names == 'LZMA2, BCJ(SPARC)'
+        assert ai.method_names == 'LZMA2, SPARC'
 
 
 @pytest.mark.files

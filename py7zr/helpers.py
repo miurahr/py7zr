@@ -400,3 +400,31 @@ class Buffer:
 
     def __len__(self) -> int:
         return self._buflen
+
+
+# this class is Borg/Singleton
+class ArchivePassword:
+
+    _shared_state = {
+        '_password': None,
+    }
+
+    def __init__(self, password: Optional[str] = None):
+        self.__dict__ = self._shared_state
+        if password is not None:
+            self._password = password
+
+    def set(self, password):
+        self._password = password
+
+    def get(self):
+        if self._password is not None:
+            return self._password
+        else:
+            return ''
+
+    def __str__(self):
+        if self._password is not None:
+            return self._password
+        else:
+            return ''

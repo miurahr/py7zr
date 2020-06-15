@@ -248,22 +248,27 @@ Formats:
 7z    37 7a bc af 27 1c
 
 Codecs:
-030101      LZMA
-21         LZMA2
-03         DELTA
-03030103     BCJ
-03030205     PPC
-03030401    IA64
-03030501     ARM
-03030701    ARMT
-03030805   SPARC
+00              COPY
+21             LZMA2
+03             DELTA
+030101          LZMA
+03030103         BCJ
+03030205         PPC
+03030401        IA64
+03030501         ARM
+03030701        ARMT
+03030805       SPARC
+040108       DEFLATE
+040202         BZip2
+04f71101   ZStandard
+06f10701       7zAES
 
 {}
 """.format(py7zr.__version__, py7zr.__copyright__, expected_checks)
     cli = py7zr.cli.Cli()
     cli.run(["i"])
     out, err = capsys.readouterr()
-    assert expected == out
+    assert out == expected
 
 
 @pytest.mark.cli

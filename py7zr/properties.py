@@ -24,7 +24,7 @@
 import binascii
 import lzma
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
@@ -144,46 +144,23 @@ class CompressionMethod(ByteEnum):
 
 
 class SupportedMethods:
-    """Hold list of methods which python3 can support."""
+    """Hold list of methods."""
     formats = [{'name': "7z", 'magic': MAGIC_7Z}]
-    codecs = [{'id': CompressionMethod.LZMA, 'name': "LZMA"},
-              {'id': CompressionMethod.LZMA2, 'name': "LZMA2"},
-              {'id': CompressionMethod.DELTA, 'name': "DELTA"},
-              {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ"},
-              {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC'},
-              {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64'},
-              {'id': CompressionMethod.BCJ_ARM, 'name': "ARM"},
-              {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT"},
-              {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC'}
-              ]
-
-
-# this class is Borg/Singleton
-class ArchivePassword:
-
-    _shared_state = {
-        '_password': None,
-    }
-
-    def __init__(self, password: Optional[str] = None):
-        self.__dict__ = self._shared_state
-        if password is not None:
-            self._password = password
-
-    def set(self, password):
-        self._password = password
-
-    def get(self):
-        if self._password is not None:
-            return self._password
-        else:
-            return ''
-
-    def __str__(self):
-        if self._password is not None:
-            return self._password
-        else:
-            return ''
+    methods = [{'id': CompressionMethod.COPY, 'name': 'COPY'},
+               {'id': CompressionMethod.LZMA2, 'name': "LZMA2"},
+               {'id': CompressionMethod.DELTA, 'name': "DELTA"},
+               {'id': CompressionMethod.LZMA, 'name': "LZMA"},
+               {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ"},
+               {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC'},
+               {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64'},
+               {'id': CompressionMethod.BCJ_ARM, 'name': "ARM"},
+               {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT"},
+               {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC'},
+               {'id': CompressionMethod.MISC_DEFLATE, 'name': 'DEFLATE'},
+               {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2'},
+               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard'},
+               {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES'},
+               ]
 
 
 lzma_methods_map = {
@@ -231,31 +208,20 @@ alt_methods_map_r = {
     FILTER_ZSTD: CompressionMethod.MISC_ZSTD,
 }
 
-# map of method code and its name.
-methods_name_map = {
-    CompressionMethod.LZMA2: 'LZMA2',
-    CompressionMethod.LZMA: 'LZMA',
-    CompressionMethod.MISC_BZIP2: 'BZip2',
-    CompressionMethod.MISC_ZIP: 'DEFLATE',
-    CompressionMethod.COPY: 'COPY',
-    CompressionMethod.DELTA: 'delta',
-    CompressionMethod.P7Z_BCJ: 'BCJ',
-    CompressionMethod.BCJ_ARM: 'BCJ(ARM)',
-    CompressionMethod.BCJ_ARMT: 'BCJ(ARMT)',
-    CompressionMethod.BCJ_IA64: 'BCJ(IA64)',
-    CompressionMethod.BCJ_PPC: 'BCJ(POWERPC)',
-    CompressionMethod.BCJ_SPARC: 'BCJ(SPARC)',
-    CompressionMethod.CRYPT_AES256_SHA256: '7zAES',
-    CompressionMethod.MISC_ZSTD: 'ZStandard',
-}
-
 
 def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
     # list of known method names with a display priority order
-    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'delta', 'COPY', 'ZStandard', 'LZ4', 'BCJ', 'BCJ(ARM)',
-                        'BCJ(ARMT)', 'BCJ(IA64)', 'BCJ(POWERPC)', 'BCJ(SPARC)', '7zAES']
+    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'ZStandard', 'LZ4*', 'BCJ2*',
+                        'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
+    unsupported_methods = {CompressionMethod.P7Z_BCJ2: 'BCJ2*',
+                           CompressionMethod.MISC_LZ4: 'LZ4*',
+                           CompressionMethod.MISC_DEFLATE64: 'DEFLATE64*'}
     methods_names = []
     for coders in coders_lists:
         for coder in coders:
-            methods_names.append(methods_name_map[coder['method']])
+            for m in SupportedMethods.methods:
+                if coder['method'] == m['id']:
+                    methods_names.append(m['name'])
+            if coder['method'] in unsupported_methods:
+                methods_names.append(unsupported_methods[coder['method']])
     return ', '.join(filter(lambda x: x in methods_names, methods_namelist))

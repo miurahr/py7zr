@@ -8,7 +8,7 @@ from Crypto.Cipher import AES
 import py7zr
 import py7zr.compressor
 from py7zr.exceptions import UnsupportedCompressionMethodError
-from py7zr.properties import ArchivePassword
+from py7zr.helpers import ArchivePassword
 
 try:
     import zstandard as Zstd  # type: ignore  # noqa
