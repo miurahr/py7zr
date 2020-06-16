@@ -25,17 +25,17 @@ import bz2
 import lzma
 import zlib
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from py7zr import UnsupportedCompressionMethodError
+from py7zr.exceptions import UnsupportedCompressionMethodError
 from py7zr.helpers import ArchivePassword, Buffer, calculate_crc32, calculate_key
-from py7zr.properties import (FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_ZSTD,
-                              READ_BLOCKSIZE, CompressionMethod, alt_methods_map, alt_methods_map_r, crypto_methods,
-                              extra_compressors, lzma_methods_map, lzma_methods_map_r, lzma_native_compressors,
-                              lzma_native_filters)
+from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
+                              FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
+                              FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE, CompressionMethod)
 
 try:
     import zstandard as Zstd  # type: ignore
@@ -286,9 +286,9 @@ def get_alternative_compressor(filter):
 
 
 def get_alternative_decompressor(coder: Dict[str, Any]) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
-    filter_id = alt_methods_map.get(coder['method'], None)
-    if filter_id is None:
+    if SupportedMethods.is_native_coder(coder):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
+    filter_id = SupportedMethods.get_filter_id(coder)
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
     if filter_id == FILTER_CRYPTO_AES256_SHA256:
@@ -302,10 +302,10 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]]):
     for coder in coders:
         if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
             raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
-        filter_id = lzma_methods_map.get(coder['method'], None)
-        if filter_id is None:
+        if not SupportedMethods.is_native_coder(coder):
             raise UnsupportedCompressionMethodError
         properties = coder.get('properties', None)
+        filter_id = SupportedMethods.get_filter_id(coder)
         if properties is not None:
             filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
         else:
@@ -364,20 +364,16 @@ class SevenZipDecompressor:
         self.consumed = 0  # type: int
         self.crc = crc
         self.digest = None  # type: Optional[int]
-        self.methods_map = []  # type: List[bool]
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
-        for coder in coders:
-            if coder['method'] in lzma_methods_map:
-                self.methods_map.append(True)
-            elif coder['method'] in alt_methods_map:
-                self.methods_map.append(False)
-            else:
-                raise UnsupportedCompressionMethodError
+        self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders)
             self.cchain.add_filter(decompressor)
+        elif not any(self.methods_map):
+            for i in range(len(coders)):
+                self.cchain.add_filter(get_alternative_decompressor(coders[i]))
         elif any(self.methods_map):
             for i in range(len(coders)):
                 if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
@@ -388,8 +384,7 @@ class SevenZipDecompressor:
             else:
                 raise UnsupportedCompressionMethodError
         else:
-            for i in range(len(coders)):
-                self.cchain.add_filter(get_alternative_decompressor(coders[i]))
+            raise UnsupportedCompressionMethodError
 
     def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
         self.consumed += len(data)
@@ -465,89 +460,36 @@ class SevenZipCompressor:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:
             self.filters = filters
-        self.coders = []
-        self.methods_map = []
         if len(self.filters) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(self.filters)))
-        for filter in self.filters:
-            if filter['id'] in lzma_methods_map_r:
-                self.methods_map.append(True)
-            elif filter['id'] in alt_methods_map_r:
-                self.methods_map.append(False)
-            else:
-                raise UnsupportedCompressionMethodError
-        # FIXME: Following complex if-else block has many duplicated code and missing filter combination cases.
+        self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
+        self.coders = []
         self.cchain = CompressorChain(self.methods_map)
-        if all(self.methods_map):
-            if self.filters[-1]['id'] in lzma_native_compressors:
-                _compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=self.filters)
-                self.cchain.add_filter(_compressor)
-                self._set_native_coders(self.filters)
-            else:
-                # LZMA/LZMA2 compression should be a first filter
-                raise UnsupportedCompressionMethodError
-        elif any(self.methods_map):  # mix of native filters and extra filters
-            if self.filters[-1]['id'] in crypto_methods:
-                if all(self.methods_map[:-1]):
-                    # Crypto + native compression
-                    self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters[:-1]))
-                    _crypto = AESCompressor()
-                    self.cchain.add_filter(_crypto)
-                    aes_properties = _crypto.encode_filter_properties()
-                    self._set_native_coders(self.filters[:-1])
-                    self.coders.insert(0, {'method': CompressionMethod.CRYPT_AES256_SHA256,
-                                           'properties': aes_properties, 'numinstreams': 1, 'numoutstreams': 1})
-                elif self.filters[-2] in extra_compressors and all(self.methods_map[:-2]):
-                    password = ArchivePassword().get()
-                    self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters[:-2]))
-                    self.cchain.add_filter(get_alternative_compressor(self.filters[-2:-1]))
-                    _crypto = AESCompressor(password)
-                    self.cchain.add_filter(_crypto)
-                    aes_properties = _crypto.encode_filter_properties()
-                    self.coders.insert(0, {'method': CompressionMethod.CRYPT_AES256_SHA256,
-                                           'properties': aes_properties, 'numinstreams': 1, 'numoutstreams': 1})
-                    self.coders.insert(0, {'method': alt_methods_map_r[self.filters[0]['id']], 'properties': None,
-                                           'numinstreams': 1, 'numoutstreams': 1})
-                    self._set_native_coders(filters[:-2])
-                else:
-                    raise UnsupportedCompressionMethodError
-            elif self.filters[-1]['id'] in extra_compressors:
-                if len(self.filters) == 2 and self.filters[1]['id'] in lzma_native_filters:
-                    self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters[1:]))
-                    self.cchain.add_filter(get_alternative_compressor(self.filters[0]))
-                    self.coders.insert(0, {'method': alt_methods_map_r[self.filters[0]['id']], 'properties': None,
-                                           'numinstreams': 1, 'numoutstreams': 1})
-                    self._set_native_coders(filters[1:])
-                else:
-                    raise UnsupportedCompressionMethodError
-            else:
-                raise UnsupportedCompressionMethodError
+        if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
+            self._set_native_compressors_coders(self.filters)
+        elif not any(self.methods_map):  # all alternative
+            for filter in filters:
+                self._set_alternate_compressors_coders(filter)
+        elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
+            self._set_native_compressors_coders(self.filters[:-1])
+            self._set_alternate_compressors_coders(self.filters[-1])
         else:
-            if self.filters[-1]['id'] in crypto_methods:
-                for filter in filters[:-1]:
-                    self.cchain.add_filter(get_alternative_compressor(filter))
-                    self.coders.insert(0, {'method': alt_methods_map_r[filter['id']], 'properties': None,
-                                       'numinstreams': 1, 'numoutstreams': 1})
-                _crypto = AESCompressor()
-                self.cchain.add_filter(_crypto)
-                aes_properties = _crypto.encode_filter_properties()
-                self.coders.insert(0, {'method': CompressionMethod.CRYPT_AES256_SHA256,
-                                       'properties': aes_properties, 'numinstreams': 1, 'numoutstreams': 1})
-            else:
-                for filter in filters:
-                    self.cchain.add_filter(get_alternative_compressor(filter))
-                    self.coders.insert(0, {'method': alt_methods_map_r[filter['id']], 'properties': None,
-                                           'numinstreams': 1, 'numoutstreams': 1})
+            raise UnsupportedCompressionMethodError
 
-    def _set_native_coders(self, filters):
+    def _set_native_compressors_coders(self, filters):
+        self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
         for filter in filters:
-            if filter['id'] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2, lzma.FILTER_DELTA]:
-                method = lzma_methods_map_r[filter['id']]
-                properties = lzma._encode_filter_properties(filter)
-                self.coders.insert(0, {'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
-            else:
-                method = lzma_methods_map_r[filter['id']]
-                self.coders.insert(0, {'method': method, 'properties': None, 'numinstreams': 1, 'numoutstreams': 1})
+            self.coders.insert(0, SupportedMethods.get_coder(filter))
+
+    def _set_alternate_compressors_coders(self, filter):
+        compressor = get_alternative_compressor(filter)
+        if SupportedMethods.is_crypto(filter):
+            properties = compressor.encode_filter_properties()
+        else:
+            properties = None
+        self.cchain.add_filter(compressor)
+        self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter),
+                               'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
     def compress(self, data):
         return self.cchain.compress(data)
@@ -566,3 +508,112 @@ class SevenZipCompressor:
     @property
     def packsizes(self):
         return self.cchain.packsizes
+
+
+class MethodsType(Enum):
+    compressor = 0
+    filter = 1
+    crypto = 2
+
+
+class SupportedMethods:
+    """Hold list of methods."""
+
+    formats = [{'name': "7z", 'magic': MAGIC_7Z}]
+    methods = [{'id': CompressionMethod.COPY, 'name': 'COPY', 'native': False,
+                'filter_id': FILTER_COPY, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.LZMA2, 'name': "LZMA2", 'native': True,
+                'filter_id': FILTER_LZMA2, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.DELTA, 'name': "DELTA", 'native': True,
+                'filter_id': FILTER_DELTA, 'type': MethodsType.filter},
+               {'id': CompressionMethod.LZMA, 'name': "LZMA", 'native': True,
+                'filter_id': FILTER_LZMA, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ", 'native': True,
+                'filter_id': FILTER_X86, 'type': MethodsType.filter},
+               {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC', 'native': True,
+                'filter_id': FILTER_POWERPC, 'type': MethodsType.filter},
+               {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64', 'native': True,
+                'filter_id': FILTER_IA64, 'type': MethodsType.filter},
+               {'id': CompressionMethod.BCJ_ARM, 'name': "ARM", 'native': True,
+                'filter_id': FILTER_ARM, 'type': MethodsType.filter},
+               {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT", 'native': True,
+                'filter_id': FILTER_ARMTHUMB, 'type': MethodsType.filter},
+               {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC', 'native': True,
+                'filter_id': FILTER_SPARC, 'type': MethodsType.filter},
+               {'id': CompressionMethod.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False,
+                'filter_id': FILTER_DEFLATE, 'type': MethodsType.filter},
+               {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2', 'native': False,
+                'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False,
+                'filter_id': FILTER_ZSTD, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False,
+                'filter_id': FILTER_CRYPTO_AES256_SHA256, 'type': MethodsType.crypto},
+               ]
+
+    @classmethod
+    def _find_method(cls, key_id, key_value):
+        return next((item for item in cls.methods if item[key_id] == key_value), None)
+
+    @classmethod
+    def get_filter_id(cls, coder):
+        return cls._find_method('id', coder['method'])['filter_id']
+
+    @classmethod
+    def is_native_filter(cls, filter) -> bool:
+        method = cls._find_method('filter_id', filter['id'])
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['native']
+
+    @classmethod
+    def is_compressor(cls, filter):
+        method = cls._find_method('filter_id', filter['id'])
+        return method['type'] == MethodsType.compressor
+
+    @classmethod
+    def is_native_coder(cls, coder) -> bool:
+        method = cls._find_method('id', coder['method'])
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['native']
+
+    @classmethod
+    def is_crypto(cls, filter) -> bool:
+        method = cls._find_method('filter_id', filter['id'])
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['type'] == MethodsType.crypto
+
+    @classmethod
+    def get_method_id(cls, filter) -> bytes:
+        method = cls._find_method('filter_id', filter['id'])
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['id']
+
+    @classmethod
+    def get_coder(cls, filter) -> Dict[str, Any]:
+        method = cls.get_method_id(filter)
+        if filter['id'] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2, lzma.FILTER_DELTA]:
+            properties = lzma._encode_filter_properties(filter)
+        else:
+            properties = None
+        return {'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1}
+
+
+def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
+    # list of known method names with a display priority order
+    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'ZStandard', 'LZ4*', 'BCJ2*',
+                        'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
+    unsupported_methods = {CompressionMethod.P7Z_BCJ2: 'BCJ2*',
+                           CompressionMethod.MISC_LZ4: 'LZ4*',
+                           CompressionMethod.MISC_DEFLATE64: 'DEFLATE64*'}
+    methods_names = []
+    for coders in coders_lists:
+        for coder in coders:
+            for m in SupportedMethods.methods:
+                if coder['method'] == m['id']:
+                    methods_names.append(m['name'])
+            if coder['method'] in unsupported_methods:
+                methods_names.append(unsupported_methods[coder['method']])
+    return ', '.join(filter(lambda x: x in methods_names, methods_namelist))

@@ -304,7 +304,7 @@ Command-line options
 
 
 Extract command options
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. option:: -P --password
 

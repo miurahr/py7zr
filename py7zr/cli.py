@@ -31,8 +31,9 @@ import texttable  # type: ignore
 
 import py7zr
 from py7zr.callbacks import ExtractCallback
+from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
-from py7zr.properties import READ_BLOCKSIZE, SupportedMethods
+from py7zr.properties import READ_BLOCKSIZE
 
 
 class CliExtractCallback(ExtractCallback):
