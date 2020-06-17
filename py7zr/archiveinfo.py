@@ -365,8 +365,8 @@ class Folder:
             for i in range(num_packedstreams):
                 self.packed_indices.append(read_uint64(file))
 
-    def prepare_coderinfo(self, compressor):
-        self.compressor = compressor
+    def prepare_coderinfo(self, filters):
+        self.compressor = SevenZipCompressor(filters=filters)
         self.coders = self.compressor.coders
         assert len(self.coders) > 0
         self.solid = True
@@ -930,7 +930,7 @@ class Header:
         buf = io.BytesIO()
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
         folder = Folder()
-        folder.prepare_coderinfo(compressor=SevenZipCompressor(filters=filters))
+        folder.prepare_coderinfo(filters=filters)
         assert folder.compressor is not None
         streams = HeaderStreamsInfo()
         streams.unpackinfo.folders = [folder]
