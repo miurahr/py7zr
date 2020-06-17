@@ -10,15 +10,11 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Support extra methods for archiveinfo() method.(#150)
-
 Changed
 -------
 
 Fixed
 -----
-
-* Fix extraction error on python 3.5.(#151)
 
 Deprecated
 ----------
@@ -28,6 +24,19 @@ Removed
 
 Security
 --------
+
+`v0.8.0b4`_
+===========
+
+Added
+-----
+
+* Support extra methods for archiveinfo() method.(#150)
+
+Fixed
+-----
+
+* Fix extraction error on python 3.5.(#151)
 
 `v0.8.0b3`_
 ===========
@@ -880,7 +889,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b4...HEAD
+.. _v0.8.0b4: https://github.com/miurahr/py7zr/compare/v0.8.0b3...v0.8.0b4
 .. _v0.8.0b3: https://github.com/miurahr/py7zr/compare/v0.8.0b2...v0.8.0b3
 .. _v0.8.0b2: https://github.com/miurahr/py7zr/compare/v0.8.0b1...v0.8.0b2
 .. _v0.8.0b1: https://github.com/miurahr/py7zr/compare/v0.8.0a3...v0.8.0b1
