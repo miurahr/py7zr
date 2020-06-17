@@ -6,5 +6,7 @@ branch = True
 [report]
 exclude_lines =
     if __name__ == .__main__.:
+    pragma: no-cover
+    @abstract
     # Don't complain about missing debug-only code:
     def __repr__
