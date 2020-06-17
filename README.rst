@@ -253,8 +253,9 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019 Hiroshi Miura
-* Copyright (c) 2004-2015 by Joachim Bauch
+* Copyright (C) 2019,2020 Hiroshi Miura
+
+* pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 * LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
 
