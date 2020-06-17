@@ -32,3 +32,15 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
+  finish:
+    runs-on: ubuntu-latest
+    name: finish parallel build
+    needs: build
+    steps:
+      - name: Tell Coveralls that the parallel build is finished
+        run: |
+          curl -k \
+              https://coveralls.io/webhook?repo_token=$COVERALLS_REPO_TOKEN \
+              -d "payload[build_num]=$GITHUB_SHA&payload[status]=done"
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
