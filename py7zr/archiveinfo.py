@@ -36,7 +36,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile, InternalError
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, CompressionMethod, Property
+from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, Property
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b'\x00'
@@ -435,9 +435,6 @@ class Folder:
             if bond.outcoder == index:
                 return idx
         return -1
-
-    def is_encrypted(self) -> bool:
-        return CompressionMethod.CRYPT_AES256_SHA256 in [x['method'] for x in self.coders]
 
 
 class UnpackInfo:
