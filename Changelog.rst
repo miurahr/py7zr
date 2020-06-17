@@ -10,13 +10,15 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support extra methods for archiveinfo() method.(#150)
+
 Changed
 -------
 
 Fixed
 -----
 
-* Fix extraction error on python 3.5(#151)
+* Fix extraction error on python 3.5.(#151)
 
 Deprecated
 ----------
