@@ -38,10 +38,10 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
-from py7zr.compressor import SevenZipCompressor
+from py7zr.compressor import get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchivePassword, ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE, get_methods_names_string
+from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
 
 if sys.version_info < (3, 6):
     import contextlib2 as contextlib
@@ -330,7 +330,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     pass
                 self.folder = Folder()
-                self.folder.prepare_coderinfo(compressor=SevenZipCompressor(filters))
+                self.folder.prepare_coderinfo(filters)
                 self.files = ArchiveFileList()
                 self.sig_header = SignatureHeader()
                 self.sig_header._write_skelton(self.fp)
