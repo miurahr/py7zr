@@ -104,33 +104,31 @@ class AESCompressor(ISevenZipCompressor):
         # So the encoder and decoder write such last bytes without change.
         # */
         currentlen = len(self.buf) + len(data)
-        nextpos = (currentlen // self.AES_CBC_BLOCKSIZE) * self.AES_CBC_BLOCKSIZE
-        if currentlen == nextpos:
+        # hopefully aligned and larger than block size.
+        if currentlen >= 16 and (currentlen & 0x0f) == 0:
             self.buf.add(data)
             res = self.cipher.encrypt(self.buf.view)
             self.buf.reset()
-        elif nextpos < 16:
-            self.buf.add(data)
-            res = b''
-        else:
+        elif currentlen > 16:  # when not aligned
+            # nextpos = (currentlen // self.AES_CBC_BLOCKSIZE) * self.AES_CBC_BLOCKSIZE
+            nextpos = currentlen & ~0x0f
             buflen = len(self.buf)
             self.buf.add(data[:nextpos - buflen])
             res = self.cipher.encrypt(self.buf.view)
             self.buf.set(data[nextpos - buflen:])
+        else:  # pragma: no-cover # smaller than block size, it will processed when flush()
+            self.buf.add(data)
+            res = b''
         return res
 
     def flush(self):
-        if self.flushed:
-            return b''
-        currentlen = len(self.buf)
-        if currentlen == 0:
-            self.flushed = True
-            return b''
-        padlen = -currentlen & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
-        self.buf.add(bytes(padlen))
-        res = self.cipher.encrypt(self.buf.view)
-        self.buf.reset()
-        self.flushed = True
+        if len(self.buf) > 0:
+            padlen = -len(self.buf) & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
+            self.buf.add(bytes(padlen))
+            res = self.cipher.encrypt(self.buf.view)
+            self.buf.reset()
+        else:
+            res = b''
         return res
 
 
@@ -158,15 +156,29 @@ class AESDecompressor(ISevenZipDecompressor):
             key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
-            self.flushed = False
         else:
             raise UnsupportedCompressionMethodError
 
     def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        if len(data) == 0 and len(self.buf) == 0:  # action flush
+        currentlen = len(self.buf) + len(data)
+        # when aligned to 16 bytes(expected)
+        if len(data) > 0 and (currentlen & 0x0f) == 0:
+            self.buf.add(data)
+            temp = self.cipher.decrypt(self.buf.view)
+            self.buf.reset()
+            return temp
+        elif len(data) > 0:  # pragma: no-cover
+            # nextpos = (currentlen // 16) * 16
+            nextpos = currentlen & ~0x0f
+            buflen = len(self.buf)
+            temp2 = data[nextpos - buflen:]
+            self.buf.add(data[:nextpos - buflen])
+            temp = self.cipher.decrypt(self.buf.view)
+            self.buf.set(temp2)
+            return temp
+        elif len(self.buf) == 0:  # pragma: no-cover  # action flush
             return b''
-        elif len(data) == 0:  # action padding
-            self.flushded = True
+        else:  # pragma: no-cover  # action padding
             # align = 16
             # padlen = (align - offset % align) % align
             #       = (align - (offset & (align - 1))) & (align - 1)
@@ -174,24 +186,9 @@ class AESDecompressor(ISevenZipDecompressor):
             #       = -offset & (16 - 1) = -offset & 15
             padlen = -len(self.buf) & 15
             self.buf.add(bytes(padlen))
-            temp = self.cipher.decrypt(self.buf.view)  # type: bytes
+            temp3 = self.cipher.decrypt(self.buf.view)  # type: bytes
             self.buf.reset()
-            return temp
-        else:
-            currentlen = len(self.buf) + len(data)
-            nextpos = (currentlen // 16) * 16
-            if currentlen == nextpos:
-                self.buf.add(data)
-                temp = self.cipher.decrypt(self.buf.view)
-                self.buf.reset()
-                return temp
-            else:
-                buflen = len(self.buf)
-                temp2 = data[nextpos - buflen:]
-                self.buf.add(data[:nextpos - buflen])
-                temp = self.cipher.decrypt(self.buf.view)
-                self.buf.set(temp2)
-                return temp
+            return temp3
 
 
 class DeflateCompressor(ISevenZipCompressor):
