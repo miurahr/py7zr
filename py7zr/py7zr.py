@@ -534,7 +534,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except KeyError:
             raise UnsupportedCompressionMethodError("Unknown method")
 
-    def _read_digest(self, pos: int, size: int) -> bool:
+    def _read_digest(self, pos: int, size: int) -> int:
         self.fp.seek(pos)
         remaining_size = size
         digest = 0
