@@ -336,6 +336,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.sig_header._write_skelton(self.fp)
                 self.afterheader = self.fp.tell()
                 self.header = Header.build_header([self.folder])
+                if self.password_protected:
+                    self.header.main_streams.packinfo.enable_digests = False  # FIXME: workaround for p7zip compatibility
                 self._reset_worker()
             elif mode in 'x':
                 raise NotImplementedError

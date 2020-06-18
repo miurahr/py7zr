@@ -242,13 +242,14 @@ class ArchiveProperties:
 class PackInfo:
     """ information about packed streams """
 
-    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs']
+    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs', 'enable_digests']
 
     def __init__(self) -> None:
         self.packpos = 0  # type: int
         self.numstreams = 0  # type: int
         self.packsizes = []  # type: List[int]
         self.crcs = []  # type: List[int]
+        self.enable_digests = True
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -279,9 +280,10 @@ class PackInfo:
         write_byte(file, Property.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
-        write_bytes(file, Property.CRC)
-        for crc in self.crcs:
-            write_uint64(file, crc)
+        if self.enable_digests:
+            write_bytes(file, Property.CRC)
+            for crc in self.crcs:
+                write_uint64(file, crc)
         write_byte(file, Property.END)
 
 
