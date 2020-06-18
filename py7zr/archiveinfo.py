@@ -455,13 +455,13 @@ class UnpackInfo:
     def _read(self, file: BinaryIO):
         pid = file.read(1)
         if pid != Property.FOLDER:
-            raise Bad7zFile('folder id expected but %s found' % repr(pid))
+            raise Bad7zFile('folder id expected but %s found' % repr(pid))  # pragma: no-cover
         self.numfolders = read_uint64(file)
         self.folders = []
         external = read_byte(file)
         if external == 0x00:
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
-        else:
+        else:  # pragma: no-cover  # there is no live example
             datastreamidx = read_uint64(file)
             current_pos = file.tell()
             file.seek(datastreamidx, 0)
@@ -472,7 +472,7 @@ class UnpackInfo:
     def _retrieve_coders_info(self, file: BinaryIO):
         pid = file.read(1)
         if pid != Property.CODERS_UNPACK_SIZE:
-            raise Bad7zFile('coders unpack size id expected but %s found' % repr(pid))
+            raise Bad7zFile('coders unpack size id expected but %s found' % repr(pid))  # pragma: no-cover
         for folder in self.folders:
             for c in folder.coders:
                 for _ in range(c['numoutstreams']):
@@ -486,7 +486,7 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))
+            raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))  # pragma: no-cover  # noqa
 
     def write(self, file: BinaryIO):
         assert self.numfolders is not None
@@ -570,7 +570,7 @@ class SubstreamsInfo:
                         didx += 1
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %r found' % pid)
+            raise Bad7zFile('end id expected but %r found' % pid)  # pragma: no-cover
         if not self.digestsdefined:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
@@ -630,7 +630,7 @@ class StreamsInfo:
             self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % repr(pid))
+            raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover
 
     def write(self, file: BinaryIO):
         write_byte(file, Property.MAIN_STREAMS_INFO)
@@ -695,12 +695,12 @@ class FilesInfo:
             elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
             elif prop == Property.ANTI:
-                self.antifiles = read_boolean(buffer, numemptystreams, checkall=False)
+                self.antifiles = read_boolean(buffer, numemptystreams, checkall=False)  # pragma: no-cover  # no live example
             elif prop == Property.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_name(buffer)
-                else:
+                else:  # pragma: no-cover
                     dataindex = read_uint64(buffer)
                     current_pos = fp.tell()
                     fp.seek(dataindex, 0)
@@ -717,7 +717,7 @@ class FilesInfo:
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_attributes(buffer, defined)
-                else:
+                else:  # pragma: no-cover
                     dataindex = read_uint64(buffer)
                     # try to read external data
                     current_pos = fp.tell()
@@ -727,7 +727,7 @@ class FilesInfo:
             elif prop == Property.START_POS:
                 self._read_start_pos(buffer)
             else:
-                raise Bad7zFile('invalid type %r' % prop)
+                raise Bad7zFile('invalid type %r' % prop)  # pragma: no-cover
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
@@ -891,7 +891,7 @@ class Header:
             self._extract_header_info(buffer)
             return
         elif pid != Property.ENCODED_HEADER:
-            raise TypeError('Unknown field: %r' % id)
+            raise TypeError('Unknown field: %r' % id)  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
         self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
@@ -995,7 +995,7 @@ class Header:
             self.files_info = FilesInfo.retrieve(fp)
             pid = fp.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % (repr(pid)))
+            raise Bad7zFile('end id expected but %s found' % (repr(pid)))  # pragma: no-cover
 
     @staticmethod
     def build_header(folders):
