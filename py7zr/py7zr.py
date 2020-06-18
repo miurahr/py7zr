@@ -336,6 +336,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.sig_header._write_skelton(self.fp)
                 self.afterheader = self.fp.tell()
                 self.header = Header.build_header([self.folder])
+                if self.password_protected:
+                    self.header.main_streams.packinfo.enable_digests = False  # FIXME: workaround for p7zip compatibility
                 self._reset_worker()
             elif mode in 'x':
                 raise NotImplementedError
@@ -534,7 +536,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except KeyError:
             raise UnsupportedCompressionMethodError("Unknown method")
 
-    def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
+    def _read_digest(self, pos: int, size: int) -> int:
         self.fp.seek(pos)
         remaining_size = size
         digest = 0
@@ -542,7 +544,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             block = min(READ_BLOCKSIZE, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
-        return digest == crc
+        return digest
 
     def _write_archive(self):
         self.worker.archive(self.fp, self.folder, deref=self.dereference)
@@ -898,11 +900,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         crcs = self.header.main_streams.packinfo.crcs  # type: Optional[List[int]]
         if crcs is None or len(crcs) == 0:
             return None
-        # check packed stream's crc
-        assert len(crcs) == len(self.header.main_streams.packinfo.packpositions)
-        for i, p in enumerate(self.header.main_streams.packinfo.packpositions):
-            if not self._test_digest_raw(p, self.header.main_streams.packinfo.packsizes[i], crcs[i]):
+        packpos = self.afterheader + self.header.main_streams.packinfo.packpos
+        packsizes = self.header.main_streams.packinfo.packsizes
+        for i in range(len(packsizes)):
+            if self._read_digest(packpos, packsizes[i]) != crcs[i]:
                 return False
+            packpos += packsizes[i]
         return True
 
     def testzip(self) -> Optional[str]:
@@ -1094,7 +1097,6 @@ class Worker:
     def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
-        outsize = 0
         unpacksize = 0
         self.header.main_streams.packinfo.numstreams = 1
         num_unpack_streams = 0
@@ -1115,7 +1117,6 @@ class Worker:
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)  # type: int
                 out = compressor.compress(tgt)
-                outsize += len(out)
                 foutsize += len(out)
                 fp.write(out)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
@@ -1135,7 +1136,6 @@ class Worker:
                     while data:
                         crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
-                        outsize += len(out)
                         foutsize += len(out)
                         fp.write(out)
                         data = fd.read(READ_BLOCKSIZE)
@@ -1148,13 +1148,13 @@ class Worker:
                 unpacksize += insize
         else:
             out = compressor.flush()
-            outsize += len(out)
             foutsize += len(out)
             fp.write(out)
             if len(self.files) > 0:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
-        self.header.main_streams.packinfo.packsizes = [outsize]
+        self.header.main_streams.packinfo.crcs = [compressor.digest]
+        self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         folder.unpacksizes = compressor.unpacksizes
 

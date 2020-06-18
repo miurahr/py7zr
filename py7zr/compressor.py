@@ -405,36 +405,34 @@ class CompressorChain:
 
     def __init__(self, methods_map):
         self.filters = []  # type: List[ISevenZipCompressor]
-        self.digests = []
-        self.packsizes = []
+        self.digest = 0
+        self.packsize = 0
         self._unpacksizes = []
         self.methods_map = methods_map
 
     def add_filter(self, filter):
         self.filters.append(filter)
-        self.digests.append(0)
-        self.packsizes.append(0)
         self._unpacksizes.append(0)
 
     def compress(self, data):
         for i, compressor in enumerate(self.filters):
-            self.digests[i] += calculate_crc32(data, self.digests[i])
             self._unpacksizes[i] += len(data)
             data = compressor.compress(data)
-            self.packsizes[i] += len(data)
+        self.packsize += len(data)
+        self.digest += calculate_crc32(data, self.digest)
         return data
 
     def flush(self):
         data = None
         for i, compressor in enumerate(self.filters):
             if data:
-                self.digests[i] += calculate_crc32(data, self.digests[i])
                 self._unpacksizes[i] += len(data)
                 data = compressor.compress(data)
                 data += compressor.flush()
             else:
                 data = compressor.flush()
-            self.packsizes[i] += len(data)
+        self.packsize += len(data)
+        self.digest += calculate_crc32(data, self.digest)
         return data
 
     @property
@@ -452,7 +450,7 @@ class CompressorChain:
 class SevenZipCompressor:
     """Main compressor object to configured for each 7zip folder."""
 
-    __slots__ = ['filters', 'compressor', 'coders', 'digest', 'cchain', 'methods_map']
+    __slots__ = ['filters', 'compressor', 'coders', 'cchain', 'methods_map']
 
     def __init__(self, filters=None):
         if filters is None:
@@ -497,16 +495,16 @@ class SevenZipCompressor:
         return self.cchain.flush()
 
     @property
-    def digests(self):
-        return self.cchain.digests
+    def digest(self):
+        return self.cchain.digest
 
     @property
     def unpacksizes(self):
         return self.cchain.unpacksizes
 
     @property
-    def packsizes(self):
-        return self.cchain.packsizes
+    def packsize(self):
+        return self.cchain.packsize
 
 
 class MethodsType(Enum):

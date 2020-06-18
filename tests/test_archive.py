@@ -254,6 +254,9 @@ def test_compress_files_1(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        assert archive.test()
+    #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
@@ -290,6 +293,12 @@ def test_compress_with_simple_filter(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.api
@@ -303,6 +312,12 @@ def test_compress_with_custom_filter(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -349,6 +364,12 @@ def test_compress_files_3(tmp_path):
     reader.close()
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -582,6 +603,7 @@ def test_compress_files_deref_loop(tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skip(reason="Uncompleted implementation.")
 def test_compress_copy(tmp_path):
     my_filters = [{'id': py7zr.FILTER_COPY}]
     tmp_path.joinpath('src').mkdir()
