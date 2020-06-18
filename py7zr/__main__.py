@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #    Pure python p7zr implementation
-#    Copyright (C) 2019 Hiroshi Miura
+#    Copyright (C) 2019,2020 Hiroshi Miura
 #
 #    This library is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,12 @@
 
 import sys
 
-from . import main
+from . import cli
+
+
+def main():
+    return cli.Cli().run()
+
 
 if __name__ == "__main__":
     sys.exit(main())

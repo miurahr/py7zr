@@ -17,9 +17,8 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-from pkg_resources import DistributionNotFound, get_distribution
+from importlib.metadata import version, PackageNotFoundError
 
-from py7zr.cli import Cli
 from py7zr.exceptions import Bad7zFile, DecompressionError, UnsupportedCompressionMethodError
 from py7zr.properties import (CHECK_CRC32, CHECK_CRC64, CHECK_NONE, CHECK_SHA256, FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2,
                               FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64,
@@ -30,8 +29,8 @@ from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7za
 __copyright__ = 'Copyright (C) 2019,2020 Hiroshi Miura'
 
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
+    __version__ = version(__name__)
+except PackageNotFoundError:  # pragma: no-cover
     # package is not installed
     __version__ = "unknown"
 
@@ -41,8 +40,3 @@ __all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile'
            'FILTER_X86', 'FILTER_ARM', 'FILTER_SPARC', 'FILTER_POWERPC', 'FILTER_IA64', 'FILTER_ARMTHUMB',
            'FILTER_BZIP2', 'FILTER_DEFLATE', 'FILTER_ZSTD',
            'CHECK_SHA256', 'CHECK_CRC64', 'CHECK_CRC32', 'CHECK_NONE', 'PRESET_DEFAULT', 'PRESET_EXTREME']
-
-
-def main():
-    cli = Cli()
-    return cli.run()

@@ -21,6 +21,7 @@ import argparse
 import getpass
 import os
 import pathlib
+import platform
 import re
 import shutil
 import sys
@@ -28,6 +29,10 @@ from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, List, Optional
 
 import texttable  # type: ignore
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
 
 import py7zr
 from py7zr.callbacks import ExtractCallback
@@ -81,13 +86,20 @@ class Cli():
 
     def run(self, arg: Optional[Any] = None) -> int:
         args = self.parser.parse_args(arg)
+        if args.version:
+            return self.show_version()
         return args.func(args)
 
     def _create_parser(self):
         parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
                                          formatter_class=argparse.RawTextHelpFormatter, add_help=True)
-        subparsers = parser.add_subparsers(title='subcommands', help='subcommand for py7zr l .. list, x .. extract,'
-                                                                     ' t .. check integrity, i .. information')
+        subparsers = parser.add_subparsers(title='subcommands', help='''<Commands>
+  c : Create archive with files
+  i : Show information about supported formats
+  l : List contents of archive
+  t : Test integrity of archive
+  x : eXtract files with full paths
+''')
         list_parser = subparsers.add_parser('l')
         list_parser.set_defaults(func=self.run_list)
         list_parser.add_argument("arcfile", help="7z archive file")
@@ -109,16 +121,27 @@ class Cli():
         test_parser.add_argument("arcfile", help="7z archive file")
         info_parser = subparsers.add_parser("i")
         info_parser.set_defaults(func=self.run_info)
+        parser.add_argument("--version", action="store_true", help="Show version")
         parser.set_defaults(func=self.show_help)
         return parser
 
+    def show_version(self):
+        dist = importlib_metadata.distribution('py7zr')
+        module_name = dist.entry_points[0].name
+        py_version = platform.python_version()
+        py_impl = platform.python_implementation()
+        py_build = platform.python_compiler()
+        print("{} Version {} : {} (Python {} [{} {}])".format(module_name, py7zr.__version__, py7zr.__copyright__,
+                                                              py_version, py_impl, py_build))
+
     def show_help(self, args):
+        self.show_version()
         self.parser.print_help()
         return(0)
 
     def run_info(self, args):
-        print("py7zr version {} {}".format(py7zr.__version__, py7zr.__copyright__))
-        print("Formats:")
+        self.show_version()
+        print("\nFormats:")
         table = texttable.Texttable()
         table.set_deco(texttable.Texttable.HEADER)
         table.set_cols_dtype(['t', 't'])
@@ -127,7 +150,7 @@ class Cli():
             m = ''.join(' {:02x}'.format(x) for x in f['magic'])
             table.add_row([f['name'], m])
         print(table.draw())
-        print("\nCodecs:")
+        print("\nCodecs and Hashes:")
         table = texttable.Texttable()
         table.set_deco(texttable.Texttable.HEADER)
         table.set_cols_dtype(['t', 't'])
@@ -135,14 +158,12 @@ class Cli():
         for c in SupportedMethods.methods:
             m = ''.join('{:02x}'.format(x) for x in c['id'])
             table.add_row([m, c['name']])
-        print(table.draw())
-        print("\nChecks:")
-        print("CHECK_NONE")
-        print("CHECK_CRC32")
-        if is_check_supported(CHECK_CRC64):
-            print("CHECK_CRC64")
+        table.add_row(['0', 'CRC32'])
         if is_check_supported(CHECK_SHA256):
-            print("CHECK_SHA256")
+            table.add_row(['0', 'SHA256'])
+        if is_check_supported(CHECK_CRC64):
+            table.add_row(['0', 'CRC64'])
+        print(table.draw())
 
     def run_list(self, args):
         """Print a table of contents to file. """
