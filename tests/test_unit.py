@@ -355,6 +355,19 @@ def test_utc():
 
 
 @pytest.mark.unit
+def test_utcoffset():
+    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0)
+    assert py7zr.helpers.Local.utcoffset(dt) is not None
+
+
+@pytest.mark.unit
+def test_dst():
+    dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0)
+    dst = py7zr.helpers.Local.dst(dt)
+    assert dst == datetime.timedelta(0) or dst == datetime.timedelta(hours=1)
+
+
+@pytest.mark.unit
 def test_localtime_tzname():
     dt = datetime.datetime(2019, 6, 1, 12, 13, 14, 0)
     assert py7zr.helpers.Local.tzname(dt) is not None
