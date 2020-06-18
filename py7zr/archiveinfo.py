@@ -411,10 +411,7 @@ class Folder:
             return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:
-        if self.compressor is not None:
-            return self.compressor
-        else:
-            raise InternalError
+        return self.compressor
 
     def get_unpack_size(self) -> int:
         if self.unpacksizes is None:
@@ -422,7 +419,8 @@ class Folder:
         for i in range(len(self.unpacksizes) - 1, -1, -1):
             if self._find_out_bin_pair(i):
                 return self.unpacksizes[i]
-        raise TypeError('not found')
+        else:
+            return self.unpacksizes[-1]
 
     def _find_in_bin_pair(self, index: int) -> int:
         for idx, bond in enumerate(self.bindpairs):
