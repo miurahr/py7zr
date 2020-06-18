@@ -248,7 +248,7 @@ class PackInfo:
         self.packpos = 0  # type: int
         self.numstreams = 0  # type: int
         self.packsizes = []  # type: List[int]
-        self.crcs = None  # type: Optional[List[int]]
+        self.crcs = []  # type: List[int]
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -272,17 +272,16 @@ class PackInfo:
     def write(self, file: BinaryIO):
         assert self.packpos is not None
         numstreams = len(self.packsizes)
-        assert self.crcs is None or len(self.crcs) == numstreams
+        assert len(self.crcs) == numstreams
         write_byte(file, Property.PACK_INFO)
         write_uint64(file, self.packpos)
         write_uint64(file, numstreams)
         write_byte(file, Property.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
-        if self.crcs is not None:
-            write_bytes(file, Property.CRC)
-            for crc in self.crcs:
-                write_uint64(file, crc)
+        write_bytes(file, Property.CRC)
+        for crc in self.crcs:
+            write_uint64(file, crc)
         write_byte(file, Property.END)
 
 
@@ -932,19 +931,17 @@ class Header:
         streams.packinfo.packpos = packpos
         folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
-        compressed_len = 0
         buf.seek(0, 0)
         data = buf.read(io.DEFAULT_BUFFER_SIZE)
         while data:
             out = folder.compressor.compress(data)
-            compressed_len += len(out)
             file.write(out)
             data = buf.read(io.DEFAULT_BUFFER_SIZE)
         out = folder.compressor.flush()
-        compressed_len += len(out)
         file.write(out)
         #
-        streams.packinfo.packsizes = [compressed_len]
+        streams.packinfo.packsizes = [folder.compressor.packsize]
+        streams.packinfo.crcs = [folder.compressor.digest]
         # actual header start position
         startpos = file.tell()
         write_byte(file, Property.ENCODED_HEADER)

@@ -1094,7 +1094,6 @@ class Worker:
     def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
-        outsize = 0
         unpacksize = 0
         self.header.main_streams.packinfo.numstreams = 1
         num_unpack_streams = 0
@@ -1115,7 +1114,6 @@ class Worker:
                 insize = len(tgt)
                 crc = calculate_crc32(tgt, 0)  # type: int
                 out = compressor.compress(tgt)
-                outsize += len(out)
                 foutsize += len(out)
                 fp.write(out)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
@@ -1135,7 +1133,6 @@ class Worker:
                     while data:
                         crc = calculate_crc32(data, crc)
                         out = compressor.compress(data)
-                        outsize += len(out)
                         foutsize += len(out)
                         fp.write(out)
                         data = fd.read(READ_BLOCKSIZE)
@@ -1148,13 +1145,13 @@ class Worker:
                 unpacksize += insize
         else:
             out = compressor.flush()
-            outsize += len(out)
             foutsize += len(out)
             fp.write(out)
             if len(self.files) > 0:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
-        self.header.main_streams.packinfo.packsizes = [outsize]
+        self.header.main_streams.packinfo.crcs = [compressor.digest]
+        self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         folder.unpacksizes = compressor.unpacksizes
 
