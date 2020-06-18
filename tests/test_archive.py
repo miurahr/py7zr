@@ -254,6 +254,9 @@ def test_compress_files_1(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        assert archive.test()
+    #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
