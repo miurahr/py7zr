@@ -34,7 +34,7 @@ from struct import pack, unpack
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
 from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
-from py7zr.exceptions import Bad7zFile, InternalError
+from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, Property
 
@@ -411,17 +411,16 @@ class Folder:
             return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:
-        if self.compressor is not None:
-            return self.compressor
-        else:
-            raise InternalError
+        assert self.compressor
+        return self.compressor
 
     def get_unpack_size(self) -> int:
         if self.unpacksizes is None:
             return 0
         for i in range(len(self.unpacksizes) - 1, -1, -1):
-            if self._find_out_bin_pair(i):
+            if self._find_out_bin_pair(i) < 0:
                 return self.unpacksizes[i]
+        return self.unpacksizes[-1]
 
     def _find_in_bin_pair(self, index: int) -> int:
         for idx, bond in enumerate(self.bindpairs):

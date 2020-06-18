@@ -415,6 +415,13 @@ def test_calculate_crc32():
 
 
 @pytest.mark.unit
+def test_calculate_crc32_blocksize():
+    test_data = open(os.path.join(testdata_path, 'test_1.7z'), 'rb').read()
+    expected = 0x3b04c652
+    assert py7zr.helpers.calculate_crc32(test_data, value=0, blocksize=128) == expected
+
+
+@pytest.mark.unit
 def test_startheader_calccrc():
     startheader = py7zr.archiveinfo.SignatureHeader()
     startheader.version = (0, 4)

@@ -390,8 +390,10 @@ class SevenZipDecompressor:
         else:
             folder_data = self.cchain.decompress(data)
         # calculate CRC with uncompressed data
-        if self.crc is not None:
+        if self.digest:
             self.digest = calculate_crc32(folder_data, self.digest)
+        else:
+            self.digest = calculate_crc32(folder_data)
         return folder_data
 
     def check_crc(self):
