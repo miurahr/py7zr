@@ -104,33 +104,31 @@ class AESCompressor(ISevenZipCompressor):
         # So the encoder and decoder write such last bytes without change.
         # */
         currentlen = len(self.buf) + len(data)
-        nextpos = (currentlen // self.AES_CBC_BLOCKSIZE) * self.AES_CBC_BLOCKSIZE
-        if currentlen == nextpos:
+        # hopefully aligned and larger than block size.
+        if currentlen >= 16 and (currentlen & 0x0f) == 0:
             self.buf.add(data)
             res = self.cipher.encrypt(self.buf.view)
             self.buf.reset()
-        elif nextpos < 16:
-            self.buf.add(data)
-            res = b''
-        else:
+        elif currentlen > 16:  # when not aligned
+            # nextpos = (currentlen // self.AES_CBC_BLOCKSIZE) * self.AES_CBC_BLOCKSIZE
+            nextpos = currentlen & ~0x0f
             buflen = len(self.buf)
             self.buf.add(data[:nextpos - buflen])
             res = self.cipher.encrypt(self.buf.view)
             self.buf.set(data[nextpos - buflen:])
+        else:  # pragma: no-cover # smaller than block size, it will processed when flush()
+            self.buf.add(data)
+            res = b''
         return res
 
     def flush(self):
-        if self.flushed:
-            return b''
-        currentlen = len(self.buf)
-        if currentlen == 0:
-            self.flushed = True
-            return b''
-        padlen = -currentlen & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
-        self.buf.add(bytes(padlen))
-        res = self.cipher.encrypt(self.buf.view)
-        self.buf.reset()
-        self.flushed = True
+        if len(self.buf) > 0:
+            padlen = -len(self.buf) & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
+            self.buf.add(bytes(padlen))
+            res = self.cipher.encrypt(self.buf.view)
+            self.buf.reset()
+        else:
+            res = b''
         return res
 
 
