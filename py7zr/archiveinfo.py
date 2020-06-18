@@ -417,7 +417,7 @@ class Folder:
         if self.unpacksizes is None:
             return 0
         for i in range(len(self.unpacksizes) - 1, -1, -1):
-            if self._find_out_bin_pair(i):
+            if self._find_out_bin_pair(i) < 0:
                 return self.unpacksizes[i]
         return self.unpacksizes[-1]
 
