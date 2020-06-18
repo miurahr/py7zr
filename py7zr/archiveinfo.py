@@ -387,7 +387,7 @@ class Folder:
             flag = struct.pack('B', id_size | iscomplex | hasattributes)
             write_byte(file, flag)
             write_bytes(file, id[:id_size])
-            if not self.is_simple(c):
+            if not self.is_simple(c):  # pragma: no-cover  # Only support simple coders
                 write_uint64(file, c['numinstreams'])
                 write_uint64(file, c['numoutstreams'])
             if c['properties'] is not None:
@@ -396,7 +396,7 @@ class Folder:
         for bond in self.bindpairs:
             write_uint64(file, bond.incoder)
             write_uint64(file, bond.outcoder)
-        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:
+        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:  # pragma: no-cover  # noqa
             for pi in self.packed_indices:
                 write_uint64(file, pi)
 
@@ -419,8 +419,7 @@ class Folder:
         for i in range(len(self.unpacksizes) - 1, -1, -1):
             if self._find_out_bin_pair(i):
                 return self.unpacksizes[i]
-        else:
-            return self.unpacksizes[-1]
+        return self.unpacksizes[-1]
 
     def _find_in_bin_pair(self, index: int) -> int:
         for idx, bond in enumerate(self.bindpairs):
