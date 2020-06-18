@@ -537,7 +537,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _test_digest_raw(self, pos: int, size: int, crc: int) -> bool:
         self.fp.seek(pos)
         remaining_size = size
-        digest = None
+        digest = 0
         while remaining_size > 0:
             block = min(READ_BLOCKSIZE, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
