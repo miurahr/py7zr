@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 #
 # This library is free software; you can redistribute it and/or
@@ -35,18 +35,17 @@ from typing import BinaryIO, Optional, Union
 import py7zr.win32compat
 
 
-def calculate_crc32(data: bytes, value: Optional[int] = None, blocksize: int = 1024 * 1024) -> int:
+def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
     """Calculate CRC32 of strings with arbitrary lengths."""
-    length = len(data)
-    pos = blocksize
-    if value:
-        value = zlib.crc32(data[:pos], value)
+    if len(data) <= blocksize:
+        value = zlib.crc32(data, value)
     else:
-        value = zlib.crc32(data[:pos])
-    while pos < length:
-        value = zlib.crc32(data[pos:pos + blocksize], value)
-        pos += blocksize
-
+        length = len(data)
+        pos = blocksize
+        value = zlib.crc32(data[:pos], value)
+        while pos < length:
+            value = zlib.crc32(data[pos:pos + blocksize], value)
+            pos += blocksize
     return value & 0xffffffff
 
 
