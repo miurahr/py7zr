@@ -511,13 +511,19 @@ def test_sevenzipcompressor_default():
 
 @pytest.mark.unit
 def test_archive_password():
-    a = py7zr.helpers.ArchivePassword('secret')
-    assert str(a) == 'secret'
-    assert a.get() == 'secret'
-    b = py7zr.helpers.ArchivePassword()
+    a = py7zr.helpers.ArchivePassword()
+    assert str(a) == ''
+    assert a.get() == ''
+    b = py7zr.helpers.ArchivePassword('secret')
+    assert str(b) == 'secret'
     assert b.get() == 'secret'
-    b.set('password')
+    assert a.get() == 'secret'
+    c = py7zr.helpers.ArchivePassword()
+    assert c.get() == 'secret'
+    c.set('password')
+    assert c.get() == 'password'
     assert b.get() == 'password'
+    assert a.get() == 'password'
 
 
 @pytest.mark.unit
