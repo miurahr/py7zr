@@ -25,6 +25,22 @@ Removed
 Security
 --------
 
+`v0.8.0b5`_
+===========
+
+Fixed
+-----
+
+* SevenZipFile.test() method now working properly. (#155)
+
+Changed
+-------
+
+* Add 'packinfo.crcs' field digests data when creating archive.(#157)
+  It help checking archive integrity without extraction.
+* CLI: help option to show py7zr version and python version.
+* Use importlib for performance improvement instead of pkg_resources module.
+
 `v0.8.0b4`_
 ===========
 
@@ -889,7 +905,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b5...HEAD
+.. _v0.8.0b5: https://github.com/miurahr/py7zr/compare/v0.8.0b4...v0.8.0b5
 .. _v0.8.0b4: https://github.com/miurahr/py7zr/compare/v0.8.0b3...v0.8.0b4
 .. _v0.8.0b3: https://github.com/miurahr/py7zr/compare/v0.8.0b2...v0.8.0b3
 .. _v0.8.0b2: https://github.com/miurahr/py7zr/compare/v0.8.0b1...v0.8.0b2
