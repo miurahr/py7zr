@@ -236,9 +236,9 @@ Everything is Ok
 def test_cli_info(capsys):
     expected = py7zr.cli.Cli._get_version()
     if lzma.is_check_supported(lzma.CHECK_CRC64):
-       check0 = '\n0              CRC64'
+        check0 = '\n0              CRC64'
     else:
-       check0 = ''
+        check0 = ''
     if lzma.is_check_supported(lzma.CHECK_SHA256):
         check1 = '\n0             SHA256'
     else:

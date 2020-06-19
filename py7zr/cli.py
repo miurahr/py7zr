@@ -29,16 +29,17 @@ from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, List, Optional
 
 import texttable  # type: ignore
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    import importlib_metadata
 
 import py7zr
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
 from py7zr.properties import COMMAND_HELP_STRING, READ_BLOCKSIZE
+
+try:
+    import importlib.metadata as importlib_metadata  # type: ignore
+except ImportError:
+    import importlib_metadata  # type: ignore
 
 
 class CliExtractCallback(ExtractCallback):
@@ -130,7 +131,7 @@ class Cli():
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
         return "{} Version {} : {} (Python {} [{} {}])".format(module_name, py7zr.__version__, py7zr.__copyright__,
-                                                              py_version, py_impl, py_build)
+                                                               py_version, py_impl, py_build)
 
     def show_help(self, args):
         self.show_version()
