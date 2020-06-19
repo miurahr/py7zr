@@ -392,13 +392,16 @@ class Buffer:
         self._buflen = length
         self.view = memoryview(self._buf[0:length])
 
-    def get(self):
-        val = self._buf
+    def get(self) -> bytearray:
+        val = self._buf[:self._buflen]
         self.reset()
         return val
 
     def __len__(self) -> int:
         return self._buflen
+
+    def __bytes__(self):
+        return bytes(self._buf[0:self._buflen])
 
 
 # this class is Borg/Singleton

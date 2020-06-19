@@ -623,3 +623,15 @@ def test_lzmadecompressor_lzmabcj():
                                          filters=[{'id': lzma.FILTER_X86}, {'id': lzma.FILTER_LZMA1}])
     outdata = decompressor.decompress(data=compressed)
     assert outdata == indata
+
+@pytest.mark.unit
+def test_unit_buffer():
+    buf = py7zr.helpers.Buffer(size=16)
+    buf.add(b'12345')
+    assert len(buf) == 5
+    assert buf.get() == bytearray(b'12345')
+    buf.add(b'67890')
+    assert buf.view == bytearray(b'67890')
+    assert bytes(buf) == b'67890'
+    buf.reset()
+    assert buf.get() == bytearray(b'')
