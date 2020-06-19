@@ -40,7 +40,7 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
-from py7zr.helpers import ArchivePassword, ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
+from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
 
 if sys.version_info < (3, 6):
@@ -276,8 +276,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                  dereference=False, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        self.password = password
         if password is not None:
-            ArchivePassword(password)
             self.password_protected = True
         else:
             self.password_protected = False

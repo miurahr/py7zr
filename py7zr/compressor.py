@@ -32,7 +32,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import UnsupportedCompressionMethodError
-from py7zr.helpers import ArchivePassword, Buffer, calculate_crc32, calculate_key
+from py7zr.helpers import Buffer, calculate_crc32, calculate_key, get_password
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
                               FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE, CompressionMethod)
@@ -68,13 +68,11 @@ class AESCompressor(ISevenZipCompressor):
     AES_CBC_BLOCKSIZE = 16
 
     def __init__(self) -> None:
-        password = ArchivePassword().get()
-        byte_password = password.encode('utf-16LE')
         self.cycles = 19  # FIXME
         self.iv = get_random_bytes(16)
         self.salt = b''
         self.method = CompressionMethod.CRYPT_AES256_SHA256
-        key = calculate_key(byte_password, self.cycles, self.salt, 'sha256')
+        key = calculate_key(get_password().encode('utf-16LE'), self.cycles, self.salt, 'sha256')
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
         self.flushed = False
@@ -135,8 +133,6 @@ class AESCompressor(ISevenZipCompressor):
 class AESDecompressor(ISevenZipDecompressor):
 
     def __init__(self, aes_properties) -> None:
-        password = ArchivePassword().get()
-        byte_password = password.encode('utf-16LE')
         firstbyte = aes_properties[0]
         numcyclespower = firstbyte & 0x3f
         if firstbyte & 0xc0 != 0:
@@ -153,7 +149,7 @@ class AESDecompressor(ISevenZipDecompressor):
             assert numcyclespower <= 24
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
-            key = calculate_key(byte_password, numcyclespower, salt, 'sha256')
+            key = calculate_key(get_password().encode('utf-16LE'), numcyclespower, salt, 'sha256')
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
         else:
