@@ -164,7 +164,8 @@ def test_py7zr_is_not_7zfile(tmp_path):
 
 @pytest.mark.cli
 def test_cli_help(capsys):
-    expected = "usage: py7zr [-h] {l,x,c,t,i}"
+
+    expected = 'usage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
         cli.run(["-h"])
@@ -174,7 +175,8 @@ def test_cli_help(capsys):
 
 @pytest.mark.cli
 def test_cli_no_subcommand(capsys):
-    expected = "usage: py7zr [-h] {l,x,c,t,i}"
+    expected = py7zr.cli.Cli._get_version()
+    expected += '\nusage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     cli.run([])
     out, err = capsys.readouterr()
@@ -184,7 +186,7 @@ def test_cli_no_subcommand(capsys):
 @pytest.mark.cli
 def test_cli_list_verbose(capsys):
     arcfile = os.path.join(testdata_path, "test_1.7z")
-    expected = """Listing archive: {}
+    expected = '''Listing archive: {}
 --
 Path = {}
 Type = 7z
@@ -197,7 +199,7 @@ Blocks = 1
 total 4 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-""".format(arcfile, arcfile)
+'''.format(arcfile, arcfile)
     expected += "{} D....            0            0  scripts\n".format(ltime2(2019, 3, 14, 0, 10, 8))
     expected += "{} ....A          111          441  scripts/py7zr\n".format(ltime2(2019, 3, 14, 0, 10, 8))
     expected += "{} ....A           58               setup.cfg\n".format(ltime2(2019, 3, 14, 0, 7, 13))
@@ -232,22 +234,21 @@ Everything is Ok
 
 @pytest.mark.cli
 def test_cli_info(capsys):
+    expected = py7zr.cli.Cli._get_version()
     if lzma.is_check_supported(lzma.CHECK_CRC64):
-        check0 = "\nCHECK_CRC64"
+       check0 = '\n0              CRC64'
     else:
-        check0 = ""
+       check0 = ''
     if lzma.is_check_supported(lzma.CHECK_SHA256):
-        check1 = "\nCHECK_SHA256"
+        check1 = '\n0             SHA256'
     else:
-        check1 = ""
-    expected_checks = """Checks:
-CHECK_NONE
-CHECK_CRC32{}{}""".format(check0, check1)
-    expected = """py7zr version {} {}
+        check1 = ''
+    expected_checks = '''0              CRC32{}{}'''.format(check1, check0)
+    expected += '''\n
 Formats:
 7z    37 7a bc af 27 1c
 
-Codecs:
+Codecs and hashes:
 00              COPY
 21             LZMA2
 03             DELTA
@@ -262,9 +263,8 @@ Codecs:
 040202         BZip2
 04f71101   ZStandard
 06f10701       7zAES
-
 {}
-""".format(py7zr.__version__, py7zr.__copyright__, expected_checks)
+'''.format(expected_checks)
     cli = py7zr.cli.Cli()
     cli.run(["i"])
     out, err = capsys.readouterr()

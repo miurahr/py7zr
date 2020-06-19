@@ -29,6 +29,13 @@ MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
 READ_BLOCKSIZE = 32248  # type: int
 QUEUELEN = READ_BLOCKSIZE * 2
+COMMAND_HELP_STRING = '''<Commands>
+  c : Create archive with files
+  i : Show information about supported formats
+  l : List contents of archive
+  t : Test integrity of archive
+  x : eXtract files with full paths
+'''
 
 # Exposed constants
 FILTER_LZMA = lzma.FILTER_LZMA1

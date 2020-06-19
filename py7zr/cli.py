@@ -38,7 +38,7 @@ import py7zr
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
-from py7zr.properties import READ_BLOCKSIZE
+from py7zr.properties import COMMAND_HELP_STRING, READ_BLOCKSIZE
 
 
 class CliExtractCallback(ExtractCallback):
@@ -93,13 +93,7 @@ class Cli():
     def _create_parser(self):
         parser = argparse.ArgumentParser(prog='py7zr', description='py7zr',
                                          formatter_class=argparse.RawTextHelpFormatter, add_help=True)
-        subparsers = parser.add_subparsers(title='subcommands', help='''<Commands>
-  c : Create archive with files
-  i : Show information about supported formats
-  l : List contents of archive
-  t : Test integrity of archive
-  x : eXtract files with full paths
-''')
+        subparsers = parser.add_subparsers(title='subcommands', help=COMMAND_HELP_STRING)
         list_parser = subparsers.add_parser('l')
         list_parser.set_defaults(func=self.run_list)
         list_parser.add_argument("arcfile", help="7z archive file")
@@ -126,13 +120,17 @@ class Cli():
         return parser
 
     def show_version(self):
+        print(self._get_version())
+
+    @staticmethod
+    def _get_version():
         dist = importlib_metadata.distribution('py7zr')
         module_name = dist.entry_points[0].name
         py_version = platform.python_version()
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
-        print("{} Version {} : {} (Python {} [{} {}])".format(module_name, py7zr.__version__, py7zr.__copyright__,
-                                                              py_version, py_impl, py_build))
+        return "{} Version {} : {} (Python {} [{} {}])".format(module_name, py7zr.__version__, py7zr.__copyright__,
+                                                              py_version, py_impl, py_build)
 
     def show_help(self, args):
         self.show_version()
@@ -150,7 +148,7 @@ class Cli():
             m = ''.join(' {:02x}'.format(x) for x in f['magic'])
             table.add_row([f['name'], m])
         print(table.draw())
-        print("\nCodecs and Hashes:")
+        print("\nCodecs and hashes:")
         table = texttable.Texttable()
         table.set_deco(texttable.Texttable.HEADER)
         table.set_cols_dtype(['t', 't'])
