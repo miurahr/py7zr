@@ -12,8 +12,8 @@ Design
 class diagram
 -------------
 
-.. image:: class_diagram.svg
-   :target: _images/class_diagram.svg
+.. image:: classes.svg
+   :target: _images/classes.svg
 
 .. _internal_classes:
 

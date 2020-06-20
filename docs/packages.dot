@@ -1,0 +1,36 @@
+digraph "packages" {
+charset="utf-8"
+rankdir=BT
+"0" [label="py7zr", shape="box"];
+"1" [label="py7zr.__main__", shape="box"];
+"2" [label="py7zr.archiveinfo", shape="box"];
+"3" [label="py7zr.callbacks", shape="box"];
+"4" [label="py7zr.cli", shape="box"];
+"5" [label="py7zr.compressor", shape="box"];
+"6" [label="py7zr.exceptions", shape="box"];
+"7" [label="py7zr.helpers", shape="box"];
+"8" [label="py7zr.properties", shape="box"];
+"9" [label="py7zr.py7zr", shape="box"];
+"10" [label="py7zr.win32compat", shape="box"];
+"0" -> "6" [arrowhead="open", arrowtail="none"];
+"0" -> "8" [arrowhead="open", arrowtail="none"];
+"0" -> "9" [arrowhead="open", arrowtail="none"];
+"2" -> "5" [arrowhead="open", arrowtail="none"];
+"2" -> "6" [arrowhead="open", arrowtail="none"];
+"2" -> "7" [arrowhead="open", arrowtail="none"];
+"2" -> "8" [arrowhead="open", arrowtail="none"];
+"4" -> "3" [arrowhead="open", arrowtail="none"];
+"4" -> "5" [arrowhead="open", arrowtail="none"];
+"4" -> "7" [arrowhead="open", arrowtail="none"];
+"4" -> "8" [arrowhead="open", arrowtail="none"];
+"4" -> "9" [arrowhead="open", arrowtail="none"];
+"5" -> "6" [arrowhead="open", arrowtail="none"];
+"5" -> "7" [arrowhead="open", arrowtail="none"];
+"5" -> "8" [arrowhead="open", arrowtail="none"];
+"9" -> "2" [arrowhead="open", arrowtail="none"];
+"9" -> "3" [arrowhead="open", arrowtail="none"];
+"9" -> "5" [arrowhead="open", arrowtail="none"];
+"9" -> "6" [arrowhead="open", arrowtail="none"];
+"9" -> "7" [arrowhead="open", arrowtail="none"];
+"9" -> "8" [arrowhead="open", arrowtail="none"];
+}
