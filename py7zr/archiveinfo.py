@@ -309,7 +309,7 @@ class Folder:
     """
 
     __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'num_bindpairs', 'num_packedstreams',
-                 'bindpairs', 'packed_indices', 'crc', 'decompressor', 'compressor', 'files']
+                 'bindpairs', 'packed_indices', 'crc', 'compressor', 'decompressor', 'files', 'password']
 
     def __init__(self) -> None:
         self.unpacksizes = []  # type: List[int]
@@ -325,6 +325,8 @@ class Folder:
         self.decompressor = None  # type: Optional[SevenZipDecompressor]
         self.compressor = None  # type: Optional[SevenZipCompressor]
         self.files = None
+        # encryption
+        self.password = None
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -367,7 +369,7 @@ class Folder:
                 self.packed_indices.append(read_uint64(file))
 
     def prepare_coderinfo(self, filters):
-        self.compressor = SevenZipCompressor(filters=filters)
+        self.compressor = SevenZipCompressor(filters=filters, password=self.password)
         self.coders = self.compressor.coders
         assert len(self.coders) > 0
         self.solid = True
@@ -408,7 +410,7 @@ class Folder:
         if self.decompressor is not None and not reset:
             return self.decompressor
         else:
-            self.decompressor = SevenZipDecompressor(self.coders, packsize, self.unpacksizes, self.crc)
+            self.decompressor = SevenZipDecompressor(self.coders, packsize, self.unpacksizes, self.crc, self.password)
             return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:
@@ -865,10 +867,12 @@ class Header:
         self.files_info = None
         self.size = 0  # fixme. Not implemented yet
         self._start_pos = 0
+        self.password = None
 
     @classmethod
-    def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int):
+    def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int, password=None):
         obj = cls()
+        obj.password = password
         obj._read(fp, buffer, start_pos)
         return obj
 
@@ -907,7 +911,7 @@ class Header:
                 uncompressed = [uncompressed] * len(folder.coders)
             compressed_size = streams.packinfo.packsizes[0]
             uncompressed_size = uncompressed[-1]
-
+            folder.password = self.password
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
             decompressor = folder.get_decompressor(compressed_size)
@@ -926,8 +930,8 @@ class Header:
         buf = io.BytesIO()
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
         folder = Folder()
+        folder.password=self.password
         folder.prepare_coderinfo(filters=filters)
-        assert folder.compressor is not None
         streams = HeaderStreamsInfo()
         streams.unpackinfo.folders = [folder]
         streams.packinfo.packpos = packpos

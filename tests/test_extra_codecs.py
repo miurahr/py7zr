@@ -107,32 +107,20 @@ def test_zstd_decompressor():
 
 @pytest.mark.unit
 def test_sevenzipcompressor_aes_lzma2():
-
-    class SevenZipFile:
-        def __init__(self, password):
-            self.password = password
-
-        def get_compressor(self, filters):
-            return py7zr.compressor.SevenZipCompressor(filters=filters)
-
-        def get_decompressor(self, coders, packsizes, unpacksizes):
-            return py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=packsizes, unpacksizes=unpacksizes,
-                                                         crc=None)
-
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data + plain_data
     filters = [
         {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
-    szf = SevenZipFile('secret')
-    compressor = szf.get_compressor(filters)
+    compressor = py7zr.compressor.SevenZipCompressor(filters=filters, password='secret')
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
     assert len(outdata) < 96
     coders = compressor.coders
     unpacksizes = compressor.unpacksizes
-    decompressor = szf.get_decompressor(coders, len(outdata), unpacksizes)
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(outdata), unpacksizes=unpacksizes,
+                                                         crc=None, password='secret')
     revert_data = decompressor.decompress(outdata)
     assert revert_data == plain_data
 
@@ -146,17 +134,12 @@ def test_aes_compressor():
 
 @pytest.mark.unit
 def test_sevenzipcompressor_aes_only():
-    class SevenZipFile:
-        def __init__(self, filters, password):
-            self.password = password
-            self.compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
-
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
     filters = [
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
-    compressor = SevenZipFile(filters, 'secret').compressor
+    compressor = py7zr.compressor.SevenZipCompressor(filters=filters, password='secret')
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
     assert len(outdata) == 64

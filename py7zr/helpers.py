@@ -403,19 +403,3 @@ class Buffer:
 
     def __bytes__(self):
         return bytes(self._buf[0:self._buflen])
-
-
-def get_password():
-    clsname = 'SevenZipFile'
-    res = None
-    caller = inspect.currentframe().f_back
-    for oframe in inspect.getouterframes(caller.f_back):
-        if 'self' in oframe.frame.f_locals:
-            self = oframe.frame.f_locals['self']
-            if type(self).__name__ == clsname:
-                if 'password' in self.__dict__:
-                    res = self.password
-                break
-    if res is None:
-        res = ''
-    return res

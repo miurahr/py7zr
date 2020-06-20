@@ -275,7 +275,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
                  dereference=False, password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        self.password = password
         self.password_protected = (password is not None)
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
@@ -316,7 +315,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._fileRefCnt = 1
         try:
             if mode == "r":
-                self._real_get_contents()
+                self._real_get_contents(password)
             elif mode in 'w':
                 if password is not None and filters is None:
                     filters = ENCRYPTED_ARCHIVE_DEFAULT
@@ -325,6 +324,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     pass
                 folder = Folder()
+                folder.password = password
                 folder.prepare_coderinfo(filters)
                 self.files = ArchiveFileList()
                 self.sig_header = SignatureHeader()
@@ -361,7 +361,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if not self._fileRefCnt and not self._filePassed:
             self.fp.close()
 
-    def _real_get_contents(self) -> None:
+    def _real_get_contents(self, password) -> None:
         if not self._check_7zfile(self.fp):
             raise Bad7zFile('not a 7z file')
         self.sig_header = SignatureHeader.retrieve(self.fp)
@@ -370,7 +370,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
-        header = Header.retrieve(self.fp, buffer, self.afterheader)
+        header = Header.retrieve(self.fp, buffer, self.afterheader, password)
         if header is None:
             return
         self.header = header
@@ -381,6 +381,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # Initialize references for convenience
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             folders = self.header.main_streams.unpackinfo.folders
+            for folder in folders:
+                folder.password = password
             packinfo = self.header.main_streams.packinfo
             packsizes = packinfo.packsizes
             subinfo = self.header.main_streams.substreamsinfo
@@ -518,7 +520,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _var_release(self):
         self._dict = None
         self.files = None
-        self.password = None
         self.header = None
         self.worker = None
         self.sig_header = None
