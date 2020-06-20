@@ -607,6 +607,7 @@ def test_lzmadecompressor_lzmabcj():
     outdata = decompressor.decompress(data=compressed)
     assert outdata == indata
 
+
 @pytest.mark.unit
 def test_unit_buffer():
     buf = py7zr.helpers.Buffer(size=16)
