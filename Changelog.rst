@@ -16,6 +16,9 @@ Changed
 Fixed
 -----
 
+* Fix password leak/overwrite among SevenZipFile objects in a process.(#159)
+  This can cause decryption error or encryption with unintended password.
+
 Deprecated
 ----------
 
