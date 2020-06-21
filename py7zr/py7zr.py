@@ -33,7 +33,6 @@ import queue
 import stat
 import sys
 import threading
-from io import BytesIO
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
@@ -371,73 +370,25 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise Bad7zFile('not a 7z file')
         self.sig_header = SignatureHeader.retrieve(self.fp)
         self.afterheader = self.fp.tell()
-        buffer = self._read_header_data()
+        self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
+        buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
+        if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
+            raise Bad7zFile('invalid header data')
         header = Header.retrieve(self.fp, buffer, self.afterheader)
         if header is None:
             return
         self.header = header
         buffer.close()
         self.files = ArchiveFileList()
-        if getattr(self.header, 'files_info', None) is not None:
-            self._filelist_retrieve()
-
-    def _read_header_data(self) -> BytesIO:
-        self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
-        buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
-        if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
-            raise Bad7zFile('invalid header data')
-        return buffer
-
-    class ParseStatus:
-        def __init__(self, src_pos=0):
-            self.src_pos = src_pos
-            self.folder = 0  # 7zip folder where target stored
-            self.outstreams = 0  # output stream count
-            self.input = 0  # unpack stream count in each folder
-            self.stream = 0  # target input stream position
-
-    def _gen_filename(self) -> str:
-        # compressed file is stored without a name, generate one
-        try:
-            basefilename = self.filename
-        except AttributeError:
-            # 7z archive file doesn't have a name
-            return 'contents'
-        else:
-            if basefilename is not None:
-                fn, ext = os.path.splitext(os.path.basename(basefilename))
-                return fn
-            else:
-                return 'contents'
-
-    def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
-        if pstat.input == 0:
-            folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
-        maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
-        uncompressed = unpacksizes[pstat.outstreams]
-        if file_in_solid > 0:
-            compressed = None
-        elif pstat.stream < len(packsizes):  # file is compressed
-            compressed = packsizes[pstat.stream]
-        else:  # file is not compressed
-            compressed = uncompressed
-        packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
-        return maxsize, compressed, uncompressed, packsize, folder.solid
-
-    def _get_unpack_filesizes(self):
-        folders = self.header.main_streams.unpackinfo.folders
-        subinfo = self.header.main_streams.substreamsinfo
-        unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
-        return unpacksizes
-
-    def _filelist_retrieve(self) -> None:
+        if getattr(self.header, 'files_info', None) is None:
+            return
         # Initialize references for convenience
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             folders = self.header.main_streams.unpackinfo.folders
             packinfo = self.header.main_streams.packinfo
-            subinfo = self.header.main_streams.substreamsinfo
             packsizes = packinfo.packsizes
-            unpacksizes = self._get_unpack_filesizes()
+            subinfo = self.header.main_streams.substreamsinfo
+            unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
         else:
             subinfo = None
             folders = None
@@ -490,6 +441,42 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if 'filename' not in file_info:
                 file_info['filename'] = self._gen_filename()
             self.files.append(file_info)
+
+    class ParseStatus:
+        def __init__(self, src_pos=0):
+            self.src_pos = src_pos
+            self.folder = 0  # 7zip folder where target stored
+            self.outstreams = 0  # output stream count
+            self.input = 0  # unpack stream count in each folder
+            self.stream = 0  # target input stream position
+
+    def _gen_filename(self) -> str:
+        # compressed file is stored without a name, generate one
+        try:
+            basefilename = self.filename
+        except AttributeError:
+            # 7z archive file doesn't have a name
+            return 'contents'
+        else:
+            if basefilename is not None:
+                fn, ext = os.path.splitext(os.path.basename(basefilename))
+                return fn
+            else:
+                return 'contents'
+
+    def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
+        if pstat.input == 0:
+            folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
+        maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
+        uncompressed = unpacksizes[pstat.outstreams]
+        if file_in_solid > 0:
+            compressed = None
+        elif pstat.stream < len(packsizes):  # file is compressed
+            compressed = packsizes[pstat.stream]
+        else:  # file is not compressed
+            compressed = uncompressed
+        packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
+        return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def _num_files(self) -> int:
         if getattr(self.header, 'files_info', None) is not None:
