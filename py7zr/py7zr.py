@@ -476,16 +476,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
-    def _num_files(self) -> int:
-        if getattr(self.header, 'files_info', None) is not None:
-            return len(self.header.files_info.files)
-        return 0
-
-    def _reset_decompressor(self) -> None:
-        if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
-            for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
-                folder.decompressor = None
-
     def set_encoded_header_mode(self, mode: bool) -> None:
         self.encoded_header_mode = mode
 
@@ -871,7 +861,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.mode == 'r':
             self.fp.seek(self.afterheader)
             self.worker = Worker(self.files, self.afterheader, self.header)
-            self._reset_decompressor()
+            if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
+                for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
+                    folder.decompressor = None
 
     def test(self) -> Optional[bool]:
         self.fp.seek(self.afterheader)
