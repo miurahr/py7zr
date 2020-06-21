@@ -67,12 +67,12 @@ class AESCompressor(ISevenZipCompressor):
 
     AES_CBC_BLOCKSIZE = 16
 
-    def __init__(self) -> None:
+    def __init__(self, password: str) -> None:
         self.cycles = 19  # FIXME
         self.iv = get_random_bytes(16)
         self.salt = b''
         self.method = CompressionMethod.CRYPT_AES256_SHA256
-        key = calculate_key(get_password().encode('utf-16LE'), self.cycles, self.salt, 'sha256')
+        key = calculate_key(password.encode('utf-16LE'), self.cycles, self.salt, 'sha256')
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
         self.flushed = False
@@ -132,7 +132,7 @@ class AESCompressor(ISevenZipCompressor):
 
 class AESDecompressor(ISevenZipDecompressor):
 
-    def __init__(self, aes_properties) -> None:
+    def __init__(self, aes_properties: bytes, password: str) -> None:
         firstbyte = aes_properties[0]
         numcyclespower = firstbyte & 0x3f
         if firstbyte & 0xc0 != 0:
@@ -149,7 +149,7 @@ class AESDecompressor(ISevenZipDecompressor):
             assert numcyclespower <= 24
             if ivsize < 16:
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
-            key = calculate_key(get_password().encode('utf-16LE'), numcyclespower, salt, 'sha256')
+            key = calculate_key(password.encode('utf-16LE'), numcyclespower, salt, 'sha256')
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
             self.buf = Buffer(size=READ_BLOCKSIZE + 16)
         else:
@@ -271,21 +271,24 @@ algorithm_class_map = {
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
-def get_alternative_compressor(filter):
+def get_alternative_compressor(filter, password=None):
     filter_id = filter['id']
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError
-    return algorithm_class_map[filter_id][0]()
+    if filter_id == FILTER_CRYPTO_AES256_SHA256:
+        return algorithm_class_map[filter_id][0](password)
+    else:
+        return algorithm_class_map[filter_id][0]()
 
 
-def get_alternative_decompressor(coder: Dict[str, Any]) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+def get_alternative_decompressor(coder: Dict[str, Any], password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
     if SupportedMethods.is_native_coder(coder):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
     filter_id = SupportedMethods.get_filter_id(coder)
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
     if filter_id == FILTER_CRYPTO_AES256_SHA256:
-        return algorithm_class_map[filter_id][1](coder['properties'])
+        return algorithm_class_map[filter_id][1](coder['properties'], password)
     else:
         return algorithm_class_map[filter_id][1]()
 
@@ -352,6 +355,7 @@ class SevenZipDecompressor:
 
     def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int]) -> None:
         # Get password which was set when creation of py7zr.SevenZipFile object.
+        password = get_password()
         self.input_size = packsize
         self.unpacksizes = unpacksizes
         self.consumed = 0  # type: int
@@ -366,12 +370,12 @@ class SevenZipDecompressor:
             self.cchain.add_filter(decompressor)
         elif not any(self.methods_map):
             for i in range(len(coders)):
-                self.cchain.add_filter(get_alternative_decompressor(coders[i]))
+                self.cchain.add_filter(get_alternative_decompressor(coders[i], password))
         elif any(self.methods_map):
             for i in range(len(coders)):
                 if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
                     for j in range(i):
-                        self.cchain.add_filter(get_alternative_decompressor(coders[j]))
+                        self.cchain.add_filter(get_alternative_decompressor(coders[j], password))
                     self.cchain.add_filter(get_lzma_decompressor(coders[i:]))
                     break
             else:
@@ -449,6 +453,7 @@ class SevenZipCompressor:
     __slots__ = ['filters', 'compressor', 'coders', 'cchain', 'methods_map']
 
     def __init__(self, filters=None):
+        password = get_password()
         if filters is None:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:
@@ -462,10 +467,10 @@ class SevenZipCompressor:
             self._set_native_compressors_coders(self.filters)
         elif not any(self.methods_map):  # all alternative
             for filter in filters:
-                self._set_alternate_compressors_coders(filter)
+                self._set_alternate_compressors_coders(filter, password)
         elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
             self._set_native_compressors_coders(self.filters[:-1])
-            self._set_alternate_compressors_coders(self.filters[-1])
+            self._set_alternate_compressors_coders(self.filters[-1], password)
         else:
             raise UnsupportedCompressionMethodError
 
@@ -474,8 +479,8 @@ class SevenZipCompressor:
         for filter in filters:
             self.coders.insert(0, SupportedMethods.get_coder(filter))
 
-    def _set_alternate_compressors_coders(self, filter):
-        compressor = get_alternative_compressor(filter)
+    def _set_alternate_compressors_coders(self, filter, password=None):
+        compressor = get_alternative_compressor(filter, password)
         if SupportedMethods.is_crypto(filter):
             properties = compressor.encode_filter_properties()
         else:
