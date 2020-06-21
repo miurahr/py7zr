@@ -276,10 +276,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password = password
-        if password is not None:
-            self.password_protected = True
-        else:
-            self.password_protected = False
+        self.password_protected = (password is not None)
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed = False  # type: bool
@@ -335,8 +332,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.sig_header._write_skelton(self.fp)
                 self.afterheader = self.fp.tell()
                 self.header = Header.build_header([self.folder])
-                if self.password_protected:
-                    self.header.main_streams.packinfo.enable_digests = False  # FIXME: workaround for p7zip compatibility
+                self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
                 self._reset_worker()
             elif mode in 'x':
                 raise NotImplementedError
@@ -482,21 +478,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if getattr(self.header, 'files_info', None) is not None:
             return len(self.header.files_info.files)
         return 0
-
-    def _set_file_property(self, outfilename: pathlib.Path, properties: Dict[str, Any]) -> None:
-        # creation time
-        creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
-        if creationtime is not None:
-            os.utime(str(outfilename), times=(creationtime, creationtime))
-        if os.name == 'posix':
-            st_mode = properties['posix_mode']
-            if st_mode is not None:
-                outfilename.chmod(st_mode)
-                return
-        # fallback: only set readonly if specified
-        if properties['readonly'] and not properties['is_directory']:
-            ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-            outfilename.chmod(outfilename.stat().st_mode & ro_mask)
 
     def _reset_decompressor(self) -> None:
         if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
@@ -789,9 +770,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         junction_dst.unlink()
                         _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
             # set file properties
-            for o, p in target_files:
-                self._set_file_property(o, p)
-            return None
+            for outfilename, properties in target_files:
+                # creation time
+                creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                if creationtime is not None:
+                    os.utime(str(outfilename), times=(creationtime, creationtime))
+                if os.name == 'posix':
+                    st_mode = properties['posix_mode']
+                    if st_mode is not None:
+                        outfilename.chmod(st_mode)
+                        return
+                # fallback: only set readonly if specified
+                if properties['readonly'] and not properties['is_directory']:
+                    ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+                    outfilename.chmod(outfilename.stat().st_mode & ro_mask)
 
     def reporter(self, callback: ExtractCallback):
         while True:
