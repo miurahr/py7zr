@@ -1,0 +1,35 @@
+digraph "compressor_classes" {
+charset="utf-8"
+rankdir=BT
+"0" [label="{AESCompressor|AES_CBC_BLOCKSIZE : int\lbuf\lcipher\lcycles : int\lflushed : bool\liv\lmethod\lsalt : bytes\l|compress(data)\lencode_filter_properties()\lflush()\l}", shape="record"];
+"1" [label="{AESDecompressor|buf\lcipher\l|decompress(data)\l}", shape="record"];
+"19" [label="{CompressionMethod|ARM\lARMT\lBCJ\lBCJ_ARM\lBCJ_ARMT\lBCJ_IA64\lBCJ_PPC\lBCJ_SPARC\lCOPY\lCRYPT_AES256_SHA256\lCRYPT_RAR29AES\lCRYPT_ZIPCRYPT\lDELTA\lIA64\lLZMA\lLZMA2\lMISC_BROTLI\lMISC_BZIP2\lMISC_DEFLATE\lMISC_DEFLATE64\lMISC_LIZARD\lMISC_LZ4\lMISC_LZH\lMISC_LZS\lMISC_Z\lMISC_ZIP\lMISC_ZSTD\lNSIS_BZIP2\lNSIS_DEFLATE\lP7Z_BCJ\lP7Z_BCJ2\lPPC\lPPMD\lSPARC\lSWAP2\lSWAP4\l|}", shape="record"];
+"20" [label="{CompressorChain|digest : int\lfilters : list\lmethods_map\lpacksize : int\lunpacksizes\l|add_filter(filter)\lcompress(data)\lflush()\l}", shape="record"];
+"22" [label="{CopyCompressor|\l|compress(data)\lflush()\l}", shape="record"];
+"23" [label="{CopyDecompressor|\l|decompress(data)\l}", shape="record"];
+"26" [label="{DecompressorChain|filters : list\l|add_filter(filter)\ldecompress(data, max_length)\l}", shape="record"];
+"27" [label="{DeflateCompressor|\l|compress(data)\lflush()\l}", shape="record"];
+"28" [label="{DeflateDecompressor|flushed : bool\l|decompress(data)\l}", shape="record"];
+"33" [label="{Folder}", shape="record"];
+"37" [label="{ISevenZipCompressor|\l|compress(data)\lflush()\l}", shape="record"];
+"38" [label="{ISevenZipDecompressor|\l|decompress(data)\l}", shape="record"];
+"53" [label="{SevenZipCompressor|cchain\lcoders : list\ldigest\lfilters : NoneType, list\lmethods_map\lpacksize\lunpacksizes\l|compress(data)\lflush()\l}", shape="record"];
+"54" [label="{SevenZipDecompressor|cchain\lconsumed : int\lcrc\ldigest : NoneType, int\linput_size\lmethods_map\lunpacksizes\l|check_crc()\ldecompress(data, max_length)\l}", shape="record"];
+"59" [label="{SupportedMethods|formats : list\lmethods : list\l|get_coder(cls, filter)\lget_filter_id(cls, coder)\lget_method_id(cls, filter)\lis_compressor(cls, filter)\lis_crypto(cls, filter)\lis_native_coder(cls, coder)\lis_native_filter(cls, filter)\l}", shape="record"];
+"67" [label="{ZstdCompressor|\l|compress(data)\lflush()\l}", shape="record"];
+"69" [label="{ZstdDecompressor|\l|decompress(data)\l}", shape="record"];
+"0" -> "37" [arrowhead="empty", arrowtail="none"];
+"1" -> "38" [arrowhead="empty", arrowtail="none"];
+"22" -> "37" [arrowhead="empty", arrowtail="none"];
+"23" -> "38" [arrowhead="empty", arrowtail="none"];
+"27" -> "37" [arrowhead="empty", arrowtail="none"];
+"28" -> "38" [arrowhead="empty", arrowtail="none"];
+"37" -> "20" [arrowhead="empty", arrowtail="none"];
+"38" -> "26" [arrowhead="empty", arrowtail="none"];
+"67" -> "37" [arrowhead="empty", arrowtail="none"];
+"69" -> "38" [arrowhead="empty", arrowtail="none"];
+"20" -> "53" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="cchain", style="solid"];
+"26" -> "54" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="cchain", style="solid"];
+"53" -> "33" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="compressor", style="solid"];
+"54" -> "33" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="decompressor", style="solid"];
+}

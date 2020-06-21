@@ -12,8 +12,27 @@ Design
 class diagram
 -------------
 
-.. image:: classes.svg
-   :target: _images/classes.svg
+Whole classes
+~~~~~~~~~~~~~~~~~~
+
+.. graphviz:: classes.dot
+
+
+Header classes
+~~~~~~~~~~~~~~
+
+.. graphviz:: header_classes.dot
+
+Compressor classes
+~~~~~~~~~~~~~~~~~~
+
+.. graphviz:: compressor_classes.dot
+
+package relations
+~~~~~~~~~~~~~~~~~
+
+.. graphviz:: packages.dot
+
 
 .. _internal_classes:
 

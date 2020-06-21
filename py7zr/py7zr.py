@@ -324,13 +324,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     filters = ARCHIVE_DEFAULT
                 else:
                     pass
-                self.folder = Folder()
-                self.folder.prepare_coderinfo(filters)
+                folder = Folder()
+                folder.prepare_coderinfo(filters)
                 self.files = ArchiveFileList()
                 self.sig_header = SignatureHeader()
                 self.sig_header._write_skelton(self.fp)
                 self.afterheader = self.fp.tell()
-                self.header = Header.build_header([self.folder])
+                self.header = Header.build_header([folder])
                 self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
                 self.fp.seek(self.afterheader)
                 self.worker = Worker(self.files, self.afterheader, self.header)
@@ -499,7 +499,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return digest
 
     def _write_archive(self):
-        self.worker.archive(self.fp, self.folder, deref=self.dereference)
+        folder = self.header.main_streams.unpackinfo.folders[0]
+        self.worker.archive(self.fp, folder, deref=self.dereference)
         # Write header and update signature header
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
                                                                  encoded=self.encoded_header_mode)

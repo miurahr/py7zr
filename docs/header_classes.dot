@@ -1,0 +1,32 @@
+digraph "classes" {
+charset="utf-8"
+rankdir=BT
+"8" [label="{ArchiveProperties|property_data : list\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"33" [label="{Folder|bindpairs : list\lcoders : list\lcompressor : NoneType\lcrc : int, NoneType\ldecompressor : NoneType\ldigestdefined : bool\lfiles : NoneType\lpacked_indices : list\lsolid : bool\lunpacksizes : list\l|get_compressor()\lget_decompressor(packsize, reset)\lget_unpack_size()\lis_simple(coder)\lprepare_coderinfo(filters)\lretrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"34" [label="{Header|additional_streams : NoneType\lfiles_info : NoneType\lmain_streams : NoneType\lproperties : NoneType\lsize : int\lsolid : bool\l|build_header(folders)\lretrieve(cls, fp, buffer, start_pos)\lwrite(file, afterheader, encoded, encrypted)\l}", shape="record"];
+"35" [label="{HeaderStreamsInfo|packinfo\lunpackinfo\l|write(file)\l}", shape="record"];
+"45" [label="{PackInfo|crcs : list\lenable_digests : bool\lnumstreams : int\lpackpos : int\lpackpositions\lpacksizes : list\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"55" [label="{SevenZipFile}", shape="record"];
+"56" [label="{SignatureHeader|nextheadercrc : int\lnextheaderofs : int\lnextheadersize : int\lstartheadercrc : int\lversion : tuple\l|calccrc(length, header_crc)\lretrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"57" [label="{StreamsInfo|packinfo : NoneType\lsubstreamsinfo : NoneType\lunpackinfo : NoneType\l|read(file)\lretrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"58" [label="{SubstreamsInfo|digests : list\ldigestsdefined : list\lnum_unpackstreams_folders : list\lunpacksizes : list, NoneType\l|retrieve(cls, file, numfolders, folders)\lwrite(file, numfolders)\l}", shape="record"];
+"64" [label="{UnpackInfo|datastreamidx : NoneType\lfolders : list\lnumfolders : NoneType, int\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"35" -> "57" [arrowhead="empty", arrowtail="none"];
+"8" -> "34" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="properties", style="solid"];
+"33" -> "64" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="folders", style="solid"];
+"34" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="header", style="solid"];
+"34" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="header", style="solid"];
+"45" -> "35" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="packinfo", style="solid"];
+"45" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="packinfo", style="solid"];
+"45" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="packinfo", style="solid"];
+"56" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="sig_header", style="solid"];
+"56" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="sig_header", style="solid"];
+"57" -> "34" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="additional_streams", style="solid"];
+"57" -> "34" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="main_streams", style="solid"];
+"57" -> "34" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="main_streams", style="solid"];
+"58" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="substreamsinfo", style="solid"];
+"58" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="substreamsinfo", style="solid"];
+"64" -> "35" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="unpackinfo", style="solid"];
+"64" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="unpackinfo", style="solid"];
+"64" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="unpackinfo", style="solid"];
+}
