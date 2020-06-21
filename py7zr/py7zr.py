@@ -779,11 +779,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     st_mode = properties['posix_mode']
                     if st_mode is not None:
                         outfilename.chmod(st_mode)
-                        return
+                        continue
                 # fallback: only set readonly if specified
                 if properties['readonly'] and not properties['is_directory']:
                     ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
                     outfilename.chmod(outfilename.stat().st_mode & ro_mask)
+            return None
 
     def reporter(self, callback: ExtractCallback):
         while True:
