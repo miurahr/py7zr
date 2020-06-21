@@ -275,7 +275,7 @@ def get_alternative_compressor(filter, password=None):
     filter_id = filter['id']
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError
-    if filter_id == FILTER_CRYPTO_AES256_SHA256:
+    if SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][0](password)
     else:
         return algorithm_class_map[filter_id][0]()
@@ -287,7 +287,7 @@ def get_alternative_decompressor(coder: Dict[str, Any], password=None) -> Union[
     filter_id = SupportedMethods.get_filter_id(coder)
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
-    if filter_id == FILTER_CRYPTO_AES256_SHA256:
+    if SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][1](coder['properties'], password)
     else:
         return algorithm_class_map[filter_id][1]()
@@ -578,6 +578,13 @@ class SupportedMethods:
     @classmethod
     def is_crypto(cls, filter) -> bool:
         method = cls._find_method('filter_id', filter['id'])
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['type'] == MethodsType.crypto
+
+    @classmethod
+    def is_crypto_id(cls, filter_id) -> bool:
+        method = cls._find_method('filter_id', filter_id)
         if method is None:
             raise UnsupportedCompressionMethodError
         return method['type'] == MethodsType.crypto
