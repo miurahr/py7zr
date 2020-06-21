@@ -316,7 +316,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._fileRefCnt = 1
         try:
             if mode == "r":
-                self._real_get_contents(self.fp)
+                self._real_get_contents()
             elif mode in 'w':
                 if password is not None and filters is None:
                     filters = ENCRYPTED_ARCHIVE_DEFAULT
@@ -361,8 +361,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if not self._fileRefCnt and not self._filePassed:
             self.fp.close()
 
-    def _real_get_contents(self, fp: BinaryIO) -> None:
-        if not self._check_7zfile(fp):
+    def _real_get_contents(self) -> None:
+        if not self._check_7zfile(self.fp):
             raise Bad7zFile('not a 7z file')
         self.sig_header = SignatureHeader.retrieve(self.fp)
         self.afterheader = self.fp.tell()
