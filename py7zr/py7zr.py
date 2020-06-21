@@ -317,8 +317,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
-                self.fp.seek(self.afterheader)
-                self.worker = Worker(self.files, self.afterheader, self.header)
             elif mode in 'w':
                 if password is not None and filters is None:
                     filters = ENCRYPTED_ARCHIVE_DEFAULT
@@ -437,8 +435,21 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 file_info['packsizes'] = [0]
 
             if 'filename' not in file_info:
-                file_info['filename'] = self._gen_filename()
+                # compressed file is stored without a name, generate one
+                try:
+                    basefilename = self.filename
+                except AttributeError:
+                    # 7z archive file doesn't have a name
+                    file_info['filename'] = 'contents'
+                else:
+                    if basefilename is not None:
+                        fn, ext = os.path.splitext(os.path.basename(basefilename))
+                        file_info['filename'] = fn
+                    else:
+                        file_info['filename'] = 'contents'
             self.files.append(file_info)
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.afterheader, self.header)
 
     class ParseStatus:
         def __init__(self, src_pos=0):
@@ -447,20 +458,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.outstreams = 0  # output stream count
             self.input = 0  # unpack stream count in each folder
             self.stream = 0  # target input stream position
-
-    def _gen_filename(self) -> str:
-        # compressed file is stored without a name, generate one
-        try:
-            basefilename = self.filename
-        except AttributeError:
-            # 7z archive file doesn't have a name
-            return 'contents'
-        else:
-            if basefilename is not None:
-                fn, ext = os.path.splitext(os.path.basename(basefilename))
-                return fn
-            else:
-                return 'contents'
 
     def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
         if pstat.input == 0:
