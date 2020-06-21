@@ -139,13 +139,7 @@ def test_sevenzipcompressor_aes_lzma2():
 
 @pytest.mark.unit
 def test_aes_compressor():
-
-    class SevenZipFile:
-        def __init__(self, password):
-            self.password = password
-            self.compressor = py7zr.compressor.AESCompressor()
-
-    compressor = SevenZipFile('secret').compressor
+    compressor = py7zr.compressor.AESCompressor('secret')
     assert compressor.method == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
     assert len(compressor.encode_filter_properties()) == 2 + 16
 
@@ -171,14 +165,9 @@ def test_sevenzipcompressor_aes_only():
 
 @pytest.mark.unit
 def test_aes_encrypt_data():
-    class SevenZipFile:
-        def __init__(self, password):
-            self.password = password
-            self.compressor = py7zr.compressor.AESCompressor()
-
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB"
     plain_data += plain_data + plain_data
-    compressor = SevenZipFile('secret').compressor
+    compressor = py7zr.compressor.AESCompressor('secret')
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
     assert len(outdata) == 96  # 96 = 16 * 6 = len(plain_data) + 3
@@ -186,17 +175,12 @@ def test_aes_encrypt_data():
 
 @pytest.mark.unit
 def test_aes_decrypt(monkeypatch):
-    class SevenZipFile:
-        def __init__(self, properties, password):
-            self.password = password
-            self.decompressor = py7zr.compressor.AESDecompressor(properties)
-
     properties = b'S\x07|&\xae\x94do\x8a4'
     indata = b"T\x9f^\xb5\xbf\xdc\x08/\xfe<\xe6i'\x84A^\x83\xdc\xdd5\xe9\xd5\xd0b\xa9\x7fH$\x11\x82\x8d" \
              b"\xce[\x85\xe7\xf2}\xe3oJ*\xc0:\xf4\xfd\x82\xe8I"
     expected = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2" \
                b"\xf7\\m\xe0t\xa6$yF_-\xa0\x0b8f "
-    decompressor = SevenZipFile(properties, 'secret').decompressor
+    decompressor = py7zr.compressor.AESDecompressor(properties, 'secret')
     assert decompressor.decompress(indata) == expected
 
 
