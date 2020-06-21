@@ -518,7 +518,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _var_release(self):
         self._dict = None
         self.files = None
-        self.folder = None
+        self.password = None
         self.header = None
         self.worker = None
         self.sig_header = None
