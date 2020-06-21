@@ -317,7 +317,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         try:
             if mode == "r":
                 self._real_get_contents(self.fp)
-                self._reset_worker()
+                self.fp.seek(self.afterheader)
+                self.worker = Worker(self.files, self.afterheader, self.header)
             elif mode in 'w':
                 if password is not None and filters is None:
                     filters = ENCRYPTED_ARCHIVE_DEFAULT
@@ -333,7 +334,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.afterheader = self.fp.tell()
                 self.header = Header.build_header([self.folder])
                 self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
-                self._reset_worker()
+                self.fp.seek(self.afterheader)
+                self.worker = Worker(self.files, self.afterheader, self.header)
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -483,11 +485,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
             for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
                 folder.decompressor = None
-
-    def _reset_worker(self) -> None:
-        """Seek to where archive data start in archive and recreate new worker."""
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header)
 
     def set_encoded_header_mode(self, mode: bool) -> None:
         self.encoded_header_mode = mode
@@ -872,11 +869,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def reset(self) -> None:
         """When read mode, it reset file pointer, decompress worker and decompressor"""
         if self.mode == 'r':
-            self._reset_worker()
+            self.fp.seek(self.afterheader)
+            self.worker = Worker(self.files, self.afterheader, self.header)
             self._reset_decompressor()
 
     def test(self) -> Optional[bool]:
-        self._reset_worker()
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.afterheader, self.header)
         crcs = self.header.main_streams.packinfo.crcs  # type: Optional[List[int]]
         if crcs is None or len(crcs) == 0:
             return None
@@ -889,7 +888,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return True
 
     def testzip(self) -> Optional[str]:
-        self._reset_worker()
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.afterheader, self.header)
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
