@@ -326,7 +326,7 @@ class Folder:
         self.compressor = None  # type: Optional[SevenZipCompressor]
         self.files = None
         # encryption
-        self.password = None
+        self.password = None  # type: Optional[str]
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -867,7 +867,7 @@ class Header:
         self.files_info = None
         self.size = 0  # fixme. Not implemented yet
         self._start_pos = 0
-        self.password = None
+        self.password = None  # type: Optional[str]
 
     @classmethod
     def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int, password=None):
@@ -930,24 +930,25 @@ class Header:
         buf = io.BytesIO()
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
         folder = Folder()
-        folder.password=self.password
+        folder.password = self.password
         folder.prepare_coderinfo(filters=filters)
         streams = HeaderStreamsInfo()
         streams.unpackinfo.folders = [folder]
         streams.packinfo.packpos = packpos
         folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
+        compressor = folder.get_compressor()
         buf.seek(0, 0)
         data = buf.read(io.DEFAULT_BUFFER_SIZE)
         while data:
-            out = folder.compressor.compress(data)
+            out = compressor.compress(data)
             file.write(out)
             data = buf.read(io.DEFAULT_BUFFER_SIZE)
-        out = folder.compressor.flush()
+        out = compressor.flush()
         file.write(out)
         #
-        streams.packinfo.packsizes = [folder.compressor.packsize]
-        streams.packinfo.crcs = [folder.compressor.digest]
+        streams.packinfo.packsizes = [compressor.packsize]
+        streams.packinfo.crcs = [compressor.digest]
         # actual header start position
         startpos = file.tell()
         write_byte(file, Property.ENCODED_HEADER)

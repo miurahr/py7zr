@@ -23,7 +23,6 @@
 
 import _hashlib  # type: ignore  # noqa
 import ctypes
-import inspect
 import os
 import pathlib
 import platform
