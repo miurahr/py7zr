@@ -1,23 +1,19 @@
 include *.rst
 include *.toml
-include *.txt
 include *.yml
 include LICENSE
 include .coveragerc
 include tox.ini
 recursive-include py7zr *.py
 recursive-include tests *.py
-recursive-include tests *.sh
 recursive-include tests *.txt
 recursive-include tests *.7z
 recursive-include tests *.0
 recursive-include docs *.bat
 recursive-include docs *.dot
-recursive-include docs *.png
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.yml
-recursive-include docs *.svg
 recursive-include docs *.odp
 recursive-include docs *.pdf
 recursive-include docs *.txt
