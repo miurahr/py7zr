@@ -619,3 +619,19 @@ def test_unit_buffer():
     assert bytes(buf) == b'67890'
     buf.reset()
     assert buf.get() == bytearray(b'')
+
+
+@pytest.mark.unit
+def test_supported_method_is_crypto():
+    assert py7zr.compressor.SupportedMethods.is_crypto({'id': py7zr.properties.FILTER_CRYPTO_AES256_SHA256})
+
+
+@pytest.mark.unit
+def test_supported_method_is_crypto_id():
+    assert py7zr.compressor.SupportedMethods.is_crypto_id(py7zr.properties.FILTER_CRYPTO_AES256_SHA256)
+
+
+@pytest.mark.unit
+def test_supported_method_get_method_id():
+    id = py7zr.compressor.SupportedMethods.get_method_id({'id': py7zr.properties.FILTER_CRYPTO_AES256_SHA256})
+    assert id == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
