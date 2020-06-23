@@ -64,7 +64,7 @@ and ZStandard with third party libraries.
 `py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
 such as PPMd, BCJ2 and Deflate64.
 
-Here is a table of algorithms supported.
+Here is a table of algorithms.
 
 +---+----------------------+------------------------------------------+
 |  #| Category             | Algorithm combination                    |
@@ -93,9 +93,9 @@ Here is a table of algorithms supported.
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- Decription of filename encrypted archive is supported.
+- Decryption of filename encrypted archive is supported.
 
-- CAUTION: Specifying an unsuppoted algorithm combination may produce a broken archive for compression.
+- CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
 
 - Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
   see `lzma module document`_ at python documentation.
@@ -106,7 +106,7 @@ Here is a table of algorithms supported.
 Document
 ========
 
-Here is a readthedocs `manual`_ document.
+Here is a readthedocs `manual`_ document. It also describe design and classes.
 
 .. _`manual`: https://py7zr.readthedocs.io/en/latest/
 
@@ -147,19 +147,34 @@ You can run command script py7zr like as follows;
 
     $ py7zr c -v 500k target.7z test_dir
 
-
-* Show help
+* Test archive
 
 .. code-block::
 
-    $ py7zr help
+    $ py7zr t test.7z
+
+* Show information
+
+.. code-block::
+
+    $ py7zr i
+
+* Show version
+
+.. code-block::
+
+    $ py7zr --version
 
 
 SevenZipFile Class Usage
 ========================
 
 py7zr is a library which can use in your python application.
-Here is a code snippet how to decompress some file in your applicaiton.
+
+Decompression/Decryption
+------------------------
+
+Here is a code snippet how to decompress some file in your application.
 
 .. code-block::
 
@@ -169,16 +184,6 @@ Here is a code snippet how to decompress some file in your applicaiton.
     archive.extractall(path="/tmp")
     archive.close()
 
-
-Here is a code snippet how to produce archive.
-
-.. code-block::
-
-    import py7zr
-
-    archive = py7zr.SevenZipFile('target.7z', 'w')
-    archive.writeall('./base_dir')
-    archive.close()
 
 
 You can also use 'with' block because py7zr provide context manager(v0.6 and later).
@@ -217,6 +222,40 @@ py7zr support an extraction of password protected archive.(v0.6 and later)
 
     with py7zr.SevenZipFile('encrypted.7z', mode='r', password='secret') as z:
         z.extractall()
+
+Compression/Encryption
+----------------------
+
+Here is a code snippet how to produce archive.
+
+.. code-block::
+
+    import py7zr
+
+    with py7zr.SevenZipFile('target.7z', 'w') as archive:
+        archive.writeall('/path/to/base_dir', 'base')
+
+
+To create encrypted archive, please pass a password.
+
+.. code-block::
+
+    import py7zr
+
+    with py7zr.SevenZipFile('target.7z', 'w', password='secret') as archive:
+        archive.writeall('/path/to/base_dir', 'base')
+
+
+To create archive with algorithms such as zstandard, you can call with custom filter.
+
+.. code-block::
+
+    import py7zr
+
+    my_filters = [{"id": py7zr.FILTER_ZSTD}]
+    another_filters = [{"id": py7zr.FILTER_ARM}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
+    with py7zr.SevenZipFile('target.7z', 'w', filters=my_filter) as archive:
+        archive.writeall('/path/to/base_dir', 'base')
 
 
 shutil helper
