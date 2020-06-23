@@ -271,8 +271,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[List[Dict[str, int]]] = None,
-                 dereference=False, password: Optional[str] = None) -> None:
+                 *, filters: Optional[List[Dict[str, int]]] = None, dereference=False, password: Optional[str] = None,
+                 header_encryption=False) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password = password
@@ -343,7 +343,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self.encoded_header_mode = False
+        self.encoded_header_mode = True
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
         self.reporterd = None  # type: Optional[threading.Thread]

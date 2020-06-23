@@ -273,7 +273,6 @@ class PackInfo:
     def write(self, file: BinaryIO):
         assert self.packpos is not None
         numstreams = len(self.packsizes)
-        assert len(self.crcs) == numstreams
         write_byte(file, Property.PACK_INFO)
         write_uint64(file, self.packpos)
         write_uint64(file, numstreams)
@@ -281,6 +280,7 @@ class PackInfo:
         for size in self.packsizes:
             write_uint64(file, size)
         if self.enable_digests:
+            assert len(self.crcs) == numstreams
             write_bytes(file, Property.CRC)
             for crc in self.crcs:
                 write_uint64(file, crc)
@@ -634,9 +634,6 @@ class StreamsInfo:
 
     def write(self, file: BinaryIO):
         write_byte(file, Property.MAIN_STREAMS_INFO)
-        self._write(file)
-
-    def _write(self, file: BinaryIO):
         if self.packinfo is not None:
             self.packinfo.write(file)
         if self.unpackinfo is not None:
@@ -655,7 +652,10 @@ class HeaderStreamsInfo(StreamsInfo):
         self.unpackinfo.numfolders = 1
 
     def write(self, file: BinaryIO):
-        self._write(file)
+        write_byte(file, Property.ENCODED_HEADER)
+        self.packinfo.write(file)
+        self.unpackinfo.write(file)
+        write_byte(file, Property.END)
 
 
 class FilesInfo:
@@ -928,9 +928,10 @@ class Header:
         folder = Folder()
         folder.prepare_coderinfo(filters=filters)
         assert folder.compressor is not None
-        streams = HeaderStreamsInfo()
-        streams.unpackinfo.folders = [folder]
-        streams.packinfo.packpos = packpos
+        headerstreams = HeaderStreamsInfo()
+        headerstreams.unpackinfo.folders = [folder]
+        headerstreams.packinfo.packpos = packpos
+        headerstreams.packinfo.enable_digests = False
         folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
         buf.seek(0, 0)
@@ -941,14 +942,9 @@ class Header:
             data = buf.read(io.DEFAULT_BUFFER_SIZE)
         out = folder.compressor.flush()
         file.write(out)
-        #
-        streams.packinfo.packsizes = [folder.compressor.packsize]
-        streams.packinfo.crcs = [folder.compressor.digest]
-        # actual header start position
+        headerstreams.packinfo.packsizes = [folder.compressor.packsize]
         startpos = file.tell()
-        write_byte(file, Property.ENCODED_HEADER)
-        streams.write(file)
-        write_byte(file, Property.END)
+        headerstreams.write(file)
         return startpos
 
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
