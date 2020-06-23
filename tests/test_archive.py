@@ -59,6 +59,12 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     cli.run(["l", str(target)])
     out, err = capsys.readouterr()
     assert expected == out
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.basic
@@ -85,6 +91,12 @@ def test_compress_directory_encoded_header(tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.testzip() is None
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -141,6 +153,12 @@ def test_compress_files_encoded_header(tmp_path):
     assert m.digest() == binascii.unhexlify('b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd')
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.basic
@@ -194,6 +212,12 @@ def test_compress_directory(tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.testzip() is None
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
 
 
 @pytest.mark.files
@@ -310,11 +334,15 @@ def test_compress_with_custom_filter(tmp_path):
     ]
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.set_encoded_header_mode(True)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
     #
+    with py7zr.SevenZipFile(target, 'r') as arc:
+        assert arc.test()
+    #
     if shutil.which('7z'):
-        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        result = subprocess.run(['7z', 't', target.as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
