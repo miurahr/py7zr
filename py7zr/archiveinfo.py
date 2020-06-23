@@ -489,8 +489,6 @@ class UnpackInfo:
             raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))  # pragma: no-cover  # noqa
 
     def write(self, file: BinaryIO):
-        assert self.numfolders is not None
-        assert self.folders is not None
         assert self.numfolders == len(self.folders)
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
@@ -576,12 +574,8 @@ class SubstreamsInfo:
             self.digests = [0] * num_digests_total
 
     def write(self, file: BinaryIO, numfolders: int):
-        assert self.num_unpackstreams_folders is not None
-        if len(self.num_unpackstreams_folders) == 0:
-            # nothing to write
+        if len(self.num_unpackstreams_folders) == 0:  # pragma: no-cover  # nothing to write
             return
-        if self.unpacksizes is None:
-            raise ValueError
         write_byte(file, Property.SUBSTREAMS_INFO)
         if not functools.reduce(lambda x, y: x and (y == 1), self.num_unpackstreams_folders, True):
             write_byte(file, Property.NUM_UNPACK_STREAM)
@@ -590,7 +584,7 @@ class SubstreamsInfo:
         write_byte(file, Property.SIZE)
         idx = 0
         for i in range(numfolders):
-            for j in range(1, self.num_unpackstreams_folders[i]):
+            for _ in range(1, self.num_unpackstreams_folders[i]):
                 size = self.unpacksizes[idx]
                 write_uint64(file, size)
                 idx += 1
