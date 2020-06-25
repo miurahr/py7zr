@@ -10,6 +10,7 @@ py7zr documentation contents
    7zFormat
    AUTHORS
    glossary
+   sevenzip-specifications
 
 Indices and tables
 ==================

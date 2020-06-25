@@ -100,17 +100,19 @@ _`Header`
 .. productionlist::
    PackedStreamsForHeaders: `Headers Block`
    Headers Block: `PackedHeader` | `HeaderInfo`
-
    PackedHeader: BYTE `kHeader`, `ArchiveProperties`
                : BYTE `kAdditionalStreamsInfo`, `StreamsInfo`
                : BYTE `kMainStreamsInfo`, `StreamsInfo`, `FilesInfo`
                : BYTE `kEnd`
    HeaderInfo  : BYTE `kEncodedHeader`, `HeaderStreamsInfo`
 
+
 .. productionlist::
    StreamsInfo: PackInfo    : BYTE NID::kPackInfo : 0x06
                             :   UINT64 `PackPos`
                             :   UINT64 `NumPackStreams`
+
+
               : CodersInfo  : BYTE NID::kUnpackInfo : 0x07
                             : BYTE NID::kFolder : 0x0B
                             :   UINT64 `NumFolders`

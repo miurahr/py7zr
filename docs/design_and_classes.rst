@@ -57,10 +57,10 @@ archiveinfo module
     :members:
 
 
-compression module
+compressor module
 ------------------
 
-.. automodule:: py7zr.compression
+.. automodule:: py7zr.compressor
     :members:
 
 

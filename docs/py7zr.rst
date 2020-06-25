@@ -22,6 +22,9 @@ and ZStandard with third party libraries.
 `py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
 such as PPMd, BCJ2 and Deflate64.
 
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
+
 Here is a table of algorithms.
 
 +---+----------------------+------------------------------------------+
