@@ -15,7 +15,6 @@ This clause shows extended BNF expression of 7-zip file format.
 .. productionlist::
    Signature: b'7z\xBC\xAF\x27\x1C'
 
-
 .. productionlist::
     ArchiveVersion : b'\x00\x04'
 
@@ -23,9 +22,7 @@ This clause shows extended BNF expression of 7-zip file format.
     StartHeader: StartHeaderCRC, NextHeaderOffset, NextHeaderSize, NextHeaderCRC
 
 .. productionlist::
-   StreamsInfo: PackInfo
-              : CodersInfo
-              : SubStreamsInfo
+   StreamsInfo: PackInfo, CodersInfo, SubStreamsInfo
 
 .. productionlist::
     PackInfo: 0x06, PackPos, NumPackStreams, SizesOfPackStream, CRCsOfPackStreams
@@ -33,55 +30,43 @@ This clause shows extended BNF expression of 7-zip file format.
 .. productionlist::
     CodersInfo: 0x07, FoldersInfo
 
+.. productionlist::
+    Folders Information: 0x0B, NumFolders, FolderInfo, CoderUnpackSizes, UnpackDigests, 0x00
 
 .. productionlist::
-    Folders Information: 0x0B, NumFolders, Folder definitions, CoderUnpackSizes, UnpackDigests, 0x00
+    FoldersInfo: 0x0B, NumFolders, (0x00, Folders) | (0x01, DataStreamIndex)
+               : [0x0C, UnPackSizes, [0x0A, UnpackDigests]], 0x00
 
 .. productionlist::
-    Folder definitions: 0x00, Folders, [Folders] | 0x01, DataStreamIndex
+    Folders: Folder{ Number of Folders }
 
 .. productionlist::
-    CoderUnpackSizes: 0x0C, UnPackSize, [UnpackSize], ...
+    UnpackSizes: UnPackSize { Sum of NumOutStreams for each Folders }
 
 .. productionlist::
-    UnpackDigests: 0x0A, UnPackDigests CRC, [UnpackDigests CRC], ...
+    UnpackSize: UINT64
 
 .. productionlist::
-    FoldersInfo: 0x07
-               : 0x0B, `NumFolders`
-               : BYTE `External`
-               : switch(External) {
-               : case 0:
-               :   `Folders[NumFolders]`
-               : case 1:
-               :   UINT64 `DataStreamIndex`
-               : }
-               : BYTE ID::kCodersUnPackSize : 0x0C
-               : for(`Folders`)
-               :   for(`Folder`.NumOutStreams)
-               :      UINT64 `UnPackSize`
-               : BYTE ID::kCRC : 0x0A
-               : UINT64[`Folders`] UnPackDigests CRCs
-               : BYTE NID::kEnd
+    UnpackDigests: CRC32 { Number of folders }
 
 .. productionlist::
-    SubStreamsInfo: 0x08, 0x0D, `NumUnPackStreamsInFolders[NumFolders]`,
-                  : 0x09, `UnPackSize[]`, 0x0A, `Digests[Number of streams with unknown CRC]`,
-                  : 0x00
+    SubStreamsInfo: 0x08, 0x0D, NumUnPackStreamsInFolders{Num of Folders],
+                  : 0x09, UnPackSize, 0x0A, Digests{Number of streams with unknown CRC}, 0x00
 
 .. productionlist::
-   Folder: `NumCoders`
-         : for (`NumCoders`)
-         : {
-         :    BYTE
-         :    {
-         :      0:3 CodecIdSize
-         :      4:  Is Complex Coder
-         :      5:  There Are Attributes
-         :      6:  Reserved
-         :      7:  0
-         :    }
-         :    BYTE `CodecId[CodecIdSize]`
+   Folder: NumCoders, CoderData { NumCoders }
+
+.. productionlist::
+    CoderData: CoderFlag, CoderID, NumCoderStreamInOut, Properties, BinPairs, PackedStreamIndex
+
+.. productionlist::
+    CoderFlag: BYTE(bit 0:3 CodecIdSize, 4: Is Complex Coder, 5: There Are Attributes, 6: Reserved, 7: 0)
+
+.. productionlist::
+    CoderId: BYTE{CodecIdSize}
+
+.. productionlist::
+
          :    if (Is Complex Coder)
          :    {
          :      UINT64 `NumInStreams`;

@@ -55,6 +55,11 @@ provided. This document provides details on the storage format for
 creating 7-zip files.  Information is provided on the records and
 fields that describe what a .7z file is.
 
+This specification does not provide technical specification of compression methods
+such as LZMA, LZMA2, Delta, BCJ and every other methods.
+It also does not provide technical specification of encryption and hash methods
+such as AES and SHA256.
+
 Trademarks
 ----------
 
@@ -413,6 +418,50 @@ Next Header CRC
 Next header CRC SHALL a CRC32 of `Header database`_ that SHALL be stored in UINT32.
 
 
+
+.. PorpertyIDs:
+
+Property IDs
+------------
+
+Information stored in Header MAY be placed after Property ID.
+For example, Header Info block start with 0x01, which means Header, then
+continues data blocks, and 0x00, which is END, is placed at last.
+This structure can be recursive but there is a rules where paticular
+ID can exist.
+
+==== ==========
+ID   Property
+==== ==========
+0x00 END
+0x01 Header
+0x02 ArchiveProperties
+0x03 AdditionalStreamsInfo
+0x04 MainStreamsInfo
+0x05 FilesInfo
+0x06 PackInfo
+0x07 UnPackInfo
+0x08 SubStreamsInfo
+0x09 Size
+0x0A CRC
+0x0B Folder
+0x0C CodersUnPackSize
+0x0D NumUnPackStream
+0x0E EmptyStream
+0x0F EmptyFile
+0x10 Anti
+0x11 Name
+0x12 CTime
+0x13 ATime
+0x14 MTime
+0x15 WinAttributes
+0x16 Comment
+0x17 EncodedHeader
+0x18 StartPos
+0x19 Dummy
+==== ==========
+
+
 .. _`HeaderInfo`:
 Header encode Information
 ---------------------------
@@ -459,6 +508,8 @@ Main Streams MAY NOT exist if archive contents is empty.
     | Additional Streams |
     +====================+
     | Main Streams       |
+    +====================+
+    | Files Information  |
     +====================+
 
 
@@ -517,15 +568,15 @@ Sizes of packed Streams SHALL stored as list of UINT64.
 
 ::
 
-    +----+==========================================================================+
-    | 06 | Pack Position                                                            |
-    +----+==========================================================================+
-    | Number of Pack Streams                                                        |
-    +===============================================================================+
-    | (Sizes of Pack Streams[Num of folders][Num of outstreams for each folder])    |
-    +===============================================================================+
-    | (CRCs of Packed Streams[Num of folders])                                      |
-    +===============================================================================+
+    +----+===================================================================+
+    | 06 | Pack Position                                                     |
+    +----+===================================================================+
+    | Number of Pack Streams                                                 |
+    +========================================================================+
+    | (Sizes of Pack Streams[Num of folders][Num of outstreams of folders])  |
+    +========================================================================+
+    | (CRCs of Packed Streams[Num of folders])                               |
+    +========================================================================+
 
 
 Pack Position
@@ -553,10 +604,9 @@ Size SHALL be positive integer and SHALL stored in UINT64.
 
 ::
 
-     0   1
-    +---+---+---+---+---+---+---+---+
-    | 09 | Sizes of Pack Streams    |
-    +---+---+---+---+---+---+---+---+
+    +---+==========================+
+    | 09| Sizes of Pack Streams    |
+    +---+==========================+
 
 
 CRCs of Pack Streams
@@ -567,10 +617,9 @@ It also MAY NOT be placed. CRC SHALL be CRC32 and stored in UINT32.
 
 ::
 
-     0   1
-    +---+---+---+---+---+---+---+---+
-    | 0A | CRCs of Pack Streams     |
-    +---+---+---+---+---+---+---+---+
+    +---+==========================+
+    | 0A| CRCs of Pack Streams     |
+    +---+==========================+
 
 
 Coders Information
@@ -583,94 +632,181 @@ It SHALL NOT be more than five coders. (Maximum four)
 
 ::
 
-     0   1
-    +---+---+---+---+---+---+---+------+
-    | 07 |  Folders Information ...    |
-    +---+---+---+---+---+---+---+------+--------------+
-    | Coders Unpack Sizes   | Unpack Digests          |
-    +---+---+---+---+---+---+---+---+------------+----+
+    +---+
+    | 07|
+    +---+=============================+---------+
+    | 0B| Number of folders           | External|
+    +---+=============================+---------+
 
-
-
-Folders Information
-^^^^^^^^^^^^^^^^^^^
-
-Folders information MAY be placed external of header block, otherwise it CAN be at
-Packed Streams for Headers. When Folders information is located at Packed Streams
-for Headers, the block SHALL become
+Folders information MAY be placed external of header block at Packed
+Streams for Headers. When it is placed external, External flag is 0x01.
+For this configuration, Coders Information becomes as follows;
 
 ::
 
-    +---+====================+---+=====================+
-    | 0B| Number of Folders  | 01|  Data Stream Index  |
-    +---+====================+---+=====================+
+    +---+
+    | 07|
+    +---+===========================================+
+    | 0B| Number of Folders                         |
+    +---+===========================================+
+    | 01| Data Stream Index                         |
+    +---+===========================================+
+    | 0C| UnpackSizes[ total number of outstreams ] |
+    +---+===========================================+
+    | 0A| UnPackDigests[ Number of folders ]        |
+    +---+===========================================+
 
-These each numbers,  other than BYTE ID such as 0x0B 0x00, SHALL be presented
-as UINT64 integer number.
-When Folder information is inline, the block SHALL become
+
+In default Folders information is placed inline, then External flag is 0x00.
 
 ::
 
-    +---+====================+===+=========+
-    | 0B| Number of Folders  | 00|
-    +---+====================+===+=========+
+    +---+
+    | 07|
+    +---+===========================================+
+    | 0B| Number of Folders                         |
+    +---+===========================================+
+    | 00| Folders[Number of Folders]                |
+    +---+===========================================+
+    | 0C| UnpackSizes[ total number of outstreams ] |
+    +---+===========================================+
+    | 0A| UnPackDigests[ Number of folders ]        |
+    +---+===========================================+
+
+
+UnpackSizes
+^^^^^^^^^^^
+
+UnpackSizes is a list of decompress sizes for each archived file data.
+When extract data from the archive, it SHALL be distilled from unpack streams
+and split chunk into defined sizes.
+
+Filenames are defined in File Information block. An order of data chunks and
+a order of filenames SHALL be same, except for filenames which is defined as
+empty stream.
+
+
+UnpackDigests
+^^^^^^^^^^^^^
+
+UnpackDigests is a list of CRC32 of decompress deta digests for each folders.
+When extract data from the archive, it CAN check an integrity of data.
+
+It SHALL be a list of UINT64 and its length SHALL be as same as number of folders.
+It MAY be skipped when Substreams Information defined.
+
+
+Folders
+-------
+
+Folder in 7-zip archive means a basic container unit for encoded data.
+It brings encoded data. The data chunk Packed Streams is defined as
+series of Folders.
+
+Each Folder has coder information. CoderInfo is consist of flag,
+number of streams and properties.
+
+Flag indicate the coder is simple i.e. single input and single output,
+or comprex i.e. multiple input, multiple output.
+
+When simple coder, number of streams is always one for input,
+and one for output, so it SHALL be skipped.
+
+::
+
+    +===================+======================================+
+    | Number of coder   |  Coder Properties[ Number of coder ] |
+    +===================+======================================+
+
+Number of coder SHALL be a UINT64 integer number.
+Coder Properties SHALL be a list of Coder Property with length SHALL be
+as same as Number of coder.
+
+Coder Property
+^^^^^^^^^^^^^^
+
+Coder Property is defined with flag which indicate coder types.
+According to flag that indicate coder is complex, the Coder Property
+MAY have a number of input and output streams of coder.
+
+Flag is defined in one byte as following bit definitions.
+
+* bit 3-0: Codec ID size
+* bit 4: Is complex codec
+* bit 5: There are attributes
+* bit 6-7: Reserved, it SHOULD always be zero.
+
+::
+
+    +------+==========================+
+    | flag | coder ID [Codec ID size] |
+    +------+==========================+
+    +================+================+
+    | [NumInStreams] | [NumOutStreams]|
+    +================+================+
+    | [Property Size]| [Properties]r  |
+    +================+================+
+    | [Input Index]  | [Output Index] |
+    +================+================+
+    | [Packed Stream Indexes ]        |
+    +=================================+
+
+Codec IDs
+^^^^^^^^^
+
+Here is a list of famous codec IDs.
+
+========= ===========
+NAME      ID
+========= ===========
+COPY      0x00
+DELTA     0x03
+BCJ       0x04
+LZMA      0x030101
+P7Z_BCJ   0x03030103
+BCJ_PPC   0x03030205
+BCJ_IA64  0x03030301
+BCJ_ARM   0x03030501
+BCJ_ARMT  0x03030701
+BCJ_SPARC 0x03030805
+LZMA2     0x21
+BZIP2     0x040202
+DEFLATE   0x040108
+DEFLATE64 0x040109
+ZSTD      0x04f71101
+LZ4       0x04f71104
+AES       0x06f10701
+========= ===========
+
+
+Substreams Information
+----------------------
+
+Substreams Information hold an information about archived data blocks
+as in extracted form. It SHALL exist that number of unpack streams,
+size of each unpack streams, and CRC of each streams.
+
+::
+
+    +---+
+    | 08|
+    +---+==========================================================+
+    | 0D| Number of unpack streams for Folders [Number of Folders] |
+    +---+==========================================================+
+    | 09| Sizes of unpack streams[total number of unpack streams]  |
+    +---+==========================================================+
+    | 0A| CRC of unpack streams[total number of unpack streams ]   |
+    +---+==========================================================+
 
 
 Files Information
 -----------------
 
-Files Information is a header block which hold archived files properties.
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-.. PorpertyIDs:
-Property IDs
-------------
-
-==== ==========
-ID   Property
-==== ==========
-0x00 END
-0x01 Header
-0x02 ArchiveProperties
-0x03 AdditionalStreamsInfo
-0x04 MainStreamsInfo
-0x05 FilesInfo
-0x06 PackInfo
-0x07 UnPackInfo
-0x08 SubStreamsInfo
-0x09 Size
-0x0A CRC
-0x0B Folder
-0x0C CodersUnPackSize
-0x0D NumUnPackStream
-0x0E EmptyStream
-0x0F EmptyFile
-0x10 Anti
-0x11 Name
-0x12 CTime
-0x13 ATime
-0x14 MTime
-0x15 WinAttributes
-0x16 Comment
-0x17 EncodedHeader
-0x18 tartPos
-0x19 Dummy
-==== ==========
 
 
 .. include:: appendix.rst
