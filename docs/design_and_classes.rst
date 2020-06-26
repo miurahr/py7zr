@@ -15,23 +15,23 @@ class diagram
 Whole classes
 ~~~~~~~~~~~~~~~~~~
 
-.. graphviz:: classes.dot
+.. graphviz:: diagrams/classes.dot
 
 
 Header classes
 ~~~~~~~~~~~~~~
 
-.. graphviz:: header_classes.dot
+.. graphviz:: diagrams/header_classes.dot
 
 Compressor classes
 ~~~~~~~~~~~~~~~~~~
 
-.. graphviz:: compressor_classes.dot
+.. graphviz:: diagrams/compressor_classes.dot
 
 package relations
 ~~~~~~~~~~~~~~~~~
 
-.. graphviz:: packages.dot
+.. graphviz:: diagrams/packages.dot
 
 
 .. _internal_classes:

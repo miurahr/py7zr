@@ -1,3 +1,4 @@
+.. _sevenzip-specifications:
 =============================
 .7z file format specification
 =============================
@@ -97,11 +98,8 @@ Notations
 * MAY indicates an OPTIONAL element.
 
 
-Specification
-=============
-
 Conventions
------------
+===========
 
 Diagram conventions
 ^^^^^^^^^^^^^^^^^^^
@@ -278,7 +276,6 @@ Following bytes SHOULD be an integer as little endian.
 +-------------+--------------+------------------------------+
 
 
-.. _`7-zip archive`:
 File format
 ===========
 
@@ -363,7 +360,7 @@ Archive version SHALL consist with two bytes.
 
 Major version MAY be 0x00, and minor version MAY be 0x04.
 
-_`StartHeader`
+.. _`StartHeader`:
 Start Header
 ------------
 
@@ -383,7 +380,7 @@ and Next Header CRC.
     +---+---+---+---+---+---+---+---+
 
 
-_`StartHeaderCRC`
+.. _`StartHeaderCRC`:
 Start Header CRC
 ^^^^^^^^^^^^^^^^
 
@@ -392,7 +389,7 @@ This CRC value SHALL be calculated from Next Header Offset, Next Header size and
 Next Header CRC.
 
 
-_`NextHeaderOffset`
+.. _`NextHeaderOffset`:
 Next Header offset
 ^^^^^^^^^^^^^^^^^^
 
@@ -401,7 +398,7 @@ Because signature header always consist with 32 bytes, the offset SHOULD be a va
 absolute position of header database in archive file - 32 bytes.
 Next header offset SHALL be stored as REAL_UINT64.
 
-_`NextHeaderOffset`
+.. _`NextHeaderOffset`:
 Next Header size
 ^^^^^^^^^^^^^^^^
 
@@ -409,14 +406,14 @@ Next header size SHALL be an size of a header database. Because a header databas
 encoded, Next header size SHALL consist of encoded(packed) size, not a raw size.
 Next header size SHALL be stored as REAL_UINT64.
 
-_`NextHeaderCRC`
+.. _`NextHeaderCRC`:
 Next Header CRC
 ^^^^^^^^^^^^^^^
 
 Next header CRC SHALL a CRC32 of `Header database`_ that SHALL be stored in UINT32.
 
 
-_`HeaderInfo`
+.. _`HeaderInfo`:
 Header encode Information
 ---------------------------
 
@@ -430,7 +427,7 @@ encoded data followed after ID 0x17.
     +---+======================+
 
 
-
+.. _Header:
 Header
 ------
 
@@ -448,6 +445,7 @@ Raw header SHALL start with one byte ID 0x01.
     |01 | Archive Properties      |
     +---+=========================+
 
+.. _ArchiveProperties:
 Archive Properties
 ------------------
 
@@ -599,144 +597,80 @@ Folders Information
 
 Folders information MAY be placed external of header block, otherwise it CAN be at
 Packed Streams for Headers. When Folders information is located at Packed Streams
-for Headers, header block SHALL become
+for Headers, the block SHALL become
 
 ::
 
-    +---+---+---+---+---+---+---+---+------------+----+
-    | 0B | Number of Folders| 01| Data Stream Index   |
-    +---+---+---+---+---+---+---+---+------------+----+
+    +---+====================+---+=====================+
+    | 0B| Number of Folders  | 01|  Data Stream Index  |
+    +---+====================+---+=====================+
 
 These each numbers,  other than BYTE ID such as 0x0B 0x00, SHALL be presented
 as UINT64 integer number.
-When Folder information
+When Folder information is inline, the block SHALL become
 
 ::
 
-     0   1
-    +---+---+---+---+---+---+---+---+------------+----+
-    | 00| Folder
-    +---+---+---+---+---+---+---+---+------------+----+
+    +---+====================+===+=========+
+    | 0B| Number of Folders  | 00|
+    +---+====================+===+=========+
+
+
+Files Information
+-----------------
+
+Files Information is a header block which hold archived files properties.
 
 
 
-Appendix: BNF expression (Informative)
-======================================
 
 
-This clause shows extended BNF expression of 7-zip file format.
-
-.. productionlist::
-   7-zip archive: SignatureHeader, [PackedStreams],
-                   : [PackedStreamsForHeaders], Header | HeaderInfo
-
-.. productionlist::
-   SignatureHeader: Signature, ArchiveVersion, StartHeader
-
-.. productionlist::
-   Signature: b'7z\xBC\xAF\x27\x1C'
 
 
-.. productionlist::
-    ArchiveVersion : b'\x00\x04'
-
-.. productionlist::
-    StartHeader: StartHeaderCRC, NextHeaderOffset, NextHeaderSize, NextHeaderCRC
-
-.. productionlist::
-   StreamsInfo: PackInfo
-              : CodersInfo
-              : SubStreamsInfo
-
-.. productionlist::
-    PackInfo: 0x06, PackPos, NumPackStreams, SizesOfPackStream, CRCsOfPackStreams
-
-.. productionlist::
-    CodersInfo: 0x07, FoldersInfo
 
 
-.. productionlist::
-    Folders Information: 0x0B, NumFolders, Folder definitions, CoderUnpackSizes, UnpackDigests, 0x00
-
-.. productionlist::
-    Folder definitions: 0x00, Folders, [Folders] | 0x01, DataStreamIndex
-
-.. productionlist::
-    CoderUnpackSizes: 0x0C, UnPackSize, [UnpackSize], ...
-
-.. productionlist::
-    UnpackDigests: 0x0A, UnPackDigests CRC, [UnpackDigests CRC], ...
 
 
-Appendix: Rationale
-===================
-
-Byte order
-----------
-
-It has been asked why 7-zip uses little endian byte order. It is a historical reason,
-that 7-zip was born as Microsoft Windows application in 1999, and its file format was
-a windows application format, when only little endian was used on target platform.
-
-CRC32
------
-
-CRC32 is a checksum.
-
-Encode
-------
-
-Encode in this document express compressed, encrypted and/or filter data. When encoding,
-it should lead encoding metadata.
-
-Extract
--------
-
-Extract in this document express decompress, decryption and/or filter data from archive.
 
 
-UTF-16-LE
----------
-
-Unicode UTF-16 encoding uses 2 bytes or 4 bytes to represent Unicode character.
-Because it is not one byte ordering, we need to consider endian, byte order.
-UTF-16-LE is a variant of UTF-16 definition which use Little-Endian for store data.
 
 
-Appendix: 7zFormat.txt (Informative)
-====================================
-
-This clause quote 7zFormat.txt distributed with 7-zip application.
-
-.. literalinclude:: 7zFormat.txt
-
-Appendix: CRC algorithm (informative)
-=====================================
-
-Chunk CRCs are calculated using standard CRC methods with pre and post conditioning,
-as defined by ISO 3309 [ISO-3309] or ITU-T V.42 [ITU-T-V42]. The CRC polynomial employed is
-
-::
-
-   x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x+1
-
-The 32-bit CRC register is initialized to all 1's, and then the data from each byte
-is processed from the least significant bit (1) to the most significant bit (128).
-After all the data bytes are processed, the CRC register is inverted
-(its ones complement is taken).
-This value is transmitted (stored in the file) MSB first.
-For the purpose of separating into bytes and ordering, the least significant bit of
-the 32-bit CRC is defined to be the coefficient of the x31 term.
-
-Practical calculation of the CRC always employs a precalculated table to greatly
-accelerate the computation
 
 
-Full Copyright Statement
-========================
+.. PorpertyIDs:
+Property IDs
+------------
 
-Intellectual Property
-=====================
+==== ==========
+ID   Property
+==== ==========
+0x00 END
+0x01 Header
+0x02 ArchiveProperties
+0x03 AdditionalStreamsInfo
+0x04 MainStreamsInfo
+0x05 FilesInfo
+0x06 PackInfo
+0x07 UnPackInfo
+0x08 SubStreamsInfo
+0x09 Size
+0x0A CRC
+0x0B Folder
+0x0C CodersUnPackSize
+0x0D NumUnPackStream
+0x0E EmptyStream
+0x0F EmptyFile
+0x10 Anti
+0x11 Name
+0x12 CTime
+0x13 ATime
+0x14 MTime
+0x15 WinAttributes
+0x16 Comment
+0x17 EncodedHeader
+0x18 tartPos
+0x19 Dummy
+==== ==========
 
-Acknowledgement
-===============
+
+.. include:: appendix.rst
