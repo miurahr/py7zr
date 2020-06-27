@@ -8,8 +8,8 @@ py7zr
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
-.. image:: https://travis-ci.org/miurahr/py7zr.svg?branch=master
-  :target: https://travis-ci.org/miurahr/py7zr
+.. image:: https://travis-ci.com/miurahr/py7zr.svg?branch=master
+  :target: https://travis-ci.com/miurahr/py7zr
 
 .. image:: https://github.com/miurahr/py7zr/workflows/Run%20Tox%20tests/badge.svg
   :target: https://github.com/miurahr/py7zr/actions
