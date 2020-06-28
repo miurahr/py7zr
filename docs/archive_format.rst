@@ -756,12 +756,68 @@ Flag is defined in one byte as following bit definitions.
     +================+================+
     | [NumInStreams] | [NumOutStreams]|
     +================+================+
-    | [Property Size]| [Properties]r  |
+    | [Property Size]| [Properties]   |
     +================+================+
     | [Input Index]  | [Output Index] |
     +================+================+
     | [Packed Stream Indexes ]        |
     +=================================+
+
+A coder property format is vary with flag.
+Following pseudo code indicate how each parameter located for informative purpose.
+
+::
+
+    if (Is Complex Coder)
+     {
+       UINT64 `NumInStreams`;
+       UINT64 `NumOutStreams`;
+     }
+     if (There Are Attributes)
+     {
+       UINT64 `PropertiesSize`
+       BYTE `Properties[PropertiesSize]`
+     }
+    }
+    NumBindPairs :  = `NumOutStreamsTotal` – 1;
+    for (`NumBindPairs`)
+     {
+       UINT64 `InIndex`;
+       UINT64 `OutIndex`;
+     }
+    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
+     if (`NumPackedStreams` > 1)
+       for(`NumPackedStreams`)
+       {
+         UINT64 `Index`;
+       };
+
+
+
+When using only simple codecs, which has one input stream and one output stream,
+coder property become as simple as follows;
+
+::
+
+    +------+==========================+=================+==============+
+    | flag | coder ID [Codec ID size] | [Property Size] | [Properties] |
+    +------+==========================+=================+==============+
+
+
+Here is an example of bytes of coder property when specifying LZMA.
+In this example, first byte 0x23 indicate that coder id size is three bytes, and
+it is not complex codec and there is a codec property.
+A coder ID is b'\x03\x01\x01' and property length is five and property is
+b'\x5D\x00\x10\x00\x00'.
+
+::
+
+    +---+---+---+---+---+---+---+---+---+---+
+    | 23| 03| 01| 01| 05| 5D| 00| 10| 00| 00|
+    +---+---+---+---+---+---+---+---+---+---+
+
+
+
 
 Codec IDs
 ---------
@@ -866,33 +922,6 @@ This clause shows extended BNF expression of 7-zip file format.
    Name: UTF16-LE Char, [Name]
    Attributes: (0x00, bit array of AttributesAreDefined |  0x01),
              : (0x00, list of Attribute | 0x01, DataIndex)
-
-
-::
-
-    if (Is Complex Coder)
-     {
-       UINT64 `NumInStreams`;
-       UINT64 `NumOutStreams`;
-     }
-     if (There Are Attributes)
-     {
-       UINT64 `PropertiesSize`
-       BYTE `Properties[PropertiesSize]`
-     }
-    }
-    NumBindPairs :  = `NumOutStreamsTotal` – 1;
-    for (`NumBindPairs`)
-     {
-       UINT64 `InIndex`;
-       UINT64 `OutIndex`;
-     }
-    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
-     if (`NumPackedStreams` > 1)
-       for(`NumPackedStreams`)
-       {
-         UINT64 `Index`;
-       };
 
 
 Appendix: Rationale
