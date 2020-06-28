@@ -116,10 +116,6 @@ The module defines the following items:
 
 .. seealso::
 
-   (external link) `7z_format`_ Documentation of the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
-
-.. seealso::
-
    (external link) `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
 
@@ -405,9 +401,6 @@ Create command options
 
    Create password protected archive. py7zr will prompt user input.
 
-
-
-.. _7z_format: https://www.7-zip.org/7z.html
 
 .. _shutil: https://docs.python.org/3/library/shutil.html
 
