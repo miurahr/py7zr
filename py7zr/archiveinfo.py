@@ -583,6 +583,7 @@ class SubstreamsInfo:
                 write_uint64(file, n)
         write_byte(file, Property.SIZE)
         idx = 0
+        assert self.unpacksizes is not None
         for i in range(numfolders):
             for _ in range(1, self.num_unpackstreams_folders[i]):
                 size = self.unpacksizes[idx]
