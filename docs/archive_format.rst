@@ -330,7 +330,7 @@ with archive version. Start Header SHALL follow after archive version.
 
       0   1   2   3   4   5   6   7
     +---+---+---+---+---+---+---+---+
-    | Signature             | Archive Version
+    | Signature             | VN    |
     +---+---+---+---+---+---+---+---+
     | Start Header                  |
     +---+---+---+---+---+---+---+---+
@@ -355,10 +355,11 @@ The first six bytes of a 7-zip file SHALL always contain the following values as
 
 
 
-Archive Version
----------------
+VN (version number, 2 byte)
+---------------------------
 
-Archive version SHALL consist with two bytes.
+Version number SHALL consist with two bytes.
+Just in case something needs to be modified in the future.
 
 ::
 
@@ -367,7 +368,7 @@ Archive version SHALL consist with two bytes.
     | Major version | Minor version |
     +---------------+---------------+
 
-Major version MAY be 0x00, and minor version MAY be 0x04.
+Major version is 0x00, and minor version is 0x04 for now.
 
 .. _`StartHeader`:
 
@@ -763,7 +764,16 @@ Flag is defined in one byte as following bit definitions.
     +=================================+
 
 Codec IDs
-^^^^^^^^^
+---------
+
+Conformant implementations SHALL support mandatory codecs that are COPY, LZMA, LZMA2, BCJ, and Delta.
+There are a variant of BCJ that are X86, PowerPC, SPARC, ARM, ARMTHUMB, and IA64.
+Conformant implementations SHOULD also support optional codecs that are AES, BZIP2, DEFLATE, BCJ2, and PPMd.
+Implementations MAY support additional codecs that are ZStandard, and LZ4.
+It MAY also support proprietary codec such as DEFLATE64.
+
+Conformant implementations SHALL accept these codec IDs and when it does not support it,
+it SHOULD report it as not supported.
 
 Here is a list of famous codec IDs.
 
