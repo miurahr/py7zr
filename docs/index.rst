@@ -6,8 +6,8 @@ py7zr documentation contents
    :maxdepth: 3
 
    py7zr
-   design_and_classes
-   specification/fileformat
+   design
+   archive_format
    AUTHORS
    glossary
 

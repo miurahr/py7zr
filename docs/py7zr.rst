@@ -14,6 +14,9 @@ This module provides tools to read and list 7z file. Features is not implemented
 to create, write and append a 7z file.  Any advanced use of this module will
 require an understanding of the format, as defined in `7z_format`_.
 
+See :download:`Introductory presentation(PDF) <presentations/Introduction_of_py7zr.pdf>`,
+and :download:`Introductory presentation(ODP) <presentations/Introduction_of_py7zr.odp>`.
+
 Compression Methods
 ===================
 
@@ -347,7 +350,7 @@ For a list of the files in a 7z archive, use the :option:`l` subcommand:
 
 
 Command-line options
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. option:: l <7z file>
 
@@ -371,7 +374,7 @@ Command-line options
 
 
 Extract command options
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. option:: -P --password
 
@@ -384,7 +387,7 @@ Extract command options
 
 
 List command options
-~~~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. option:: --verbose
 
@@ -392,7 +395,7 @@ List command options
 
 
 Create command options
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 .. option:: -v | --volume {Size}[b|k|m|g]
 
