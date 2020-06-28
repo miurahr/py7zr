@@ -881,7 +881,6 @@ Files Information
 
 
 
-
 Appendix: BNF expression (Informative)
 ======================================
 
@@ -922,6 +921,55 @@ This clause shows extended BNF expression of 7-zip file format.
    Name: UTF16-LE Char, [Name]
    Attributes: (0x00, bit array of AttributesAreDefined |  0x01),
              : (0x00, list of Attribute | 0x01, DataIndex)
+
+
+::
+
+    if (Is Complex Coder)
+     {
+       UINT64 `NumInStreams`;
+       UINT64 `NumOutStreams`;
+     }
+     if (There Are Attributes)
+     {
+       UINT64 `PropertiesSize`
+       BYTE `Properties[PropertiesSize]`
+     }
+    }
+    NumBindPairs :  = `NumOutStreamsTotal` – 1;
+    for (`NumBindPairs`)
+     {
+       UINT64 `InIndex`;
+       UINT64 `OutIndex`;
+     }
+    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
+     if (`NumPackedStreams` > 1)
+       for(`NumPackedStreams`)
+       {
+         UINT64 `Index`;
+       };
+
+
+Appendix: CRC algorithm (normative)
+===================================
+
+Chunk CRCs are calculated using standard CRC methods with pre and post conditioning,
+as defined by ISO 3309 [ISO-3309] or ITU-T V.42 [ITU-T-V42]. The CRC polynomial employed is
+
+::
+
+   x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x+1
+
+The 32-bit CRC register is initialized to all 1's, and then the data from each byte
+is processed from the least significant bit (1) to the most significant bit (128).
+After all the data bytes are processed, the CRC register is inverted
+(its ones complement is taken).
+This value is transmitted (stored in the file) MSB first.
+For the purpose of separating into bytes and ordering, the least significant bit of
+the 32-bit CRC is defined to be the coefficient of the x31 term.
+
+Practical calculation of the CRC always employs a precalculated table to greatly
+accelerate the computation
 
 
 Appendix: Rationale
@@ -965,26 +1013,4 @@ Appendix: 7zFormat.txt (Informative)
 This clause quote 7zFormat.txt distributed with 7-zip application.
 
 .. literalinclude:: reference/7zFormat.txt
-
-Appendix: CRC algorithm (informative)
-=====================================
-
-Chunk CRCs are calculated using standard CRC methods with pre and post conditioning,
-as defined by ISO 3309 [ISO-3309] or ITU-T V.42 [ITU-T-V42]. The CRC polynomial employed is
-
-::
-
-   x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x+1
-
-The 32-bit CRC register is initialized to all 1's, and then the data from each byte
-is processed from the least significant bit (1) to the most significant bit (128).
-After all the data bytes are processed, the CRC register is inverted
-(its ones complement is taken).
-This value is transmitted (stored in the file) MSB first.
-For the purpose of separating into bytes and ordering, the least significant bit of
-the 32-bit CRC is defined to be the coefficient of the x31 term.
-
-Practical calculation of the CRC always employs a precalculated table to greatly
-accelerate the computation
-
 
