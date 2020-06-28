@@ -11,8 +11,8 @@
 
 The 7z file format is a popular archive and compression format in recent days.
 This module provides tools to read and list 7z file. Features is not implemented
-to create, write and append a 7z file.  Any advanced use of this module will
-require an understanding of the format, as defined in `7z_format`_.
+to create, write and append a 7z file. py7zr does not support self-extracting archive,
+aka. SFX file, and only support plain 7z archive file.
 
 See :download:`Introductory presentation(PDF) <presentations/Introduction_of_py7zr.pdf>`,
 and :download:`Introductory presentation(ODP) <presentations/Introduction_of_py7zr.odp>`.
