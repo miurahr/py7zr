@@ -234,7 +234,7 @@ class PackInfo:
                 self.crcs = [read_uint64(file) for _ in range(self.numstreams)]
                 pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % repr(pid))
+            raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover  # noqa
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
         return self
 
@@ -344,8 +344,8 @@ class Folder:
         self.digestdefined = False
         num_bindpairs = sum([c['numoutstreams'] for c in self.coders]) - 1
         self.bindpairs = [Bond(incoder=i + 1, outcoder=i) for i in range(num_bindpairs)]
-        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:
-            self.packed_indices.append(0)  # FIXME
+        # Only simple codecs are suport, assert it
+        assert sum([c['numinstreams'] for c in self.coders]) == sum([c['numoutstreams'] for c in self.coders])
 
     def write(self, file: BinaryIO):
         num_coders = len(self.coders)
