@@ -815,13 +815,10 @@ class FilesInfo:
 class Header:
     """ the archive header """
 
-    __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
-                'size', '_start_pos']
+    __slot__ = ['solid', 'main_streams', 'files_info', 'size', '_start_pos']
 
     def __init__(self) -> None:
         self.solid = False
-        self.properties = None
-        self.additional_streams = None
         self.main_streams = None
         self.files_info = None
         self.size = 0  # fixme. Not implemented yet
@@ -918,17 +915,10 @@ class Header:
             startpos = self._encode_header(file, afterheader, filters)
         else:
             write_byte(file, Property.HEADER)
-            # Archive properties
             if self.main_streams is not None:
                 self.main_streams.write(file)
-            # Files Info
             if self.files_info is not None:
                 self.files_info.write(file)
-            if self.properties is not None:
-                self.properties.write(file)
-            # AdditionalStreams
-            if self.additional_streams is not None:
-                self.additional_streams.write(file)
             write_byte(file, Property.END)
         endpos = file.tell()
         header_len = endpos - startpos
@@ -939,9 +929,6 @@ class Header:
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
-        if pid == Property.ADDITIONAL_STREAMS_INFO:
-            self.additional_streams = StreamsInfo.retrieve(fp)
-            pid = fp.read(1)
         if pid == Property.MAIN_STREAMS_INFO:
             self.main_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)
