@@ -32,7 +32,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_crc32, calculate_key, get_password
+from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
                               FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE, CompressionMethod)
@@ -353,9 +353,8 @@ class SevenZipDecompressor:
     """Main decompressor object which is properly configured and bind to each 7zip folder.
     because 7zip folder can have a custom compression method"""
 
-    def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int]) -> None:
-        # Get password which was set when creation of py7zr.SevenZipFile object.
-        password = get_password()
+    def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int],
+                 password: Optional[str] = None) -> None:
         self.input_size = packsize
         self.unpacksizes = unpacksizes
         self.consumed = 0  # type: int
@@ -452,8 +451,7 @@ class SevenZipCompressor:
 
     __slots__ = ['filters', 'compressor', 'coders', 'cchain', 'methods_map']
 
-    def __init__(self, filters=None):
-        password = get_password()
+    def __init__(self, filters=None, password=None):
         if filters is None:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:

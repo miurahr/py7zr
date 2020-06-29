@@ -277,7 +277,7 @@ class Folder:
     """
 
     __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'num_bindpairs', 'num_packedstreams',
-                 'bindpairs', 'packed_indices', 'crc', 'decompressor', 'compressor', 'files']
+                 'bindpairs', 'packed_indices', 'crc', 'compressor', 'decompressor', 'files', 'password']
 
     def __init__(self) -> None:
         self.unpacksizes = []  # type: List[int]
@@ -293,6 +293,8 @@ class Folder:
         self.decompressor = None  # type: Optional[SevenZipDecompressor]
         self.compressor = None  # type: Optional[SevenZipCompressor]
         self.files = None
+        # encryption
+        self.password = None  # type: Optional[str]
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -335,7 +337,7 @@ class Folder:
                 self.packed_indices.append(read_uint64(file))
 
     def prepare_coderinfo(self, filters):
-        self.compressor = SevenZipCompressor(filters=filters)
+        self.compressor = SevenZipCompressor(filters=filters, password=self.password)
         self.coders = self.compressor.coders
         assert len(self.coders) > 0
         self.solid = True
@@ -376,7 +378,7 @@ class Folder:
         if self.decompressor is not None and not reset:
             return self.decompressor
         else:
-            self.decompressor = SevenZipDecompressor(self.coders, packsize, self.unpacksizes, self.crc)
+            self.decompressor = SevenZipDecompressor(self.coders, packsize, self.unpacksizes, self.crc, self.password)
             return self.decompressor
 
     def get_compressor(self) -> SevenZipCompressor:
@@ -823,41 +825,34 @@ class Header:
         self.files_info = None
         self.size = 0
         self._start_pos = 0
+        self.password = None  # type: Optional[str]
 
     @classmethod
-    def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int):
+    def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int, password=None):
         obj = cls()
-        obj._read(fp, buffer, start_pos)
+        obj._read(fp, buffer, start_pos, password)
         return obj
 
-    def _read(self, fp: BinaryIO, buffer: BytesIO, start_pos: int) -> None:
-        self._start_pos = start_pos
-        fp.seek(self._start_pos)
-        self._decode_header(fp, buffer)
-
-    def _decode_header(self, fp: BinaryIO, buffer: BytesIO) -> None:
+    def _read(self, fp: BinaryIO, buffer: BytesIO, start_pos: int, password) -> None:
         """
         Decode header data or encoded header data from buffer.
         When buffer consist of encoded buffer, it get stream data
         from it and call itself recursively
         """
+        self._start_pos = start_pos
+        fp.seek(self._start_pos)
         pid = buffer.read(1)
         if not pid:
             # empty archive
             return
-        elif pid == Property.HEADER:
+        if pid == Property.HEADER:
             self._extract_header_info(buffer)
             return
-        elif pid != Property.ENCODED_HEADER:
+        if pid != Property.ENCODED_HEADER:
             raise TypeError('Unknown field: %r' % id)  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
-        self._decode_header(fp, self._get_headerdata_from_streams(fp, streams))
-
-    def _get_headerdata_from_streams(self, fp: BinaryIO, streams: StreamsInfo) -> BytesIO:
-        """get header data from given streams.unpackinfo and packinfo.
-        folder data are stored in raw data positioned in afterheader."""
-        buffer = io.BytesIO()
+        buffer2 = io.BytesIO()
         src_start = self._start_pos
         for folder in streams.unpackinfo.folders:
             uncompressed = folder.unpacksizes
@@ -865,6 +860,7 @@ class Header:
                 uncompressed = [uncompressed] * len(folder.coders)
             compressed_size = streams.packinfo.packsizes[0]
             uncompressed_size = uncompressed[-1]
+            folder.password = password
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
             decompressor = folder.get_decompressor(compressed_size)
@@ -874,9 +870,12 @@ class Header:
             if folder.digestdefined:
                 if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile('invalid block data')
-            buffer.write(folder_data)
-        buffer.seek(0, 0)
-        return buffer
+            buffer2.write(folder_data)
+        buffer2.seek(0, 0)
+        pid = buffer2.read(1)
+        if pid != Property.HEADER:
+            raise TypeError('Unknown field: %r' % id)  # pragma: no-cover
+        self._extract_header_info(buffer2)
 
     def _encode_header(self, file: BinaryIO, afterheader: int, filters):
         startpos = file.tell()
@@ -884,6 +883,7 @@ class Header:
         buf = io.BytesIO()
         _, raw_header_len, raw_crc = self.write(buf, 0, False)
         folder = Folder()
+        folder.password = self.password
         folder.prepare_coderinfo(filters=filters)
         assert folder.compressor is not None
         headerstreams = HeaderStreamsInfo()
@@ -892,15 +892,19 @@ class Header:
         headerstreams.packinfo.enable_digests = False
         folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
+        compressor = folder.get_compressor()
         buf.seek(0, 0)
         data = buf.read(io.DEFAULT_BUFFER_SIZE)
         while data:
-            out = folder.compressor.compress(data)
+            out = compressor.compress(data)
             file.write(out)
             data = buf.read(io.DEFAULT_BUFFER_SIZE)
-        out = folder.compressor.flush()
+        out = compressor.flush()
         file.write(out)
-        headerstreams.packinfo.packsizes = [folder.compressor.packsize]
+        #
+        headerstreams.packinfo.packsizes = [compressor.packsize]
+        headerstreams.packinfo.crcs = [compressor.digest]
+        # actual header start position
         startpos = file.tell()
         headerstreams.write(file)
         return startpos
