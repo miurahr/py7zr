@@ -2,7 +2,7 @@
 Py7zr ChangeLog
 ===============
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file.(#165,#166,#167,#168)
 
 `Unreleased`_
 =============
@@ -15,13 +15,17 @@ Added
 Changed
 -------
 
+* Update password handling and drop get_password() helper (#162)
+
 Fixed
 -----
+
+* Now return correct header size by archiveinfo() method.(#169)
 
 Deprecated
 ----------
 
-* Drop ArchiveProperty class: A field has already deprecated or not used.
+* Drop ArchiveProperty class: A field has already deprecated or not used.(#170)
 * Drop AntiFile property: a property has already deprecated or not used.
 
 Removed
