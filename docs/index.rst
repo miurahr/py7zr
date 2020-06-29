@@ -1,20 +1,20 @@
+============================
 py7zr documentation contents
 ============================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    py7zr
-   filters
-   design_and_classes
-   7zFormat
+   design
+   archive_format
    AUTHORS
    glossary
 
+==================
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

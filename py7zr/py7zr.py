@@ -53,7 +53,7 @@ if sys.platform.startswith('win'):
     import _winapi
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
-FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
+FILE_ATTRIBUTE_WINDOWS_MASK = 0x07fff
 
 
 class ArchiveFile:
@@ -271,8 +271,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[List[Dict[str, int]]] = None,
-                 dereference=False, password: Optional[str] = None) -> None:
+                 *, filters: Optional[List[Dict[str, int]]] = None, dereference=False, password: Optional[str] = None,
+                 header_encryption=False) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
@@ -343,7 +343,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self.encoded_header_mode = False
+        self.encoded_header_mode = True
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
         self.reporterd = None  # type: Optional[threading.Thread]
@@ -371,6 +371,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
+        header.size += 32 + self.sig_header.nextheadersize
         if header is None:
             return
         self.header = header

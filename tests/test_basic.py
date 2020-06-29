@@ -191,7 +191,7 @@ def test_cli_list_verbose(capsys):
 Path = {}
 Type = 7z
 Phisical Size = 657
-Headers Size = 0
+Headers Size = 216
 Method = LZMA2
 Solid = +
 Blocks = 1
@@ -219,7 +219,7 @@ def test_cli_test(capsys):
 Path = {}
 Type = 7z
 Phisical Size = 1663
-Headers Size = 0
+Headers Size = 203
 Method = LZMA2
 Solid = -
 Blocks = 1

@@ -207,38 +207,6 @@ def bits_to_bytes(bit_length: int) -> int:
     return - (-bit_length // 8)
 
 
-class ArchiveProperties:
-
-    __slots__ = ['property_data']
-
-    def __init__(self):
-        self.property_data = []
-
-    @classmethod
-    def retrieve(cls, file):
-        return cls()._read(file)
-
-    def _read(self, file):
-        pid = file.read(1)
-        if pid == Property.ARCHIVE_PROPERTIES:
-            while True:
-                ptype = file.read(1)
-                if ptype == Property.END:
-                    break
-                size = read_uint64(file)
-                props = read_bytes(file, size)
-                self.property_data.append(props)
-        return self
-
-    def write(self, file):
-        if len(self.property_data) > 0:
-            write_byte(file, Property.ARCHIVE_PROPERTIES)
-            for data in self.property_data:
-                write_uint64(file, len(data))
-                write_bytes(file, data)
-            write_byte(file, Property.END)
-
-
 class PackInfo:
     """ information about packed streams """
 
@@ -273,7 +241,6 @@ class PackInfo:
     def write(self, file: BinaryIO):
         assert self.packpos is not None
         numstreams = len(self.packsizes)
-        assert len(self.crcs) == numstreams
         write_byte(file, Property.PACK_INFO)
         write_uint64(file, self.packpos)
         write_uint64(file, numstreams)
@@ -281,6 +248,7 @@ class PackInfo:
         for size in self.packsizes:
             write_uint64(file, size)
         if self.enable_digests:
+            assert len(self.crcs) == numstreams
             write_bytes(file, Property.CRC)
             for crc in self.crcs:
                 write_uint64(file, crc)
@@ -491,8 +459,6 @@ class UnpackInfo:
             raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))  # pragma: no-cover  # noqa
 
     def write(self, file: BinaryIO):
-        assert self.numfolders is not None
-        assert self.folders is not None
         assert self.numfolders == len(self.folders)
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
@@ -578,12 +544,8 @@ class SubstreamsInfo:
             self.digests = [0] * num_digests_total
 
     def write(self, file: BinaryIO, numfolders: int):
-        assert self.num_unpackstreams_folders is not None
-        if len(self.num_unpackstreams_folders) == 0:
-            # nothing to write
+        if len(self.num_unpackstreams_folders) == 0:  # pragma: no-cover  # nothing to write
             return
-        if self.unpacksizes is None:
-            raise ValueError
         write_byte(file, Property.SUBSTREAMS_INFO)
         if not functools.reduce(lambda x, y: x and (y == 1), self.num_unpackstreams_folders, True):
             write_byte(file, Property.NUM_UNPACK_STREAM)
@@ -591,8 +553,9 @@ class SubstreamsInfo:
                 write_uint64(file, n)
         write_byte(file, Property.SIZE)
         idx = 0
+        assert self.unpacksizes is not None
         for i in range(numfolders):
-            for j in range(1, self.num_unpackstreams_folders[i]):
+            for _ in range(1, self.num_unpackstreams_folders[i]):
                 size = self.unpacksizes[idx]
                 write_uint64(file, size)
                 idx += 1
@@ -636,9 +599,6 @@ class StreamsInfo:
 
     def write(self, file: BinaryIO):
         write_byte(file, Property.MAIN_STREAMS_INFO)
-        self._write(file)
-
-    def _write(self, file: BinaryIO):
         if self.packinfo is not None:
             self.packinfo.write(file)
         if self.unpackinfo is not None:
@@ -657,7 +617,10 @@ class HeaderStreamsInfo(StreamsInfo):
         self.unpackinfo.numfolders = 1
 
     def write(self, file: BinaryIO):
-        self._write(file)
+        write_byte(file, Property.ENCODED_HEADER)
+        self.packinfo.write(file)
+        self.unpackinfo.write(file)
+        write_byte(file, Property.END)
 
 
 class FilesInfo:
@@ -696,8 +659,6 @@ class FilesInfo:
                 numemptystreams += isempty.count(True)
             elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
-            elif prop == Property.ANTI:
-                self.antifiles = read_boolean(buffer, numemptystreams, checkall=False)  # pragma: no-cover  # no live example
             elif prop == Property.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
@@ -856,16 +817,13 @@ class FilesInfo:
 class Header:
     """ the archive header """
 
-    __slot__ = ['solid', 'properties', 'additional_streams', 'main_streams', 'files_info',
-                'size', '_start_pos']
+    __slot__ = ['solid', 'main_streams', 'files_info', 'size', '_start_pos']
 
     def __init__(self) -> None:
         self.solid = False
-        self.properties = None
-        self.additional_streams = None
         self.main_streams = None
         self.files_info = None
-        self.size = 0  # fixme. Not implemented yet
+        self.size = 0
         self._start_pos = 0
         self.password = None  # type: Optional[str]
 
@@ -907,7 +865,8 @@ class Header:
             fp.seek(src_start, 0)
             decompressor = folder.get_decompressor(compressed_size)
             folder_data = decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
-            src_start += uncompressed_size
+            self.size += compressed_size
+            src_start += compressed_size
             if folder.digestdefined:
                 if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile('invalid block data')
@@ -926,9 +885,11 @@ class Header:
         folder = Folder()
         folder.password = self.password
         folder.prepare_coderinfo(filters=filters)
-        streams = HeaderStreamsInfo()
-        streams.unpackinfo.folders = [folder]
-        streams.packinfo.packpos = packpos
+        assert folder.compressor is not None
+        headerstreams = HeaderStreamsInfo()
+        headerstreams.unpackinfo.folders = [folder]
+        headerstreams.packinfo.packpos = packpos
+        headerstreams.packinfo.enable_digests = False
         folder.crc = raw_crc
         folder.unpacksizes = [raw_header_len]
         compressor = folder.get_compressor()
@@ -941,13 +902,11 @@ class Header:
         out = compressor.flush()
         file.write(out)
         #
-        streams.packinfo.packsizes = [compressor.packsize]
-        streams.packinfo.crcs = [compressor.digest]
+        headerstreams.packinfo.packsizes = [compressor.packsize]
+        headerstreams.packinfo.crcs = [compressor.digest]
         # actual header start position
         startpos = file.tell()
-        write_byte(file, Property.ENCODED_HEADER)
-        streams.write(file)
-        write_byte(file, Property.END)
+        headerstreams.write(file)
         return startpos
 
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
@@ -960,17 +919,10 @@ class Header:
             startpos = self._encode_header(file, afterheader, filters)
         else:
             write_byte(file, Property.HEADER)
-            # Archive properties
             if self.main_streams is not None:
                 self.main_streams.write(file)
-            # Files Info
             if self.files_info is not None:
                 self.files_info.write(file)
-            if self.properties is not None:
-                self.properties.write(file)
-            # AdditionalStreams
-            if self.additional_streams is not None:
-                self.additional_streams.write(file)
             write_byte(file, Property.END)
         endpos = file.tell()
         header_len = endpos - startpos
@@ -981,12 +933,6 @@ class Header:
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
-        if pid == Property.ARCHIVE_PROPERTIES:
-            self.properties = ArchiveProperties.retrieve(fp)
-            pid = fp.read(1)
-        if pid == Property.ADDITIONAL_STREAMS_INFO:
-            self.additional_streams = StreamsInfo.retrieve(fp)
-            pid = fp.read(1)
         if pid == Property.MAIN_STREAMS_INFO:
             self.main_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)

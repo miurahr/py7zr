@@ -10,23 +10,54 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* File format specification: add ISO/IEC standard style specification document.
+
 Changed
 -------
 
 Fixed
 -----
 
-* Fix password leak/overwrite among SevenZipFile objects in a process.(#159)
-  This can cause decryption error or encryption with unintended password.
-
 Deprecated
 ----------
+
+* Drop ArchiveProperty class: A field has already deprecated or not used.
+* Drop AntiFile property: a property has already deprecated or not used.
 
 Removed
 -------
 
 Security
 --------
+
+`v0.8.0b7`_
+===========
+
+Changed
+-------
+
+* Enable encoded header and add more test with 7zip compatibility.(#164)
+
+Fixed
+-----
+
+* Disable adding CRC for encoded header packinfo.(#164)
+
+`v0.8.0b6`_
+===========
+
+Fixed
+-----
+
+* Fix password leak/overwrite among SevenZipFile objects in a process.(#159)
+  This can cause decryption error or encryption with unintended password.
+* Release password on close()
+
+Changed
+-------
+
+* Refactoring SevenZipFile class internals. (#160)
+* Refactoring classes in compressor module. (#161)
 
 `v0.8.0b5`_
 ===========
@@ -908,7 +939,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b7...HEAD
+.. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
+.. _v0.8.0b6: https://github.com/miurahr/py7zr/compare/v0.8.0b5...v0.8.0b6
 .. _v0.8.0b5: https://github.com/miurahr/py7zr/compare/v0.8.0b4...v0.8.0b5
 .. _v0.8.0b4: https://github.com/miurahr/py7zr/compare/v0.8.0b3...v0.8.0b4
 .. _v0.8.0b3: https://github.com/miurahr/py7zr/compare/v0.8.0b2...v0.8.0b3

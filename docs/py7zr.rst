@@ -1,5 +1,6 @@
-:mod:`py7zr` --- Work with 7Z archives (restricted version)
-===========================================================
+======================================
+:mod:`py7zr` --- 7-Zip archive library
+======================================
 
 .. module:: py7zr
    :synopsis: Read and write 7Z-format archive files.
@@ -10,8 +11,11 @@
 
 The 7z file format is a popular archive and compression format in recent days.
 This module provides tools to read and list 7z file. Features is not implemented
-to create, write and append a 7z file.  Any advanced use of this module will
-require an understanding of the format, as defined in `7z_format`_.
+to create, write and append a 7z file. py7zr does not support self-extracting archive,
+aka. SFX file, and only support plain 7z archive file.
+
+See :download:`Introductory presentation(PDF) <presentations/Introduction_of_py7zr.pdf>`,
+and :download:`Introductory presentation(ODP) <presentations/Introduction_of_py7zr.odp>`.
 
 Compression Methods
 ===================
@@ -21,6 +25,9 @@ It also support BZip2 and Deflate that are implemented in python core libraries,
 and ZStandard with third party libraries.
 `py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
 such as PPMd, BCJ2 and Deflate64.
+
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
 
 Here is a table of algorithms.
 
@@ -109,12 +116,11 @@ The module defines the following items:
 
 .. seealso::
 
-   (external link) `7z_format`_ Documentation of the 7z file format by Igor Pavlov who craete algorithms and 7z archive format.
-
-.. seealso::
-
    (external link) `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
+
+Class description
+=================
 
 .. _sevenzipfile-object:
 
@@ -235,6 +241,66 @@ SevenZipFile Object
    The archive must be open with mode ``'w'``
 
 
+Possible filters value
+^^^^^^^^^^^^^^^^^^^^^^
+
+Here is a list of examples for possible filters values.
+You can use it when creating SevenZipFile object.
+
+.. code-block::
+
+    from py7zr import FILTER_LZMA, SevenZipFile
+
+    filters = [{'id': FILTER_LZMA}]
+    archive = SevenZipFile('target.7z', mode='w', filters=filters)
+
+
+LZMA2 + Delta
+    ``[{'id': FILTER_DELTA}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA2 + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA2 + ARM
+    ``[{'id': FILTER_ARM}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA}]``
+
+LZMA2
+    ``[{'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA
+    ``[{'id': FILTER_LZMA}]``
+
+BZip2
+    ``[{'id': FILTER_BZIP2}]``
+
+Deflate
+    ``[{'id': FILTER_DEFLATE}]``
+
+ZStandard
+    ``[{'id': FILTER_ZSTD}]``
+
+7zAES + LZMA2 + Delta
+    ``[{'id': FILTER_DELTA}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + LZMA2 + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + LZMA
+    ``[{'id': FILTER_LZMA}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + Deflate
+    ``[{'id': FILTER_DEFLATE}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + BZip2
+    ``[{'id': FILTER_BZIP2}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + ZStandard
+    ``[{'id': FILTER_ZSTD}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+
 .. _archiveinfo-object:
 
 ArchiveInfo Object
@@ -258,7 +324,7 @@ FileInfo objects represent a file information of member of archive.
 
 
 Command-Line Interface
-----------------------
+======================
 
 The :mod:`py7zr` module provides a simple command-line interface to interact
 with 7z archives.
@@ -280,7 +346,7 @@ For a list of the files in a 7z archive, use the :option:`l` subcommand:
 
 
 Command-line options
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. option:: l <7z file>
 
@@ -304,7 +370,7 @@ Command-line options
 
 
 Extract command options
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. option:: -P --password
 
@@ -317,7 +383,7 @@ Extract command options
 
 
 List command options
-~~~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. option:: --verbose
 
@@ -325,7 +391,7 @@ List command options
 
 
 Create command options
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 .. option:: -v | --volume {Size}[b|k|m|g]
 
@@ -335,9 +401,6 @@ Create command options
 
    Create password protected archive. py7zr will prompt user input.
 
-
-
-.. _7z_format: https://www.7-zip.org/7z.html
 
 .. _shutil: https://docs.python.org/3/library/shutil.html
 
