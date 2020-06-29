@@ -16,8 +16,10 @@ to prepare a precise format specification documentation to keep compatibility an
 
 This specification defines an archive file format of 7-zip archive.
 This specification is derived from 7zFormat.txt bundled with p7zip utility which is portable
-7-zip implementation. Its details are retrieved from knowledge got by reverse engineering effort
-of p7zip implementation.
+7-zip implementation.
+
+A purpose of this document is to provide a concrete documentation to realize compatibility
+between implementations.
 
 
 Copyright Notice
@@ -33,7 +35,7 @@ Purpose
 -----------
 
 This specification is intended to define a cross-platform, interoperable file storage and
-transfer format  The information here is meant to be a concise guide for those wishing
+transfer format. The information here is meant to be a concise guide for those wishing
 to implement libraries and utility to handle 7-zip archive files.
 
 Intended audience
@@ -284,6 +286,30 @@ Following bytes SHOULD be an integer as little endian.
 +-------------+--------------+------------------------------+
 
 
+BooleanList
+^^^^^^^^^^^
+
+BooleanList is a list of boolean bit arrays.
+It has two field. First it defines an existence of boolean values for each items of number of files or
+objects. Then boolean bit fields continues.
+There is an extension of expression that indicate all boolean values is True, and
+skip boolean bit fields.
+
+::
+
+    +----+===========================================+
+    | 00 | bit field of booleans                     |
+    +----+===========================================+
+
+The bit field is defined which order is from MSB to LSB,
+i.e. bit 7 (MSB) of first byte indicate a boolean for first stream, object or file,
+bit 6 of first byte indicate a boolean for second stream, object or file, and
+bit 0(LSB) of second byte indicate a boolean for 16th stream, object or file.
+
+A length is vary according to a number of items to indicate.
+If a number of items is not multiple of eight, rest of bitfield SHOULD zero.
+
+
 File format
 ===========
 
@@ -463,7 +489,7 @@ ID   Property
 0x12 CTime
 0x13 ATime
 0x14 MTime
-0x15 WinAttributes
+0x15 Attributes
 0x16 Comment
 0x17 EncodedHeader
 0x18 StartPos
@@ -501,54 +527,18 @@ Raw header SHALL start with one byte ID 0x01.
 
 ::
 
-    +---+=========================+
-    |01 | Archive Properties      |
-    +---+=========================+
-
-.. _ArchiveProperties:
-
-Archive Properties
-------------------
-
-Archive properties MAY consist of Additional Streams and Main Streams.
-Additional Streams MAY NOT exist.
-Main Streams MAY NOT exist if archive contents is empty.
-
-::
-
-    +====================+
-    | Additional Streams |
-    +====================+
-    | Main Streams       |
-    +====================+
-    | Files Information  |
-    +====================+
+    +---+
+    | 01|
+    +---+====================+
+    | 03| Additional Streams |
+    +---+====================+
+    | 04| Main Streams       |
+    +---+====================+
+    | 05| Files Information  |
+    +---+====================+
 
 
-Additional Streams
-------------------
-
-Additional Streams SHALL consist with StreamsInfo.
-Structure of Additional Streams SHALL be as same as Main Streams.
-
-::
-
-    +----+==============================+
-    | 03 | Streams Information          |
-    +----+==============================+
-
-
-Main Streams
-------------
-
-Main Streams SHALL consist with StreamsInfo.
-
-::
-
-    +----+==============================+
-    | 04 | Streams Information          |
-    +----+==============================+
-
+Additional Streams and Main Streams has a same structure as Streams Information.
 
 Streams Information
 -------------------
@@ -879,7 +869,156 @@ size of each unpack streams, and CRC of each streams.
 Files Information
 -----------------
 
+Files Information SHOULD hold a list of files, directories and symbolic links.
+Its order SHALL be as same as order of streams defined in packed information.
 
+::
+
+    +=================+=================+================+
+    | Number of files | [Empty Streams] | [ Empty Files] |
+    +---+====================+===========================+
+    | 11| BooleanList        |  list of FileNames        |
+    +---+====================+===========================+
+    | 15| BooleanList        |  list of Attributes       |
+    +---+====================+===========================+
+    | [ CTime ]       | [ ATime ]       | [ Mtime ]      |
+    +=================+=================+================+
+
+
+
+list of FileNames
+^^^^^^^^^^^^^^^^^
+
+list of FileNames data can be externally encoded, then
+
+::
+
+    +--------------+=============+
+    |external=0x01 | [DataIndex] |
+    +--------------+=============+
+
+Otherwise, filenames is inline,
+
+
+::
+
+    +----+===============================+
+    | 00 |  FileNames[number of files]   |
+    +----+===============================+
+
+
+FileName SHALL be a wide character string encoded with UTF16-LE and
+follows wchar_t NULL character, i.e. 0x0000.
+
+
+list of Attributes
+^^^^^^^^^^^^^^^^^^
+
+list of attributes SHALL start ID 0x15 then follows BooeanList
+which defines whether property is defined or not for each files.
+
+::
+
+    +---+=============+==========================+
+    | 15| BooleanList |  list of property        |
+    +---+=============+==========================+
+
+
+ list of property can be external then it defines data index.
+
+
+Attribute
+^^^^^^^^^
+
+Attribute is a UINT32 integer value.
+
+.. list-table:: Attribute values
+    :widths: 10 50
+    :header-rows: 1
+    :stub-columns: 1
+
+    * - ID/Value
+      - Description
+    * - FILE_ATTRIBUTE_READONLY 1 (0x1)
+      - A file that is read-only.
+    * - FILE_ATTRIBUTE_HIDDEN 2 (0x2)
+      - The file or directory is hidden.
+    * - FILE_ATTRIBUTE_DIRECTORY 16 (0x10)
+      - It identifies a directory.
+    * - FILE_ATTRIBUTE_ARCHIVE 32 (0x20)
+      - A file or directory that is an archive file or directory.
+    * - FILE_ATTRIBUTE_REPARSE_POINT 1024 (0x400)
+      - file or directory that has an associated reparse point, or a file that is a symbolic link.
+    * - bit 16-31
+      - UNIX file permissions and attributes.
+    * - UNIX_EXTENSION (0x8000)
+      - Indicate a unix permissions and file attributes are bundled when 1.
+
+CTime
+^^^^^
+
+::
+
+    +---+===============+
+    | 12|  FileTimes    |
+    +---+===============+
+
+ATime
+^^^^^
+
+::
+
+    +---+===============+
+    | 13|  FileTimes    |
+    +---+===============+
+
+
+MTime
+^^^^^
+
+::
+
+    +---+===============+
+    | 14|  FileTimes    |
+    +---+===============+
+
+
+FileTimes
+^^^^^^^^^
+
+FileTimes SHALL be a list of file time specs. It SHALL be a bit array of defined flag
+and then continues a list of Time spec for each files.
+
+When it defines time spec for all of files, it SHALL place 0x01 which means all-defined.
+then it SHALL continue a list of time spec, that length is as same as number of files.
+
+::
+
+    +=============+==========================================+
+    | BooleanList |   list of Time spec                      |
+    +=============+==========================================+
+
+If it defines time spec of a part of files, it SHALL place 0x00 which means boolean
+
+
+list of Time spec
+^^^^^^^^^^^^^^^^^
+
+::
+
+    +----------+================================================+
+    | external |  Time spec[Number of files]                     |
+    +----------+================================================+
+
+Time spec
+^^^^^^^^^
+
+Time spec is a UINT64 value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+
+
+========
+Appendix
+========
 
 Appendix: BNF expression (Informative)
 ======================================
@@ -911,9 +1050,8 @@ This clause shows extended BNF expression of 7-zip file format.
    CoderFlag: BYTE(bit 0:3 CodecIdSize, 4: Is Complex Coder, 5: There Are Attributes, 6: Reserved, 7: 0)
    CoderId: BYTE{CodecIdSize}
    FilesInfo: 0x05, NumFiles, FileInfo, [FileInfo]
-   FileInfo: Size, [0x0E, bit array of IsEmptyStream], [0x0F, bit array of IsEmptyFile],
-           : [0x10, bit array of IsAntiFile], [0x12, FileTime], [0x13, FileTime], [0x14, FileTime],
-           : [0x11, FileNames], [0x15, Attributes]
+   FileInfo: NumFiles, [0x0E, bit array of IsEmptyStream], [0x0F, bit array of IsEmptyFile],
+           : [0x12, FileTime], [0x13, FileTime], [0x14, FileTime], [0x11, FileNames], [0x15, Attributes]
    FileTime: (0x00, bit array of TimeDefined |  0x01),
            : (0x00, list of Time | 0x01, DataIndex)
    FileNames: (0x00, list of each filename | 0x01, DataIndex)

@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* File format specification: add ISO/IEC standard style specification document.
+
 Changed
 -------
 
@@ -18,6 +20,9 @@ Fixed
 
 Deprecated
 ----------
+
+* Drop ArchiveProperty class: A field has already deprecated or not used.
+* Drop AntiFile property: a property has already deprecated or not used.
 
 Removed
 -------
