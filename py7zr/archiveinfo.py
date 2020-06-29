@@ -824,7 +824,7 @@ class Header:
         self.additional_streams = None
         self.main_streams = None
         self.files_info = None
-        self.size = 0  # fixme. Not implemented yet
+        self.size = 0
         self._start_pos = 0
 
     @classmethod
@@ -868,12 +868,12 @@ class Header:
                 uncompressed = [uncompressed] * len(folder.coders)
             compressed_size = streams.packinfo.packsizes[0]
             uncompressed_size = uncompressed[-1]
-
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
             decompressor = folder.get_decompressor(compressed_size)
             folder_data = decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
-            src_start += uncompressed_size
+            self.size += compressed_size
+            src_start += compressed_size
             if folder.digestdefined:
                 if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile('invalid block data')
