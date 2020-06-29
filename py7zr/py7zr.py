@@ -371,6 +371,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile('invalid header data')
         header = Header.retrieve(self.fp, buffer, self.afterheader)
+        header.size += 32 + self.sig_header.nextheadersize
         if header is None:
             return
         self.header = header
