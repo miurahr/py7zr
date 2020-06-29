@@ -233,16 +233,6 @@ def test_lzma_lzma2bcj_compressor():
 
 
 @pytest.mark.unit
-def test_read_archive_properties():
-    buf = io.BytesIO()
-    inp = binascii.unhexlify('0207012300')
-    buf.write(inp)
-    buf.seek(0, 0)
-    ap = py7zr.archiveinfo.ArchiveProperties.retrieve(buf)
-    assert ap.property_data[0] == (0x23, )  # FIXME: what it should be?
-
-
-@pytest.mark.unit
 @pytest.mark.parametrize("abytes, count, checkall, expected",
                          [(b'\xb4\x80', 9, False, [True, False, True, True, False, True, False, False, True]),
                           (b'\xff\xc0', 10, False, [True, True, True, True, True, True, True, True, True, True]),
@@ -317,23 +307,6 @@ def test_write_utf16(testinput, expected):
     py7zr.archiveinfo.write_utf16(buf, testinput)
     actual = buf.getvalue()
     assert actual == expected
-
-
-@pytest.mark.unit
-def test_write_archive_properties():
-    """
-    test write function of ArchiveProperties class.
-    Structure is as follows:
-    BYTE Property.ARCHIVE_PROPERTIES (0x02)
-       UINT64 PropertySize   (7 for test)
-       BYTE PropertyData(PropertySize) b'0123456789abcd' for test
-    BYTE Property.END (0x00)
-    """
-    archiveproperties = py7zr.archiveinfo.ArchiveProperties()
-    archiveproperties.property_data = [binascii.unhexlify('0123456789abcd')]
-    buf = io.BytesIO()
-    archiveproperties.write(buf)
-    assert buf.getvalue() == binascii.unhexlify('02070123456789abcd00')
 
 
 @pytest.mark.unit

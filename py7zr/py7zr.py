@@ -53,7 +53,7 @@ if sys.platform.startswith('win'):
     import _winapi
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
-FILE_ATTRIBUTE_WINDOWS_MASK = 0x04fff
+FILE_ATTRIBUTE_WINDOWS_MASK = 0x04ff
 
 
 class ArchiveFile:

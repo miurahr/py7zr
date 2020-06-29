@@ -207,38 +207,6 @@ def bits_to_bytes(bit_length: int) -> int:
     return - (-bit_length // 8)
 
 
-class ArchiveProperties:
-
-    __slots__ = ['property_data']
-
-    def __init__(self):
-        self.property_data = []
-
-    @classmethod
-    def retrieve(cls, file):
-        return cls()._read(file)
-
-    def _read(self, file):
-        pid = file.read(1)
-        if pid == Property.ARCHIVE_PROPERTIES:
-            while True:
-                ptype = file.read(1)
-                if ptype == Property.END:
-                    break
-                size = read_uint64(file)
-                props = read_bytes(file, size)
-                self.property_data.append(props)
-        return self
-
-    def write(self, file):
-        if len(self.property_data) > 0:
-            write_byte(file, Property.ARCHIVE_PROPERTIES)
-            for data in self.property_data:
-                write_uint64(file, len(data))
-                write_bytes(file, data)
-            write_byte(file, Property.END)
-
-
 class PackInfo:
     """ information about packed streams """
 
@@ -689,8 +657,6 @@ class FilesInfo:
                 numemptystreams += isempty.count(True)
             elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
-            elif prop == Property.ANTI:
-                self.antifiles = read_boolean(buffer, numemptystreams, checkall=False)  # pragma: no-cover  # no live example
             elif prop == Property.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
@@ -973,9 +939,6 @@ class Header:
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
-        if pid == Property.ARCHIVE_PROPERTIES:
-            self.properties = ArchiveProperties.retrieve(fp)
-            pid = fp.read(1)
         if pid == Property.ADDITIONAL_STREAMS_INFO:
             self.additional_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)
