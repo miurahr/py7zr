@@ -1,4 +1,3 @@
-import binascii
 import ctypes
 import datetime
 import io
