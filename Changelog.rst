@@ -10,6 +10,28 @@ All notable changes to this project will be documented in this file.(#165,#166,#
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+
+`v0.8.0b8`_
+===========
+
+Added
+-----
+
 * File format specification: add ISO/IEC standard style specification document.
 
 Changed
@@ -22,17 +44,11 @@ Fixed
 
 * Now return correct header size by archiveinfo() method.(#169)
 
-Deprecated
-----------
-
-* Drop ArchiveProperty class: A field has already deprecated or not used.(#170)
-* Drop AntiFile property: a property has already deprecated or not used.
-
 Removed
 -------
 
-Security
---------
+* Drop ArchiveProperty class: A field has already deprecated or not used.(#170)
+* Drop AntiFile property: a property has already deprecated or not used.
 
 `v0.8.0b7`_
 ===========
@@ -943,7 +959,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b8...HEAD
+.. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
 .. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
 .. _v0.8.0b6: https://github.com/miurahr/py7zr/compare/v0.8.0b5...v0.8.0b6
 .. _v0.8.0b5: https://github.com/miurahr/py7zr/compare/v0.8.0b4...v0.8.0b5
