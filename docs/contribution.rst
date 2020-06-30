@@ -126,16 +126,12 @@ Internal classes
 
 Here is a detailed intarface documentation for implementer.
 
-.. _archivefile-objects:
-
 ArchiveFile Objects
 -------------------
 
-.. autoclass:: py7zr.py7zr.ArchiveFile
+.. automodule:: py7zr.py7zr
     :members:
 
-
-.. _archiveinfo-objects:
 
 archiveinfo module
 ------------------
