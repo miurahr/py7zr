@@ -1,4 +1,9 @@
-======================================
+.. _api_documentation:
+
+=================
+API Documentation
+=================
+
 :mod:`py7zr` --- 7-Zip archive library
 ======================================
 
@@ -7,15 +12,6 @@
 
 .. moduleauthor:: Hiroshi Miura <miurahr@linux.com>
 
---------------
-
-The 7z file format is a popular archive and compression format in recent days.
-This module provides tools to read and list 7z file. Features is not implemented
-to create, write and append a 7z file. py7zr does not support self-extracting archive,
-aka. SFX file, and only support plain 7z archive file.
-
-See :download:`Introductory presentation(PDF) <presentations/Introduction_of_py7zr.pdf>`,
-and :download:`Introductory presentation(ODP) <presentations/Introduction_of_py7zr.odp>`.
 
 Compression Methods
 ===================
@@ -118,9 +114,12 @@ The module defines the following items:
 
    (external link) `shutil`_  :mod:`shutil` module offers a number of high-level operations on files and collections of files.
 
+.. _shutil: https://docs.python.org/3/library/shutil.html
+
 
 Class description
 =================
+
 
 .. _sevenzipfile-object:
 
@@ -241,6 +240,17 @@ SevenZipFile Object
    The archive must be open with mode ``'w'``
 
 
+.. method:: SevenZipFile.writeall(filename, arcname=None)
+
+   Write the directory and its sub items recursively into the archive, giving
+   the archive name *arcname* (by default, this will be the same as *filename*,
+   but without a drive letter and with leading path seaprator removed).
+
+   If you want to store directories and files, putting *arcname* is good idea.
+   When filename is 'C:/a/b/c' and arcname is 'c', with a file exist as 'C:/a/b/c/d.txt',
+   then archive listed as ['c', 'c/d.txt'], the former as directory.
+
+
 Possible filters value
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -309,100 +319,12 @@ ArchiveInfo Object
 ArchiveInfo object represent archive information.
 
 
-
 .. _fileinfo-objects:
 
 FileInfo Objects
 --------------------
 
 FileInfo objects represent a file information of member of archive.
-
-
-
-.. _py7zr-commandline:
-.. program:: py7zr
-
-
-Command-Line Interface
-======================
-
-The :mod:`py7zr` module provides a simple command-line interface to interact
-with 7z archives.
-
-If you want to extract a 7z archive into the specified directory, use
-the :option:`x` subcommand:
-
-.. code-block:: shell-session
-
-    $ python -m py7zr x monty.7z target-dir/
-    $ py7zr x monty.7z
-
-For a list of the files in a 7z archive, use the :option:`l` subcommand:
-
-.. code-block:: shell-session
-
-    $ python -m py7zr l monty.7z
-    $ py7zr l monty.7z
-
-
-Command-line options
---------------------
-
-.. option:: l <7z file>
-
-   List files in a 7z file.
-
-.. option:: x <7z file> [<output_dir>]
-
-   Extract 7z file into target directory.
-
-.. option:: c <7z file> <base_dir>
-
-   Create 7zip archive from base_directory
-
-.. option:: i <7z file>
-
-   Show archive information of specified 7zip archive.
-
-.. option:: t <7z file>
-
-   Test whether the 7z file is valid or not.
-
-
-Extract command options
------------------------
-
-.. option:: -P --password
-
-   Extract password protected archive. py7zr will prompt user input.
-
-
-.. option:: --verbose
-
-   Show verbose debug log.
-
-
-List command options
---------------------
-
-.. option:: --verbose
-
-   Show verbose debug log.
-
-
-Create command options
-----------------------
-
-.. option:: -v | --volume {Size}[b|k|m|g]
-
-   Create multi-volume archive with Size. Usable with 'c' sub-command.
-
-.. option:: -P --password
-
-   Create password protected archive. py7zr will prompt user input.
-
-
-.. _shutil: https://docs.python.org/3/library/shutil.html
 
 
 .. rubric:: Footnotes
