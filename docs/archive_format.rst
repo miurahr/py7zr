@@ -1,8 +1,8 @@
 .. _sevenzip-specifications:
 
-=============================
-.7z file format specification
-=============================
+========================
+.7z format specification
+========================
 
 Abstract
 ========
@@ -29,14 +29,18 @@ Copyright (C) 2020 Hiroshi Miura
 
 
 Introduction
-================
+============
 
 Purpose
------------
+-------
 
 This specification is intended to define a cross-platform, interoperable file storage and
 transfer format. The information here is meant to be a concise guide for those wishing
 to implement libraries and utility to handle 7-zip archive files.
+
+This documentations is NOT a specification of any existed utilities and libraries.
+This documentation does not have some features which is implemented in an existed utility.
+It is because this document purpose is to keep interoperability.
 
 Intended audience
 -----------------
@@ -48,7 +52,7 @@ The text of the specification assumes a basic background in programming
 at the level of bits and other primitive data representations.
 
 Scope
----------
+-----
 
 "7-zip archive" is one of popular files compression and archive formats.
 It is universally used to aggregate, compress, and encrypt files into a single
@@ -366,6 +370,8 @@ with archive version. Start Header SHALL follow after archive version.
     +---+---+---+---+---+---+---+---+
 
 
+VN: Version Number
+
 
 Signature
 ---------
@@ -381,8 +387,8 @@ The first six bytes of a 7-zip file SHALL always contain the following values as
 
 
 
-VN (version number, 2 byte)
----------------------------
+Version Number
+--------------
 
 Version number SHALL consist with two bytes.
 Just in case something needs to be modified in the future.
@@ -512,12 +518,39 @@ encoded data followed after ID 0x17.
     +---+======================+
 
 
+When header is encoded whole archive structure becomes as follows:
+
+::
+
+    +======================================+
+    | Signature Header                     |
+    +======================================+
+    | (Packed Streams)                     |
+    +======================================+
+    | Packed Streams for Header            |
+    +======================================+
+    | 17| Streams Information for header   |
+    +---+==================================+
+
+otherwise whole archive structure become as follows:
+
+::
+
+    +======================================+
+    | Signature Header                     |
+    +======================================+
+    | (Packed Streams)                     |
+    +======================================+
+    | 01 | Header                          |
+    +---+===================================+
+
+
 .. _Header:
 
 Header
 ------
 
-Header SHALL be consist of archive properties that is required to extract it.
+Header SHALL be consist of Main Streams.
 It  MAY be also consist of file list information.
 It SHALL placed at a position where Start header offset pointed in archive file.
 Header database MAY be encoded.
@@ -530,15 +563,17 @@ Raw header SHALL start with one byte ID 0x01.
     +---+
     | 01|
     +---+====================+
-    | 03| Additional Streams |
-    +---+====================+
     | 04| Main Streams       |
     +---+====================+
     | 05| Files Information  |
     +---+====================+
 
 
-Additional Streams and Main Streams has a same structure as Streams Information.
+Main Streams
+------------
+
+Main Streams SHALL be defined as Streams Information which hold data of
+archived files.
 
 Streams Information
 -------------------
@@ -910,6 +945,8 @@ Otherwise, filenames is inline,
 FileName SHALL be a wide character string encoded with UTF16-LE and
 follows wchar_t NULL character, i.e. 0x0000.
 
+FileNames SHOULD exist as inline data for compatibility.
+
 
 list of Attributes
 ^^^^^^^^^^^^^^^^^^
@@ -925,7 +962,6 @@ which defines whether property is defined or not for each files.
 
 
  list of property can be external then it defines data index.
-
 
 Attribute
 ^^^^^^^^^
@@ -1016,10 +1052,6 @@ Time spec
 Time spec is a UINT64 value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
 
 
-========
-Appendix
-========
-
 Appendix: BNF expression (Informative)
 ======================================
 
@@ -1032,11 +1064,14 @@ This clause shows extended BNF expression of 7-zip file format.
    SignatureHeader: Signature, ArchiveVersion, StartHeader
    Signature: b'7z\xBC\xAF\x27\x1C'
    ArchiveVersion : b'\x00\x04'
-   StartHeader: StartHeaderCRC, NextHeaderOffset, NextHeaderSize, NextHeaderCRC
+   StartHeader: StartHeaderCRC, NextHeaderOffset,
+              : NextHeaderSize, NextHeaderCRC
    StreamsInfo: PackInfo, CodersInfo, SubStreamsInfo
-   PackInfo: 0x06, PackPos, NumPackStreams, SizesOfPackStream, CRCsOfPackStreams
+   PackInfo: 0x06, PackPos, NumPackStreams,
+           : SizesOfPackStream, CRCsOfPackStreams
    CodersInfo: 0x07, FoldersInfo
-   Folders Information: 0x0B, NumFolders, FolderInfo, CoderUnpackSizes, UnpackDigests, 0x00
+   Folders Information: 0x0B, NumFolders, FolderInfo,
+                      : CoderUnpackSizes, UnpackDigests, 0x00
    FoldersInfo: 0x0B, NumFolders, (0x00, Folders) | (0x01, DataStreamIndex)
               : [0x0C, UnPackSizes, [0x0A, UnpackDigests]], 0x00
    Folders: Folder{ Number of Folders }
@@ -1044,14 +1079,20 @@ This clause shows extended BNF expression of 7-zip file format.
    UnpackSize: UINT64
    UnpackDigests: CRC32 { Number of folders }
    SubStreamsInfo: 0x08, 0x0D, NumUnPackStreamsInFolders{Num of Folders],
-                 : 0x09, UnPackSize, 0x0A, Digests{Number of streams with unknown CRC}, 0x00
+                 : 0x09, UnPackSize, 0x0A,
+                 : Digests{Number of streams with unknown CRC}, 0x00
    Folder: NumCoders, CoderData { NumCoders }
-   CoderData: CoderFlag, CoderID, NumCoderStreamInOut, Properties, BinPairs, PackedStreamIndex
-   CoderFlag: BYTE(bit 0:3 CodecIdSize, 4: Is Complex Coder, 5: There Are Attributes, 6: Reserved, 7: 0)
+   CoderData: CoderFlag, CoderID, NumCoderStreamInOut, Properties,
+            : BinPairs, PackedStreamIndex
+   CoderFlag: BYTE(bit 0:3 CodecIdSize, 4: Is Complex Coder,
+            : 5: There Are Attributes, 6: Reserved, 7: 0)
    CoderId: BYTE{CodecIdSize}
    FilesInfo: 0x05, NumFiles, FileInfo, [FileInfo]
-   FileInfo: NumFiles, [0x0E, bit array of IsEmptyStream], [0x0F, bit array of IsEmptyFile],
-           : [0x12, FileTime], [0x13, FileTime], [0x14, FileTime], [0x11, FileNames], [0x15, Attributes]
+   FileInfo: NumFiles, [0x0E, bit array of IsEmptyStream],
+           : [0x0F, bit array of IsEmptyFile],
+           : [0x11, FileNames],
+           : [0x12, FileTime], [0x13, FileTime], [0x14, FileTime],
+           : [0x15, Attributes]
    FileTime: (0x00, bit array of TimeDefined |  0x01),
            : (0x00, list of Time | 0x01, DataIndex)
    FileNames: (0x00, list of each filename | 0x01, DataIndex)
@@ -1060,6 +1101,8 @@ This clause shows extended BNF expression of 7-zip file format.
    Attributes: (0x00, bit array of AttributesAreDefined |  0x01),
              : (0x00, list of Attribute | 0x01, DataIndex)
 
+
+A Coder flag affect a following CoderData existence as following algorithm;
 
 ::
 
@@ -1143,12 +1186,3 @@ UTF-16-LE
 Unicode UTF-16 encoding uses 2 bytes or 4 bytes to represent Unicode character.
 Because it is not one byte ordering, we need to consider endian, byte order.
 UTF-16-LE is a variant of UTF-16 definition which use Little-Endian for store data.
-
-
-Appendix: 7zFormat.txt (Informative)
-====================================
-
-This clause quote 7zFormat.txt distributed with 7-zip application.
-
-.. literalinclude:: reference/7zFormat.txt
-

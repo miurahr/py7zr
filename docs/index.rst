@@ -1,12 +1,13 @@
-============================
-py7zr documentation contents
-============================
+==============================
+py7zr -- 7-zip archive library
+==============================
 
 .. toctree::
    :maxdepth: 3
 
-   py7zr
-   design
+   user_guide
+   api
+   contribution
    archive_format
    AUTHORS
    glossary
