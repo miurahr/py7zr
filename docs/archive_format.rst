@@ -113,106 +113,53 @@ Notations
 Conventions
 ===========
 
-Diagram conventions
--------------------
-
-In the diagrams below, a box like this:
+Data format defition uses following convenstion to represent
+data structure and size.
 
 ::
 
-    +---+
-    |   | <-- the vertical bars might be missing
-    +---+
+    [name][name, type, value][name, type]
+    ([name, type])[name_0, type]...[name_n, type]
 
 
-represents one byte.
+* '[name]': refers data defined other place
 
-When specified with character with single quote, it means a constant
-value of specified character.
+* '[name, type]': indicate a data definition
 
-An example bellow means a data '7' ie. 0x37  is placed as one byte.
+* '[name, type, value]': indicate a constant definition
 
-::
+* '([name, type])':  indicate it is optional data definition
 
-    +---+
-    |'7'|
-    +---+
-
-
-When two digit of hexadecimal alphabet and number(0-9A-F) is placed,
-it means a constant of specified value.
-
-An example bellow means a constant 0xFF is placed as one byte.
-
-::
-
-    +---+
-    | FF|
-    +---+
-
-A box like this:
-
-::
-
-    +==============+
-    |              |
-    +==============+
-
-
-represents a variable number of bytes.
-When label is placed, it refers other field defined in this document.
-
-::
-
-    +=============================+
-    | Signature Header            |
-    +=============================+
-
-
-When label is placed inside '( )' bracket, it express the field is optional.
-
-::
-
-    +=============================+
-    | (Packed Streams)            |
-    +=============================+
-
-
-When two or more labels are placed inside '( )' bracket separeted with bartical bar '|',
-it express the field is selectable.
-
-::
-
-    +=============================+
-    | (A | B)                     |
-    +=============================+
-
-
-This example means a field is mandatory but it can be A or B.
-
-When adding a block bracket '[]' at end of label, it means the field is a list of
-values or repeatable.
-
-::
-
-    +=============================+
-    | CRCs of packed stream[]     |
-    +=============================+
-
-When label is placed at a block bracket, it means a length of a list.
-
-::
-
-    +===========================================+
-    | CRCs of packed stream[Num of folders]     |
-    +===========================================+
-
+* '[name_0, type]...[name_n, type]': indicate list of type data.
 
 
 Data Representations
 ====================
 
 This chapter describes basic data representations used in 7-zip file.
+
+
+BYTE
+----
+
+BYTE is a basic data type to store a char, Property ID or bitfield.
+
+
+BYTEARRAY
+---------
+
+BYTEARRAY is a sequence of BYTE. Its length SHALL be defined in another place.
+
+
+String
+------
+
+There are two type of string data is used in 7-zip archive format.
+
+* UTF-16-LE
+
+* UTF-8
+
 
 Integers
 --------
@@ -236,8 +183,8 @@ noted.
 |              |         | | 18,446,744,073,709,551,615 |
 |              |         | | (0xffffffffffffffff)       |
 +--------------+---------+------------------------------+
-| NUMBER       | |1-9    | | variable length integer    |
-|              | |bytes  | | value represent 0 to       |
+| NUMBER       | | 1-9   | | variable length integer    |
+|              | | bytes | | value represent 0 to       |
 |              |         | | 18,446,744,073,709,551,615 |
 |              |         | | (0xffffffffffffffff)       |
 +--------------+---------+------------------------------+
@@ -272,6 +219,18 @@ Following bytes SHOULD be an integer as little endian.
 |11111111     | BYTE y[8]    | y                            |
 +-------------+--------------+------------------------------+
 
+Bitfield
+--------
+
+Bitfield represent eight boolean values in single BYTE.
+
+The bit field is defined which order is from MSB to LSB,
+i.e. bit 7 (MSB) of first byte indicate a boolean for first stream, object or file,
+bit 6 of first byte indicate a boolean for second stream, object or file, and
+bit 0(LSB) of second byte indicate a boolean for 16th stream, object or file.
+
+A length is vary according to a number of items to indicate.
+If a number of items is not multiple of eight, rest of bitfield SHOULD zero.
 
 BooleanList
 -----------
@@ -282,25 +241,9 @@ objects. Then boolean bit fields continues.
 There is an extension of expression that indicate all boolean values is True, and
 skip boolean bit fields.
 
-+--------------+----------+-------------------------+-----------+
-| Name         | Type     |  Description            | Required? |
-+==============+==========+=========================+===========+
-| alldefined   | BYTE     | | Indicate all boolean  | YES       |
-|              |          | | value is defined or   |           |
-|              |          | | not.                  |           |
-+--------------+----------+-------------------------+-----------+
-| booleans     | bitfield | | Required when alldefined is 0x00  |
-|              |          | | fields are interpreted from MSB   |
-|              |          | | to LSB                            |
-+--------------+----------+-------------------------+-----------+
+::
 
-The bit field is defined which order is from MSB to LSB,
-i.e. bit 7 (MSB) of first byte indicate a boolean for first stream, object or file,
-bit 6 of first byte indicate a boolean for second stream, object or file, and
-bit 0(LSB) of second byte indicate a boolean for 16th stream, object or file.
-
-A length is vary according to a number of items to indicate.
-If a number of items is not multiple of eight, rest of bitfield SHOULD zero.
+    [alldefined, BYTE] ([bool_0, bitfield]...[bool_n, bitfield])
 
 
 File format
@@ -348,6 +291,17 @@ Signature header SHALL consist in 32 bytes.
 Signature header SHALL start with Signature then continues
 with archive version. Start Header SHALL follow after archive version.
 
+::
+
+    [Signature]
+    [Major Version, BYTE, 0][Minor Version, BYTE, 0x04]
+    [Start Header CRC, UINT32]
+    [Next Header offset, NUMBER][Next Header size, NUMBER]
+    [Next Header CRC, UINT32]
+
+
+It can be observed as follows when taken hex dump.
+
 +--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 | address| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |
 +--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
@@ -356,27 +310,11 @@ with archive version. Start Header SHALL follow after archive version.
 | 0x0010 | offset(cont)  | N.H. size                     | N.H. CRC      |
 +--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 
-* VN: Version Number
-
-* S.H. CRC: Start Header CRC
-
-* N.H. offset: Next Header offset
-
-* N.H. size: Next Header size
-
-* N.H. CRC: Next Header CRC
 
 Signature
 ^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain the following values:
-
-::
-
-      0    1    2   3   4   5
-    +----+----+---+---+---+---+
-    |'7' |'z' |BC |AF |27 |1C |
-    +----+----+---+---+---+---+
+The first six bytes of a 7-zip file SHALL always contain b'7z\xbc\xaf\x27\x1c'.
 
 Version Number
 ^^^^^^^^^^^^^^
@@ -473,36 +411,27 @@ encoded data followed after ID 0x17.
 
 ::
 
-    +---+======================+
-    |17 | Streams Information  |
-    +---+======================+
+    [ID, BYTE, 0x17]
+    [Streams Information for Header, StreamsInfo]
 
 
 When header is encoded whole archive structure becomes as follows:
 
 ::
 
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | Packed Streams for Header            |
-    +======================================+
-    | 17| Streams Information for header   |
-    +---+==================================+
+    [Signature Header]
+    ([Packed Streams])
+    [Packed Streams for Header]
+    [ID, BYTE, 0x17][Streams Information for Header]
 
-otherwise whole archive structure become as follows:
+
+Otherwise whole archive structure become as follows:
 
 ::
 
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | 01 | Header                          |
-    +---+===================================+
+    [Signature Header]
+    ([Packed Streams])
+    [ID, BYTE, 0x01][Header]
 
 
 .. _Header:
@@ -520,13 +449,9 @@ Raw header SHALL start with one byte ID 0x01.
 
 ::
 
-    +---+
-    | 01|
-    +---+====================+
-    | 04| Main Streams       |
-    +---+====================+
-    | 05| Files Information  |
-    +---+====================+
+    [ID, BYTE, 0x01]
+    [ID, BYTE, 0x04] [Main Streams]
+    [ID, BYTE, 0x05] [Files Information]
 
 
 Main Streams
@@ -540,17 +465,11 @@ Streams Information
 
 Streams Info SHALL contain with Pack Info, Coders Info and SubStreamsInfo.
 
-
 ::
 
-    +===============================+
-    | Pack Information              |
-    +===============================+
-    | Coders Information            |
-    +===============================+
-    | Substreams Information        |
-    +===============================+
-
+    [Pack Information]
+    [Coders Information]
+    [Substreams Information]
 
 
 Pack Information
@@ -565,15 +484,10 @@ Sizes of packed Streams SHALL stored as list of UINT64.
 
 ::
 
-    +----+===================================================================+
-    | 06 | Pack Position                                                     |
-    +----+===================================================================+
-    | Number of Pack Streams                                                 |
-    +========================================================================+
-    | (Sizes of Pack Streams[Num of folders][Num of outstreams of folders])  |
-    +========================================================================+
-    | (CRCs of Packed Streams[Num of folders])                               |
-    +========================================================================+
+    [ID, BYTE, 0x06]
+    [Pack Position][Number of Pack Streams, NUMBER]
+    ([Sizes of Pack Streams])
+    ([CRCs of packed Streams])
 
 
 Pack Position
@@ -601,9 +515,7 @@ Size SHALL be positive integer and SHALL stored in NUMBER.
 
 ::
 
-    +---+==========================+
-    | 09| Sizes of Pack Streams    |
-    +---+==========================+
+    [ID, BYTE, 0x09][Size_0, NUMBER]...[Size_n, NUMBER]
 
 
 CRCs of Pack Streams
@@ -614,9 +526,7 @@ It also MAY NOT be placed. CRC SHALL be CRC32 and stored in UINT32.
 
 ::
 
-    +---+==========================+
-    | 0A| CRCs of Pack Streams     |
-    +---+==========================+
+    [ID, BYTE, 0x0A][CRC_0, UINT32]...[CRC_n, UINT32]
 
 
 Coders Information
@@ -629,11 +539,9 @@ It SHALL NOT be more than five coders. (Maximum four)
 
 ::
 
-    +---+
-    | 07|
-    +---+=============================+---------+
-    | 0B| Number of folders           | External|
-    +---+=============================+---------+
+    [ID, BYTE, 0x07]
+    [ID, BYTE, 0x0B][Number of folders, NUMBER]
+    [External, BYTE]
 
 Folders information MAY be placed external of header block at Packed
 Streams for Headers. When it is placed external, External flag is 0x01.
@@ -641,34 +549,22 @@ For this configuration, Coders Information becomes as follows;
 
 ::
 
-    +---+
-    | 07|
-    +---+===========================================+
-    | 0B| Number of Folders                         |
-    +---+===========================================+
-    | 01| Data Stream Index                         |
-    +---+===========================================+
-    | 0C| UnpackSizes[ total number of outstreams ] |
-    +---+===========================================+
-    | 0A| UnPackDigests[ Number of folders ]        |
-    +---+===========================================+
+    [ID, BYTE, 0x07]
+    [ID, BYTE, 0x0B][Number of folders, NUMBER]
+    [External, BYTE, 0x01] [Data Stream Index, NUMBER]
+    [ID, BYTE, 0x0C][Unpacksize_0, NUMBER]...[Unpacksize_n, NUMBER]
+    [ID, BYTE, 0x0A][UnpackDigest_0, UINT32]...[UnpackDigest_n, UINT32]
 
 
 In default Folders information is placed inline, then External flag is 0x00.
 
 ::
 
-    +---+
-    | 07|
-    +---+===========================================+
-    | 0B| Number of Folders                         |
-    +---+===========================================+
-    | 00| Folders[Number of Folders]                |
-    +---+===========================================+
-    | 0C| UnpackSizes[ total number of outstreams ] |
-    +---+===========================================+
-    | 0A| UnPackDigests[ Number of folders ]        |
-    +---+===========================================+
+    [ID, BYTE, 0x07]
+    [ID, BYTE, 0x0B][Number of folders, NUMBER]
+    [External, BYTE, 0x00] [Folder_0]...[Folder_n]
+    [ID, BYTE, 0x0C][Unpacksize_0, NUMBER]...[Unpacksize_n, NUMBER]
+    [ID, BYTE, 0x0A][UnpackDigest_0, UINT32]...[UnpackDigest_n, UINT32]
 
 
 UnpackSizes
@@ -711,9 +607,7 @@ and one for output, so it SHALL be skipped.
 
 ::
 
-    +===================+======================================+
-    | Number of coder   |  Coder Properties[ Number of coder ] |
-    +===================+======================================+
+    [Number of Coders, NUMBER][Property_0]...[Property_n]
 
 Number of coder SHALL be a NUMBER integer number.
 Coder Properties SHALL be a list of Coder Property with length SHALL be
@@ -736,18 +630,22 @@ Flag is defined in one byte as following bit definitions.
 
 ::
 
-    +------+==========================+
-    | flag | coder ID [Codec ID size] |
-    +------+==========================+
-    +================+================+
-    | [NumInStreams] | [NumOutStreams]|
-    +================+================+
-    | [Property Size]| [Properties]   |
-    +================+================+
-    | [Input Index]  | [Output Index] |
-    +================+================+
-    | [Packed Stream Indexes ]        |
-    +=================================+
+    [Flag, BYTE][Coder ID, BYTEARRAY]
+    ([NumInStreams][NumOutStreams])
+    [Property Size, NUMBER][Property, BYTEARRAY]
+    ([BindPair_0]...[BindPair_n])
+    [Packed Stream Index_0, NUMBER]...[Packed Stream Index_n, NUMBER]
+
+BindPairs
+^^^^^^^^^
+
+BindPairs describe connection among coders when coder produce multiple output
+or required multiple input.
+
+::
+
+    [Input Index, NUMBER][Output Index, NUMBER]
+
 
 A coder property format is vary with flag.
 Following pseudo code indicate how each parameter located for informative purpose.
@@ -779,30 +677,22 @@ Following pseudo code indicate how each parameter located for informative purpos
        };
 
 
-
 When using only simple codecs, which has one input stream and one output stream,
 coder property become as simple as follows;
 
 ::
 
-    +------+==========================+=================+==============+
-    | flag | coder ID [Codec ID size] | [Property Size] | [Properties] |
-    +------+==========================+=================+==============+
-
+    [Flag, BYTE] [Coder ID_0]...[Coder ID_n]
+    [Property Size, NUMBER][Property, BYTEARRAY]
 
 Here is an example of bytes of coder property when specifying LZMA.
+
+* b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'
+
 In this example, first byte 0x23 indicate that coder id size is three bytes, and
 it is not complex codec and there is a codec property.
 A coder ID is b'\x03\x01\x01' and property length is five and property is
 b'\x5D\x00\x10\x00\x00'.
-
-::
-
-    +---+---+---+---+---+---+---+---+---+---+
-    | 23| 03| 01| 01| 05| 5D| 00| 10| 00| 00|
-    +---+---+---+---+---+---+---+---+---+---+
-
-
 
 
 Codec IDs
@@ -847,19 +737,12 @@ Substreams Information
 
 Substreams Information hold an information about archived data blocks
 as in extracted form. It SHALL exist that number of unpack streams,
-size of each unpack streams, and CRC of each streams.
+size of each unpack streams, and CRC of each streams::
 
-::
+    [ID, BYTE, 0x08]
+    [ID, BYTE, 0x0D][Number of unpack streams for Folder_0]...[Number of unpack streams for Folder_n]
+    [ID, BYTE, 0x09][Size of unpack Streams_0]...[Size of unpack Streams_m]
 
-    +---+
-    | 08|
-    +---+==========================================================+
-    | 0D| Number of unpack streams for Folders [Number of Folders] |
-    +---+==========================================================+
-    | 09| Sizes of unpack streams[total number of unpack streams]  |
-    +---+==========================================================+
-    | 0A| CRC of unpack streams[total number of unpack streams ]   |
-    +---+==========================================================+
 
 
 Files Information
@@ -870,16 +753,14 @@ Its order SHALL be as same as order of streams defined in packed information.
 
 ::
 
-    +=================+=================+================+
-    | Number of files | [Empty Streams] | [ Empty Files] |
-    +---+====================+===========================+
-    | 11| BooleanList        |  list of FileNames        |
-    +---+====================+===========================+
-    | 15| BooleanList        |  list of Attributes       |
-    +---+====================+===========================+
-    | [ CTime ]       | [ ATime ]       | [ Mtime ]      |
-    +=================+=================+================+
-
+    [Number of files]
+    ([Empty Streams])
+    ([Empty Files])
+    [ID, BYTE, 0x11]
+    [FileNameExist, BooleanList][FileName_0]...[FileName_n]
+    [ID, BYTE, 0x15]
+    [AttributeExist, BooleanList][Attribute_0]...[Attribute_n]
+    ([CTime])([Atime])([Mtime])
 
 
 list of FileNames
@@ -889,18 +770,14 @@ list of FileNames data can be externally encoded, then
 
 ::
 
-    +--------------+=============+
-    |external=0x01 | [DataIndex] |
-    +--------------+=============+
+    [External, BYTE, 0x01] [DataIndex]
 
 Otherwise, filenames is inline,
 
 
 ::
 
-    +----+===============================+
-    | 00 |  FileNames[number of files]   |
-    +----+===============================+
+    [External, BYTE, 0x00][Filename_0]...[Filename_n]
 
 
 FileName SHALL be a wide character string encoded with UTF16-LE and
@@ -917,12 +794,10 @@ which defines whether property is defined or not for each files.
 
 ::
 
-    +---+=============+==========================+
-    | 15| BooleanList |  list of property        |
-    +---+=============+==========================+
+    [ID, BYTE, 0x15][AttributeExist, BooleanList]
+    [Attribute_0, UINT32]...[Attribute_n, UINT32]
 
-
- list of property can be external then it defines data index.
+list of property can be external then it defines data index.
 
 Attribute
 ^^^^^^^^^
@@ -956,28 +831,21 @@ CTime
 
 ::
 
-    +---+===============+
-    | 12|  FileTimes    |
-    +---+===============+
+    [ID, BYTE, 0x12][FileTimes]
 
 ATime
 ^^^^^
 
 ::
 
-    +---+===============+
-    | 13|  FileTimes    |
-    +---+===============+
-
+    [ID, BYTE, 0x13][FileTimes]
 
 MTime
 ^^^^^
 
 ::
 
-    +---+===============+
-    | 14|  FileTimes    |
-    +---+===============+
+    [ID, BYTE, 0x14][FileTimes]
 
 
 FileTimes
@@ -991,26 +859,11 @@ then it SHALL continue a list of time spec, that length is as same as number of 
 
 ::
 
-    +=============+==========================================+
-    | BooleanList |   list of Time spec                      |
-    +=============+==========================================+
+    [TimeExist, BooleanList]
+    [External, BYTE, 0x00][Time_0, NUMBER]...[Time_n, NUMBER]
 
 If it defines time spec of a part of files, it SHALL place 0x00 which means boolean
-
-
-list of Time spec
-^^^^^^^^^^^^^^^^^
-
-::
-
-    +----------+================================================+
-    | external |  Time spec[Number of files]                     |
-    +----------+================================================+
-
-Time spec
-^^^^^^^^^
-
-Time spec is a NUMBER value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+Times are NUMBER values. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
 
 
 Appendix: BNF expression (Informative)
