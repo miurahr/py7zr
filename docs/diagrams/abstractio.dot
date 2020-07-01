@@ -1,0 +1,6 @@
+digraph "abstractio" {
+charset="utf-8"
+rankdir=BT
+"41" [label="{MemIO|\l|close()\lflush()\lmkdir(parents, exist_ok)\lopen(mode)\lread(length)\lseek(position)\lwrite(data)\l}", shape="record"];
+"44" [label="{NullIO|\l|close()\lflush()\lmkdir()\lopen(mode)\lread(length)\lwrite(data)\l}", shape="record"];
+}

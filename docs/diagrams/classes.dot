@@ -7,7 +7,6 @@ rankdir=BT
 "4" [label="{ArchiveFile|archivable\lcompressed\lcrc32\lemptystream\lfilename\lfolder\lid\lis_directory\lis_junction\lis_socket\lis_symlink\llastwritetime\lorigin\lposix_mode\lreadonly\lst_fmt\luncompressed\l|file_properties()\l}", shape="record"];
 "5" [label="{ArchiveFileList|files_list : list\lindex : int\loffset : int\l|append(file_info)\l}", shape="record"];
 "7" [label="{ArchiveInfo|blocks\lfilename\lheader_size\lmethod_names\lsize\lsolid\luncompressed\l|}", shape="record"];
-"8" [label="{ArchiveProperties|property_data : list\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
 "13" [label="{Buffer|view : memoryview\l|add(data)\lget()\lreset()\lset(data)\l}", shape="record"];
 "16" [label="{Callback|\l|report_end(processing_file_path, wrote_bytes)\lreport_postprocess()\lreport_start(processing_file_path, processing_bytes)\lreport_start_preparation()\lreport_warning(message)\l}", shape="record"];
 "19" [label="{CompressionMethod|ARM\lARMT\lBCJ\lBCJ_ARM\lBCJ_ARMT\lBCJ_IA64\lBCJ_PPC\lBCJ_SPARC\lCOPY\lCRYPT_AES256_SHA256\lCRYPT_RAR29AES\lCRYPT_ZIPCRYPT\lDELTA\lIA64\lLZMA\lLZMA2\lMISC_BROTLI\lMISC_BZIP2\lMISC_DEFLATE\lMISC_DEFLATE64\lMISC_LIZARD\lMISC_LZ4\lMISC_LZH\lMISC_LZS\lMISC_Z\lMISC_ZIP\lMISC_ZSTD\lNSIS_BZIP2\lNSIS_DEFLATE\lP7Z_BCJ\lP7Z_BCJ2\lPPC\lPPMD\lSPARC\lSWAP2\lSWAP4\l|}", shape="record"];
@@ -19,9 +18,9 @@ rankdir=BT
 "28" [label="{DeflateDecompressor|flushed : bool\l|decompress(data)\l}", shape="record"];
 "30" [label="{ExtractCallback|\l|}", shape="record"];
 "31" [label="{FileInfo|archivable\lcompressed\lcrc32\lcreationtime\lfilename\lis_directory\luncompressed\l|}", shape="record"];
-"32" [label="{FilesInfo|antifiles : list, NoneType\lemptyfiles : list\lfiles : list\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
+"32" [label="{FilesInfo|emptyfiles : list\lfiles : list\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
 "33" [label="{Folder|bindpairs : list\lcoders : list\lcompressor : NoneType\lcrc : int, NoneType\ldecompressor : NoneType\ldigestdefined : bool\lfiles : NoneType\lpacked_indices : list\lsolid : bool\lunpacksizes : list\l|get_compressor()\lget_decompressor(packsize, reset)\lget_unpack_size()\lis_simple(coder)\lprepare_coderinfo(filters)\lretrieve(cls, file)\lwrite(file)\l}", shape="record"];
-"34" [label="{Header|additional_streams : NoneType\lfiles_info : NoneType\lmain_streams : NoneType\lproperties : NoneType\lsize : int\lsolid : bool\l|build_header(folders)\lretrieve(cls, fp, buffer, start_pos)\lwrite(file, afterheader, encoded, encrypted)\l}", shape="record"];
+"34" [label="{Header|files_info : NoneType\lmain_streams : NoneType\lsize : int\lsolid : bool\l|build_header(folders)\lretrieve(cls, fp, buffer, start_pos)\lwrite(file, afterheader, encoded, encrypted)\l}", shape="record"];
 "35" [label="{HeaderStreamsInfo|packinfo\lunpackinfo\l|write(file)\l}", shape="record"];
 "37" [label="{ISevenZipCompressor|\l|compress(data)\lflush()\l}", shape="record"];
 "38" [label="{ISevenZipDecompressor|\l|decompress(data)\l}", shape="record"];
@@ -38,9 +37,7 @@ rankdir=BT
 "64" [label="{UnpackInfo|datastreamidx : NoneType\lfolders : list\lnumfolders : NoneType, int\l|retrieve(cls, file)\lwrite(file)\l}", shape="record"];
 "66" [label="{Worker|files\lheader\lsrc_start\ltarget_filepath : dict\l|archive(fp, folder, deref)\ldecompress(fp, folder, fq, size, compressed_size, src_end)\lextract(fp, parallel, q)\lextract_single(fp, files, src_start, src_end, q)\lregister_filelike(id, fileish)\l}", shape="record"];
 "67" [label="{ZstdCompressor|\l|compress(data)\lflush()\l}", shape="record"];
-"68" [label="{ZstdCompressor|read_from\lwrite_to\l|chunker(size, chunk_size)\lcompress(data)\lcompressobj(size)\lcopy_stream(ifh, ofh, size, read_size, write_size)\lframe_progression()\lmemory_size()\lread_to_iter(reader, size, read_size, write_size)\lstream_reader(source, size, read_size)\lstream_writer(writer, size, write_size, write_return_read)\l}", shape="record"];
 "69" [label="{ZstdDecompressor|\l|decompress(data)\l}", shape="record"];
-"70" [label="{ZstdDecompressor|read_from\lwrite_to\l|copy_stream(ifh, ofh, read_size, write_size)\ldecompress(data, max_output_size)\ldecompress_content_dict_chain(frames)\ldecompressobj(write_size)\lmemory_size()\lread_to_iter(reader, read_size, write_size, skip_bytes)\lstream_reader(source, read_size, read_across_frames)\lstream_writer(writer, write_size, write_return_read)\l}", shape="record"];
 "0" -> "37" [arrowhead="empty", arrowtail="none"];
 "1" -> "38" [arrowhead="empty", arrowtail="none"];
 "2" -> "16" [arrowhead="empty", arrowtail="none"];
@@ -56,7 +53,6 @@ rankdir=BT
 "69" -> "38" [arrowhead="empty", arrowtail="none"];
 "5" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="files", style="solid"];
 "5" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="files", style="solid"];
-"8" -> "34" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="properties", style="solid"];
 "13" -> "0" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="buf", style="solid"];
 "13" -> "1" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="buf", style="solid"];
 "20" -> "53" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="cchain", style="solid"];
@@ -82,6 +78,4 @@ rankdir=BT
 "64" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="unpackinfo", style="solid"];
 "64" -> "57" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="unpackinfo", style="solid"];
 "66" -> "55" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="worker", style="solid"];
-"68" -> "67" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="_ctc", style="solid"];
-"70" -> "69" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="_ctc", style="solid"];
 }

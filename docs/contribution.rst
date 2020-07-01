@@ -2,9 +2,12 @@
 
 :tocdepth: 2
 
-=================
+*****************
 Contributor guide
-=================
+*****************
+
+Development environment
+=======================
 
 If you’re reading this, you’re probably interested in contributing to py7zr.
 Thank you very much! The purpose of this guide is to get you to the point
@@ -79,7 +82,7 @@ guidelines
 
 
 Class and module design
------------------------
+=======================
 
 The py7zr take class design that categorized into several sub modules
 to reflect its role.
@@ -100,11 +103,13 @@ cli submodule is a place for command line functions and pretty printings.
 
 .. graphviz:: diagrams/packages.dot
 
+Here is a whole classes diagram. There are part by part descriptions at Next sections.
+
 .. graphviz:: diagrams/classes.dot
 
 
 Header classes
-^^^^^^^^^^^^^^
+--------------
 
 Header related classes are in py7zr.archiveinfo submodule.
 
@@ -112,43 +117,59 @@ Header related classes are in py7zr.archiveinfo submodule.
 
 
 Compressor classes
-~~~~~~~~~~~~~~~~~~
+------------------
 
 There are compression related classes in py7zr.compressor submodule.
 
 .. graphviz:: diagrams/compressor_classes.dot
 
 
+IO Abstraction classes
+----------------------
+
+There are two IO abstraction classes to provide Mem API and check method.
+
+.. graphviz:: diagrams/abstractio.dot
+
+
+Callback classes
+----------------
+
+Here is a callback interface class. ExtractCallback class is a concrete class used in CLI.
+
+.. graphviz:: diagrams/callbacks.dot
+
+
 .. _internal_classes:
 
-Internal classes
+Classes details
 ================
 
-Here is a detailed intarface documentation for implementer.
+Here is a detailed interface documentation for implementer.
 
 ArchiveFile Objects
 -------------------
 
 .. automodule:: py7zr.py7zr
-    :members:
+   :members:
 
 
 archiveinfo module
 ------------------
 
 .. automodule:: py7zr.archiveinfo
-    :members:
+   :members:
 
 
 compressor module
 ------------------
 
 .. automodule:: py7zr.compressor
-    :members:
+   :members:
 
 
 helpers module
 --------------
 
 .. automodule:: py7zr.helpers
-    :members:
+   :members:

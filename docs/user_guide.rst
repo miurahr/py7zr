@@ -1,8 +1,8 @@
 .. _user_guide:
 
-==========
+**********
 User Guide
-==========
+**********
 
 The 7z file format is a popular archive and compression format in recent days.
 This module provides tools to read, write and list 7z file. Features is not implemented
