@@ -214,8 +214,8 @@ Data Representations
 
 This chapter describes basic data representations used in 7-zip file.
 
-Integers and byte order
------------------------
+Integers
+--------
 
 All integers that require more than one byte SHALL be in a little endian,
 Least significant byte (LSB) comes first, then more significant bytes in
@@ -224,42 +224,25 @@ for four bytes integers). The highest bit (value 128) of byte is number bit 7
 and lowest bit (value 1) is number bit 0. Values are unsigned unless otherwise
 noted.
 
++--------------+---------+------------------------------+
+| name         | size    |  description                 |
++==============+=========+==============================+
+| UINT32       | 4 bytes | | integer at little endian   |
+|              |         | | represent 0 to             |
+|              |         | | 4,294,967,295 (0xffffffff) |
++--------------+---------+------------------------------+
+| UINT64       | 8 bytes | | integer at little endian   |
+|              |         | | represent 0 to             |
+|              |         | | 18,446,744,073,709,551,615 |
+|              |         | | (0xffffffffffffffff)       |
++--------------+---------+------------------------------+
+| NUMBER       | |1-9    | | variable length integer    |
+|              | |bytes  | | value represent 0 to       |
+|              |         | | 18,446,744,073,709,551,615 |
+|              |         | | (0xffffffffffffffff)       |
++--------------+---------+------------------------------+
 
-UINT32
-^^^^^^
-
-UINT32 SHALL be an integer value stored in 4 bytes at little endian,
-representing a integer rage from 0 to 4,294,967,295 (0xffffffff).
-
-::
-
-      0   1   2   3
-    +---+---+---+---+
-    |               |
-    +---+---+---+---+
-
-
-REAL_UINT64
-^^^^^^^^^^^
-
-REAL_UINT64 SHALL be an integer value stored in 8 bytes at little endian,
-representing a integer range from 0 to 18446744073709551615 (0xffffffffffffffff)
-It may also known as unsigned long long.
-
-::
-
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    |                               |
-    +---+---+---+---+---+---+---+---+
-
-
-
-UINT64
-^^^^^^
-
-UINT64 SHALL be a integer value encoded with the following scheme.
-It SHALL represent an integer from 0 to 18446744073709551615 (0xffffffffffffffff)
+NUMBER SHALL be a integer value encoded with the following scheme.
 in byte length between one byte to nine bytes.
 
 Size of encoding sequence SHALL indicated at first byte.
@@ -291,7 +274,7 @@ Following bytes SHOULD be an integer as little endian.
 
 
 BooleanList
-^^^^^^^^^^^
+-----------
 
 BooleanList is a list of boolean bit arrays.
 It has two field. First it defines an existence of boolean values for each items of number of files or
@@ -299,11 +282,17 @@ objects. Then boolean bit fields continues.
 There is an extension of expression that indicate all boolean values is True, and
 skip boolean bit fields.
 
-::
-
-    +----+===========================================+
-    | 00 | bit field of booleans                     |
-    +----+===========================================+
++--------------+----------+-------------------------+-----------+
+| Name         | Type     |  Description            | Required? |
++==============+==========+=========================+===========+
+| alldefined   | BYTE     | | Indicate all boolean  | YES       |
+|              |          | | value is defined or   |           |
+|              |          | | not.                  |           |
++--------------+----------+-------------------------+-----------+
+| booleans     | bitfield | | Required when alldefined is 0x00  |
+|              |          | | fields are interpreted from MSB   |
+|              |          | | to LSB                            |
++--------------+----------+-------------------------+-----------+
 
 The bit field is defined which order is from MSB to LSB,
 i.e. bit 7 (MSB) of first byte indicate a boolean for first stream, object or file,
@@ -334,17 +323,20 @@ SHALL placed instead of Header.
 When Header database is placed as plain form,
 Packed Streams for Headers SHALL NOT exist.
 
-::
 
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | (Packed Streams for Headers)         |
-    +======================================+
-    | (Header | Header encode Information) |
-    +======================================+
++----------------------------------------+--------------------+
+|  Name                                  | Mandatory/Optional |
++========================================+====================+
+|  Signature Header                      | Mandatory          |
++----------------------------------------+--------------------+
+|  Packed Streams                        | Optional           |
++----------------------------------------+--------------------+
+|  Packed Streams for Header             | Optional           |
++----------------------------------------+--------------------+
+|  Header                                | Optional           |
++----------------------------------------+--------------------+
+|  Header encode Information             | Optional           |
++----------------------------------------+--------------------+
 
 
 .. _`SignatureHeader`:
@@ -356,27 +348,28 @@ Signature header SHALL consist in 32 bytes.
 Signature header SHALL start with Signature then continues
 with archive version. Start Header SHALL follow after archive version.
 
-::
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| address| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| 0x0000 | Signature             | VN    | S.H. CRC      | N.H. offset   |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| 0x0010 | offset(cont)  | N.H. size                     | N.H. CRC      |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    | Signature             | VN    |
-    +---+---+---+---+---+---+---+---+
-    | Start Header                  |
-    +---+---+---+---+---+---+---+---+
-    | Start Header (cont)           |
-    +---+---+---+---+---+---+---+---+
-    | Start Header (cont)           |
-    +---+---+---+---+---+---+---+---+
+* VN: Version Number
 
+* S.H. CRC: Start Header CRC
 
-VN: Version Number
+* N.H. offset: Next Header offset
 
+* N.H. size: Next Header size
+
+* N.H. CRC: Next Header CRC
 
 Signature
----------
+^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain the following values as Signature header:
+The first six bytes of a 7-zip file SHALL always contain the following values:
 
 ::
 
@@ -385,53 +378,20 @@ The first six bytes of a 7-zip file SHALL always contain the following values as
     |'7' |'z' |BC |AF |27 |1C |
     +----+----+---+---+---+---+
 
-
-
 Version Number
---------------
+^^^^^^^^^^^^^^
 
 Version number SHALL consist with two bytes.
-Just in case something needs to be modified in the future.
-
-::
-
-            0               1
-    +---------------+---------------+
-    | Major version | Minor version |
-    +---------------+---------------+
-
 Major version is 0x00, and minor version is 0x04 for now.
-
-.. _`StartHeader`:
-
-Start Header
-------------
-
-Start header SHALL be a metadata of header database.
-Start header shall consist with Start header CRC, Next Header Offset, Next Header Size,
-and Next Header CRC.
-
-::
-
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    | Start H. CRC  | N.H. offset   |
-    +---+---+---+---+---+---+---+---+
-    | offset(cont)  | N.H. size     |
-    +---+---+---+---+---+---+---+---+
-    | size(cont)    | N.H. crc      |
-    +---+---+---+---+---+---+---+---+
-
 
 .. _`StartHeaderCRC`:
 
 Start Header CRC
 ^^^^^^^^^^^^^^^^
 
-Start header CRC SHALL be a CRC32 of `Start Header`_ It SHALL be stored in form of UINT32.
+It SHALL be stored in form of UINT32.
 This CRC value SHALL be calculated from Next Header Offset, Next Header size and
 Next Header CRC.
-
 
 .. _`NextHeaderOffset`:
 
@@ -441,7 +401,7 @@ Next Header offset
 Next header offset SHALL be an offset from end of signature header to header database.
 Because signature header always consist with 32 bytes, the offset SHOULD be a value that
 absolute position of header database in archive file - 32 bytes.
-Next header offset SHALL be stored as REAL_UINT64.
+Next header offset SHALL be stored as UINT64.
 
 .. _`NextHeaderSize`:
 
@@ -450,7 +410,7 @@ Next Header size
 
 Next header size SHALL be an size of a header database. Because a header database MAY be
 encoded, Next header size SHALL consist of encoded(packed) size, not a raw size.
-Next header size SHALL be stored as REAL_UINT64.
+Next header size SHALL be stored as UINT64.
 
 .. _`NextHeaderCRC`:
 
@@ -506,7 +466,7 @@ ID   Property
 .. _`HeaderInfo`:
 
 Header encode Information
----------------------------
+-------------------------
 
 Header encode Information is a Streams Information data for Header data as
 encoded data followed after ID 0x17.
@@ -600,7 +560,7 @@ Pack Information SHALL start with one byte of id value; 0x06.
 Pack Information SHALL be const with Pack Position, Number of Pack Streams,
 a list of sizes of Pack Streams and a list of CRCs of pack streams.
 Pack positon and Number of Pakc streams SHALL be stored as
-variable length UINT64 form.
+variable length NUMBER form.
 Sizes of packed Streams SHALL stored as list of UINT64.
 
 ::
@@ -636,8 +596,8 @@ Sizes of Pack Streams
 ^^^^^^^^^^^^^^^^^^^^^
 
 Sizes of Pack Streams SHOULD be omitted when Number of Pack Streams is zero.
-This is an array of UINT64 values which length is as same as Number of Pack Streams.
-Size SHALL be positive integer and SHALL stored in UINT64.
+This is an array of NUMBER values which length is as same as Number of Pack Streams.
+Size SHALL be positive integer and SHALL stored in NUMBER.
 
 ::
 
@@ -729,7 +689,7 @@ UnpackDigests
 UnpackDigests is a list of CRC32 of decompress deta digests for each folders.
 When extract data from the archive, it CAN check an integrity of data.
 
-It SHALL be a list of UINT64 and its length SHALL be as same as number of folders.
+It SHALL be a list of NUMBER and its length SHALL be as same as number of folders.
 It MAY be skipped when Substreams Information defined.
 
 
@@ -755,9 +715,10 @@ and one for output, so it SHALL be skipped.
     | Number of coder   |  Coder Properties[ Number of coder ] |
     +===================+======================================+
 
-Number of coder SHALL be a UINT64 integer number.
+Number of coder SHALL be a NUMBER integer number.
 Coder Properties SHALL be a list of Coder Property with length SHALL be
 as same as Number of coder.
+
 
 Coder Property
 ^^^^^^^^^^^^^^
@@ -795,26 +756,26 @@ Following pseudo code indicate how each parameter located for informative purpos
 
     if (Is Complex Coder)
      {
-       UINT64 `NumInStreams`;
-       UINT64 `NumOutStreams`;
+       NUMBER `NumInStreams`;
+       NUMBER `NumOutStreams`;
      }
      if (There Are Attributes)
      {
-       UINT64 `PropertiesSize`
+       NUMBER `PropertiesSize`
        BYTE `Properties[PropertiesSize]`
      }
     }
     NumBindPairs :  = `NumOutStreamsTotal` – 1;
     for (`NumBindPairs`)
      {
-       UINT64 `InIndex`;
-       UINT64 `OutIndex`;
+       NUMBER `InIndex`;
+       NUMBER `OutIndex`;
      }
     NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
      if (`NumPackedStreams` > 1)
        for(`NumPackedStreams`)
        {
-         UINT64 `Index`;
+         NUMBER `Index`;
        };
 
 
@@ -1049,7 +1010,7 @@ list of Time spec
 Time spec
 ^^^^^^^^^
 
-Time spec is a UINT64 value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+Time spec is a NUMBER value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
 
 
 Appendix: BNF expression (Informative)
@@ -1076,7 +1037,7 @@ This clause shows extended BNF expression of 7-zip file format.
               : [0x0C, UnPackSizes, [0x0A, UnpackDigests]], 0x00
    Folders: Folder{ Number of Folders }
    UnpackSizes: UnPackSize { Sum of NumOutStreams for each Folders }
-   UnpackSize: UINT64
+   UnpackSize: NUMBER
    UnpackDigests: CRC32 { Number of folders }
    SubStreamsInfo: 0x08, 0x0D, NumUnPackStreamsInFolders{Num of Folders],
                  : 0x09, UnPackSize, 0x0A,
@@ -1108,26 +1069,26 @@ A Coder flag affect a following CoderData existence as following algorithm;
 
     if (Is Complex Coder)
      {
-       UINT64 `NumInStreams`;
-       UINT64 `NumOutStreams`;
+       NUMBER `NumInStreams`;
+       NUMBER `NumOutStreams`;
      }
      if (There Are Attributes)
      {
-       UINT64 `PropertiesSize`
+       NUMBER `PropertiesSize`
        BYTE `Properties[PropertiesSize]`
      }
     }
     NumBindPairs :  = `NumOutStreamsTotal` – 1;
     for (`NumBindPairs`)
      {
-       UINT64 `InIndex`;
-       UINT64 `OutIndex`;
+       NUMBER `InIndex`;
+       NUMBER `OutIndex`;
      }
     NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
      if (`NumPackedStreams` > 1)
        for(`NumPackedStreams`)
        {
-         UINT64 `Index`;
+         NUMBER `Index`;
        };
 
 
