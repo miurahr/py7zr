@@ -1,8 +1,8 @@
 .. _api_documentation:
 
-=================
+*****************
 API Documentation
-=================
+*****************
 
 :mod:`py7zr` --- 7-Zip archive library
 ======================================
@@ -11,44 +11,6 @@ API Documentation
    :synopsis: Read and write 7Z-format archive files.
 
 .. moduleauthor:: Hiroshi Miura <miurahr@linux.com>
-
-
-Compression Methods
-===================
-
-'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
-It also support BZip2 and Deflate that are implemented in python core libraries,
-and ZStandard with third party libraries.
-`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
-such as PPMd, BCJ2 and Deflate64.
-
-.. _`lzma module`: https://docs.python.org/3/library/lzma.html
-.. _`liblzma`: https://tukaani.org/xz/
-
-Here is a table of algorithms.
-
-+---+----------------------+------------------------------------------+
-|  #| Category             | Algorithm combination                    |
-+===+======================+==========================================+
-|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
-|   | - Decompression      | IA64, ARMT, SPARC)                       |
-+---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ                               |
-+---+                      +------------------------------------------+
-|  3|                      | LZMA2 or LZMA only                       |
-+---+                      +------------------------------------------+
-|  4|                      | Bzip2, Deflate, ZStandard                |
-+---+----------------------+------------------------------------------+
-|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
-+---+ - Decryption         +------------------------------------------+
-|  6|                      | 7zAES + LZMA                             |
-+---+                      +------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
-+---+----------------------+------------------------------------------+
-|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
-+---+                      +------------------------------------------+
-|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
-+---+----------------------+------------------------------------------+
 
 
 The module is built upon awesome development effort and knowledge of `pylzma` module
@@ -251,8 +213,47 @@ SevenZipFile Object
    then archive listed as ['c', 'c/d.txt'], the former as directory.
 
 
+
+Compression Methods
+===================
+
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+It also support BZip2 and Deflate that are implemented in python core libraries,
+and ZStandard with third party libraries.
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
+such as PPMd, BCJ2 and Deflate64.
+
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
+
+Here is a table of algorithms.
+
++---+----------------------+------------------------------------------+
+|  #| Category             | Algorithm combination                    |
++===+======================+==========================================+
+|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
+|   | - Decompression      | IA64, ARMT, SPARC)                       |
++---+                      +------------------------------------------+
+|  2|                      | LZMA + BCJ                               |
++---+                      +------------------------------------------+
+|  3|                      | LZMA2 or LZMA only                       |
++---+                      +------------------------------------------+
+|  4|                      | Bzip2, Deflate, ZStandard                |
++---+----------------------+------------------------------------------+
+|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
++---+ - Decryption         +------------------------------------------+
+|  6|                      | 7zAES + LZMA                             |
++---+                      +------------------------------------------+
+|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
++---+----------------------+------------------------------------------+
+|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
++---+                      +------------------------------------------+
+|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
++---+----------------------+------------------------------------------+
+
+
 Possible filters value
-^^^^^^^^^^^^^^^^^^^^^^
+======================
 
 Here is a list of examples for possible filters values.
 You can use it when creating SevenZipFile object.
@@ -310,28 +311,9 @@ ZStandard
 7zAES + ZStandard
     ``[{'id': FILTER_ZSTD}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
 
-
-.. _archiveinfo-object:
-
-ArchiveInfo Object
---------------------
-
-ArchiveInfo object represent archive information.
-
-
-.. _fileinfo-objects:
-
-FileInfo Objects
---------------------
-
-FileInfo objects represent a file information of member of archive.
-
-
 .. rubric:: Footnotes
 
 .. [#f1] Modes other than ```'r'``` and ```'w'``` have not implemented yet. If given other than 'r'
         or 'w', it will generate :exc:`NotImplementedError`
 
 .. [#f2] *filter* is always ignored in current version.
-
-.. [#f3] Not implemented yet, the method will generate :exc:`NotImplementedError`

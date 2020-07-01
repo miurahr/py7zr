@@ -1,0 +1,7 @@
+digraph "callbacks" {
+charset="utf-8"
+rankdir=BT
+"16" [label="{Callback|\l|report_end(processing_file_path, wrote_bytes)\lreport_postprocess()\lreport_start(processing_file_path, processing_bytes)\lreport_start_preparation()\lreport_warning(message)\l}", shape="record"];
+"30" [label="{ExtractCallback|\l|}", shape="record"];
+"30" -> "16" [arrowhead="empty", arrowtail="none"];
+}
