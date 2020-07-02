@@ -124,6 +124,7 @@ html_theme_options = {
     # 'logo': 'logo.png',
     'github_user': 'miurahr',
     'github_repo': 'py7zr',
+    'page_width': 'auto',
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -156,7 +157,7 @@ html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-#html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = '%b %d, %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
