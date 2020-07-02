@@ -6,6 +6,8 @@ sphinx:
 python:
    version: 3.7
    install:
-      extra_requirements:
-         - docs
+      - method: pip
+        path: .
+        extra_requirements:
+           - docs
    system_packages: true
