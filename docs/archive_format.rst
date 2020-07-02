@@ -110,112 +110,36 @@ Notations
 * MAY indicates an OPTIONAL element.
 
 
-Conventions
-===========
-
-Diagram conventions
--------------------
-
-In the diagrams below, a box like this:
-
-::
-
-    +---+
-    |   | <-- the vertical bars might be missing
-    +---+
-
-
-represents one byte.
-
-When specified with character with single quote, it means a constant
-value of specified character.
-
-An example bellow means a data '7' ie. 0x37  is placed as one byte.
-
-::
-
-    +---+
-    |'7'|
-    +---+
-
-
-When two digit of hexadecimal alphabet and number(0-9A-F) is placed,
-it means a constant of specified value.
-
-An example bellow means a constant 0xFF is placed as one byte.
-
-::
-
-    +---+
-    | FF|
-    +---+
-
-A box like this:
-
-::
-
-    +==============+
-    |              |
-    +==============+
-
-
-represents a variable number of bytes.
-When label is placed, it refers other field defined in this document.
-
-::
-
-    +=============================+
-    | Signature Header            |
-    +=============================+
-
-
-When label is placed inside '( )' bracket, it express the field is optional.
-
-::
-
-    +=============================+
-    | (Packed Streams)            |
-    +=============================+
-
-
-When two or more labels are placed inside '( )' bracket separeted with bartical bar '|',
-it express the field is selectable.
-
-::
-
-    +=============================+
-    | (A | B)                     |
-    +=============================+
-
-
-This example means a field is mandatory but it can be A or B.
-
-When adding a block bracket '[]' at end of label, it means the field is a list of
-values or repeatable.
-
-::
-
-    +=============================+
-    | CRCs of packed stream[]     |
-    +=============================+
-
-When label is placed at a block bracket, it means a length of a list.
-
-::
-
-    +===========================================+
-    | CRCs of packed stream[Num of folders]     |
-    +===========================================+
-
-
-
 Data Representations
 ====================
 
 This chapter describes basic data representations used in 7-zip file.
 
-Integers and byte order
------------------------
+
+BYTE
+----
+
+BYTE is a basic data type to store a char, Property ID or bitfield.
+
+
+BYTEARRAY
+---------
+
+BYTEARRAY is a sequence of BYTE. Its length SHALL be defined in another place.
+
+
+String
+------
+
+There are two type of string data is used in 7-zip archive format.
+
+* UTF-16-LE
+
+* UTF-8
+
+
+Integers
+--------
 
 All integers that require more than one byte SHALL be in a little endian,
 Least significant byte (LSB) comes first, then more significant bytes in
@@ -224,42 +148,25 @@ for four bytes integers). The highest bit (value 128) of byte is number bit 7
 and lowest bit (value 1) is number bit 0. Values are unsigned unless otherwise
 noted.
 
++--------------+---------+------------------------------+
+| name         | size    |  description                 |
++==============+=========+==============================+
+| UINT32       | 4 bytes | | integer at little endian   |
+|              |         | | represent 0 to             |
+|              |         | | 4,294,967,295 (0xffffffff) |
++--------------+---------+------------------------------+
+| UINT64       | 8 bytes | | integer at little endian   |
+|              |         | | represent 0 to             |
+|              |         | | 18,446,744,073,709,551,615 |
+|              |         | | (0xffffffffffffffff)       |
++--------------+---------+------------------------------+
+| NUMBER       | | 1-9   | | variable length integer    |
+|              | | bytes | | value represent 0 to       |
+|              |         | | 18,446,744,073,709,551,615 |
+|              |         | | (0xffffffffffffffff)       |
++--------------+---------+------------------------------+
 
-UINT32
-^^^^^^
-
-UINT32 SHALL be an integer value stored in 4 bytes at little endian,
-representing a integer rage from 0 to 4,294,967,295 (0xffffffff).
-
-::
-
-      0   1   2   3
-    +---+---+---+---+
-    |               |
-    +---+---+---+---+
-
-
-REAL_UINT64
-^^^^^^^^^^^
-
-REAL_UINT64 SHALL be an integer value stored in 8 bytes at little endian,
-representing a integer range from 0 to 18446744073709551615 (0xffffffffffffffff)
-It may also known as unsigned long long.
-
-::
-
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    |                               |
-    +---+---+---+---+---+---+---+---+
-
-
-
-UINT64
-^^^^^^
-
-UINT64 SHALL be a integer value encoded with the following scheme.
-It SHALL represent an integer from 0 to 18446744073709551615 (0xffffffffffffffff)
+NUMBER SHALL be a integer value encoded with the following scheme.
 in byte length between one byte to nine bytes.
 
 Size of encoding sequence SHALL indicated at first byte.
@@ -289,21 +196,10 @@ Following bytes SHOULD be an integer as little endian.
 |11111111     | BYTE y[8]    | y                            |
 +-------------+--------------+------------------------------+
 
+BitField
+--------
 
-BooleanList
-^^^^^^^^^^^
-
-BooleanList is a list of boolean bit arrays.
-It has two field. First it defines an existence of boolean values for each items of number of files or
-objects. Then boolean bit fields continues.
-There is an extension of expression that indicate all boolean values is True, and
-skip boolean bit fields.
-
-::
-
-    +----+===========================================+
-    | 00 | bit field of booleans                     |
-    +----+===========================================+
+BitField represent eight boolean values in single BYTE.
 
 The bit field is defined which order is from MSB to LSB,
 i.e. bit 7 (MSB) of first byte indicate a boolean for first stream, object or file,
@@ -312,6 +208,23 @@ bit 0(LSB) of second byte indicate a boolean for 16th stream, object or file.
 
 A length is vary according to a number of items to indicate.
 If a number of items is not multiple of eight, rest of bitfield SHOULD zero.
+
+BooleanList
+-----------
+
+BooleanList is a list of boolean bit arrays.
+It has two field. First it defines an existence of boolean values for each items of number of files or
+objects. Then boolean bit fields continues.
+There is an extension of expression that indicate all boolean values is True, and
+skip boolean bit fields.
+
+.. railroad-diagram::
+
+   stack:
+   - 'alldefined, BYTE'
+   -
+      zero_or_more:
+      - 'boolean, BitField'
 
 
 File format
@@ -334,17 +247,18 @@ SHALL placed instead of Header.
 When Header database is placed as plain form,
 Packed Streams for Headers SHALL NOT exist.
 
-::
+.. railroad-diagram::
 
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | (Packed Streams for Headers)         |
-    +======================================+
-    | (Header | Header encode Information) |
-    +======================================+
+   stack:
+   - Signature Header
+   -
+      optional:
+      - Packed Streams
+   - choice:
+      -
+         - Packed Streams for Header
+         - Header Encode Information
+      - Header
 
 
 .. _`SignatureHeader`:
@@ -356,82 +270,49 @@ Signature header SHALL consist in 32 bytes.
 Signature header SHALL start with Signature then continues
 with archive version. Start Header SHALL follow after archive version.
 
-::
+.. railroad-diagram::
 
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    | Signature             | VN    |
-    +---+---+---+---+---+---+---+---+
-    | Start Header                  |
-    +---+---+---+---+---+---+---+---+
-    | Start Header (cont)           |
-    +---+---+---+---+---+---+---+---+
-    | Start Header (cont)           |
-    +---+---+---+---+---+---+---+---+
+   stack:
+   - Signature
+   -
+      - Major Version, BYTE, '0x00'
+      - Minor Version, BYTE, '0x04'
+   - Start Header CRC, UINT32
+   -
+      - Next Header Offset, NUMBER
+      - Next Header Size, NUMBER
+      - Next Header CRC, UINT32
 
+It can be observed as follows when taken hex dump.
 
-VN: Version Number
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| address| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| 0x0000 | Signature             | VN    | S.H. CRC      | N.H. offset   |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| 0x0010 | offset(cont)  | N.H. size                     | N.H. CRC      |
++--------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 
 
 Signature
----------
+^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain the following values as Signature header:
-
-::
-
-      0    1    2   3   4   5
-    +----+----+---+---+---+---+
-    |'7' |'z' |BC |AF |27 |1C |
-    +----+----+---+---+---+---+
-
-
+The first six bytes of a 7-zip file SHALL always contain b'7z\xbc\xaf\x27\x1c'.
 
 Version Number
---------------
+^^^^^^^^^^^^^^
 
 Version number SHALL consist with two bytes.
-Just in case something needs to be modified in the future.
-
-::
-
-            0               1
-    +---------------+---------------+
-    | Major version | Minor version |
-    +---------------+---------------+
-
 Major version is 0x00, and minor version is 0x04 for now.
-
-.. _`StartHeader`:
-
-Start Header
-------------
-
-Start header SHALL be a metadata of header database.
-Start header shall consist with Start header CRC, Next Header Offset, Next Header Size,
-and Next Header CRC.
-
-::
-
-      0   1   2   3   4   5   6   7
-    +---+---+---+---+---+---+---+---+
-    | Start H. CRC  | N.H. offset   |
-    +---+---+---+---+---+---+---+---+
-    | offset(cont)  | N.H. size     |
-    +---+---+---+---+---+---+---+---+
-    | size(cont)    | N.H. crc      |
-    +---+---+---+---+---+---+---+---+
-
 
 .. _`StartHeaderCRC`:
 
 Start Header CRC
 ^^^^^^^^^^^^^^^^
 
-Start header CRC SHALL be a CRC32 of `Start Header`_ It SHALL be stored in form of UINT32.
+It SHALL be stored in form of UINT32.
 This CRC value SHALL be calculated from Next Header Offset, Next Header size and
 Next Header CRC.
-
 
 .. _`NextHeaderOffset`:
 
@@ -441,7 +322,7 @@ Next Header offset
 Next header offset SHALL be an offset from end of signature header to header database.
 Because signature header always consist with 32 bytes, the offset SHOULD be a value that
 absolute position of header database in archive file - 32 bytes.
-Next header offset SHALL be stored as REAL_UINT64.
+Next header offset SHALL be stored as UINT64.
 
 .. _`NextHeaderSize`:
 
@@ -450,7 +331,7 @@ Next Header size
 
 Next header size SHALL be an size of a header database. Because a header database MAY be
 encoded, Next header size SHALL consist of encoded(packed) size, not a raw size.
-Next header size SHALL be stored as REAL_UINT64.
+Next header size SHALL be stored as UINT64.
 
 .. _`NextHeaderCRC`:
 
@@ -465,11 +346,13 @@ Next header CRC SHALL a CRC32 of Header that SHALL be stored in UINT32.
 Property IDs
 ------------
 
-Information stored in Header MAY be placed after Property ID.
+Information stored in Header SHALL be placed after Property ID.
 For example, Header Info block start with 0x01, which means Header, then
 continues data blocks, and 0x00, which is END, is placed at last.
-This structure can be recursive but there is a rules where paticular
+This structure can be recursive but there is a rules where particular
 ID can exist.
+
+Property ID SHALL be a BYTE.
 
 ==== ==========
 ID   Property
@@ -506,43 +389,17 @@ ID   Property
 .. _`HeaderInfo`:
 
 Header encode Information
----------------------------
+-------------------------
 
 Header encode Information is a Streams Information data for Header data as
 encoded data followed after ID 0x17.
 
-::
 
-    +---+======================+
-    |17 | Streams Information  |
-    +---+======================+
+.. railroad-diagram::
 
-
-When header is encoded whole archive structure becomes as follows:
-
-::
-
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | Packed Streams for Header            |
-    +======================================+
-    | 17| Streams Information for header   |
-    +---+==================================+
-
-otherwise whole archive structure become as follows:
-
-::
-
-    +======================================+
-    | Signature Header                     |
-    +======================================+
-    | (Packed Streams)                     |
-    +======================================+
-    | 01 | Header                          |
-    +---+===================================+
+   stack:
+   - EncodedHeader, Property ID
+   - Streams Information for Header, StreamsInfo
 
 
 .. _Header:
@@ -558,16 +415,17 @@ Header database MAY be encoded.
 When raw header is located, it SHOULD become the following structure.
 Raw header SHALL start with one byte ID 0x01.
 
-::
+.. railroad-diagram::
 
-    +---+
-    | 01|
-    +---+====================+
-    | 04| Main Streams       |
-    +---+====================+
-    | 05| Files Information  |
-    +---+====================+
-
+   stack:
+   - Header, Property ID
+   -
+      - MainStreamsInfo, Property ID
+      - Main Streams
+   -
+      optional:
+      - FilesInfo, Property ID
+      - Files Information
 
 Main Streams
 ------------
@@ -580,17 +438,12 @@ Streams Information
 
 Streams Info SHALL contain with Pack Info, Coders Info and SubStreamsInfo.
 
+.. railroad-diagram::
 
-::
-
-    +===============================+
-    | Pack Information              |
-    +===============================+
-    | Coders Information            |
-    +===============================+
-    | Substreams Information        |
-    +===============================+
-
+   stack:
+   - Pack Information
+   - Coders Information
+   - Substream Information
 
 
 Pack Information
@@ -600,21 +453,21 @@ Pack Information SHALL start with one byte of id value; 0x06.
 Pack Information SHALL be const with Pack Position, Number of Pack Streams,
 a list of sizes of Pack Streams and a list of CRCs of pack streams.
 Pack positon and Number of Pakc streams SHALL be stored as
-variable length UINT64 form.
+variable length NUMBER form.
 Sizes of packed Streams SHALL stored as list of UINT64.
 
-::
+.. railroad-diagram::
 
-    +----+===================================================================+
-    | 06 | Pack Position                                                     |
-    +----+===================================================================+
-    | Number of Pack Streams                                                 |
-    +========================================================================+
-    | (Sizes of Pack Streams[Num of folders][Num of outstreams of folders])  |
-    +========================================================================+
-    | (CRCs of Packed Streams[Num of folders])                               |
-    +========================================================================+
-
+   stack:
+   - PackInfo, Property ID
+   - Pack Position, NUMBER
+   - Number of Pack Streams, NUMBER
+   -
+      optional:
+      - Sizes of Pack Streams
+   -
+      optional:
+      - CRCs of Pack Streams
 
 Pack Position
 ^^^^^^^^^^^^^
@@ -636,14 +489,16 @@ Sizes of Pack Streams
 ^^^^^^^^^^^^^^^^^^^^^
 
 Sizes of Pack Streams SHOULD be omitted when Number of Pack Streams is zero.
-This is an array of UINT64 values which length is as same as Number of Pack Streams.
-Size SHALL be positive integer and SHALL stored in UINT64.
+This is an array of NUMBER values which length is as same as Number of Pack Streams.
+Size SHALL be positive integer and SHALL stored in NUMBER.
 
-::
+.. railroad-diagram::
 
-    +---+==========================+
-    | 09| Sizes of Pack Streams    |
-    +---+==========================+
+   stack:
+   - Size, Property ID
+   -
+      one_or_more:
+      - size, NUMBER
 
 
 CRCs of Pack Streams
@@ -652,11 +507,14 @@ CRCs of Pack Streams
 When Number of Pack Streams is zero, then CRCs of Pack Streams SHALL not exist.
 It also MAY NOT be placed. CRC SHALL be CRC32 and stored in UINT32.
 
-::
 
-    +---+==========================+
-    | 0A| CRCs of Pack Streams     |
-    +---+==========================+
+.. railroad-diagram::
+
+   stack:
+   - CRC, Property ID
+   -
+      one_or_more:
+      - crc, UINT32
 
 
 Coders Information
@@ -667,48 +525,33 @@ It SHALL provide encoding and encryption filter parameters.
 It MAY be a single coder or multiple coders defined.
 It SHALL NOT be more than five coders. (Maximum four)
 
-::
+.. railroad-diagram::
 
-    +---+
-    | 07|
-    +---+=============================+---------+
-    | 0B| Number of folders           | External|
-    +---+=============================+---------+
-
-Folders information MAY be placed external of header block at Packed
-Streams for Headers. When it is placed external, External flag is 0x01.
-For this configuration, Coders Information becomes as follows;
-
-::
-
-    +---+
-    | 07|
-    +---+===========================================+
-    | 0B| Number of Folders                         |
-    +---+===========================================+
-    | 01| Data Stream Index                         |
-    +---+===========================================+
-    | 0C| UnpackSizes[ total number of outstreams ] |
-    +---+===========================================+
-    | 0A| UnPackDigests[ Number of folders ]        |
-    +---+===========================================+
+   stack:
+   - UnpackInfo, Property ID
+   -
+      - Folder, Property ID
+      - Number of Folders, NUMBER
+   - choice:
+      -
+         - Not Ext(0x00), BYTE
+         - Folder
+      -
+         - Ext(0x01), BYTE
+         - Data Stream Index, NUMBER
+   -
+      optional:
+      - 'CodersUnpackSize, Property ID'
+      - one_or_more:
+         - Unpacksize, NUMBER
+   -
+      optional:
+      - 'UnpackDigest, Property ID'
+      - one_or_more:
+         - UnpackDigest, UINT32
 
 
 In default Folders information is placed inline, then External flag is 0x00.
-
-::
-
-    +---+
-    | 07|
-    +---+===========================================+
-    | 0B| Number of Folders                         |
-    +---+===========================================+
-    | 00| Folders[Number of Folders]                |
-    +---+===========================================+
-    | 0C| UnpackSizes[ total number of outstreams ] |
-    +---+===========================================+
-    | 0A| UnPackDigests[ Number of folders ]        |
-    +---+===========================================+
 
 
 UnpackSizes
@@ -729,7 +572,7 @@ UnpackDigests
 UnpackDigests is a list of CRC32 of decompress deta digests for each folders.
 When extract data from the archive, it CAN check an integrity of data.
 
-It SHALL be a list of UINT64 and its length SHALL be as same as number of folders.
+It SHALL be a list of NUMBER and its length SHALL be as same as number of folders.
 It MAY be skipped when Substreams Information defined.
 
 
@@ -749,15 +592,19 @@ or comprex i.e. multiple input, multiple output.
 When simple coder, number of streams is always one for input,
 and one for output, so it SHALL be skipped.
 
-::
 
-    +===================+======================================+
-    | Number of coder   |  Coder Properties[ Number of coder ] |
-    +===================+======================================+
+.. railroad-diagram::
 
-Number of coder SHALL be a UINT64 integer number.
+   stack:
+   - Number of Coders, NUMBER
+   - one_or_more:
+      - Coder Property
+
+
+Number of coder SHALL be a NUMBER integer number.
 Coder Properties SHALL be a list of Coder Property with length SHALL be
 as same as Number of coder.
+
 
 Coder Property
 ^^^^^^^^^^^^^^
@@ -773,20 +620,31 @@ Flag is defined in one byte as following bit definitions.
 * bit 5: There are attributes
 * bit 6-7: Reserved, it SHOULD always be zero.
 
-::
 
-    +------+==========================+
-    | flag | coder ID [Codec ID size] |
-    +------+==========================+
-    +================+================+
-    | [NumInStreams] | [NumOutStreams]|
-    +================+================+
-    | [Property Size]| [Properties]   |
-    +================+================+
-    | [Input Index]  | [Output Index] |
-    +================+================+
-    | [Packed Stream Indexes ]        |
-    +=================================+
+.. railroad-diagram::
+
+   stack:
+   - Flag, BYTE
+   - Coder ID, BYTEARRAY
+   - optional:
+      - NumInStreams, NUMBER
+      - NumOutStreams, NUMBER
+   - optional:
+      - Property Size, NUMBER
+      - Property, BYTEARRAY
+   - optional:
+      - one_or_more:
+         - Input Index, NUMBER
+         - Outout Index, NUMBER
+   - one_or_more:
+      - Packed Stream Index, NUMBER
+
+
+BindPairs
+^^^^^^^^^
+
+BindPairs describe connection among coders when coder produce multiple output
+or required multiple input.
 
 A coder property format is vary with flag.
 Following pseudo code indicate how each parameter located for informative purpose.
@@ -795,53 +653,51 @@ Following pseudo code indicate how each parameter located for informative purpos
 
     if (Is Complex Coder)
      {
-       UINT64 `NumInStreams`;
-       UINT64 `NumOutStreams`;
+       NUMBER `NumInStreams`;
+       NUMBER `NumOutStreams`;
      }
      if (There Are Attributes)
      {
-       UINT64 `PropertiesSize`
+       NUMBER `PropertiesSize`
        BYTE `Properties[PropertiesSize]`
      }
     }
     NumBindPairs :  = `NumOutStreamsTotal` – 1;
     for (`NumBindPairs`)
      {
-       UINT64 `InIndex`;
-       UINT64 `OutIndex`;
+       NUMBER `InIndex`;
+       NUMBER `OutIndex`;
      }
     NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
      if (`NumPackedStreams` > 1)
        for(`NumPackedStreams`)
        {
-         UINT64 `Index`;
+         NUMBER `Index`;
        };
-
 
 
 When using only simple codecs, which has one input stream and one output stream,
 coder property become as simple as follows;
 
-::
 
-    +------+==========================+=================+==============+
-    | flag | coder ID [Codec ID size] | [Property Size] | [Properties] |
-    +------+==========================+=================+==============+
+.. railroad-diagram::
+
+   stack:
+   - Flag, BYTE
+   - Coder ID, BYTEARRAY
+   - optional:
+      - Property Size, NUMBER
+      - Property, BYTEARRAY
 
 
 Here is an example of bytes of coder property when specifying LZMA.
+
+* b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'
+
 In this example, first byte 0x23 indicate that coder id size is three bytes, and
 it is not complex codec and there is a codec property.
 A coder ID is b'\x03\x01\x01' and property length is five and property is
 b'\x5D\x00\x10\x00\x00'.
-
-::
-
-    +---+---+---+---+---+---+---+---+---+---+
-    | 23| 03| 01| 01| 05| 5D| 00| 10| 00| 00|
-    +---+---+---+---+---+---+---+---+---+---+
-
-
 
 
 Codec IDs
@@ -886,19 +742,19 @@ Substreams Information
 
 Substreams Information hold an information about archived data blocks
 as in extracted form. It SHALL exist that number of unpack streams,
-size of each unpack streams, and CRC of each streams.
+size of each unpack streams, and CRC of each streams
 
-::
+.. railroad-diagram::
 
-    +---+
-    | 08|
-    +---+==========================================================+
-    | 0D| Number of unpack streams for Folders [Number of Folders] |
-    +---+==========================================================+
-    | 09| Sizes of unpack streams[total number of unpack streams]  |
-    +---+==========================================================+
-    | 0A| CRC of unpack streams[total number of unpack streams ]   |
-    +---+==========================================================+
+   stack:
+   - SubStreamsInfo, Property ID
+   - NumUnpackStream, Property ID
+   - one_or_more:
+      - Number of unpack streams, NUMBER
+   - Size, Property ID
+   - one_or_more:
+      - Size of unpack streams, NUMBER
+
 
 
 Files Information
@@ -907,61 +763,76 @@ Files Information
 Files Information SHOULD hold a list of files, directories and symbolic links.
 Its order SHALL be as same as order of streams defined in packed information.
 
-::
+.. railroad-diagram::
 
-    +=================+=================+================+
-    | Number of files | [Empty Streams] | [ Empty Files] |
-    +---+====================+===========================+
-    | 11| BooleanList        |  list of FileNames        |
-    +---+====================+===========================+
-    | 15| BooleanList        |  list of Attributes       |
-    +---+====================+===========================+
-    | [ CTime ]       | [ ATime ]       | [ Mtime ]      |
-    +=================+=================+================+
+   stack:
+   - FileInfo, Property ID
+   - Number of Files, NUMBER
+   - optional:
+      - Empty Streams
+   - optional:
+      - Empty Files
+   - Name, Property ID
+   - FilenameExist, BooleanList
+   - choice:
+      -
+         - Not External(0x00), BYTE
+         - zero_or_more:
+            - FileName, UTF-16-LE
+      -
+         - Ext(0x01), BYTE
+         - Data Index, NUMBER
+   - Attribute, Property ID
+   - AttributeExist, BooleanList
+   - choice:
+      -
+         - Not External(0x00), BYTE
+         - zero_or_more:
+            - Attribute, UINT32
+      -
+         - Ext(0x01), BYTE
+         - Data Index, NUMBER
+   - optional:
+      - CTime, Property ID
+      - TimeExist, BooleanList
+      - choice:
+         -
+            - External, BYTE, 0x00
+            - one_or_more:
+               - FileTime, NUMBER
+         -
+            - External, BYTE, 0x01
+            - Data Index, NUMBER
+   - optional:
+      - ATime, Property ID
+      - TimeExist, BooleanList
+      - choice:
+         -
+            - External, BYTE, 0x00
+            - one_or_more:
+               - FileTime, NUMBER
+         -
+            - External, BYTE, 0x01
+            - Data Index, NUMBER
+   - optional:
+      - MTime, Property ID
+      - TimeExist, BooleanList
+      - choice:
+         -
+            - External, BYTE, 0x00
+            - one_or_more:
+               - FileTime, NUMBER
+         -
+            - External, BYTE, 0x01
+            - Data Index, NUMBER
 
 
+FileName
+^^^^^^^^
 
-list of FileNames
-^^^^^^^^^^^^^^^^^
-
-list of FileNames data can be externally encoded, then
-
-::
-
-    +--------------+=============+
-    |external=0x01 | [DataIndex] |
-    +--------------+=============+
-
-Otherwise, filenames is inline,
-
-
-::
-
-    +----+===============================+
-    | 00 |  FileNames[number of files]   |
-    +----+===============================+
-
-
-FileName SHALL be a wide character string encoded with UTF16-LE and
+FileNam SHALL be a wide character string encoded with UTF16-LE and
 follows wchar_t NULL character, i.e. 0x0000.
 
-FileNames SHOULD exist as inline data for compatibility.
-
-
-list of Attributes
-^^^^^^^^^^^^^^^^^^
-
-list of attributes SHALL start ID 0x15 then follows BooeanList
-which defines whether property is defined or not for each files.
-
-::
-
-    +---+=============+==========================+
-    | 15| BooleanList |  list of property        |
-    +---+=============+==========================+
-
-
- list of property can be external then it defines data index.
 
 Attribute
 ^^^^^^^^^
@@ -990,66 +861,10 @@ Attribute is a UINT32 integer value.
     * - UNIX_EXTENSION (0x8000)
       - Indicate a unix permissions and file attributes are bundled when 1.
 
-CTime
-^^^^^
-
-::
-
-    +---+===============+
-    | 12|  FileTimes    |
-    +---+===============+
-
-ATime
-^^^^^
-
-::
-
-    +---+===============+
-    | 13|  FileTimes    |
-    +---+===============+
-
-
-MTime
-^^^^^
-
-::
-
-    +---+===============+
-    | 14|  FileTimes    |
-    +---+===============+
-
-
-FileTimes
+FileTime
 ^^^^^^^^^
 
-FileTimes SHALL be a list of file time specs. It SHALL be a bit array of defined flag
-and then continues a list of Time spec for each files.
-
-When it defines time spec for all of files, it SHALL place 0x01 which means all-defined.
-then it SHALL continue a list of time spec, that length is as same as number of files.
-
-::
-
-    +=============+==========================================+
-    | BooleanList |   list of Time spec                      |
-    +=============+==========================================+
-
-If it defines time spec of a part of files, it SHALL place 0x00 which means boolean
-
-
-list of Time spec
-^^^^^^^^^^^^^^^^^
-
-::
-
-    +----------+================================================+
-    | external |  Time spec[Number of files]                     |
-    +----------+================================================+
-
-Time spec
-^^^^^^^^^
-
-Time spec is a UINT64 value. FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
+FileTime are NUMBER values in 100-nanosecond intervals since 1601/01/01 (UTC)
 
 
 Appendix: BNF expression (Informative)
@@ -1076,7 +891,7 @@ This clause shows extended BNF expression of 7-zip file format.
               : [0x0C, UnPackSizes, [0x0A, UnpackDigests]], 0x00
    Folders: Folder{ Number of Folders }
    UnpackSizes: UnPackSize { Sum of NumOutStreams for each Folders }
-   UnpackSize: UINT64
+   UnpackSize: NUMBER
    UnpackDigests: CRC32 { Number of folders }
    SubStreamsInfo: 0x08, 0x0D, NumUnPackStreamsInFolders{Num of Folders],
                  : 0x09, UnPackSize, 0x0A,
@@ -1108,26 +923,26 @@ A Coder flag affect a following CoderData existence as following algorithm;
 
     if (Is Complex Coder)
      {
-       UINT64 `NumInStreams`;
-       UINT64 `NumOutStreams`;
+       NUMBER `NumInStreams`;
+       NUMBER `NumOutStreams`;
      }
      if (There Are Attributes)
      {
-       UINT64 `PropertiesSize`
+       NUMBER `PropertiesSize`
        BYTE `Properties[PropertiesSize]`
      }
     }
     NumBindPairs :  = `NumOutStreamsTotal` – 1;
     for (`NumBindPairs`)
      {
-       UINT64 `InIndex`;
-       UINT64 `OutIndex`;
+       NUMBER `InIndex`;
+       NUMBER `OutIndex`;
      }
     NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
      if (`NumPackedStreams` > 1)
        for(`NumPackedStreams`)
        {
-         UINT64 `Index`;
+         NUMBER `Index`;
        };
 
 
