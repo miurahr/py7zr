@@ -23,84 +23,24 @@ py7zr
 
 Pure python 7-zip implementation
 
+py7zr is a library and utility to support 7zip archive compression, decompression,
+encryption and decryption written by Python programming language.
 
-Dependency
-==========
+Install
+=======
 
-`py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
-The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
+You can install py7zr as usual other libraries using pip.
 
-Minimum required version is Python 3.5.
-Two additional library is required only on Python3.5; contextlib2 and pathlib2.
+.. code-block::
 
-Compression is supported on Python 3.6 and later.
-Multi-volume archive creation issupported on Python 3.7 and later.
+    $ pip install py7zr
 
-There are other runtime requrements; texttable, pycryptodome
+When you want to handle extra codecs (ZStandard) then add extra requirements to command line
 
-Version recommendations are:
+.. code-block::
 
-- CPython 3.7.5, CPython 3.8.0 and later.
-- PyPy3.6-7.2.0 and later.
+    $ pip install py7zr[zstd]
 
-Following fixes are included in these versions, and it is not fixed on python3.6.
-
-- `BPO-21872`_: LZMA library sometimes fails to decompress a file
-- `PyPy3-3088`_: lzma.LZMADecomporessor.decompress does not respect max_length
-
-
-.. _`lzma module`: https://docs.python.org/3/library/lzma.html
-.. _`liblzma`: https://tukaani.org/xz/
-.. _`BPO-21872`: https://bugs.python.org/issue21872
-.. _`PyPy3-3088`: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
-
-
-Compression Methods
-===================
-
-'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
-It also support BZip2 and Deflate that are implemented in python core libraries,
-and ZStandard with third party libraries.
-`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
-such as PPMd, BCJ2 and Deflate64.
-
-Here is a table of algorithms.
-
-+---+----------------------+------------------------------------------+
-|  #| Category             | Algorithm combination                    |
-+===+======================+==========================================+
-|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
-|   | - Decompression      | IA64, ARMT, SPARC)                       |
-+---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ                               |
-+---+                      +------------------------------------------+
-|  3|                      | LZMA2 or LZMA only                       |
-+---+                      +------------------------------------------+
-|  4|                      | Bzip2, Deflate, ZStandard                |
-+---+----------------------+------------------------------------------+
-|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
-+---+ - Decryption         +------------------------------------------+
-|  6|                      | 7zAES + LZMA                             |
-+---+                      +------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
-+---+----------------------+------------------------------------------+
-|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
-+---+                      +------------------------------------------+
-|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
-+---+----------------------+------------------------------------------+
-
-
-- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
-  but not work with original 7-zip because the original does not implement the feature.
-
-- Decryption of filename encrypted archive is supported.
-
-- CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
-
-- Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
-  see `lzma module document`_ at python documentation.
-  
-.. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
 
 
 Documents
@@ -300,6 +240,86 @@ py7zr also support `shutil`  interface.
 
     # compression
     shutil.make_archive('target', '7zip', 'src')
+
+
+Required Python versions
+========================
+
+`py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
+The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
+
+Minimum required version is Python 3.5.
+Two additional library is required only on Python3.5; contextlib2 and pathlib2.
+
+Compression is supported on Python 3.6 and later.
+Multi-volume archive creation issupported on Python 3.7 and later.
+
+There are other runtime requrements; texttable, pycryptodome
+
+Version recommendations are:
+
+- CPython 3.7.5, CPython 3.8.0 and later.
+- PyPy3.6-7.2.0 and later.
+
+Following fixes are included in these versions, and it is not fixed on python3.6.
+
+- `BPO-21872`_: LZMA library sometimes fails to decompress a file
+- `PyPy3-3088`_: lzma.LZMADecomporessor.decompress does not respect max_length
+
+
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
+.. _`BPO-21872`: https://bugs.python.org/issue21872
+.. _`PyPy3-3088`: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
+
+
+Compression Methods supported
+=============================
+
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+It also support BZip2 and Deflate that are implemented in python core libraries,
+and ZStandard with third party libraries.
+`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
+such as PPMd, BCJ2 and Deflate64.
+
+Here is a table of algorithms.
+
++---+----------------------+------------------------------------------+
+|  #| Category             | Algorithm combination                    |
++===+======================+==========================================+
+|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
+|   | - Decompression      | IA64, ARMT, SPARC)                       |
++---+                      +------------------------------------------+
+|  2|                      | LZMA + BCJ                               |
++---+                      +------------------------------------------+
+|  3|                      | LZMA2 or LZMA only                       |
++---+                      +------------------------------------------+
+|  4|                      | Bzip2, Deflate, ZStandard                |
++---+----------------------+------------------------------------------+
+|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
++---+ - Decryption         +------------------------------------------+
+|  6|                      | 7zAES + LZMA                             |
++---+                      +------------------------------------------+
+|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
++---+----------------------+------------------------------------------+
+|  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
++---+                      +------------------------------------------+
+|  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
++---+----------------------+------------------------------------------+
+
+
+- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
+  but not work with original 7-zip because the original does not implement the feature.
+
+- Decryption of filename encrypted archive is supported.
+
+- CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
+
+- Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
+  see `lzma module document`_ at python documentation.
+  
+.. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
+
 
 Use Cases
 =========
