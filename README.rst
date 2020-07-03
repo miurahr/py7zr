@@ -1,6 +1,11 @@
-=====
-py7zr
-=====
+======================================
+|logo| py7zr -- a 7z library on python
+======================================
+
+.. |logo| image:: logo.svg
+    :width: 80pt
+    :height: 80pt
+    :target: https://pypi.org/project/py7zr
 
 .. image:: https://readthedocs.org/projects/py7zr/badge/?version=latest
   :target: https://py7zr.readthedocs.io/en/latest/?badge=latest
@@ -21,10 +26,11 @@ py7zr
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
 
-Pure python 7-zip implementation
+
 
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
+
 
 Install
 =======
@@ -40,7 +46,6 @@ When you want to handle extra codecs (ZStandard) then add extra requirements to 
 .. code-block::
 
     $ pip install py7zr[zstd]
-
 
 
 Documents
