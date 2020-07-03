@@ -103,12 +103,35 @@ Here is a table of algorithms.
 .. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
 
 
-Document
-========
+Documents
+=========
 
-Here is a readthedocs `manual`_ document. It also describe design and classes.
+User manuals
+------------
 
-.. _`manual`: https://py7zr.readthedocs.io/en/latest/
+* `User Guide`_ for latest version.
+
+* `API guide`_ for latest version.
+
+* `Manual`_ for stable version.
+
+Developer guide
+---------------
+
+* `Contributor guide`_ for one want to contribute the project.
+
+* `7z file specification`_
+
+
+.. _`manual` : https://py7zr.readthedocs.io/en/stable/
+
+.. _`User Guide`: https://py7zr.readthedocs.io/en/latest/user_guide.html
+
+.. _`API guide` : https://py7zr.readthedocs.io/en/latest/api.html
+
+.. _`Contributor guide` : https://py7zr.readthedocs.io/en/latest/contribution.html
+
+.. _`7z file specification` : https://py7zr.readthedocs.io/en/latest/archive_format.html
 
 
 CLI Usage
