@@ -1,4 +1,5 @@
 include *.rst
+include *.svg
 include *.toml
 include *.yml
 include LICENSE
@@ -11,6 +12,7 @@ recursive-include tests *.7z
 recursive-include tests *.0
 recursive-include docs *.bat
 recursive-include docs *.dot
+recursive-include docs *.png
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.yml
