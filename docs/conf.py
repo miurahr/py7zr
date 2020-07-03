@@ -121,10 +121,16 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    # 'logo': 'logo.png',
+    'logo': 'logo.png',
+    'description': 'py7zr -- a 7z library',
+    'logo_name': True,
+    'github_banner': True,
     'github_user': 'miurahr',
     'github_repo': 'py7zr',
     'page_width': 'auto',
+    'badge_branch': 'master',
+    'donate_url': 'https://liberapay.com/miurahr',
+    'truvis_button': True,
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []

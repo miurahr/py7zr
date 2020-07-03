@@ -1,6 +1,11 @@
-=====
-py7zr
-=====
+======================================
+|logo| py7zr -- a 7z library on python
+======================================
+
+.. |logo| image:: logo.svg
+    :width: 80pt
+    :height: 80pt
+    :target: https://pypi.org/project/py7zr
 
 .. image:: https://readthedocs.org/projects/py7zr/badge/?version=latest
   :target: https://py7zr.readthedocs.io/en/latest/?badge=latest
@@ -19,9 +24,6 @@ py7zr
 
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
-
-
-Pure python 7-zip implementation
 
 
 Dependency
