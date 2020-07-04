@@ -78,10 +78,10 @@ def test_concurrent_extraction(tmp_path, caplog):
         szf.extractall(path=path)
         szf.close()
 
-    archives = ['bugzilla_16.7z', 'bugzilla_4.7z', 'bzip2.7z', 'bzip2_2.7z', 'copy.7z',
-                'empty.7z', 'github_14.7z', 'lzma2bcj.7z', 'mblock_1.7z', 'mblock_2.7z',
+    archives = ['bugzilla_4.7z', 'bzip2.7z', 'bzip2_2.7z', 'copy.7z',
+                'empty.7z', 'github_14.7z', 'lzma2bcj.7z', 'mblock_1.7z',
                 'mblock_3.7z', 'solid.7z', 'symlink.7z', 'test_1.7z', 'test_2.7z',
-                'test_3.7z', 'test_4.7z', 'test_5.7z', 'test_6.7z',
+                'test_3.7z', 'test_5.7z', 'test_6.7z',
                 'test_folder.7z', 'umlaut-non_solid.7z', 'umlaut-solid.7z', 'zerosize.7z']
     with concurrent.futures.ThreadPoolExecutor() as executor:
         tasks = [executor.submit(extractor, os.path.join(testdata_path, ar), tmp_path.joinpath(ar)) for ar in archives]
