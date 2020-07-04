@@ -218,13 +218,13 @@ def test_extract_lzmabcj_archiveinfo():
 
 @pytest.mark.files
 def test_extract_lzmabcj_1(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzmabcj.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_1.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
 def test_extract_lzmabcj_2(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzmabcj_2.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_1.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
 
 
@@ -444,7 +444,7 @@ def test_py7zr_extract_corrupted(tmp_path):
 
 @pytest.mark.files
 def test_extract_lzma2delta(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2delta.7z').open('rb')) as archive:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2delta_1.7z').open('rb')) as archive:
         archive.extractall(path=tmp_path)
 
 
@@ -453,10 +453,10 @@ def test_extract_lzma2delta(tmp_path):
 def test_lzma_raw_decompressor_lzmabcj():
     # two files are compress same source by different methods
     indata = []
-    with testdata_path.joinpath('bcj_1.7z').open('rb') as rawin:
+    with testdata_path.joinpath('lzma_bcj_1.7z').open('rb') as rawin:
         rawin.seek(32)
         indata.append(rawin.read(11327))
-    with testdata_path.joinpath('bcj_3.7z').open('rb') as rawin:
+    with testdata_path.joinpath('lzma_bcj_2.7z').open('rb') as rawin:
         rawin.seek(32)
         indata.append(rawin.read(11334))
     filters1 = []

@@ -25,7 +25,7 @@ def test_archiveinfo_deflate64():
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj2():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2.7z'), 'r') as ar:
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2_1.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA, BCJ2*'
 
@@ -102,7 +102,7 @@ def test_archivetest_deflate64():
 @pytest.mark.files
 def test_archivetest_lzma_bcj2():
     with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2.7z'), 'r') as ar:
+        with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj2_1.7z'), 'r') as ar:
             assert ar.testzip() is None
 
 
