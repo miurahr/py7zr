@@ -25,6 +25,24 @@ Removed
 Security
 --------
 
+`v0.8.0`_
+===========
+
+Added
+-----
+
+* test: add test for #178 bug report the case of LZMA+BCJ as xfails.
+
+Changed
+-------
+
+* Improve README, documents and specifications.
+
+Removed
+-------
+
+* test: Drop some test case with large files.
+
 
 `v0.8.0b8`_
 ===========
@@ -959,7 +977,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0b8...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0...HEAD
+.. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
 .. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
 .. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
 .. _v0.8.0b6: https://github.com/miurahr/py7zr/compare/v0.8.0b5...v0.8.0b6
