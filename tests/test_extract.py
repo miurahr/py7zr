@@ -139,16 +139,6 @@ def test_bugzilla_4(tmp_path):
 
 
 @pytest.mark.files
-def test_bugzilla_16(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('bugzilla_16.7z').open(mode='rb'))
-    expected = [{'filename': 'mame4all_2.5.ini',
-                 'digest': 'aaebca5e140e0099a757903fc9f194f9e6da388eed22d37bfd1625c80aa25903'},
-                {'filename': 'mame4all_2.5/mame',
-                 'digest': '6bc23b11fbb9a64096408623d476ad16083ef71c5e7919335e8696036034987d'}]
-    decode_all(archive, expected, tmp_path)
-
-
-@pytest.mark.files
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_extract_symlink(tmp_path):
@@ -327,20 +317,6 @@ def test_multiblock_unlink(tmp_path):
     archive = py7zr.SevenZipFile(open(str(src), 'rb'))
     os.unlink(str(src))
     archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_multiblock_zerosize(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('mblock_2.7z').open(mode='rb'))
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
-def test_multiblock_zerosize_mem():
-    archive = py7zr.SevenZipFile(testdata_path.joinpath('mblock_2.7z').open(mode='rb'))
-    _dict = archive.readall()
     archive.close()
 
 
