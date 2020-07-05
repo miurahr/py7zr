@@ -289,6 +289,8 @@ def get_alternative_decompressor(coder: Dict[str, Any], password=None) -> Union[
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
     if SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][1](coder['properties'], password)
+    elif SupportedMethods.need_property(filter_id):
+        return algorithm_class_map[filter_id][1](coder['properties'])
     else:
         return algorithm_class_map[filter_id][1]()
 
@@ -516,33 +518,33 @@ class SupportedMethods:
     """Hold list of methods."""
 
     formats = [{'name': "7z", 'magic': MAGIC_7Z}]
-    methods = [{'id': CompressionMethod.COPY, 'name': 'COPY', 'native': False,
+    methods = [{'id': CompressionMethod.COPY, 'name': 'COPY', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_COPY, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.LZMA2, 'name': "LZMA2", 'native': True,
+               {'id': CompressionMethod.LZMA2, 'name': "LZMA2", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_LZMA2, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.DELTA, 'name': "DELTA", 'native': True,
+               {'id': CompressionMethod.DELTA, 'name': "DELTA", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_DELTA, 'type': MethodsType.filter},
-               {'id': CompressionMethod.LZMA, 'name': "LZMA", 'native': True,
+               {'id': CompressionMethod.LZMA, 'name': "LZMA", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_LZMA, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ", 'native': True,
+               {'id': CompressionMethod.P7Z_BCJ, 'name': "BCJ", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_X86, 'type': MethodsType.filter},
-               {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC', 'native': True,
+               {'id': CompressionMethod.BCJ_PPC, 'name': 'PPC', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_POWERPC, 'type': MethodsType.filter},
-               {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64', 'native': True,
+               {'id': CompressionMethod.BCJ_IA64, 'name': 'IA64', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_IA64, 'type': MethodsType.filter},
-               {'id': CompressionMethod.BCJ_ARM, 'name': "ARM", 'native': True,
+               {'id': CompressionMethod.BCJ_ARM, 'name': "ARM", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_ARM, 'type': MethodsType.filter},
-               {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT", 'native': True,
+               {'id': CompressionMethod.BCJ_ARMT, 'name': "ARMT", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_ARMTHUMB, 'type': MethodsType.filter},
-               {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC', 'native': True,
+               {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_SPARC, 'type': MethodsType.filter},
-               {'id': CompressionMethod.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False,
+               {'id': CompressionMethod.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_DEFLATE, 'type': MethodsType.filter},
-               {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2', 'native': False,
+               {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False,
+               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_ZSTD, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False,
+               {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_CRYPTO_AES256_SHA256, 'type': MethodsType.crypto},
                ]
 
@@ -579,6 +581,13 @@ class SupportedMethods:
         if method is None:
             raise UnsupportedCompressionMethodError
         return method['type'] == MethodsType.crypto
+
+    @classmethod
+    def need_property(cls, filter_id):
+        method = cls._find_method('filter_id', filter_id)
+        if method is None:
+            raise UnsupportedCompressionMethodError
+        return method['need_prop']
 
     @classmethod
     def is_crypto_id(cls, filter_id) -> bool:
