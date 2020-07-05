@@ -27,19 +27,16 @@ The module defines the following items:
    :noindex:
 
    The class for reading 7z files.  See section
-   :ref:`sevenzipfile-object` for constructor details.
 
 
 .. class:: ArchiveInfo
 
-   Class used to represent information about an information of an archive file. See section
-   :ref:`archiveinfo-object` for fields details.
+   The class used to represent information about an information of an archive file. See section
 
 
 .. class:: FileInfo
 
-    Class used to represent information about a member of an archive file. See section
-    :ref:`fileinfo-objects` for fields details.
+   The class used to represent information about a member of an archive file. See section
 
 
 .. function:: is_7zfile(filename)
@@ -258,7 +255,7 @@ Possible filters value
 Here is a list of examples for possible filters values.
 You can use it when creating SevenZipFile object.
 
-.. code-block::
+.. code-block:: python
 
     from py7zr import FILTER_LZMA, SevenZipFile
 

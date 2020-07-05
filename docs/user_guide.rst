@@ -99,30 +99,18 @@ Command-line options
    Test whether the 7z file is valid or not.
 
 
-Extract command options
------------------------
+Common command options
+-------------------------
 
 .. option:: -P --password
 
-   Extract password protected archive. py7zr will prompt user input.
+   Extract, list or create password protected archive. py7zr will prompt user input.
 
 
 .. option:: --verbose
 
    Show verbose debug log.
 
-
-List command options
---------------------
-
-.. option:: --verbose
-
-   Show verbose debug log.
-
-.. option:: -P --password
-
-   List password protected archive with filename ecnryption.
-   py7zr will prompt user input.
 
 Create command options
 ----------------------
@@ -130,10 +118,6 @@ Create command options
 .. option:: -v | --volume {Size}[b|k|m|g]
 
    Create multi-volume archive with Size. Usable with 'c' sub-command.
-
-.. option:: -P --password
-
-   Create password protected archive. py7zr will prompt user input.
 
 
 Presentation material
