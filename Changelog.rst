@@ -2,7 +2,7 @@
 Py7zr ChangeLog
 ===============
 
-All notable changes to this project will be documented in this file.(#165,#166,#167,#168)
+All notable changes to this project will be documented in this file.
 
 `Unreleased`_
 =============
@@ -12,8 +12,6 @@ Added
 
 Changed
 -------
-
-* Manage compression methods to handle whether decompressor requires coder['property'] or not.
 
 Fixed
 -----
