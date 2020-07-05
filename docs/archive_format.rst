@@ -219,7 +219,6 @@ There is an extension of expression that indicate all boolean values is True, an
 skip boolean bit fields.
 
 .. railroad-diagram::
-   :alt: 'alldefined, BYTE', zero_or_more('boolean, BitField')
 
    stack:
    - 'alldefined, BYTE'
