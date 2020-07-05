@@ -20,8 +20,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #
-
-import _hashlib  # type: ignore  # noqa
 import ctypes
 import os
 import pathlib
@@ -31,6 +29,8 @@ import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import BinaryIO, Optional, Union
+
+import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
 

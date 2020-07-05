@@ -16,7 +16,6 @@
 #    You should have received a copy of the GNU Lesser General Public
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
 import argparse
 import getpass
 import os
@@ -37,7 +36,7 @@ from py7zr.helpers import Local
 from py7zr.properties import COMMAND_HELP_STRING, READ_BLOCKSIZE
 
 try:
-    import importlib.metadata as importlib_metadata  # type: ignore
+    from importlib import metadata as importlib_metadata  # type: ignore
 except ImportError:
     import importlib_metadata  # type: ignore
 
