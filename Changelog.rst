@@ -13,6 +13,8 @@ Added
 Changed
 -------
 
+* Manage compression methods to handle whether decompressor requires coder['property'] or not.
+
 Fixed
 -----
 
@@ -25,8 +27,16 @@ Removed
 Security
 --------
 
-`v0.8.0`_
+`v0.9.0a1`_
 ===========
+
+Changed
+-------
+
+* Manage compression methods to handle whether decompressor requires coder['property'] or not.
+
+`v0.8.0`_
+=========
 
 Added
 -----
@@ -977,7 +987,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.0a1...HEAD
+.. _v0.9.0a1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0a1
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
 .. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
 .. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
