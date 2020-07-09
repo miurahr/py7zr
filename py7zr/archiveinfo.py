@@ -310,7 +310,10 @@ class Folder:
             methodsize = b & 0xf
             iscomplex = b & 0x10 == 0x10
             hasattributes = b & 0x20 == 0x20
-            c = {'method': file.read(methodsize)}  # type: Dict[str, Any]
+            if methodsize > 0:
+                c = {'method': file.read(methodsize)}  # type: Dict[str, Any]
+            else:
+                c = {'method': b'\x00'}
             if iscomplex:
                 c['numinstreams'] = read_uint64(file)
                 c['numoutstreams'] = read_uint64(file)
