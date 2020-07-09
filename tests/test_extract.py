@@ -335,6 +335,13 @@ def test_copy(tmp_path):
 
 
 @pytest.mark.files
+def test_copy_2(tmp_path):
+    """ test loading of copy compressed files part2."""
+    with py7zr.SevenZipFile(testdata_path.joinpath('copy_2.7z').open(mode='rb')) as ar:
+        ar.extractall(path=tmp_path)
+
+
+@pytest.mark.files
 def test_close_unlink(tmp_path):
     shutil.copyfile(str(testdata_path.joinpath('test_1.7z')), str(tmp_path.joinpath('test_1.7z')))
     archive = py7zr.SevenZipFile(str(tmp_path.joinpath('test_1.7z')))
