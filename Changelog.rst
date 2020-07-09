@@ -10,17 +10,11 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Add Copy method as an extraction only support.(#184)
-
 Changed
 -------
 
 Fixed
 -----
-
-* Accept archive which Method ID is NULL(size=0)(#181, #182)
-
-* CLI: Does not crash when trying extract archive which use unsupported method(#183)
 
 Deprecated
 ----------
@@ -30,6 +24,22 @@ Removed
 
 Security
 --------
+
+`v0.8.1`_
+=========
+
+Added
+-----
+
+* Add Copy method as an extraction only support.(#184)
+
+Fixed
+-----
+
+* Accept archive which Method ID is NULL(size=0)(#181, #182)
+
+* CLI: Does not crash when trying extract archive which use unsupported method(#183)
+
 
 `v0.8.0`_
 =========
@@ -983,7 +993,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.1...HEAD
+.. _v0.8.1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.8.1
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
 .. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
 .. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
