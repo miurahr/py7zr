@@ -260,7 +260,7 @@ class Cli():
         verbose = args.verbose
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
-            return(1)
+            return 1
         if not args.password:
             password = None  # type: Optional[str]
         else:
@@ -269,16 +269,29 @@ class Cli():
             except getpass.GetPassWarning:
                 sys.stderr.write('Warning: your password may be shown.\n')
                 return(1)
-        a = py7zr.SevenZipFile(target, 'r', password=password)
+        try:
+            a = py7zr.SevenZipFile(target, 'r', password=password)
+        except py7zr.exceptions.Bad7zFile:
+            print('Header is corrupted. Cannot read as 7z file.')
+            return 1
+
         cb = None  # Optional[ExtractCallback]
         if verbose:
             archive_info = a.archiveinfo()
             cb = CliExtractCallback(total_bytes=archive_info.uncompressed, ofd=sys.stderr)
-        if args.odir:
-            a.extractall(path=args.odir, callback=cb)
+        try:
+            if args.odir:
+                a.extractall(path=args.odir, callback=cb)
+            else:
+                a.extractall(callback=cb)
+        except py7zr.exceptions.UnsupportedCompressionMethodError:
+            print("Unsupported compression method is used in archive. ABORT.")
+            return 1
+        except py7zr.exceptions.DecompressionError:
+            print("Error has been occurred during decompression. ABORT.")
+            return 1
         else:
-            a.extractall(callback=cb)
-        return(0)
+            return 0
 
     def _check_volumesize_valid(self, size: str) -> bool:
         if self.unit_pattern.match(size):
