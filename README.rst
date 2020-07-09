@@ -307,6 +307,8 @@ Here is a table of algorithms.
 +---+                      +------------------------------------------+
 |  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
 +---+----------------------+------------------------------------------+
+|  8| - Extraction only    | COPY                                     |
++---+----------------------+------------------------------------------+
 |  8| - Unsupported        | PPMd, BCJ2, Deflate64                    |
 +---+                      +------------------------------------------+
 |  9|                      | Bzip2, Deflate, ZStandard + BCJ          |
@@ -320,11 +322,7 @@ Here is a table of algorithms.
 
 - CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
 
-- Delta and BCJ filters are only supported with LZMA2 compression algorithm, because of python's lzma module limitation.
-  see `lzma module document`_ at python documentation.
-  
-.. _`lzma module document`: https://docs.python.org/3/library/lzma.html?highlight=lzma#specifying-custom-filter-chains
-
+- CAUTION: LZMA+BCJ extraction may fail with internal error in decompressor. See issue #178
 
 Use Cases
 =========
