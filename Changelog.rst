@@ -10,11 +10,17 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Add Copy method as an extraction only support.(#184)
+
 Changed
 -------
 
 Fixed
 -----
+
+* Accept archive which Method ID is NULL(size=0)(#181, #182)
+
+* CLI: Does not crash when trying extract archive which use unsupported method(#183)
 
 Deprecated
 ----------
