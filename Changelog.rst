@@ -15,6 +15,8 @@ Added
 Changed
 -------
 
+* Manage compression methods to handle whether decompressor requires coder['property'] or not.
+
 Fixed
 -----
 
@@ -31,14 +33,6 @@ Removed
 Security
 --------
 
-`v0.9.0a1`_
-===========
-
-Changed
--------
-
-* Manage compression methods to handle whether decompressor requires coder['property'] or not.
-
 `v0.8.0`_
 =========
 
@@ -46,182 +40,58 @@ Added
 -----
 
 * test: add test for #178 bug report the case of LZMA+BCJ as xfails.
-
-Changed
--------
-
-* Improve README, documents and specifications.
-
-Removed
--------
-
-* test: Drop some test case with large files.
-
-
-`v0.8.0b8`_
-===========
-
-Added
------
-
 * File format specification: add ISO/IEC standard style specification document.
-
-Changed
--------
-
-* Update password handling and drop get_password() helper (#162)
-
-Fixed
------
-
-* Now return correct header size by archiveinfo() method.(#169)
-
-Removed
--------
-
-* Drop ArchiveProperty class: A field has already deprecated or not used.(#170)
-* Drop AntiFile property: a property has already deprecated or not used.
-
-`v0.8.0b7`_
-===========
-
-Changed
--------
-
-* Enable encoded header and add more test with 7zip compatibility.(#164)
-
-Fixed
------
-
-* Disable adding CRC for encoded header packinfo.(#164)
-
-`v0.8.0b6`_
-===========
-
-Fixed
------
-
-* Fix password leak/overwrite among SevenZipFile objects in a process.(#159)
-  This can cause decryption error or encryption with unintended password.
-* Release password on close()
-
-Changed
--------
-
-* Refactoring SevenZipFile class internals. (#160)
-* Refactoring classes in compressor module. (#161)
-
-`v0.8.0b5`_
-===========
-
-Fixed
------
-
-* SevenZipFile.test() method now working properly. (#155)
-
-Changed
--------
-
-* Add 'packinfo.crcs' field digests data when creating archive.(#157)
-  It help checking archive integrity without extraction.
-* CLI: help option to show py7zr version and python version.
-* Use importlib for performance improvement instead of pkg_resources module.
-
-`v0.8.0b4`_
-===========
-
-Added
------
-
 * Support extra methods for archiveinfo() method.(#150)
-
-Fixed
------
-
-* Fix extraction error on python 3.5.(#151)
-
-`v0.8.0b3`_
-===========
-
-Added
------
-
 * test: unit tests for Sparc, ARMT and IA64 filters.
-
-Changed
--------
-
-* Documents: additional methods, filter examples.
-* CI configurations: Manage coverage with Coveralls.
-
-
-`v0.8.0b2`_
-===========
-
-Changed
--------
-
-* Refactoring decompression classes to handle data precisely with folder.unpacksizes(#146)
-
-
-`v0.8.0b1`_
-===========
-
-Added
------
-
 * Support for PPC and ARM filters.
-
-`v0.8.0a3`_
-===========
-
-Added
------
-
 * Support encryption(#145)
 * Export supported filter constants, such as FILTER_ZSTD(#145)
 
 Changed
 -------
 
+* Improve README, documents and specifications.
+* Update password handling and drop get_password() helper (#162)
+* Enable encoded header and add more test with 7zip compatibility.(#164)
+* Refactoring SevenZipFile class internals. (#160)
+* Refactoring classes in compressor module. (#161)
+* Add 'packinfo.crcs' field digests data when creating archive.(#157)
+  It help checking archive integrity without extraction.
+* CLI: help option to show py7zr version and python version.
+* Use importlib for performance improvement instead of pkg_resources module.
+* Documents: additional methods, filter examples.
+* CI configurations: Manage coverage with Coveralls.
+* Refactoring decompression classes to handle data precisely with folder.unpacksizes(#146)
 * Default compression mode is LZMA2+BCJ which is as same as
   7zip and p7zip(#145)
 * Enhance encryption strength, IV is now 16 bytes, and generated
   with cryptodom.random module.(#145)
-
+* Refactoring compression algorythm related modules.
 
 Fixed
 -----
 
+* Now return correct header size by archiveinfo() method.(#169)
+* Disable adding CRC for encoded header packinfo.(#164)
+* Fix password leak/overwrite among SevenZipFile objects in a process.(#159)
+  This can cause decryption error or encryption with unintended password.
+* Release password on close()
+* SevenZipFile.test() method now working properly. (#155)
+* Fix extraction error on python 3.5.(#151)
 * Support combination of filters(#145)
 * Compression of Delta, BZip2, ZStandard, and Deflate(#145)
-
-
-`v0.8.0a2`_
-===========
-
-Fixed
------
-
 * Fix archived head by multiple filter specified.
 * Fix delta filter.
 * Working with BCJ filter.
 * Fix archiveinfo to provide proper names.
 
-`v0.8.0a1`_
-===========
-
-Changed
--------
-
-* Refactoring compression algorythm related modules.
-
-
 Removed
 -------
 
+* test: Drop some test case with large files.
+* Drop ArchiveProperty class: A field has already deprecated or not used.(#170)
+* Drop AntiFile property: a property has already deprecated or not used.
 * remove final_header definition.
-
 
 
 `v0.7.3`_
@@ -268,16 +138,6 @@ Fixed
 `v0.7.0`_
 =========
 
-Changed
--------
-
-* Extraction: Unlink output file if exist when it become a symbolic link.
-  When overwrite extracted files and there are symlinks, it may cause an unexpected result.
-  Unlinking it may help it.
-
-`v0.7.0b3`_
-===========
-
 Added
 -----
 
@@ -286,35 +146,6 @@ Added
   If it is True, add the content of the target files to the archive.
   This has no effect on systems that do not support symbolic links.
 * Introduce progress callback mechanism (#130)
-
-Changed
--------
-
-* CLI: add --verbose option for extraction
-* win32: update win32compat
-
-Fixed
------
-
-* Fix archiveinfo() for 7zAES archives
-* Release variables when close() (#129)
-
-`v0.7.0b2`_
-===========
-
-Fixed
------
-
-* Support extraction of file onto a place where path length is > 260 bytes on Windows 10, Windows Server 2016R2
-  and later. (Windows Vista, 7 and Windows Server 2012 still have a limitation of path length as a OS spec)(#116, #126)
-
-
-`v0.7.0b1`_
-===========
-
-Added
------
-
 * Support memory API.(#111, #119)
   Introduce read(filter) and readall() method for SevenZipFile class.
 * Support ZStandard codec compression algorithm for extraction.(#124, #125)
@@ -322,10 +153,23 @@ Added
 Changed
 -------
 
+* Extraction: Unlink output file if exist when it become a symbolic link.
+  When overwrite extracted files and there are symlinks, it may cause an unexpected result.
+  Unlinking it may help it.
+* CLI: add --verbose option for extraction
+* win32: update win32compat
 * Drop pywin32 dependency(#120)
 * Introduce internal win32compat.py
 * Archive: Looking for symbolic link object in the archived list,
   and if found, record as relative link.(#112, #113, #122)
+
+Fixed
+-----
+
+* Fix archiveinfo() for 7zAES archives
+* Release variables when close() (#129)
+* Support extraction of file onto a place where path length is > 260 bytes on Windows 10, Windows Server 2016R2
+  and later. (Windows Vista, 7 and Windows Server 2012 still have a limitation of path length as a OS spec)(#116, #126)
 
 Removed
 -------
@@ -343,6 +187,18 @@ Added
 * Test: SevenZipFile.archiveinfo() for various archives.
 * Test: extraction of LZMA+BCJ archive become fails as marked known issue.
 * Support deflate decompression method.
+* Introduce context manager for SevenZipFile (#95)
+* Test: add benchmarking test.
+* Add concurrent extraction test.
+* Add remote data test for general application test.
+* Add class for multi volume header.
+* Add readlink helper function for windows.
+* Test: download and extract test case as a show case.
+* setup.cfg: add entry-point configuration.
+* Support filtering  a target of  extracted files from archive (#64)
+* Support decryption (#55)
+* Add release note automation workflow with Github actions.
+* COPY decompression method.(#61)
 
 Changed
 -------
@@ -356,6 +212,20 @@ Changed
 * Change decompressor class interface
     - change max_length type to int and defualt to -1.
 * Update decryption function to improve performance.
+* SevenZipFile(file-object, 'r') now can run extract() well even unlink before extract().
+* Concurrency strategy: change to threading instead of multiprocessing. (#92)
+* Release process is done by Github Actions
+* Temporary disable to measure coverage, which is not working with threading.
+* Tox: now pass PYTEST_ADDOPTS environment variable.
+* extract: decompression is done as another process in default.
+* extract: default multiprocessing mode is spawn
+* extract: single process mode for password protected archive.
+* Use spawn multiprocessing mode for all platforms.
+* Use self context for multiprocessing.
+* Concurrency implementation changes to use multiprocessing.Process() instead of
+  concurrency.futures to avoid freeze or deadlock with application usage of it.(#70)
+* Stop checking coverage because coverage.py > 5.0.0 produce error when multiprocessing.Process() usage.
+* Drop handlers, NullHandler, BufferHnalder, and FileHander.
 
 Fixed
 -----
@@ -363,234 +233,30 @@ Fixed
 * Fix SevenZipFIle.archiveinfo() crash for LZMA+BCJ archive.(#100)
 * Fix SevenZipFile.test() method defeated from v0.6b2 (#103)
 * Fix SevenZipFile.solid() method to return proper value. (#72,#97)
-
-
-`v0.6b8`_
-=========
-
-Added
------
-
-* Introduce context manager for SevenZipFile (#95)
-
-Changed
--------
-
-* SevenZipFile(file-object, 'r') now can run extract() well even unlink before extract().
-
-Fixed
------
-
 * Fix README example for extraction option.
 * Some of decryption of encrypted archive fails.(#75)
-
-
-`v0.6b7`_
-=========
-
-Added
------
-
-* Test: add benchmarking test.
-
-Changed
--------
-
-* Concurrency strategy: change to threading instead of multiprocessing. (#92)
-
-
-`v0.6b6`_
-=========
-
-Fixed
------
-
 * Make pywin32 a regular runtime dependency
-
-
-`v0.6b5`_
-=========
-
-Added
------
-
-* Add concurrent extraction test.
-* Add remote data test for general application test.
-* Add class for multi volume header.
-* Add readlink helper function for windows.
-
-Changed
--------
-
-* Release process is done by Github Actions
-* Temporary disable to measure coverage, which is not working with threading.
-* Tox: now pass PYTEST_ADDOPTS environment variable.
-
-Fixed
------
-
 * Build with pep517 utility.
 * Fix race condition for changing current working directory of caller, which cause failures in multithreading.(#80,#82)
+* extract: catch UnsupportedMethod exception properly when multiprocessing.
+* Fixed extraction of 7zip file with BZip2 algorithm.(#66)
+* Fix symbolic link extraction with relative path target directory.(#67)
+* Fix retrieving Folder header information logics for codecs.(#62)
 
 Security
 --------
 
 * CLI: Use 'getpass' standard library to input password.(#59)
 
-
-`v0.6b4`_
-=========
-
-Changed
--------
-
-* extract: decompression is done as another process in default.
-* extract: default multiprocessing mode is spawn
-* extract: single process mode for password protected archive.
-
-Fixed
------
-
-* extract: catch UnsupportedMethod exception properly when multiprocessing.
-
-
-`v0.6b3`_
-=========
-
-Added
------
-
-* Test: download and extract test case as a show case.
-* setup.cfg: add entry-point configuration.
-
-Changed
--------
-
-* Use spawn multiprocessing mode for all platforms.
-* Use self context for multiprocessing.
-
 Removed
 -------
 
 * Static py7zr binary. Now it is generated by python installer.
-
-`v0.6b2`_
-=========
-
-Changed
--------
-
-* Concurrency implementation changes to use multiprocessing.Process() instead of
-  concurrency.futures to avoid freeze or deadlock with application usage of it.(#70)
-* Stop checking coverage because coverage.py > 5.0.0 produce error when multiprocessing.Process() usage.
-* Drop handlers, NullHandler, BufferHnalder, and FileHander.
-
-Known Issues
-------------
-
-* Extraction of encrypted archive which has multiple compression folders fails when
-  multiprocessing mode is not 'fork', that is python3.8 and later on MacOS, and on Windows.
-  see. test_extract_encrypted_2()
-
-`v0.6b1`_
-=========
-
-Fixed
------
-
-* Fixed extraction of 7zip file with BZip2 algorithm.(#66)
-
-`v0.6a2`_
-=========
-
-Added
------
-
-* Support filtering  a target of  extracted files from archive (#64)
-
-Fixed
------
-
-* Fix symbolic link extraction with relative path target directory.(#67)
-
-
-`v0.6a1`_
-=========
-
-Added
------
-
-* Support decryption (#55)
-* Add release note automation workflow with Github actions.
-* COPY decompression method.(#61)
-
-Fixed
------
-
-* Fix retrieving Folder header information logics for codecs.(#62)
-
-
-Removed
--------
-
 * Test symlink on windows.(#60)
 
 
-`v0.5b6`_
-=========
-
-Fixed
------
-
-* Fix extraction of archive which has zero size files and directories(#54).
-* Revert zero size file logic(#47).
-
-`v0.5b5`_
-=========
-
-Fixed
------
-
-* Revert zero size file logic which break extraction by 7zip.
-
-`v0.5b4`_
-=========
-
-Fixed
------
-
-* Support for making archive with zero size files(#47).
-* Produced broken archive when target has many directorires(#48).
-* Reduce test warnings, fix annotations.
-* Fix coverage error on test.
-
-
-`v0.5b3`_
-=========
-
-Fixed
------
-
-* Support for making archive with symbolic links.
-
-
-`v0.5b2`_
-=========
-
-Changed
--------
-
-* Update documents.
-
-Fixed
------
-
-* Fix write logics (#42)
-* Fix read FilesInfo block.
-
-
-`v0.5b1`_
-=========
+`v0.5`_
+=======
 
 Support making a 7zip archive.
 
@@ -605,9 +271,24 @@ Added
   shutil.make_archive() by exposing pack_7zarchive()
 * Support custom filters for compression.
 
+Changed
+-------
+
+* Update documents.
+
 Fixed
 -----
 
+* Fix extraction of archive which has zero size files and directories(#54).
+* Revert zero size file logic(#47).
+* Revert zero size file logic which break extraction by 7zip.
+* Support for making archive with zero size files(#47).
+* Produced broken archive when target has many directorires(#48).
+* Reduce test warnings, fix annotations.
+* Fix coverage error on test.
+* Support for making archive with symbolic links.
+* Fix write logics (#42)
+* Fix read FilesInfo block.
 * Skip rare case when directory already exist, that can happen multiple process working
   in same working directory.
 * Write: Produce a good archive file for multiple target files.
@@ -991,43 +672,14 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.0a1...HEAD
-.. _v0.9.0a1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0a1
-.. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
-.. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
-.. _v0.8.0b7: https://github.com/miurahr/py7zr/compare/v0.8.0b6...v0.8.0b7
-.. _v0.8.0b6: https://github.com/miurahr/py7zr/compare/v0.8.0b5...v0.8.0b6
-.. _v0.8.0b5: https://github.com/miurahr/py7zr/compare/v0.8.0b4...v0.8.0b5
-.. _v0.8.0b4: https://github.com/miurahr/py7zr/compare/v0.8.0b3...v0.8.0b4
-.. _v0.8.0b3: https://github.com/miurahr/py7zr/compare/v0.8.0b2...v0.8.0b3
-.. _v0.8.0b2: https://github.com/miurahr/py7zr/compare/v0.8.0b1...v0.8.0b2
-.. _v0.8.0b1: https://github.com/miurahr/py7zr/compare/v0.8.0a3...v0.8.0b1
-.. _v0.8.0a3: https://github.com/miurahr/py7zr/compare/v0.8.0a2...v0.8.0a3
-.. _v0.8.0a2: https://github.com/miurahr/py7zr/compare/v0.8.0a1...v0.8.0a2
-.. _v0.8.0a1: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0a1
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0...HEAD
+.. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
 .. _v0.7.1: https://github.com/miurahr/py7zr/compare/v0.7.0...v0.7.1
-.. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.7.0b3...v0.7.0
-.. _v0.7.0b3: https://github.com/miurahr/py7zr/compare/v0.7.0b2...v0.7.0b3
-.. _v0.7.0b2: https://github.com/miurahr/py7zr/compare/v0.7.0b1...v0.7.0b2
-.. _v0.7.0b1: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0b1
-.. _v0.6: https://github.com/miurahr/py7zr/compare/v0.6b7...v0.6
-.. _v0.6b7: https://github.com/miurahr/py7zr/compare/v0.6b6...v0.6b7
-.. _v0.6b6: https://github.com/miurahr/py7zr/compare/v0.6b5...v0.6b6
-.. _v0.6b5: https://github.com/miurahr/py7zr/compare/v0.6b4...v0.6b5
-.. _v0.6b4: https://github.com/miurahr/py7zr/compare/v0.6b3...v0.6b4
-.. _v0.6b3: https://github.com/miurahr/py7zr/compare/v0.6b2...v0.6b3
-.. _v0.6b2: https://github.com/miurahr/py7zr/compare/v0.6b1...v0.6b2
-.. _v0.6b1: https://github.com/miurahr/py7zr/compare/v0.6a2...v0.6b1
-.. _v0.6a2: https://github.com/miurahr/py7zr/compare/v0.6a1...v0.6a2
-.. _v0.6a1: https://github.com/miurahr/py7zr/compare/v0.5b6...v0.6a1
-.. _v0.5b6: https://github.com/miurahr/py7zr/compare/v0.5b5...v0.5b6
-.. _v0.5b5: https://github.com/miurahr/py7zr/compare/v0.5b4...v0.5b5
-.. _v0.5b4: https://github.com/miurahr/py7zr/compare/v0.5b3...v0.5b4
-.. _v0.5b3: https://github.com/miurahr/py7zr/compare/v0.5b2...v0.5b3
-.. _v0.5b2: https://github.com/miurahr/py7zr/compare/v0.5b1...v0.5b2
-.. _v0.5b1: https://github.com/miurahr/py7zr/compare/v0.4...v0.5b1
+.. _v0.7.0: https://github.com/miurahr/py7zr/compare/v0.6...v0.7.0
+.. _v0.6: https://github.com/miurahr/py7zr/compare/v0.5...v0.6
+.. _v0.5: https://github.com/miurahr/py7zr/compare/v0.4...v0.5
 .. _v0.4: https://github.com/miurahr/py7zr/compare/v0.3.5...v0.4
 .. _v0.3.5: https://github.com/miurahr/py7zr/compare/v0.3.4...v0.3.5
 .. _v0.3.4: https://github.com/miurahr/py7zr/compare/v0.3.3...v0.3.4
