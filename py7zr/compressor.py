@@ -262,6 +262,113 @@ class ZstdCompressor(ISevenZipCompressor):
         return b''
 
 
+class BCJFilter:
+
+    def __init__(self, is_encoder: bool):
+        self.is_encoder = is_encoder  # type: bool
+        #
+        self.prev_mask = 0  # type: int
+        self.prev_pos = -5  # type: int
+        self.current_position = 0  # type: int
+        self.buffer = bytearray()  # type: bytes
+
+    def x86_code(self) -> int:
+        mask_to_allowed_status = [True, True, True, False, True, False, False, False]
+        mask_to_bit_number = [0, 1, 2, 2, 3, 3, 3, 3]
+        size = len(self.buffer)
+        if size < 5:
+            return 0
+        if self.current_position - self.prev_pos > 5:
+            self.prev_pos = self.current_position - 5
+
+        limit = size - 5
+        buffer_pos = 0
+        while buffer_pos <= limit:
+            b = self.buffer[buffer_pos]
+            if b != 0xE8 and b != 0xE9:
+                buffer_pos += 1
+                continue
+            offset = self.current_position + buffer_pos - self.prev_pos
+            self.prev_pos = self.current_position + buffer_pos
+            if offset > 5:
+                self.prev_mask = 0
+            else:
+                for i in range(offset):
+                    self.prev_mask &= 0x77
+                    self.prev_mask <<= 1
+            b = self.buffer[buffer_pos + 4]
+            if (b == 0 or b == 0xFF) and mask_to_allowed_status[(self.prev_mask >> 1) & 0x7] \
+                    and (self.prev_mask >> 1) < 0x10:
+                src = b << 24 | self.buffer[buffer_pos + 3] << 16 | self.buffer[buffer_pos + 2] << 8 | \
+                      self.buffer[buffer_pos + 1]
+                while True:
+                    if self.is_encoder:
+                        dest = src + (self.current_position + buffer_pos + 5)
+                    else:
+                        dest = src - (self.current_position + buffer_pos + 5)
+                    if self.prev_mask == 0:
+                        break
+                    i = mask_to_bit_number[self.prev_mask >> 1]
+                    b = 0xFF & (dest >> (24 - i * 8))
+                    if not (b == 0 or b == 0xFF):
+                        break
+                    src = dest ^ (1 << (32 - i * 8) - 1)
+                self.buffer[buffer_pos + 4] = 0xFF & (~(((dest >> 24) & 1) - 1))
+                self.buffer[buffer_pos + 3] = 0xFF & (dest >> 16)
+                self.buffer[buffer_pos + 2] = 0xFF & (dest >> 8)
+                self.buffer[buffer_pos + 1] = 0xFF & dest
+                buffer_pos += 5
+                self.prev_mask = 0
+            else:
+                buffer_pos += 1
+                self.prev_mask |= 1
+        self.current_position += buffer_pos
+        return buffer_pos
+
+
+class BCJDecoder(ISevenZipDecompressor, BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(False)
+        self.stream_size = size  # type: int
+        self.eof = False
+        self.need_input = True
+        self.used_size = 0
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        self.buffer += data
+        self.used_size += len(data)
+        if self.used_size >= self.stream_size:
+            self.need_input = False
+        pos = self.x86_code()
+        if self.current_position > self.stream_size - 5:
+            offset = self.stream_size - self.current_position
+            tmp = self.buffer[:pos + offset]
+            self.eof = True
+            self.current_position = self.stream_size
+            self.buffer = b''
+        else:
+            tmp = self.buffer[:pos]
+            self.buffer = self.buffer[pos:]
+        return tmp
+
+
+class BCJEncoder(ISevenZipCompressor, BCJFilter):
+
+    def __init__(self):
+        super().__init__(True)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        self.buffer += data
+        pos = self.x86_code()
+        tmp = self.buffer[:pos]
+        self.buffer = self.buffer[pos:]
+        return tmp
+
+    def flush(self):
+        return self.buffer
+
+
 algorithm_class_map = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
