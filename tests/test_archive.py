@@ -833,3 +833,20 @@ def test_compress_armt(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+
+
+@pytest.mark.basic
+def test_compress_small_bytes(tmp_path):
+    tmp_path.joinpath('t').mkdir()
+    with tmp_path.joinpath('t/a').open('w') as f:
+        f.write('1')
+    with tmp_path.joinpath('t/b').open('w') as f:
+        f.write('2')
+    with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w') as archive:
+        archive.writeall(tmp_path.joinpath('t'), 't')
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
