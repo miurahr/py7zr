@@ -545,23 +545,24 @@ class SubstreamsInfo:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
 
-    def write(self, file: BinaryIO, numfolders: int):
+    def write(self, file: BinaryIO):
         if len(self.num_unpackstreams_folders) == 0:  # pragma: no-cover  # nothing to write
             return
         write_byte(file, Property.SUBSTREAMS_INFO)
-        if not functools.reduce(lambda x, y: x and (y == 1), self.num_unpackstreams_folders, True):
+        solid = functools.reduce(lambda x, y: x or (y != 1), self.num_unpackstreams_folders, False)
+        if solid:
             write_byte(file, Property.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
-        write_byte(file, Property.SIZE)
-        idx = 0
-        assert self.unpacksizes is not None
-        for i in range(numfolders):
-            for _ in range(1, self.num_unpackstreams_folders[i]):
-                size = self.unpacksizes[idx]
-                write_uint64(file, size)
-                idx += 1
-            idx += 1
+        has_multi = functools.reduce(lambda x, y: x or (y > 1), self.num_unpackstreams_folders, False)
+        if has_multi:
+            write_byte(file, Property.SIZE)
+            idx = 0
+            for i, num in enumerate(self.num_unpackstreams_folders):
+                for j in range(num):
+                    if j + 1 != num:
+                        write_uint64(file, self.unpacksizes[idx])
+                    idx += 1
         if functools.reduce(lambda x, y: x or y, self.digestsdefined, False):
             write_byte(file, Property.CRC)
             write_boolean(file, self.digestsdefined, all_defined=True)
@@ -606,7 +607,7 @@ class StreamsInfo:
         if self.unpackinfo is not None:
             self.unpackinfo.write(file)
         if self.substreamsinfo is not None:
-            self.substreamsinfo.write(file, self.unpackinfo.numfolders)
+            self.substreamsinfo.write(file)
         write_byte(file, Property.END)
 
 

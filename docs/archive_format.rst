@@ -740,9 +740,17 @@ AES       0x06f10701
 Substreams Information
 ----------------------
 
+Substream Information is an optional field that indicate substreams from
+each folder produces.
+
+When the archive is not solid, there SHALL NOT be SubStreams information.
+When SubStreams Information is omitted, extractor still know a unpack size information
+as folder information.
+
 Substreams Information hold an information about archived data blocks
 as in extracted form. It SHALL exist that number of unpack streams,
 size of each unpack streams, and CRC of each streams
+
 
 .. railroad-diagram::
 
