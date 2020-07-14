@@ -836,7 +836,7 @@ def test_compress_armt(tmp_path):
 
 
 @pytest.mark.basic
-def test_compress_small_bytes(tmp_path):
+def test_compress_small_files(tmp_path):
     tmp_path.joinpath('t').mkdir()
     with tmp_path.joinpath('t/a').open('w') as f:
         f.write('1')
