@@ -743,7 +743,7 @@ class FilesInfo:
 
     def _write_prop_bool_vector(self, fp: BinaryIO, propid, vector) -> None:
         write_byte(fp, propid)
-        write_boolean(fp, vector, all_defined=True)
+        write_boolean(fp, vector, all_defined=False)
 
     @staticmethod
     def _are_there(vector) -> bool:
@@ -800,11 +800,8 @@ class FilesInfo:
             write_byte(file, Property.EMPTY_STREAM)
             write_uint64(file, bits_to_bytes(numfiles))
             write_boolean(file, emptystreams, all_defined=False)
-        else:
-            if self._are_there(self.emptyfiles):
-                self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
-            if self._are_there(self.antifiles):
-                self._write_prop_bool_vector(file, Property.ANTI, self.antifiles)
+        elif self._are_there(self.emptyfiles):
+            self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
         # Name
         self._write_names(file)
         # timestamps
