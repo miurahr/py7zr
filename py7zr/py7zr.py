@@ -873,9 +873,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             return None
         packpos = self.afterheader + self.header.main_streams.packinfo.packpos
         packsizes = self.header.main_streams.packinfo.packsizes
-        for i in range(len(packsizes)):
-            if self._read_digest(packpos, packsizes[i]) != crcs[i]:
-                return False
+        digestdefined = self.header.main_streams.packinfo.digestdefined
+        j = 0
+        for i, d in enumerate(digestdefined):
+            if d:
+                if self._read_digest(packpos, packsizes[i]) != crcs[j]:
+                    return False
+                j += 1
             packpos += packsizes[i]
         return True
 
@@ -1126,6 +1130,7 @@ class Worker:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.crcs = [compressor.digest]
+        self.header.main_streams.packinfo.digestdefined = [True]
         self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         folder.unpacksizes = compressor.unpacksizes
