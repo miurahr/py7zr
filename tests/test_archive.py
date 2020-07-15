@@ -278,14 +278,14 @@ def test_compress_files_1(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    with py7zr.SevenZipFile(target, 'r') as archive:
-        assert archive.test()
-    #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        assert archive.test()
 
 
 @pytest.mark.api
@@ -335,17 +335,18 @@ def test_compress_with_custom_filter(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.set_encoded_header_mode(True)
+    archive.header.main_streams.packinfo.enable_digests = True
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
-    #
-    with py7zr.SevenZipFile(target, 'r') as arc:
-        assert arc.test()
     #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', target.as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+    #
+    with py7zr.SevenZipFile(target, 'r') as arc:
+        assert arc.test()
 
 
 @pytest.mark.files

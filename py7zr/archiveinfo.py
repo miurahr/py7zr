@@ -230,7 +230,9 @@ class PackInfo:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
             pid = file.read(1)
             if pid == Property.CRC:
-                self.crcs = [read_uint64(file) for _ in range(self.numstreams)]
+                self.enable_digests = True
+                crc_defined = read_boolean(file, self.numstreams, True)
+                self.crcs = [read_uint32(file)[0] if crcexist else None for crcexist in crc_defined]
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover  # noqa
@@ -248,9 +250,12 @@ class PackInfo:
             write_uint64(file, size)
         if self.enable_digests:
             assert len(self.crcs) == numstreams
-            write_bytes(file, Property.CRC)
-            for crc in self.crcs:
-                write_uint64(file, crc)
+            digest_defined = [(crc is not None) for crc in self.crcs]
+            write_byte(file, Property.CRC)
+            write_boolean(file, digest_defined, True)
+            for i in range(numstreams):
+                if digest_defined[i]:
+                    write_uint32(file, self.crcs[i])
         write_byte(file, Property.END)
 
 
