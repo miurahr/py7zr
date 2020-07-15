@@ -556,6 +556,7 @@ class SubstreamsInfo:
                 write_uint64(file, n)
         has_multi = functools.reduce(lambda x, y: x or (y > 1), self.num_unpackstreams_folders, False)
         if has_multi:
+            assert self.unpacksizes
             write_byte(file, Property.SIZE)
             idx = 0
             for i, num in enumerate(self.num_unpackstreams_folders):
