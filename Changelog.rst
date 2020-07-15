@@ -20,8 +20,8 @@ Changed
 Fixed
 -----
 
+* Fix packinfo crc  read and write (#187, #189)
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
-
 * CLI: Does not crash when trying extract archive which use unsupported method(#183)
 
 Deprecated
