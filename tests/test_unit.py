@@ -142,8 +142,7 @@ def test_py7zr_substreamsinfo_write():
     ss.digests = [3010113243, 3703540999, 2164028094]
     ss.num_unpackstreams_folders = [3]
     ss.unpacksizes = [111, 58, 559]
-    numfolders = len(folders)
-    ss.write(buffer, numfolders)
+    ss.write(buffer)
     actual = buffer.getvalue()
     assert actual == b'\x08\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00'
 
