@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.8.2`_
+=========
+
+Fixed
+-----
+
+* Fix packinfo crc read and write (#187, #189)
+
+
 `v0.8.1`_
 =========
 
@@ -37,7 +46,6 @@ Fixed
 -----
 
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
-
 * CLI: Does not crash when trying extract archive which use unsupported method(#183)
 
 
@@ -993,7 +1001,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.2...HEAD
+.. _v0.8.2: https://github.com/miurahr/py7zr/compare/v0.8.1...v0.8.2
 .. _v0.8.1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.8.1
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
 .. _v0.8.0b8: https://github.com/miurahr/py7zr/compare/v0.8.0b7...v0.8.0b8
