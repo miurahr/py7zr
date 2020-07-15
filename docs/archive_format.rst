@@ -512,6 +512,7 @@ It also MAY NOT be placed. CRC SHALL be CRC32 and stored in UINT32.
 
    stack:
    - CRC, Property ID
+   - DigestDefined, BooleanList
    -
       one_or_more:
       - crc, UINT32
