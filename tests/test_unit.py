@@ -314,6 +314,7 @@ def test_write_packinfo():
     packinfo.packpos = 0
     packinfo.packsizes = [48]
     packinfo.crcs = [py7zr.helpers.calculate_crc32(b'abcd')]
+    packinfo.digestdefined = [True]
     packinfo.enable_digests = True
     buffer = io.BytesIO()
     packinfo.write(buffer)

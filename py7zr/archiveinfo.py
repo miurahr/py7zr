@@ -209,12 +209,13 @@ def bits_to_bytes(bit_length: int) -> int:
 class PackInfo:
     """ information about packed streams """
 
-    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs', 'enable_digests']
+    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs', 'digestdefined', 'enable_digests']
 
     def __init__(self) -> None:
         self.packpos = 0  # type: int
         self.numstreams = 0  # type: int
         self.packsizes = []  # type: List[int]
+        self.digestdefined = []  # type: List[bool]
         self.crcs = []  # type: List[int]
         self.enable_digests = True
 
@@ -231,8 +232,10 @@ class PackInfo:
             pid = file.read(1)
             if pid == Property.CRC:
                 self.enable_digests = True
-                crc_defined = read_boolean(file, self.numstreams, True)
-                self.crcs = [read_uint32(file)[0] if crcexist else None for crcexist in crc_defined]
+                self.digestdefined = read_boolean(file, self.numstreams, True)
+                for crcexist in self.digestdefined:
+                    if crcexist:
+                        self.crcs.append(read_uint32(file)[0])
                 pid = file.read(1)
         if pid != Property.END:
             raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover  # noqa
@@ -250,11 +253,10 @@ class PackInfo:
             write_uint64(file, size)
         if self.enable_digests:
             assert len(self.crcs) == numstreams
-            digest_defined = [(crc is not None) for crc in self.crcs]
             write_byte(file, Property.CRC)
-            write_boolean(file, digest_defined, True)
+            write_boolean(file, self.digestdefined, True)
             for i in range(numstreams):
-                if digest_defined[i]:
+                if self.digestdefined[i]:
                     write_uint32(file, self.crcs[i])
         write_byte(file, Property.END)
 
