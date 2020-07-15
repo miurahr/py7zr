@@ -6,6 +6,7 @@ import lzma
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 
@@ -471,3 +472,19 @@ def test_lzma_raw_decompressor_lzmabcj():
     assert lzma_out == lzma2_out
     assert len(lzma2bcj_out) == uncompress_size
     assert len(lzmabcj_out) == uncompress_size
+
+
+@pytest.mark.skipif(not shutil.which('7z'), reason="no 7z command installed")
+def test_decompress_small_files(tmp_path):
+    tmp_path.joinpath('t').mkdir()
+    with tmp_path.joinpath('t/a').open('w') as f:
+        f.write('1')
+    with tmp_path.joinpath('t/b').open('w') as f:
+        f.write('2')
+    result = subprocess.run(['7z', 'a', (tmp_path / 'target.7z').as_posix(), (tmp_path / 't')], stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stdout)
+        pytest.fail('7z command report error')
+    #
+    with py7zr.SevenZipFile(tmp_path / 'target.7z', 'r') as arc:
+        arc.testzip()

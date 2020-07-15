@@ -418,7 +418,7 @@ class CompressorChain:
             self._unpacksizes[i] += len(data)
             data = compressor.compress(data)
         self.packsize += len(data)
-        self.digest += calculate_crc32(data, self.digest)
+        self.digest = calculate_crc32(data, self.digest)
         return data
 
     def flush(self):
@@ -431,7 +431,7 @@ class CompressorChain:
             else:
                 data = compressor.flush()
         self.packsize += len(data)
-        self.digest += calculate_crc32(data, self.digest)
+        self.digest = calculate_crc32(data, self.digest)
         return data
 
     @property
