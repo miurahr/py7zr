@@ -771,6 +771,7 @@ Files Information
 
 Files Information SHOULD hold a list of files, directories and symbolic links.
 Its order SHALL be as same as order of streams defined in packed information.
+A type of file is stored in Attribute field.
 
 .. railroad-diagram::
 
@@ -791,16 +792,16 @@ Its order SHALL be as same as order of streams defined in packed information.
       -
          - Ext(0x01), BYTE
          - Data Index, NUMBER
-   - Attribute, Property ID
-   - AttributeExist, BooleanList
+   - MTime, Property ID
+   - TimeExist, BooleanList
    - choice:
       -
-         - Not External(0x00), BYTE
-         - zero_or_more:
-            - Attribute, UINT32
+         - External, BYTE, 0x00
+         - one_or_more:
+            - FileTime, NUMBER
       -
-         - Ext(0x01), BYTE
-         - Data Index, NUMBER
+         - External, BYTE, 0x01
+      - Data Index, NUMBER
    - optional:
       - CTime, Property ID
       - TimeExist, BooleanList
@@ -823,17 +824,16 @@ Its order SHALL be as same as order of streams defined in packed information.
          -
             - External, BYTE, 0x01
             - Data Index, NUMBER
-   - optional:
-      - MTime, Property ID
-      - TimeExist, BooleanList
-      - choice:
-         -
-            - External, BYTE, 0x00
-            - one_or_more:
-               - FileTime, NUMBER
-         -
-            - External, BYTE, 0x01
-            - Data Index, NUMBER
+   - Attribute, Property ID
+   - AttributeExist, BooleanList
+   - choice:
+      -
+         - Not External(0x00), BYTE
+         - zero_or_more:
+            - Attribute, UINT32
+      -
+         - Ext(0x01), BYTE
+         - Data Index, NUMBER
 
 
 FileName
@@ -846,7 +846,11 @@ follows wchar_t NULL character, i.e. 0x0000.
 Attribute
 ^^^^^^^^^
 
-Attribute is a UINT32 integer value.
+Attribute is a UINT32 integer value. From bit 0 to 15 are as same as
+Windows attributes. Bit 16 to 31 is used for storing unix attributes.
+When file is a symbolic link, it SHOULD has an attribute that
+UNIX_EXTENSION flag enabled, and link bit of unix attributes.
+
 
 .. list-table:: Attribute values
     :widths: 10 50
@@ -866,9 +870,10 @@ Attribute is a UINT32 integer value.
     * - FILE_ATTRIBUTE_REPARSE_POINT 1024 (0x400)
       - file or directory that has an associated reparse point, or a file that is a symbolic link.
     * - bit 16-31
-      - UNIX file permissions and attributes.
+      - UNIX file permissions and attributes.  16bit shift to left of permissions and attributes.
     * - UNIX_EXTENSION (0x8000)
       - Indicate a unix permissions and file attributes are bundled when 1.
+
 
 FileTime
 ^^^^^^^^^
