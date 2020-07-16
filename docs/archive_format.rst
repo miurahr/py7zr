@@ -420,29 +420,15 @@ Raw header SHALL start with one byte ID 0x01.
    - Header, Property ID
    -
       - MainStreamsInfo, Property ID
-      - Main Streams
+      - Pack Information
+      - Coders Information
+      - optional:
+         - Substream Information
+   - END, Property ID
    -
       optional:
-      - FilesInfo, Property ID
       - Files Information
-
-Main Streams
-------------
-
-Main Streams SHALL be defined as Streams Information which hold data of
-archived files.
-
-Streams Information
--------------------
-
-Streams Info SHALL contain with Pack Info, Coders Info and SubStreamsInfo.
-
-.. railroad-diagram::
-
-   stack:
-   - Pack Information
-   - Coders Information
-   - Substream Information
+   - END, Property ID
 
 
 Pack Information
@@ -467,6 +453,8 @@ Sizes of packed Streams SHALL stored as a list of NUMBER.
    -
       optional:
       - CRCs of Pack Streams
+   - END, Property ID
+
 
 Pack Position
 ^^^^^^^^^^^^^
@@ -550,6 +538,7 @@ It SHALL NOT be more than five coders. (Maximum four)
       - 'UnpackDigest, Property ID'
       - one_or_more:
          - UnpackDigest, UINT32
+   - END, Property ID
 
 
 In default Folders information is placed inline, then External flag is 0x00.
@@ -763,8 +752,11 @@ size of each unpack streams, and CRC of each streams
    - Size, Property ID
    - one_or_more:
       - Size of unpack streams, NUMBER
-
-
+   - optional:
+      - CRC, Property ID
+      - one_or_more:
+         - digest, UINT32
+   - END, Property ID
 
 
 Files Information
@@ -849,6 +841,7 @@ A type of file is stored in Attribute field.
       -
          - Ext(0x01), BYTE
          - Data Index, NUMBER
+   - END, Property ID
 
 
 Size
