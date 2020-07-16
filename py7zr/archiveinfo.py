@@ -809,6 +809,15 @@ class FilesInfo:
             write_boolean(file, emptystreams, all_defined=False)
         elif self._are_there(self.emptyfiles):
             self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
+        # padding
+        pos = file.tell()
+        padlen = -pos & 3  # padlen = 4 - pos % 4 if pos % 4 > 0 else 0
+        if 2 >= padlen > 0:
+            padlen += 4
+        if padlen > 2:
+            write_byte(file, Property.DUMMY)
+            write_byte(file, (padlen - 2).to_bytes(1, 'little'))
+            write_bytes(file, bytes(padlen - 2))
         # Name
         self._write_names(file)
         # timestamps
