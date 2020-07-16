@@ -8,18 +8,16 @@ Abstract
 ========
 
 7-zip archive is one of popular files compression and archive formats. There has been
-no well-defined file format specification document in 20 years from its birth, so
-it is not considered application defined format.
+no well-defined file format because there is no precise specification document in 20 years
+from its birth, so it has been considered as an application proprietary format.
 
-There are some independent implementation of utility to handle 7-zip archives, it is necessary
-to prepare a precise format specification documentation to keep compatibility and interoperability.
+There are some independent implementation of utility to handle 7-zip archives,
+precise documentation of specification is mandatory to keep compatibility and
+interoperability among implementations.
 
-This specification defines an archive file format of 7-zip archive.
-This specification is derived from 7zFormat.txt bundled with p7zip utility which is portable
-7-zip implementation.
-
-A purpose of this document is to provide a concrete documentation to realize compatibility
-between implementations.
+This specification defines an archive file format of .7z archive.
+A purpose of this document is to provide a concrete documentation
+to archive an interoperability among implementations.
 
 
 Copyright Notice
@@ -41,6 +39,7 @@ to implement libraries and utility to handle 7-zip archive files.
 This documentations is NOT a specification of any existed utilities and libraries.
 This documentation does not have some features which is implemented in an existed utility.
 It is because this document purpose is to keep interoperability.
+
 
 Intended audience
 -----------------
@@ -89,11 +88,11 @@ of archive utility software, because of its nature, only standardized formats ar
 as portable, stable for long time and freely usable specification.
 PKWare ZIP, GNU Tar and GZip are examples for it.
 Since 7-zip, its format and algorithm LZMA/LZMA2 are born as public-domain in 1999,
-it is known as one of long lived file format.
+it has been known as one of long lived file format.
 
-There are two effort to make 7zip as a well-documented and portable format.
+There are two effort to make .7z archives as well-documented, portable, and long life.
 One is a documentation project here, and other is a software development project
-to be independent and compatible with original 7zip and p7zip utility such as py7zr.
+to be compatible with original 7zip and p7zip utility such as py7zr.
 
 
 Notations
@@ -392,7 +391,7 @@ Header encode Information
 -------------------------
 
 Header encode Information is a Streams Information data for Header data as
-encoded data followed after ID 0x17.
+encoded data followed after ID 0x17, EncodedHeader Property.
 
 
 .. railroad-diagram::
@@ -454,14 +453,14 @@ Pack Information SHALL be const with Pack Position, Number of Pack Streams,
 a list of sizes of Pack Streams and a list of CRCs of pack streams.
 Pack positon and Number of Pakc streams SHALL be stored as
 variable length NUMBER form.
-Sizes of packed Streams SHALL stored as list of UINT64.
+Sizes of packed Streams SHALL stored as a list of NUMBER.
 
 .. railroad-diagram::
 
    stack:
    - PackInfo, Property ID
    - Pack Position, NUMBER
-   - Number of Pack Streams, NUMBER
+   - Count of Pack Streams, NUMBER
    -
       optional:
       - Sizes of Pack Streams
@@ -476,10 +475,10 @@ Pack Position SHALL indicate a position of encoded streams that value SHALL be
 an offset from the end of signature header.
 It MAY be a next position of end of signature header.
 
-Number of Pack Streams
-^^^^^^^^^^^^^^^^^^^^^^
+Count of Pack Streams
+^^^^^^^^^^^^^^^^^^^^^
 
-Number of Pack Streams SHALL indicate a number of encoded streams.
+Count of Pack Streams SHALL indicate a number of encoded streams.
 LZMA and LZMA2 SHOULD have a single (one) stream.
 7-zip CAN have encoding methods which produce multiple encoded streams.
 When there are multiple streams, a value of Number of Pack Streams SHALL
@@ -489,7 +488,7 @@ Sizes of Pack Streams
 ^^^^^^^^^^^^^^^^^^^^^
 
 Sizes of Pack Streams SHOULD be omitted when Number of Pack Streams is zero.
-This is an array of NUMBER values which length is as same as Number of Pack Streams.
+This is an array of NUMBER values which length is as same as Count of Pack Streams.
 Size SHALL be positive integer and SHALL stored in NUMBER.
 
 .. railroad-diagram::
@@ -504,8 +503,9 @@ Size SHALL be positive integer and SHALL stored in NUMBER.
 CRCs of Pack Streams
 ^^^^^^^^^^^^^^^^^^^^
 
-When Number of Pack Streams is zero, then CRCs of Pack Streams SHALL not exist.
-It also MAY NOT be placed. CRC SHALL be CRC32 and stored in UINT32.
+When Count of Pack Streams is zero, then CRCs of Pack Streams SHALL not exist.
+CRC CAN be exist and indicated as DigestDefined BooleanList.
+CRC SHALL be CRC32 and stored in UINT32.
 
 
 .. railroad-diagram::
@@ -766,6 +766,7 @@ size of each unpack streams, and CRC of each streams
 
 
 
+
 Files Information
 -----------------
 
@@ -779,11 +780,21 @@ A type of file is stored in Attribute field.
    - FileInfo, Property ID
    - Number of Files, NUMBER
    - optional:
-      - Empty Streams
+      - Empty Stream, Property ID
+      - Size, NUMBER
+      - Flag of Empty Streams, BitField
    - optional:
-      - Empty Files
+      - Empty Files, Property ID
+      - Size, NUMBER
+      - Flag of Empty Files, BitField
+   - optional:
+      - Dummy, Property ID
+      - Size, NUMBER
+      - one_or_more:
+         - '0x00'
    - Name, Property ID
-   - FilenameExist, BooleanList
+   - Size, NUMBER
+   - FileNamesExist, BooleanList
    - choice:
       -
          - Not External(0x00), BYTE
@@ -793,6 +804,7 @@ A type of file is stored in Attribute field.
          - Ext(0x01), BYTE
          - Data Index, NUMBER
    - MTime, Property ID
+   - Size, NUMBER
    - TimeExist, BooleanList
    - choice:
       -
@@ -804,6 +816,7 @@ A type of file is stored in Attribute field.
       - Data Index, NUMBER
    - optional:
       - CTime, Property ID
+      - Size, NUMBER
       - TimeExist, BooleanList
       - choice:
          -
@@ -815,6 +828,7 @@ A type of file is stored in Attribute field.
             - Data Index, NUMBER
    - optional:
       - ATime, Property ID
+      - Size, NUMBER
       - TimeExist, BooleanList
       - choice:
          -
@@ -825,6 +839,7 @@ A type of file is stored in Attribute field.
             - External, BYTE, 0x01
             - Data Index, NUMBER
    - Attribute, Property ID
+   - Size, NUMBER
    - AttributeExist, BooleanList
    - choice:
       -
@@ -836,11 +851,33 @@ A type of file is stored in Attribute field.
          - Data Index, NUMBER
 
 
+Size
+^^^^
+
+Size field indicate a size of next data. For example, Name size means,
+a size in byte from a start of FileNamesExist field and an end of file names.
+
+
+Empty Streams
+^^^^^^^^^^^^^
+
+Empty streams has a number of emptystreams and a boolean list to indicate which
+file entry does not have a packed stream.
+
+Dummy
+^^^^^
+
+Dummy MAY be placed for alignment. When processing File Names, which is UTF-16-LE,
+it is better to be aligned in word barrier.
+
 FileName
 ^^^^^^^^
 
-FileNam SHALL be a wide character string encoded with UTF16-LE and
+FileNam SHALL be a wide character string encoded with UTF-16-LE and
 follows wchar_t NULL character, i.e. 0x0000.
+
+Path separator SHALL be normalized as '/', which is as POSIX standard.
+FileName SHOULD be relative path notation.
 
 
 Attribute
@@ -879,6 +916,52 @@ FileTime
 ^^^^^^^^^
 
 FileTime are NUMBER values in 100-nanosecond intervals since 1601/01/01 (UTC)
+
+
+File type and a way
+===================
+
+Normal files
+------------
+
+Normal files are stored with packed streams and ordinal file information.
+Its contents are stored into packed stream.
+It SHOULD have an attribute of Windows such as FILE_ATTRIBUTE_ARCHIVE.
+It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+
+Directories
+-----------
+
+Directories are stored without packed streams. It have entries in file information.
+It SHALL have an attribute which is FILE_ATTRIBUTE_DIRECTORY.
+It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+
+Special Files
+-------------
+
+There is an extension to handle special files such as sockets, device files, and symbolic links.
+A type of special files is indicated as file attribute.
+Further attribute of special file is stored as a content.
+
+Compliant client CAN skip record of special files on extraction.
+
+
+Symbolic links
+^^^^^^^^^^^^^^
+
+Symbolic links are stored as packed streams and file information.
+Its target file path, in relative, are recorded into packed streams
+in UTF-8 character encoding.
+It SHALL have a UNIX attribute which is S_IFLNK.
+
+
+REPARSE_POINT on Windows
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Reparse point on windows SHOULD be stored with packed stream and file information.
+Its target link path, in absolute, are recorded into packed stream
+in UTF-8 character encoding.
+It SHALL have an attribute which is FILE_ATTRIBUTE_REPARSE_POINT.
 
 
 Appendix: BNF expression (Informative)
@@ -1012,6 +1095,14 @@ Extract in this document express decompress, decryption and/or filter data from 
 UTF-16-LE
 ---------
 
-Unicode UTF-16 encoding uses 2 bytes or 4 bytes to represent Unicode character.
+Unicode UTF-16 encoding uses 2 bytes or 4 bytes to represent Unicode characters.
 Because it is not one byte ordering, we need to consider endian, byte order.
 UTF-16-LE is a variant of UTF-16 definition which use Little-Endian for store data.
+
+
+UTF-8
+-----
+
+Unicode UTF-8 encoding uses a sequence of bytes, from 1 bytes to 4 bytes to represent
+Unicode characters. ISO 10646 defines it as 1 byts to 8 bytes encoding, so compliant
+implementation SHALL be able to handle 8bytes sequence and mark it as invalid.
