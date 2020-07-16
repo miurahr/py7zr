@@ -813,7 +813,7 @@ A type of file is stored in Attribute field.
             - FileTime, NUMBER
       -
          - External, BYTE, 0x01
-      - Data Index, NUMBER
+         - Data Index, NUMBER
    - optional:
       - CTime, Property ID
       - Size, NUMBER
