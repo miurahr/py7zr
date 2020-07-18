@@ -23,6 +23,7 @@
 #
 import bz2
 import lzma
+import struct
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -270,7 +271,7 @@ class BCJFilter:
         self.prev_mask = 0  # type: int
         self.prev_pos = -5  # type: int
         self.current_position = 0  # type: int
-        self.buffer = bytearray()  # type: bytes
+        self.buffer = bytearray()
 
     def x86_code(self) -> int:
         mask_to_allowed_status = [True, True, True, False, True, False, False, False]
@@ -280,12 +281,11 @@ class BCJFilter:
             return 0
         if self.current_position - self.prev_pos > 5:
             self.prev_pos = self.current_position - 5
-
+        view = memoryview(self.buffer)
         limit = size - 5
         buffer_pos = 0
         while buffer_pos <= limit:
-            b = self.buffer[buffer_pos]
-            if b != 0xE8 and b != 0xE9:
+            if view[buffer_pos] != 0xE8 and view[buffer_pos] != 0xE9:
                 buffer_pos += 1
                 continue
             offset = self.current_position + buffer_pos - self.prev_pos
@@ -296,11 +296,10 @@ class BCJFilter:
                 for i in range(offset):
                     self.prev_mask &= 0x77
                     self.prev_mask <<= 1
-            b = self.buffer[buffer_pos + 4]
-            if (b == 0 or b == 0xFF) and mask_to_allowed_status[(self.prev_mask >> 1) & 0x7] \
-                    and (self.prev_mask >> 1) < 0x10:
-                src = b << 24 | self.buffer[buffer_pos + 3] << 16 | self.buffer[buffer_pos + 2] << 8 | \
-                      self.buffer[buffer_pos + 1]
+            if (view[buffer_pos + 4] == 0 or view[buffer_pos + 4] == 0xFF) and \
+                    mask_to_allowed_status[(self.prev_mask >> 1) & 0x7] and (self.prev_mask >> 1) < 0x10:
+                jump_target = self.buffer[buffer_pos + 1:buffer_pos + 5]
+                src = struct.unpack('<L', jump_target)[0]
                 while True:
                     if self.is_encoder:
                         dest = src + (self.current_position + buffer_pos + 5)
@@ -313,10 +312,9 @@ class BCJFilter:
                     if not (b == 0 or b == 0xFF):
                         break
                     src = dest ^ (1 << (32 - i * 8) - 1)
-                self.buffer[buffer_pos + 4] = 0xFF & (~(((dest >> 24) & 1) - 1))
-                self.buffer[buffer_pos + 3] = 0xFF & (dest >> 16)
-                self.buffer[buffer_pos + 2] = 0xFF & (dest >> 8)
-                self.buffer[buffer_pos + 1] = 0xFF & dest
+                write_view = view[buffer_pos + 1:buffer_pos + 5]
+                write_view[0:3] = (dest & 0xFFFFFF).to_bytes(3, 'little')
+                write_view[3:4] = (0xFF & (~(((dest >> 24) & 1) - 1))).to_bytes(1, 'little')
                 buffer_pos += 5
                 self.prev_mask = 0
             else:
@@ -333,22 +331,23 @@ class BCJDecoder(ISevenZipDecompressor, BCJFilter):
         self.stream_size = size  # type: int
         self.eof = False
         self.need_input = True
-        self.used_size = 0
+        self.used_size = 0  # type: int
 
     def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self.buffer += data
+        self.buffer.extend(data)
+        view = memoryview(self.buffer)
         self.used_size += len(data)
         if self.used_size >= self.stream_size:
             self.need_input = False
         pos = self.x86_code()
         if self.current_position > self.stream_size - 5:
             offset = self.stream_size - self.current_position
-            tmp = self.buffer[:pos + offset]
+            tmp = bytes(self.buffer[:pos + offset])
             self.eof = True
             self.current_position = self.stream_size
-            self.buffer = b''
+            self.buffer = bytearray()
         else:
-            tmp = self.buffer[:pos]
+            tmp = bytes(self.buffer[:pos])
             self.buffer = self.buffer[pos:]
         return tmp
 
@@ -359,14 +358,14 @@ class BCJEncoder(ISevenZipCompressor, BCJFilter):
         super().__init__(True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self.buffer += data
+        self.buffer.extend(data)
         pos = self.x86_code()
-        tmp = self.buffer[:pos]
+        tmp = bytes(self.buffer[:pos])
         self.buffer = self.buffer[pos:]
         return tmp
 
     def flush(self):
-        return self.buffer
+        return bytes(self.buffer)
 
 
 algorithm_class_map = {

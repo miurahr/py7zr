@@ -2,7 +2,6 @@ import asyncio
 import binascii
 import ctypes
 import hashlib
-import lzma
 import os
 import pathlib
 import shutil

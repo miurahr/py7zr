@@ -640,4 +640,3 @@ def test_bcj_decode(tmp_path):
             m.update(filter.decompress(data))
             data = f.read(8192)
         assert m.digest() == binascii.unhexlify('5ae0726746e2ccdad8f511ecfcf5f79df4533b83f86b1877cebc07f14a4e9b6a')
-
