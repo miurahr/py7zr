@@ -895,22 +895,3 @@ def test_compress_small_files(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
-
-
-@pytest.mark.basic
-def test_compress_lzma1_armt(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_ARMTHUMB}, {"id": py7zr.FILTER_LZMA}]
-    target = tmp_path.joinpath('target.7z')
-    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
-    archive.write(os.path.join(testdata_path, "lib"), "lib")
-    archive.writeall(os.path.join(testdata_path, "lib", "aarch64-linux-gnu"), "lib/aarch64-linux-gnu")
-    archive.close()
-    #
-    with py7zr.SevenZipFile(target, 'r') as archive:
-        archive.extractall(path=tmp_path / 'tgt')
-    #
-    if shutil.which('7z'):
-        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
-        if result.returncode != 0:
-            print(result.stdout)
-            pytest.fail('7z command report error')
