@@ -375,7 +375,7 @@ algorithm_class_map = {
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
     FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
-    FILTER_X86: {BCJEncoder, BCJDecoder},
+    FILTER_X86: (BCJEncoder, BCJDecoder),
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
@@ -383,7 +383,7 @@ def get_alternative_compressor(filter, password=None):
     filter_id = filter['id']
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError
-    if SupportedMethods.is_crypto_id(filter_id):
+    elif SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][0](password)
     else:
         return algorithm_class_map[filter_id][0]()
@@ -479,11 +479,25 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # --------- Hack for special combinations
         # hack for LZMA1+BCJ which should be native+alternative
         if len(coders) >= 2:
             if coders[0]['method'] == CompressionMethod.LZMA and coders[1]['method'] == CompressionMethod.P7Z_BCJ:
                 self.methods_map[1] = False
-        #
+        # when only a native method is FILTER_X86
+        if not all(self.methods_map) and any(self.methods_map):
+            for i, b in enumerate(self.methods_map):
+                native_compressor = False
+                if b:
+                    filter_id = SupportedMethods.get_filter_id(coders[i])
+                    if SupportedMethods.is_compressor_id(filter_id):
+                        native_compressor = True
+            if not native_compressor:
+                for i, coder in enumerate(coders):
+                    filter_id = SupportedMethods.get_filter_id(coders[i])
+                    if filter_id == FILTER_X86:
+                        self.methods_map[i] = False
+        # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders)
@@ -585,10 +599,17 @@ class SevenZipCompressor:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(self.filters)))
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
         self.coders = []
-        self.cchain = CompressorChain(self.methods_map)
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
+            self.cchain = CompressorChain(self.methods_map)
             self._set_native_compressors_coders(self.filters)
-        elif not any(self.methods_map):  # all alternative
+            return
+        #
+        for i, f in enumerate(self.filters):
+            if f['id'] == FILTER_X86:
+                self.methods_map[i] = False
+        #
+        self.cchain = CompressorChain(self.methods_map)
+        if not any(self.methods_map):  # all alternative
             for filter in filters:
                 self._set_alternate_compressors_coders(filter, password)
         elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
@@ -689,6 +710,11 @@ class SupportedMethods:
     @classmethod
     def is_compressor(cls, filter):
         method = cls._find_method('filter_id', filter['id'])
+        return method['type'] == MethodsType.compressor
+
+    @classmethod
+    def is_compressor_id(cls, filter_id):
+        method = cls._find_method('filter_id', filter_id)
         return method['type'] == MethodsType.compressor
 
     @classmethod
