@@ -375,6 +375,7 @@ algorithm_class_map = {
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
     FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
+    FILTER_X86: {BCJEncoder, BCJDecoder},
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
@@ -388,12 +389,18 @@ def get_alternative_compressor(filter, password=None):
         return algorithm_class_map[filter_id][0]()
 
 
-def get_alternative_decompressor(coder: Dict[str, Any], password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+def get_alternative_decompressor(coder: Dict[str, Any], unpacksize=None, password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+    filter_id = SupportedMethods.get_filter_id(coder)
+    # Special treatment for BCJ
+    if filter_id == FILTER_X86:
+        assert unpacksize
+        return BCJDecoder(size=unpacksize)
+    # Check supported?
     if SupportedMethods.is_native_coder(coder):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
-    filter_id = SupportedMethods.get_filter_id(coder)
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
+    #
     if SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][1](coder['properties'], password)
     elif SupportedMethods.need_property(filter_id):
@@ -472,22 +479,31 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # hack for LZMA1+BCJ which should be native+alternative
+        if len(coders) >= 2:
+            if coders[0]['method'] == CompressionMethod.LZMA and coders[1]['method'] == CompressionMethod.P7Z_BCJ:
+                self.methods_map[1] = False
+        #
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders)
             self.cchain.add_filter(decompressor)
         elif not any(self.methods_map):
             for i in range(len(coders)):
-                self.cchain.add_filter(get_alternative_decompressor(coders[i], password))
+                self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
         elif any(self.methods_map):
             for i in range(len(coders)):
                 if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
                     for j in range(i):
-                        self.cchain.add_filter(get_alternative_decompressor(coders[j], password))
+                        self.cchain.add_filter(get_alternative_decompressor(coders[j], unpacksizes[j], password))
                     self.cchain.add_filter(get_lzma_decompressor(coders[i:]))
                     break
             else:
-                raise UnsupportedCompressionMethodError
+                for i in range(len(coders)):
+                    if self.methods_map[i]:
+                        self.cchain.add_filter(get_lzma_decompressor([coders[i]]))
+                    else:
+                        self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
         else:
             raise UnsupportedCompressionMethodError
 
