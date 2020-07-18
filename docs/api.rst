@@ -231,24 +231,37 @@ Here is a table of algorithms.
 |  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
 |   | - Decompression      | IA64, ARMT, SPARC)                       |
 +---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ                               |
+|  2|                      | LZMA + BCJ(X86, ARM, PPC, IA64, SPARC)   |
 +---+                      +------------------------------------------+
-|  3|                      | LZMA2 or LZMA only                       |
+|  3|                      | LZMA2, LZMA, Bzip2, Deflate only         |
 +---+                      +------------------------------------------+
-|  4|                      | Bzip2, Deflate, ZStandard                |
+|  4|                      | Bzip2, or Deflate + BCJ(X86)             |
 +---+----------------------+------------------------------------------+
-|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
+|  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
 +---+ - Decryption         +------------------------------------------+
 |  6|                      | 7zAES + LZMA                             |
 +---+                      +------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
+|  7|                      | 7zAES + Bzip2, Deflate                   |
 +---+----------------------+------------------------------------------+
-|  8| - Extraction only    | COPY                                     |
+|  8| - Compression only   | LZMA + BCJ(ARMT)                         |
 +---+----------------------+------------------------------------------+
-|  9| - Unsupported        | PPMd, BCJ2, Deflate64                    |
+|  9| - Extraction only    | COPY                                     |
++---+----------------------+------------------------------------------+
+| 10| - Unsupported        | PPMd, BCJ2, Deflate64                    |
 +---+                      +------------------------------------------+
-| 10|                      | Bzip2, Deflate, ZStandard + BCJ          |
+| 11|                      | ZStandard                                |
 +---+----------------------+------------------------------------------+
+
+- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
+  but not work with original 7-zip because the original does not implement the feature.
+
+- Decryption of filename encrypted archive is supported.
+
+- CAUTION: Specifying an unsupported algorithms combination may produce a broken archive or raise exception.
+
+- ZStandard is supported when install with pip [zstd] option.
+
+- ZStandard compression/decompression is implemented but it is not well-tested.
 
 
 Possible filters value
