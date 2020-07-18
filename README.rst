@@ -295,23 +295,25 @@ Here is a table of algorithms.
 |  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
 |   | - Decompression      | IA64, ARMT, SPARC)                       |
 +---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ                               |
+|  2|                      | LZMA + BCJ(X86, ARM, PPC, IA64, SPARC)   |
 +---+                      +------------------------------------------+
-|  3|                      | LZMA2 or LZMA only                       |
+|  3|                      | LZMA2, LZMA, Bzip2, Deflate only         |
 +---+                      +------------------------------------------+
-|  4|                      | Bzip2, Deflate, ZStandard                |
+|  4|                      | Bzip2, or Deflate + BCJ(X86)             |
 +---+----------------------+------------------------------------------+
-|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
+|  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
 +---+ - Decryption         +------------------------------------------+
 |  6|                      | 7zAES + LZMA                             |
 +---+                      +------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate or ZStandard      |
+|  7|                      | 7zAES + Bzip2, Deflate                   |
 +---+----------------------+------------------------------------------+
 |  8| - Extraction only    | COPY                                     |
 +---+----------------------+------------------------------------------+
 |  9| - Unsupported        | PPMd, BCJ2, Deflate64                    |
 +---+                      +------------------------------------------+
-| 10|                      | Bzip2, Deflate, ZStandard + BCJ          |
+| 10|                      | LZMA + BCJ(ARMT)                         |
++---+                      +------------------------------------------+
+| 11|                      | ZStandard                                |
 +---+----------------------+------------------------------------------+
 
 
@@ -322,7 +324,10 @@ Here is a table of algorithms.
 
 - CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
 
-- CAUTION: LZMA+BCJ extraction may fail with internal error in decompressor. See issue #178
+- ZStandard is supported when install with pip [zstd] option.
+
+- ZStandard compression/decompression is implemented but it is not well-tested.
+
 
 Use Cases
 =========
