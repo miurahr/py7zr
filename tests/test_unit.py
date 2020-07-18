@@ -1,5 +1,7 @@
+import binascii
 import ctypes
 import datetime
+import hashlib
 import io
 import lzma
 import os
@@ -608,3 +610,33 @@ def test_supported_method_is_crypto_id():
 def test_supported_method_get_method_id():
     id = py7zr.compressor.SupportedMethods.get_method_id({'id': py7zr.properties.FILTER_CRYPTO_AES256_SHA256})
     assert id == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
+
+
+@pytest.mark.unit
+def test_bcj_encode(tmp_path):
+    with open(os.path.join(testdata_path, 'x86.bin'), 'rb') as f:
+        filter = py7zr.compressor.BCJEncoder()
+        m = hashlib.sha256()
+        with tmp_path.joinpath('target.bin').open('wb') as fo:
+            data = f.read(8192)
+            while len(data) > 0:
+                odata = filter.compress(data)
+                m.update(odata)
+                fo.write(odata)
+                data = f.read(8192)
+            odata = filter.flush()
+            m.update(odata)
+            fo.write(odata)
+        assert m.digest() == binascii.unhexlify('e396dadbbe0be4190cdea986e0ec949b049ded2b38df19268a78d32b90b72d42')
+
+
+@pytest.mark.unit
+def test_bcj_decode(tmp_path):
+    with open(os.path.join(testdata_path, 'bcj.bin'), 'rb') as f:
+        filter = py7zr.compressor.BCJDecoder(12800)
+        m = hashlib.sha256()
+        data = f.read(8192)
+        while len(data) > 0:
+            m.update(filter.decompress(data))
+            data = f.read(8192)
+        assert m.digest() == binascii.unhexlify('5ae0726746e2ccdad8f511ecfcf5f79df4533b83f86b1877cebc07f14a4e9b6a')

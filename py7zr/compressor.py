@@ -23,6 +23,7 @@
 #
 import bz2
 import lzma
+import struct
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -262,12 +263,125 @@ class ZstdCompressor(ISevenZipCompressor):
         return b''
 
 
+class BCJFilter:
+
+    _mask_to_allowed_number = [0, 1, 2, 4, 8, 9, 10, 12]
+    _mask_to_bit_number = [0, 1, 2, 2, 3, 3, 3, 3]
+
+    def __init__(self, is_encoder: bool):
+        self.is_encoder = is_encoder  # type: bool
+        #
+        self.prev_mask = 0  # type: int
+        self.prev_pos = -5  # type: int
+        self.current_position = 0  # type: int
+        self.buffer = bytearray()
+
+    def x86_code(self) -> int:
+        size = len(self.buffer)
+        if size < 5:
+            return 0
+        if self.current_position - self.prev_pos > 5:
+            self.prev_pos = self.current_position - 5
+        view = memoryview(self.buffer)
+        limit = size - 5
+        buffer_pos = 0
+        while buffer_pos <= limit:
+            if view[buffer_pos] not in [0xe8, 0xe9]:
+                buffer_pos += 1
+                continue
+            offset = self.current_position + buffer_pos - self.prev_pos
+            self.prev_pos = self.current_position + buffer_pos
+            if offset > 5:
+                self.prev_mask = 0
+            else:
+                for i in range(offset):
+                    self.prev_mask &= 0x77
+                    self.prev_mask <<= 1
+            # note:
+            # condition (self.prev_mask >> 1) in [0, 1, 2, 4, 8, 9, 10, 12]
+            # is as same as
+            # condition _mask_to_allowed_status[(self.prev_mask >> 1) & 0x7] and (self.prev_mask >> 1) < 0x10:
+            # when _mask_to_allowed_status = [True, True, True, False, True, False, False, False]
+            #
+            if view[buffer_pos + 4] in [0, 0xff] and (self.prev_mask >> 1) in self._mask_to_allowed_number:
+                jump_target = self.buffer[buffer_pos + 1:buffer_pos + 5]
+                src = struct.unpack('<L', jump_target)[0]
+                distance = self.current_position + buffer_pos + 5
+                idx = self._mask_to_bit_number[self.prev_mask >> 1]
+                while True:
+                    if self.is_encoder:
+                        dest = src + distance
+                    else:
+                        dest = src - distance
+                    if self.prev_mask == 0:
+                        break
+                    b = 0xFF & (dest >> (24 - idx * 8))
+                    if not (b == 0 or b == 0xFF):
+                        break
+                    src = dest ^ (1 << (32 - idx * 8) - 1)
+                write_view = view[buffer_pos + 1:buffer_pos + 5]
+                write_view[0:3] = (dest & 0xFFFFFF).to_bytes(3, 'little')
+                write_view[3:4] = [b'\x00', b'\xff'][(dest >> 24) & 1]  # (~(((dest >> 24) & 1) - 1)) & 0xFF
+                buffer_pos += 5
+                self.prev_mask = 0
+            else:
+                buffer_pos += 1
+                self.prev_mask |= 1
+        self.current_position += buffer_pos
+        return buffer_pos
+
+
+class BCJDecoder(ISevenZipDecompressor, BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(False)
+        self.stream_size = size  # type: int
+        self.eof = False
+        self.need_input = True
+        self.used_size = 0  # type: int
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        self.buffer.extend(data)
+        view = memoryview(self.buffer)
+        self.used_size += len(data)
+        if self.used_size >= self.stream_size:
+            self.need_input = False
+        pos = self.x86_code()
+        if self.current_position > self.stream_size - 5:
+            offset = self.stream_size - self.current_position
+            tmp = bytes(self.buffer[:pos + offset])
+            self.eof = True
+            self.current_position = self.stream_size
+            self.buffer = bytearray()
+        else:
+            tmp = bytes(self.buffer[:pos])
+            self.buffer = self.buffer[pos:]
+        return tmp
+
+
+class BCJEncoder(ISevenZipCompressor, BCJFilter):
+
+    def __init__(self):
+        super().__init__(True)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        self.buffer.extend(data)
+        pos = self.x86_code()
+        tmp = bytes(self.buffer[:pos])
+        self.buffer = self.buffer[pos:]
+        return tmp
+
+    def flush(self):
+        return bytes(self.buffer)
+
+
 algorithm_class_map = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
     FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
+    FILTER_X86: (BCJEncoder, BCJDecoder),
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
@@ -275,18 +389,24 @@ def get_alternative_compressor(filter, password=None):
     filter_id = filter['id']
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError
-    if SupportedMethods.is_crypto_id(filter_id):
+    elif SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][0](password)
     else:
         return algorithm_class_map[filter_id][0]()
 
 
-def get_alternative_decompressor(coder: Dict[str, Any], password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+def get_alternative_decompressor(coder: Dict[str, Any], unpacksize=None, password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
+    filter_id = SupportedMethods.get_filter_id(coder)
+    # Special treatment for BCJ
+    if filter_id == FILTER_X86:
+        assert unpacksize
+        return BCJDecoder(size=unpacksize)
+    # Check supported?
     if SupportedMethods.is_native_coder(coder):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
-    filter_id = SupportedMethods.get_filter_id(coder)
     if filter_id not in algorithm_class_map:
         raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
+    #
     if SupportedMethods.is_crypto_id(filter_id):
         return algorithm_class_map[filter_id][1](coder['properties'], password)
     elif SupportedMethods.need_property(filter_id):
@@ -365,22 +485,45 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # --------- Hack for special combinations
+        # hack for LZMA1+BCJ which should be native+alternative
+        if len(coders) >= 2:
+            if coders[0]['method'] == CompressionMethod.LZMA and coders[1]['method'] == CompressionMethod.P7Z_BCJ:
+                self.methods_map[1] = False
+        # when only a native method is FILTER_X86
+        if not all(self.methods_map) and any(self.methods_map):
+            for i, b in enumerate(self.methods_map):
+                native_compressor = False
+                if b:
+                    filter_id = SupportedMethods.get_filter_id(coders[i])
+                    if SupportedMethods.is_compressor_id(filter_id):
+                        native_compressor = True
+            if not native_compressor:
+                for i, coder in enumerate(coders):
+                    filter_id = SupportedMethods.get_filter_id(coders[i])
+                    if filter_id == FILTER_X86:
+                        self.methods_map[i] = False
+        # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders)
             self.cchain.add_filter(decompressor)
         elif not any(self.methods_map):
             for i in range(len(coders)):
-                self.cchain.add_filter(get_alternative_decompressor(coders[i], password))
+                self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
         elif any(self.methods_map):
             for i in range(len(coders)):
                 if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
                     for j in range(i):
-                        self.cchain.add_filter(get_alternative_decompressor(coders[j], password))
+                        self.cchain.add_filter(get_alternative_decompressor(coders[j], unpacksizes[j], password))
                     self.cchain.add_filter(get_lzma_decompressor(coders[i:]))
                     break
             else:
-                raise UnsupportedCompressionMethodError
+                for i in range(len(coders)):
+                    if self.methods_map[i]:
+                        self.cchain.add_filter(get_lzma_decompressor([coders[i]]))
+                    else:
+                        self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
         else:
             raise UnsupportedCompressionMethodError
 
@@ -462,10 +605,17 @@ class SevenZipCompressor:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(self.filters)))
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
         self.coders = []
-        self.cchain = CompressorChain(self.methods_map)
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
+            self.cchain = CompressorChain(self.methods_map)
             self._set_native_compressors_coders(self.filters)
-        elif not any(self.methods_map):  # all alternative
+            return
+        #
+        for i, f in enumerate(self.filters):
+            if f['id'] == FILTER_X86:
+                self.methods_map[i] = False
+        #
+        self.cchain = CompressorChain(self.methods_map)
+        if not any(self.methods_map):  # all alternative
             for filter in filters:
                 self._set_alternate_compressors_coders(filter, password)
         elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
@@ -566,6 +716,11 @@ class SupportedMethods:
     @classmethod
     def is_compressor(cls, filter):
         method = cls._find_method('filter_id', filter['id'])
+        return method['type'] == MethodsType.compressor
+
+    @classmethod
+    def is_compressor_id(cls, filter_id):
+        method = cls._find_method('filter_id', filter_id)
         return method['type'] == MethodsType.compressor
 
     @classmethod

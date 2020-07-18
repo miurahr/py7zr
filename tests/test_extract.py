@@ -2,7 +2,6 @@ import asyncio
 import binascii
 import ctypes
 import hashlib
-import lzma
 import os
 import pathlib
 import shutil
@@ -220,9 +219,8 @@ def test_extract_lzmabcj_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='liblzma bug.')
 def test_extract_lzmabcj_3(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('bcj_1.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_1.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
 
 
@@ -432,48 +430,6 @@ def test_extract_lzma2delta(tmp_path):
         archive.extractall(path=tmp_path)
 
 
-@pytest.mark.unit
-@pytest.mark.xfail(reason='liblzma may have a bug against LZMA1+BCJ.')
-def test_lzma_raw_decompressor_lzmabcj():
-    # two files are compress same source by different methods
-    indata = []
-    with testdata_path.joinpath('lzma_bcj_1.7z').open('rb') as rawin:
-        rawin.seek(32)
-        indata.append(rawin.read(11327))
-    with testdata_path.joinpath('lzma_bcj_2.7z').open('rb') as rawin:
-        rawin.seek(32)
-        indata.append(rawin.read(11334))
-    filters1 = []
-    filters1.append({'id': lzma.FILTER_X86})
-    filters1.append(lzma._decode_filter_properties(lzma.FILTER_LZMA1, b']\x00\x00\x01\x00'))
-    filters2 = []
-    filters2.append({'id': lzma.FILTER_X86})
-    filters2.append(lzma._decode_filter_properties(lzma.FILTER_LZMA2, b'\x0b'))
-    decompressor1 = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters1)
-    lzmabcj_out = decompressor1.decompress(indata[0])
-    decompressor3 = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters2)
-    lzma2bcj_out = decompressor3.decompress(indata[1])
-    decompressor4 = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters1[1:])
-    lzma_out = decompressor4.decompress(indata[0])
-    decompressor5 = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters2[1:])
-    lzma2_out = decompressor5.decompress(indata[1])
-    #
-    # filters1 pipeline:   indata[0] --> LZMA1 --> FILTER_X86 --> lzmabcj_out
-    #                                     +----> lzma_out
-    # filters2 pipeline:   indata[1] --> LZMA2 --> FILTER_X86 --> lzma2bcj_out
-    #                                     +----> lzma2_out
-    #
-    # lzma_out and lzma2_out are same.
-    #
-    # lzmabcj_out and lzma2bcj_out should be same
-    # but lzmabcj_out lacks last 4 bytes by python lzma/liblzma bug.
-    #
-    uncompress_size = 12800
-    assert lzma_out == lzma2_out
-    assert len(lzma2bcj_out) == uncompress_size
-    assert len(lzmabcj_out) == uncompress_size
-
-
 @pytest.mark.skipif(not shutil.which('7z'), reason="no 7z command installed")
 def test_decompress_small_files(tmp_path):
     tmp_path.joinpath('t').mkdir()
@@ -488,3 +444,31 @@ def test_decompress_small_files(tmp_path):
     #
     with py7zr.SevenZipFile(tmp_path / 'target.7z', 'r') as arc:
         arc.testzip()
+
+
+@pytest.mark.files
+@pytest.mark.xfail(reason='lzma module raises exception')
+def test_extract_lzma_bcj_arm(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_arm.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.xfail(reason='lzma module raises exception')
+def test_extract_lzma_bcj_armt(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_armt.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.xfail(reason='lzma module raises exception')
+def test_extract_lzma_bcj_ppc(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_ppc.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
+
+
+@pytest.mark.files
+@pytest.mark.xfail(reason='lzma module raises exception')
+def test_extract_lzma_bcj_sparc(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_sparc.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
