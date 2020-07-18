@@ -448,7 +448,7 @@ def test_decompress_small_files(tmp_path):
 
 @pytest.mark.files
 def test_extract_lzmabcj_sparc(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_sparc.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_bcj_sparc.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
     m = hashlib.sha256(_dict['test/test2.txt'].read())
     assert m.digest() == binascii.unhexlify('1d0d28682fca74c5912ea7e3f6878ccfdb6e4e249b161994b7f2870e6649ef09')
@@ -458,7 +458,7 @@ def test_extract_lzmabcj_sparc(tmp_path):
 
 @pytest.mark.files
 def test_extract_lzmabcj_arm(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_arm.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_bcj_arm.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
     m = hashlib.sha256(_dict['test/test2.txt'].read())
     assert m.digest() == binascii.unhexlify('1d0d28682fca74c5912ea7e3f6878ccfdb6e4e249b161994b7f2870e6649ef09')
@@ -468,7 +468,7 @@ def test_extract_lzmabcj_arm(tmp_path):
 
 @pytest.mark.files
 def test_extract_lzmabcj_armt(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_armt.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_bcj_armt.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
     m = hashlib.sha256(_dict['test/test2.txt'].read())
     assert m.digest() == binascii.unhexlify('1d0d28682fca74c5912ea7e3f6878ccfdb6e4e249b161994b7f2870e6649ef09')
@@ -478,7 +478,7 @@ def test_extract_lzmabcj_armt(tmp_path):
 
 @pytest.mark.files
 def test_extract_lzmabcj_ia64(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_ia64.7z').open(mode='rb')) as ar:
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_bcj_ia64.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
     m = hashlib.sha256(_dict['test/test2.txt'].read())
     assert m.digest() == binascii.unhexlify('1d0d28682fca74c5912ea7e3f6878ccfdb6e4e249b161994b7f2870e6649ef09')

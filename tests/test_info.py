@@ -45,36 +45,36 @@ def test_archiveinfo_lzma2_bcj():
 
 
 @pytest.mark.files
-def test_archiveinfo_lzma_bcj_arm():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_arm.7z'), 'r') as ar:
+def test_archiveinfo_lzma2_bcj_arm():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_arm.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA2, ARM'
 
 
 @pytest.mark.files
-def test_archiveinfo_lzma_bcj_armt():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_armt.7z'), 'r') as ar:
+def test_archiveinfo_lzma2_bcj_armt():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_armt.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA2, ARMT'
 
 
 @pytest.mark.files
-def test_archiveinfo_lzma_bcj_ia64():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ia64.7z'), 'r') as ar:
+def test_archiveinfo_lzma2_bcj_ia64():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_ia64.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA2, IA64'
 
 
 @pytest.mark.files
-def test_archiveinfo_lzma_bcj_ppc():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ppc.7z'), 'r') as ar:
+def test_archiveinfo_lzma2_bcj_ppc():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_ppc.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA2, PPC'
 
 
 @pytest.mark.files
-def test_archiveinfo_lzma_bcj_sparc():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_sparc.7z'), 'r') as ar:
+def test_archiveinfo_lzma2_bcj_sparc():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_sparc.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA2, SPARC'
 
@@ -120,32 +120,32 @@ def test_archivetest_lzma2_bcj():
 
 
 @pytest.mark.files
-def test_archivetest_lzma_bcj_arm():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_arm.7z'), 'r') as ar:
+def test_archivetest_lzma2_bcj_arm():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_arm.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
 @pytest.mark.files
-def test_archivetest_lzma_bcj_armt():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_armt.7z'), 'r') as ar:
+def test_archivetest_lzma2_bcj_armt():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_armt.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
 @pytest.mark.files
-def test_archivetest_lzma_bcj_ia64():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ia64.7z'), 'r') as ar:
+def test_archivetest_lzma2_bcj_ia64():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_ia64.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
 @pytest.mark.files
-def test_archivetest_lzma_bcj_ppc():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_ppc.7z'), 'r') as ar:
+def test_archivetest_lzma2_bcj_ppc():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_ppc.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
 @pytest.mark.files
-def test_archivetest_lzma_bcj_sparc():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_sparc.7z'), 'r') as ar:
+def test_archivetest_lzma2_bcj_sparc():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma2_bcj_sparc.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
