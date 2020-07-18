@@ -10,16 +10,19 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* BCJ Decoder/Encoder written by python.(#198)
 * Add Copy method as an extraction only support.(#184)
 
 Changed
 -------
 
+* Set ZStandard compression as unsupported because of a bug with unknown reason.(#198)
 * Manage compression methods to handle whether decompressor requires coder['property'] or not.
 
 Fixed
 -----
 
+* Support LZMA+BCJ with alternative BCJ filter.(#198)
 * Fix packinfo crc  read and write (#187, #189)
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
 * CLI: Does not crash when trying extract archive which use unsupported method(#183)
