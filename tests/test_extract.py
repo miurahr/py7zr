@@ -447,7 +447,6 @@ def test_decompress_small_files(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_arm(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_arm.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
