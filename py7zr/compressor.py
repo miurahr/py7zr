@@ -655,34 +655,21 @@ class SevenZipDecompressor:
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
         # --------- Hack for special combinations
         # hack for LZMA1+BCJ which should be native+alternative
-        _bcj_methods = [CompressionMethod.P7Z_BCJ, CompressionMethod.BCJ_ARM, CompressionMethod.BCJ_ARMT,
-                        CompressionMethod.BCJ_PPC, CompressionMethod.BCJ_SPARC]
+        _bcj_filters = [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
         if len(coders) >= 2:
             target_compressor = False
             has_bcj = False
-            for coder in coders:
-                if coder['method'] in [CompressionMethod.LZMA, CompressionMethod.MISC_BZIP2,
-                                       CompressionMethod.MISC_DEFLATE, CompressionMethod.MISC_ZSTD]:
+            bcj_index = -1
+            for i, coder in enumerate(coders):
+                filter_id = SupportedMethods.get_filter_id(coder)
+                if SupportedMethods.is_compressor_id(filter_id) and filter_id != FILTER_LZMA2:
                     target_compressor = True
-                if coder['method'] in _bcj_methods:
+                if filter_id in _bcj_filters:
                     has_bcj = True
-            if target_compressor and has_bcj:
-                for i, coder in enumerate(coders):
-                    if coder['method'] in _bcj_methods:
-                        self.methods_map[i] = False
-        # when only a native method is FILTER_X86, FILTER_ARM
-        if not all(self.methods_map) and any(self.methods_map):
-            for i, b in enumerate(self.methods_map):
-                native_compressor = False
-                if b:
-                    filter_id = SupportedMethods.get_filter_id(coders[i])
-                    if SupportedMethods.is_compressor_id(filter_id):
-                        native_compressor = True
-            if not native_compressor:
-                for i, coder in enumerate(coders):
-                    filter_id = SupportedMethods.get_filter_id(coders[i])
-                    if filter_id in _bcj_methods:
-                        self.methods_map[i] = False
+                    bcj_index = i
+                if target_compressor and has_bcj:
+                    self.methods_map[bcj_index] = False
+                    break
         # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
@@ -869,7 +856,7 @@ class SupportedMethods:
                {'id': CompressionMethod.BCJ_SPARC, 'name': 'SPARC', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_SPARC, 'type': MethodsType.filter},
                {'id': CompressionMethod.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False, 'need_prop': False,
-                'filter_id': FILTER_DEFLATE, 'type': MethodsType.filter},
+                'filter_id': FILTER_DEFLATE, 'type': MethodsType.compressor},
                {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
                {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': False,
