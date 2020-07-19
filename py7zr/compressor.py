@@ -663,14 +663,15 @@ class SevenZipDecompressor:
         _bcj_methods = [CompressionMethod.P7Z_BCJ, CompressionMethod.BCJ_ARM, CompressionMethod.BCJ_ARMT,
                         CompressionMethod.BCJ_PPC, CompressionMethod.BCJ_SPARC]
         if len(coders) >= 2:
-            has_lzma1 = False
+            target_compressor = False
             has_bcj = False
             for coder in coders:
-                if coder['method'] == CompressionMethod.LZMA:
-                    has_lzma1 = True
+                if coder['method'] in [CompressionMethod.LZMA, CompressionMethod.MISC_BZIP2,
+                                       CompressionMethod.MISC_DEFLATE, CompressionMethod.MISC_ZSTD]:
+                    target_compressor = True
                 if coder['method'] in _bcj_methods:
                     has_bcj = True
-            if has_lzma1 and has_bcj:
+            if target_compressor and has_bcj:
                 for i, coder in enumerate(coders):
                     if coder['method'] in _bcj_methods:
                         self.methods_map[i] = False
