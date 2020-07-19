@@ -231,11 +231,11 @@ Here is a table of algorithms.
 |  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
 |   | - Decompression      | IA64, ARMT, SPARC)                       |
 +---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ(X86, ARM, PPC, IA64, SPARC)   |
+|  2|                      | LZMA + BCJ(X86,ARMT,ARM,PPC,SPARC)       |
 +---+                      +------------------------------------------+
 |  3|                      | LZMA2, LZMA, Bzip2, Deflate only         |
 +---+                      +------------------------------------------+
-|  4|                      | Bzip2, or Deflate + BCJ(X86)             |
+|  4|                      | Bzip2,Deflate+BCJ(X86,ARM,PPC,ARMT,SPARC)|
 +---+----------------------+------------------------------------------+
 |  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
 +---+ - Decryption         +------------------------------------------+
@@ -243,7 +243,7 @@ Here is a table of algorithms.
 +---+                      +------------------------------------------+
 |  7|                      | 7zAES + Bzip2, Deflate                   |
 +---+----------------------+------------------------------------------+
-|  8| - Compression only   | LZMA + BCJ(ARMT)                         |
+|  8| - Compression only   | LZMA + BCJ(IA64)                         |
 +---+----------------------+------------------------------------------+
 |  9| - Extraction only    | COPY                                     |
 +---+----------------------+------------------------------------------+

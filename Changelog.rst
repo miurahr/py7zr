@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* BCJ Decoder/Encoder written by python.(#198)
+* BCJ Decoder/Encoder written by python.(#198, #199)
+* Support Bzip2, Defalte + BCJ(X86, PPC, ARM, ARMT, SPARC) (#199)
 * Add Copy method as an extraction only support.(#184)
 
 Changed
@@ -22,7 +23,7 @@ Changed
 Fixed
 -----
 
-* Support LZMA+BCJ with alternative BCJ filter.(#198)
+* Support LZMA+BCJ(X86, PPC, ARM, ARMT, SPARC) with alternative BCJ filter.(#198, #199)
 * Fix packinfo crc  read and write (#187, #189)
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
 * CLI: Does not crash when trying extract archive which use unsupported method(#183)
