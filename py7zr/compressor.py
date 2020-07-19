@@ -268,13 +268,81 @@ class BCJFilter:
     _mask_to_allowed_number = [0, 1, 2, 4, 8, 9, 10, 12]
     _mask_to_bit_number = [0, 1, 2, 2, 3, 3, 3, 3]
 
-    def __init__(self, is_encoder: bool):
+    def __init__(self, func, readahead: int, is_encoder: bool, stream_size: int = 0):
         self.is_encoder = is_encoder  # type: bool
         #
         self.prev_mask = 0  # type: int
         self.prev_pos = -5  # type: int
         self.current_position = 0  # type: int
+        self.stream_size = stream_size  # type: int  # should initialize in child class
         self.buffer = bytearray()
+        #
+        self._method = func
+        self._readahead = readahead
+
+    def _sparc_code(self):
+        limit = len(self.buffer) - 4
+        i = 0
+        while i <= limit:
+            if (self.buffer[i] == 0x40 and (self.buffer[i + 1] & 0xC0) == 0x00 or
+                    (self.buffer[i] == 0x7F and (self.buffer[i + 1] & 0xC0) == 0xC0)):
+                src = struct.unpack('>L', self.buffer[i:i + 4])[0] << 2
+                distance = self.current_position + i
+                if self.is_encoder:
+                    dest = (src + distance) >> 2
+                else:
+                    dest = (src - distance) >> 2
+                dest = (((0 - ((dest >> 22) & 1)) << 22) & 0x3FFFFFFF) | (dest & 0x3FFFFF) | 0x40000000
+                self.buffer[i:i + 4] = struct.pack('>L', dest)
+            i += 4
+        self.current_position = i
+        return i
+
+    def _ppc_code(self):
+        limit = len(self.buffer) - 4
+        i = 0
+        while i <= limit:
+            # PowerPC branch 6(48) 24(Offset) 1(Abs) 1(Link)
+            distance = self.current_position + i
+            if int(self.buffer[i]) >> 2 == 0x12 and int(self.buffer[i + 3]) & 3 == 1:
+                src = (int(self.buffer[i + 0]) & 3) << 24 | int(self.buffer[i + 1]) << 16 | \
+                      int(self.buffer[i + 2]) << 8 | int(self.buffer[i + 3])
+                src = (src >> 2) << 2
+                if self.is_encoder:
+                    dest = src + distance
+                else:
+                    dest = src - distance
+                self.buffer[i + 0] = 0x48 | ((dest >> 24) & 0x03)
+                self.buffer[i + 1] = (dest >> 16) & 0xFF
+                self.buffer[i + 2] = (dest >> 8) & 0xFF
+                self.buffer[i + 3] &= 0x03
+                self.buffer[i + 3] |= (dest & 0xFF)
+            i += 4
+        self.current_position = i
+        return i
+
+    def _armt_code(self) -> int:
+        limit = len(self.buffer) - 4
+        i = 0
+        while i <= limit:
+            if self.buffer[i + 1] & 0xF8 == 0xF0 and self.buffer[i + 3] & 0xF8 == 0xF8:
+                src = (int(self.buffer[i + 1]) & 0x07) << 19 | int(self.buffer[i + 0]) << 11 |\
+                      (int(self.buffer[i + 3]) & 0x07) << 8 | int(self.buffer[i + 2])
+                src <<= 1
+                distance = self.current_position + i + 4
+                if self.is_encoder:
+                    dest = src + distance
+                else:
+                    dest = src - distance
+                dest >>= 1
+                self.buffer[i + 1] = 0xF0 | ((dest >> 19) & 0x07)
+                self.buffer[i + 0] = (dest >> 11) & 0xFF
+                self.buffer[i + 3] = 0xF8 | ((dest >> 8) & 0x07)
+                self.buffer[i + 2] = dest & 0xFF
+                i += 2
+            i += 2
+        self.current_position += i
+        return i
 
     def _arm_code(self) -> int:
         limit = len(self.buffer) - 4
@@ -348,10 +416,10 @@ class BCJFilter:
         self.current_position += buffer_pos
         return buffer_pos
 
-    def _decompress(self, func, readahead, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def _decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         self.buffer.extend(data)
-        pos = func()
-        if self.current_position > self.stream_size - readahead:
+        pos = self._method()
+        if self.current_position > self.stream_size - self._readahead:
             offset = self.stream_size - self.current_position
             tmp = bytes(self.buffer[:pos + offset])
             self.current_position = self.stream_size
@@ -361,57 +429,120 @@ class BCJFilter:
             self.buffer = self.buffer[pos:]
         return tmp
 
+    def _compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        self.buffer.extend(data)
+        pos = self._method()
+        tmp = bytes(self.buffer[:pos])
+        self.buffer = self.buffer[pos:]
+        return tmp
+
+    def _flush(self):
+        return bytes(self.buffer)
+
+
+class BcjSparcDecoder(ISevenZipDecompressor, BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self._sparc_code, 4, False, size)
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._decompress(data)
+
+
+class BcjSparcEncoder(ISevenZipCompressor, BCJFilter):
+
+    def __init__(self):
+        super().__init__(self._sparc_code, 4, True)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._compress(data)
+
+    def flush(self):
+        return self._flush()
+
+
+class BcjPpcDecoder(ISevenZipDecompressor, BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self._ppc_code, 4, False, size)
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._decompress(data)
+
+
+class BcjPpcEncoder(ISevenZipCompressor, BCJFilter):
+
+    def __init__(self):
+        super().__init__(self._ppc_code, 4, True)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._compress(data)
+
+    def flush(self):
+        return self._flush()
+
+
+class BcjArmtDecoder(ISevenZipDecompressor, BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self._armt_code, 4, False, size)
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._decompress(data)
+
+
+class BcjArmtEncoder(ISevenZipCompressor, BCJFilter):
+
+    def __init__(self):
+        super().__init__(self._armt_code, 4, True)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._compress(data)
+
+    def flush(self):
+        return self._flush()
+
 
 class BcjArmDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(False)
-        self.stream_size = size  # type: int
+        super().__init__(self._arm_code, 4, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._decompress(self._arm_code, 4, data)
+        return self._decompress(data)
 
 
 class BcjArmEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(True)
+        super().__init__(self._arm_code, 4, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self.buffer.extend(data)
-        pos = self._arm_code()
-        tmp = bytes(self.buffer[:pos])
-        self.buffer = self.buffer[pos:]
-        return tmp
+        return self._compress(data)
 
     def flush(self):
-        return bytes(self.buffer)
+        return self._flush()
 
 
 class BCJDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(False)
-        self.stream_size = size  # type: int
+        super().__init__(self._x86_code, 5, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._decompress(self._x86_code, 5, data)
+        return self._decompress(data)
 
 
 class BCJEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(True)
+        super().__init__(self._x86_code, 5, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self.buffer.extend(data)
-        pos = self._x86_code()
-        tmp = bytes(self.buffer[:pos])
-        self.buffer = self.buffer[pos:]
-        return tmp
+        return self._compress(data)
 
     def flush(self):
-        return bytes(self.buffer)
+        return self._flush()
 
 
 algorithm_class_map = {
@@ -422,6 +553,9 @@ algorithm_class_map = {
     FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
     FILTER_X86: (BCJEncoder, BCJDecoder),
     FILTER_ARM: (BcjArmEncoder, BcjArmDecoder),
+    FILTER_ARMTHUMB: (BcjArmtEncoder, BcjArmtDecoder),
+    FILTER_POWERPC: (BcjPpcEncoder, BcjPpcDecoder),
+    FILTER_SPARC: (BcjSparcEncoder, BcjSparcDecoder),
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
@@ -437,12 +571,9 @@ def get_alternative_compressor(filter, password=None):
 
 def get_alternative_decompressor(coder: Dict[str, Any], unpacksize=None, password=None) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
     filter_id = SupportedMethods.get_filter_id(coder)
-    # Special treatment for BCJ
-    if filter_id == FILTER_X86:
-        assert unpacksize
-        return BCJDecoder(size=unpacksize)
-    elif filter_id == FILTER_ARM:
-        return BcjArmDecoder(size=unpacksize)
+    # Special treatment for BCJ filters
+    if filter_id in [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]:
+        return algorithm_class_map[filter_id][1](size=unpacksize)
     # Check supported?
     if SupportedMethods.is_native_coder(coder):
         raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
@@ -474,7 +605,7 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]]):
 
 
 class DecompressorChain:
-    '''decompressor filter chain'''
+    """decompressor filter chain"""
 
     def __init__(self, methods_map, unpacksizes):
         self.filters = []  # type: List[ISevenZipDecompressor]
@@ -529,17 +660,19 @@ class SevenZipDecompressor:
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
         # --------- Hack for special combinations
         # hack for LZMA1+BCJ which should be native+alternative
+        _bcj_methods = [CompressionMethod.P7Z_BCJ, CompressionMethod.BCJ_ARM, CompressionMethod.BCJ_ARMT,
+                        CompressionMethod.BCJ_PPC, CompressionMethod.BCJ_SPARC]
         if len(coders) >= 2:
             has_lzma1 = False
             has_bcj = False
             for coder in coders:
                 if coder['method'] == CompressionMethod.LZMA:
                     has_lzma1 = True
-                if coder['method'] in [CompressionMethod.P7Z_BCJ, CompressionMethod.BCJ_ARM]:
+                if coder['method'] in _bcj_methods:
                     has_bcj = True
             if has_lzma1 and has_bcj:
                 for i, coder in enumerate(coders):
-                    if coder['method'] in [CompressionMethod.P7Z_BCJ, CompressionMethod.BCJ_ARM]:
+                    if coder['method'] in _bcj_methods:
                         self.methods_map[i] = False
         # when only a native method is FILTER_X86, FILTER_ARM
         if not all(self.methods_map) and any(self.methods_map):
@@ -552,7 +685,7 @@ class SevenZipDecompressor:
             if not native_compressor:
                 for i, coder in enumerate(coders):
                     filter_id = SupportedMethods.get_filter_id(coders[i])
-                    if filter_id in [FILTER_X86, FILTER_ARM]:
+                    if filter_id in _bcj_methods:
                         self.methods_map[i] = False
         # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)

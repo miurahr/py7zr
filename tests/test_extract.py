@@ -447,21 +447,18 @@ def test_extract_lzma_bcj_arm(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_armt(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_armt.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_ppc(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_ppc.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_sparc(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_sparc.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
