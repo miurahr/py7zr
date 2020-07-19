@@ -284,8 +284,7 @@ class BCJFilter:
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
-            if (self.buffer[i] == 0x40 and (self.buffer[i + 1] & 0xC0) == 0x00 or
-                    (self.buffer[i] == 0x7F and (self.buffer[i + 1] & 0xC0) == 0xC0)):
+            if (self.buffer[i], self.buffer[i + 1] & 0xC0) in [(0x40, 0x00), (0x7F, 0xC0)]:
                 src = struct.unpack('>L', self.buffer[i:i + 4])[0] << 2
                 distance = self.current_position + i
                 if self.is_encoder:
@@ -304,41 +303,39 @@ class BCJFilter:
         while i <= limit:
             # PowerPC branch 6(48) 24(Offset) 1(Abs) 1(Link)
             distance = self.current_position + i
-            if int(self.buffer[i]) >> 2 == 0x12 and int(self.buffer[i + 3]) & 3 == 1:
-                src = (int(self.buffer[i + 0]) & 3) << 24 | int(self.buffer[i + 1]) << 16 | \
-                      int(self.buffer[i + 2]) << 8 | int(self.buffer[i + 3])
-                src = (src >> 2) << 2
+            if self.buffer[i] & 0xFC == 0x48 and self.buffer[i + 3] & 0x03 == 1:
+                src = struct.unpack('>L', self.buffer[i:i + 4])[0] & 0x3FFFFFC
                 if self.is_encoder:
                     dest = src + distance
                 else:
                     dest = src - distance
-                self.buffer[i + 0] = 0x48 | ((dest >> 24) & 0x03)
-                self.buffer[i + 1] = (dest >> 16) & 0xFF
-                self.buffer[i + 2] = (dest >> 8) & 0xFF
-                self.buffer[i + 3] &= 0x03
-                self.buffer[i + 3] |= (dest & 0xFF)
+                # lsb = int(self.buffer[i + 3]) & 0x03 == 1
+                dest = (0x48 << 24) | (dest & 0x03FFFFFF) | 1
+                self.buffer[i:i + 4] = struct.pack('>L', dest)
             i += 4
         self.current_position = i
         return i
+
+    def _unpack_thumb(self, b: Union[bytearray, bytes, memoryview]) -> int:
+        return ((b[1] & 0x07) << 19) | (b[0] << 11) | ((b[3] & 0x07) << 8) | b[2]
+
+    def _pack_thumb(self, val: int):
+        b = bytes([(val >> 11) & 0xFF, 0xF0 | ((val >> 19) & 0x07), val & 0xFF, 0xF8 | ((val >> 8) & 0x07)])
+        return b
 
     def _armt_code(self) -> int:
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
             if self.buffer[i + 1] & 0xF8 == 0xF0 and self.buffer[i + 3] & 0xF8 == 0xF8:
-                src = (int(self.buffer[i + 1]) & 0x07) << 19 | int(self.buffer[i + 0]) << 11 |\
-                      (int(self.buffer[i + 3]) & 0x07) << 8 | int(self.buffer[i + 2])
-                src <<= 1
+                src = self._unpack_thumb(self.buffer[i:i + 4]) << 1
                 distance = self.current_position + i + 4
                 if self.is_encoder:
                     dest = src + distance
                 else:
                     dest = src - distance
                 dest >>= 1
-                self.buffer[i + 1] = 0xF0 | ((dest >> 19) & 0x07)
-                self.buffer[i + 0] = (dest >> 11) & 0xFF
-                self.buffer[i + 3] = 0xF8 | ((dest >> 8) & 0x07)
-                self.buffer[i + 2] = dest & 0xFF
+                self.buffer[i:i + 4] = self._pack_thumb(dest)
                 i += 2
             i += 2
         self.current_position += i
@@ -349,15 +346,13 @@ class BCJFilter:
         i = 0
         while i <= limit:
             if self.buffer[i + 3] == 0xEB:
-                src = ((int(self.buffer[i + 2]) << 16) | (int(self.buffer[i + 1]) << 8) | int(self.buffer[i + 0])) << 2
+                src = struct.unpack('<L', self.buffer[i:i + 3] + b'\x00')[0] << 2
                 distance = self.current_position + i + 8
                 if self.is_encoder:
                     dest = (src + distance) >> 2
                 else:
                     dest = (src - distance) >> 2
-                self.buffer[i + 0] = dest & 0xFF
-                self.buffer[i + 1] = (dest >> 8) & 0xFF
-                self.buffer[i + 2] = (dest >> 16) & 0xFF
+                self.buffer[i:i + 3] = struct.pack('<L', dest & 0xFFFFFF)[:3]
             i += 4
         self.current_position += i
         return i
