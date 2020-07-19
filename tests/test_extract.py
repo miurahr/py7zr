@@ -201,26 +201,14 @@ def test_lzma2bcj2(tmp_path):
 
 
 @pytest.mark.files
-def test_extract_lzmabcj_archiveinfo():
-    with py7zr.SevenZipFile(str(testdata_path.joinpath('lzma_bcj.7z')), 'r') as ar:
-        ar.archiveinfo()
-
-
-@pytest.mark.files
-def test_extract_lzmabcj_1(tmp_path):
+def test_extract_lzma_1(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_1.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-def test_extract_lzmabcj_2(tmp_path):
+def test_extract_lzma2_1(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma2_1.7z').open(mode='rb')) as ar:
-        _dict = ar.readall()
-
-
-@pytest.mark.files
-def test_extract_lzmabcj_3(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_1.7z').open(mode='rb')) as ar:
         _dict = ar.readall()
 
 
@@ -447,28 +435,30 @@ def test_decompress_small_files(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
+def test_extract_lzma_bcj_x86(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_x86.7z').open(mode='rb')) as ar:
+        _dict = ar.readall()
+
+
+@pytest.mark.files
 def test_extract_lzma_bcj_arm(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_arm.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_armt(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_armt.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_ppc(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_ppc.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)
 
 
 @pytest.mark.files
-@pytest.mark.xfail(reason='lzma module raises exception')
 def test_extract_lzma_bcj_sparc(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('lzma_bcj_sparc.7z').open(mode='rb')) as ar:
         ar.extractall(tmp_path)

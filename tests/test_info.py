@@ -32,7 +32,7 @@ def test_archiveinfo_lzma_bcj2():
 
 @pytest.mark.files
 def test_archiveinfo_lzma_bcj():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj.7z'), 'r') as ar:
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_x86.7z'), 'r') as ar:
         ai = ar.archiveinfo()
         assert ai.method_names == 'LZMA, BCJ'
 
@@ -108,7 +108,7 @@ def test_archivetest_lzma_bcj2():
 
 @pytest.mark.files
 def test_archivetest_lzma_bcj():
-    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj.7z'), 'r') as ar:
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'lzma_bcj_x86.7z'), 'r') as ar:
         assert ar.testzip() is None
 
 
