@@ -1027,7 +1027,7 @@ class Worker:
         decompressor = folder.get_decompressor(compressed_size)
         zero_request = False
         while out_remaining > 0:
-            max_length = min(out_remaining, io.DEFAULT_BUFFER_SIZE)
+            max_length = out_remaining
             rest_size = src_end - fp.tell()
             if rest_size == 0:
                 # now we come to end of folder.
