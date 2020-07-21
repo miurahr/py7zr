@@ -16,6 +16,7 @@ Changed
 Fixed
 -----
 
+
 Deprecated
 ----------
 
@@ -24,6 +25,21 @@ Removed
 
 Security
 --------
+
+`v0.8.3`_
+=========
+
+Changed
+-------
+
+* Use large(1MB) read blocksize for Python 3.7.5 and later and PyPy 7.2.0 and later.
+
+
+Fixed
+-----
+
+* Fix decompression max_size to pass lzma module. Now it is as same as out_remaining.
+
 
 `v0.8.2`_
 =========
@@ -1001,7 +1017,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.3...HEAD
+.. _v0.8.3: https://github.com/miurahr/py7zr/compare/v0.8.2...v0.8.3
 .. _v0.8.2: https://github.com/miurahr/py7zr/compare/v0.8.1...v0.8.2
 .. _v0.8.1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.8.1
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.8.0b8...v0.8.0
