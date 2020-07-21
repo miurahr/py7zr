@@ -22,11 +22,18 @@
 #
 import binascii
 import lzma
+import platform
+import sys
 from enum import Enum
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
-READ_BLOCKSIZE = 32248  # type: int
+if platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
+    READ_BLOCKSIZE = 1048576  # type: int
+elif sys.version_info >= (3, 7, 5):
+    READ_BLOCKSIZE = 1048576
+else:
+    READ_BLOCKSIZE = 32248
 QUEUELEN = READ_BLOCKSIZE * 2
 COMMAND_HELP_STRING = '''<Commands>
   c : Create archive with files
