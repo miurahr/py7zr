@@ -17,12 +17,14 @@ Added
 Changed
 -------
 
+* Use large(1MB) read blocksize for Python 3.7.5 and later and PyPy 7.2.0 and later.
 * Set ZStandard compression as unsupported because of a bug with unknown reason.(#198)
 * Manage compression methods to handle whether decompressor requires coder['property'] or not.
 
 Fixed
 -----
 
+* Fix decompression max_size to pass lzma module. Now it is as same as out_remaining.
 * Support LZMA+BCJ(X86, PPC, ARM, ARMT, SPARC) with alternative BCJ filter.(#198, #199)
 * Fix packinfo crc  read and write (#187, #189)
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
