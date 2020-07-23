@@ -1,27 +1,18 @@
 language: python
 dist: bionic
 sudo: false
-cache: pip
-language: python
 matrix:
   include:
     - python: 3.7
-      env: TOXENV=check PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
+      env: TOXENV=check PYTEST_ADDOPTS=""
     - python: 3.7
-      env: TOXENV=docs PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
+      env: TOXENV=docs PYTEST_ADDOPTS=""
     - python: 3.7
-      env: TOXENV=mypy PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS=""
+      env: TOXENV=mypy PYTEST_ADDOPTS=""
     - python: pypy3.6-7.2.0
-      env: TOXENV=pypy3 PYTEST_NO_COVERAGE=1 PYTEST_ADDOPTS="--benchmark-skip"
+      env: TOXENV=pypy3 PYTEST_ADDOPTS="--benchmark-skip"
 
 install:
-  - pip install tox-travis coveralls
+  - pip install tox-travis
 
 script: tox
-
-after_success:
-  - |
-    if [[ "$PYTEST_NO_COVERAGE" != 1 ]]; then
-      coverage xml --ignore-errors
-      coveralls
-    fi
