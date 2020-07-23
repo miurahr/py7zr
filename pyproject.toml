@@ -6,7 +6,10 @@ build-backend = "setuptools.build_meta"
 local_scheme = "no-local-version"
 
 [tool.coverage.run]
-omit = "*test*"
+branch = true
+parallel = true
+source = ["py7zr"]
 
 [tool.coverage.report]
-exclude_lines = ["if __name__ == .__main__.:", "def __repr__"]
+show_missing = true
+exclude_lines = ["if __name__ == .__main__.:", "pragma: no-cover", "@abstract", "def __repr__"]
