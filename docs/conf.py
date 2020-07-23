@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'py7zr'
-copyright = u'2019, Hiroshi Miura'
+copyright = u'2019-2020, Hiroshi Miura'
 author = u'Hiroshi Miura'
 
 # The version info for the project you're documenting, acts as replacement for
