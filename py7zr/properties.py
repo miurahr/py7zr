@@ -33,7 +33,7 @@ if platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
 elif sys.version_info >= (3, 7, 5):
     READ_BLOCKSIZE = 1048576
 else:
-    READ_BLOCKSIZE = 32248
+    READ_BLOCKSIZE = 32768
 QUEUELEN = READ_BLOCKSIZE * 2
 COMMAND_HELP_STRING = '''<Commands>
   c : Create archive with files
