@@ -375,8 +375,11 @@ class Buffer:
     def add(self, data: Union[bytes, bytearray, memoryview]):
         length = len(data)
         if length + self._buflen > self._size:
-            raise BufferOverflow()  # pragma: no-cover
-        self._buf[self._buflen:self._buflen + length] = data
+            # extend buffer
+            self._buf = self._buf[:self._buflen] + data
+            self._size = self._buflen + length
+        else:
+            self._buf[self._buflen:self._buflen + length] = data
         self._buflen += length
         self.view = memoryview(self._buf[0:self._buflen])
 
@@ -387,8 +390,11 @@ class Buffer:
     def set(self, data: Union[bytes, bytearray, memoryview]) -> None:
         length = len(data)
         if length > self._size:
-            raise BufferOverflow()  # pragma: no-cover
-        self._buf[0:length] = data
+            # extend buffer
+            self._buf = bytearray(data)
+            self._size = length
+        else:
+            self._buf[0:length] = data
         self._buflen = length
         self.view = memoryview(self._buf[0:length])
 
