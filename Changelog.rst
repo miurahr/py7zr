@@ -10,6 +10,28 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+
+`v0.8.0`_
+=========
+
+Added
+-----
+
 * BCJ Decoder/Encoder written by python.(#198, #199)
 * Support Bzip2, Defalte + BCJ(X86, PPC, ARM, ARMT, SPARC) (#199)
 * Add Copy method as an extraction only support.(#184)
@@ -30,14 +52,6 @@ Fixed
 * Accept archive which Method ID is NULL(size=0)(#181, #182)
 * CLI: Does not crash when trying extract archive which use unsupported method(#183)
 
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.8.0`_
 =========
@@ -678,7 +692,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.0...HEAD
+.. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
