@@ -288,6 +288,7 @@ and ZStandard with third party libraries.
 such as PPMd, BCJ2 and Deflate64.
 
 Here is a table of algorithms.
+
 +---+----------------------+--------------------------------------------+
 |  #| Category             | Algorithm combination                      |
 +===+======================+============================================+
