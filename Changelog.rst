@@ -26,6 +26,19 @@ Security
 --------
 
 
+`v0.9.1`_
+=========
+
+Changed
+-------
+
+* Improve DecompressionChain.decompress() logics.(#207)
+
+Fixed
+-----
+
+* Fix BCJ filter for decompression that can cause infinite loop or wrong output.(#204,#205,#206)
+
 `v0.9.0`_
 =========
 
@@ -694,7 +707,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.1...HEAD
+.. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
 .. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
