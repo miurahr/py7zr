@@ -26,7 +26,7 @@ Security
 --------
 
 
-`v0.8.0`_
+`v0.9.0`_
 =========
 
 Added
@@ -46,6 +46,8 @@ Changed
 Fixed
 -----
 
+* Significantly improve decompress performance which is as same speed as v0.7.*.
+  by updating buffer handling.
 * Fix decompression max_size to pass lzma module. Now it is as same as out_remaining.
 * Support LZMA+BCJ(X86, PPC, ARM, ARMT, SPARC) with alternative BCJ filter.(#198, #199)
 * Fix packinfo crc  read and write (#187, #189)
