@@ -391,15 +391,15 @@ class BCJFilter:
                 idx = self._mask_to_bit_number[self.prev_mask >> 1]
                 while True:
                     if self.is_encoder:
-                        dest = src + distance
+                        dest = (src + distance) & 0xffffffff  # uint32 behavior
                     else:
-                        dest = src - distance
+                        dest = (src - distance) & 0xffffffff
                     if self.prev_mask == 0:
                         break
                     b = 0xFF & (dest >> (24 - idx * 8))
                     if not (b == 0 or b == 0xFF):
                         break
-                    src = dest ^ (1 << (32 - idx * 8) - 1)
+                    src = dest ^ ((1 << (32 - idx * 8)) - 1) & 0xffffffff
                 write_view = view[buffer_pos + 1:buffer_pos + 5]
                 write_view[0:3] = (dest & 0xFFFFFF).to_bytes(3, 'little')
                 write_view[3:4] = [b'\x00', b'\xff'][(dest >> 24) & 1]  # (~(((dest >> 24) & 1) - 1)) & 0xFF
