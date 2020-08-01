@@ -633,6 +633,7 @@ class DecompressorChain:
         if max_length == 0:
             res = self._buf + self._decompress(self._unused + data)
             self._buf = bytearray()
+            self._unused = bytearray()
         else:
             current_buf_len = len(self._buf)
             if current_buf_len >= max_length:
@@ -645,8 +646,12 @@ class DecompressorChain:
                     self._unused = bytearray()
                 else:
                     tmp = self._decompress(data)
-                res = self._buf + tmp[:max_length - current_buf_len]
-                self._buf = bytearray(tmp[max_length - current_buf_len:])
+                if current_buf_len + len(tmp) <= max_length:
+                    res = self._buf + tmp
+                    self._buf = bytearray()
+                else:
+                    res = self._buf + tmp[:max_length - current_buf_len]
+                    self._buf = bytearray(tmp[max_length - current_buf_len:])
         return res
 
     @property
