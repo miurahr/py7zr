@@ -1036,9 +1036,12 @@ class Worker:
                     raise Exception("decompression get wrong: no output data.")
                 zero_request = True
             else:
-                read_size = min(READ_BLOCKSIZE, rest_size)
-                inp = fp.read(read_size)
-                tmp = decompressor.decompress(inp, max_length)
+                if decompressor.unused_size >= READ_BLOCKSIZE:
+                    tmp = decompressor.decompress(b'', max_length)
+                else:
+                    read_size = min(READ_BLOCKSIZE - decompressor.unused_size, rest_size)
+                    inp = fp.read(read_size)
+                    tmp = decompressor.decompress(inp, max_length)
             if len(tmp) > 0 and out_remaining >= len(tmp):
                 out_remaining -= len(tmp)
                 fq.write(tmp)
