@@ -612,7 +612,8 @@ class DecompressorChain:
             prev = r
             self._unpacksizes.append(unpacksizes[i - shift])
         self._unpacked = [0 for _ in range(len(self._unpacksizes))]
-        self._buf = b''
+        self._unused = bytearray()
+        self._buf = bytearray()
 
     def add_filter(self, filter):
         self.filters.append(filter)
@@ -630,13 +631,27 @@ class DecompressorChain:
 
     def decompress(self, data, max_length=0):
         if max_length == 0:
-            res = self._buf + self._decompress(data)
-            self._buf = b''
+            res = self._buf + self._decompress(self._unused + data)
+            self._buf = bytearray()
         else:
-            tmp = self._buf + self._decompress(data)
-            res = tmp[:max_length]
-            self._buf = tmp[max_length:]
+            current_buf_len = len(self._buf)
+            if current_buf_len >= max_length:
+                self._unused.extend(data)
+                res = self._buf[:max_length]
+                self._buf = self._buf[max_length:]
+            else:
+                if len(self._unused) > 0:
+                    tmp = self._decompress(self._unused + data)
+                    self._unused = bytearray()
+                else:
+                    tmp = self._decompress(data)
+                res = self._buf + tmp[:max_length - current_buf_len]
+                self._buf = bytearray(tmp[max_length - current_buf_len:])
         return res
+
+    @property
+    def unused_size(self):
+        return len(self._unused)
 
 
 class SevenZipDecompressor:
@@ -709,6 +724,10 @@ class SevenZipDecompressor:
 
     def check_crc(self):
         return self.crc == self.digest
+
+    @property
+    def unused_size(self):
+        return self.cchain.unused_size
 
 
 class CompressorChain:
