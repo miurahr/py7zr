@@ -26,6 +26,16 @@ Removed
 Security
 --------
 
+`v0.8.4`_
+=========
+
+Fixed
+-----
+
+* Significantly improve decompress performance which is as same speed as v0.7.*.
+  by updating buffer handling.(#203)
+
+
 `v0.8.3`_
 =========
 
@@ -1017,7 +1027,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.4...HEAD
+.. _v0.8.4: https://github.com/miurahr/py7zr/compare/v0.8.3...v0.8.4
 .. _v0.8.3: https://github.com/miurahr/py7zr/compare/v0.8.2...v0.8.3
 .. _v0.8.2: https://github.com/miurahr/py7zr/compare/v0.8.1...v0.8.2
 .. _v0.8.1: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.8.1
