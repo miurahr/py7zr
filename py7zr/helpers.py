@@ -367,19 +367,13 @@ class BufferOverflow(Exception):
 class Buffer:
 
     def __init__(self, size: int = 16):
-        self._size = size
         self._buf = bytearray(size)
         self._buflen = 0
         self.view = memoryview(self._buf[0:0])
 
     def add(self, data: Union[bytes, bytearray, memoryview]):
         length = len(data)
-        if length + self._buflen > self._size:
-            # extend buffer
-            self._buf = self._buf[:self._buflen] + data
-            self._size = self._buflen + length
-        else:
-            self._buf[self._buflen:self._buflen + length] = data
+        self._buf[self._buflen:] = data
         self._buflen += length
         self.view = memoryview(self._buf[0:self._buflen])
 
@@ -389,12 +383,7 @@ class Buffer:
 
     def set(self, data: Union[bytes, bytearray, memoryview]) -> None:
         length = len(data)
-        if length > self._size:
-            # extend buffer
-            self._buf = bytearray(data)
-            self._size = length
-        else:
-            self._buf[0:length] = data
+        self._buf[0:] = data
         self._buflen = length
         self.view = memoryview(self._buf[0:length])
 
