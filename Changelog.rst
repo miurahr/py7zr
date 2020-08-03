@@ -26,6 +26,15 @@ Removed
 Security
 --------
 
+`v0.8.5`_
+=========
+
+Chnaged
+-------
+
+* Intenal helper class Buffer now grow when addtion or set request larger data.(#202)
+
+
 `v0.8.4`_
 =========
 
@@ -1027,7 +1036,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.8.5...HEAD
+.. _v0.8.5: https://github.com/miurahr/py7zr/compare/v0.8.4...v0.8.5
 .. _v0.8.4: https://github.com/miurahr/py7zr/compare/v0.8.3...v0.8.4
 .. _v0.8.3: https://github.com/miurahr/py7zr/compare/v0.8.2...v0.8.3
 .. _v0.8.2: https://github.com/miurahr/py7zr/compare/v0.8.1...v0.8.2
