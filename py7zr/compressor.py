@@ -76,7 +76,7 @@ class AESCompressor(ISevenZipCompressor):
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
         self.flushed = False
-        self.buf = Buffer(size=READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE)
+        self.buf = Buffer(size=READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE * 2)
 
     def encode_filter_properties(self):
         # cycles = secrets.SystemRandom().randint(1, 23)
