@@ -360,10 +360,6 @@ class NullIO:
         pass
 
 
-class BufferOverflow(Exception):
-    pass
-
-
 class Buffer:
 
     def __init__(self, size: int = 16):
