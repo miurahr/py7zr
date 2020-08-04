@@ -598,8 +598,18 @@ def get_alternative_decompressor(coder: Dict[str, Any], unpacksize=None, passwor
         return algorithm_class_map[filter_id][1]()
 
 
-def get_lzma_decompressor(coders: List[Dict[str, Any]]):
+class LZMA1Decompressor(ISevenZipDecompressor):
+    def __init__(self, filters, unpacksize):
+        self._decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+        self.unpacksize = unpacksize
+
+    def decompress(self, data, max_length):
+        return self._decompressor.decompress(data, max_length)
+
+
+def get_lzma_decompressor(coders: List[Dict[str, Any]], unpacksize: int):
     filters = []  # type: List[Dict[str, Any]]
+    lzma1 = False
     for coder in coders:
         if coder['numinstreams'] != 1 or coder['numoutstreams'] != 1:
             raise UnsupportedCompressionMethodError('Only a simple compression method is currently supported.')
@@ -607,11 +617,16 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]]):
             raise UnsupportedCompressionMethodError
         properties = coder.get('properties', None)
         filter_id = SupportedMethods.get_filter_id(coder)
+        if filter_id == FILTER_LZMA:
+            lzma1 = True
         if properties is not None:
             filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
         else:
             filters[:0] = [{'id': filter_id}]
-    return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
+    if lzma1:
+        return LZMA1Decompressor(filters, unpacksize)
+    else:
+        return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
 
 class DecompressorChain:
@@ -636,7 +651,10 @@ class DecompressorChain:
     def _decompress(self, data, max_length: int):
         for i, decompressor in enumerate(self.filters):
             if self._unpacked[i] < self._unpacksizes[i]:
-                data = decompressor.decompress(data, max_length)
+                if isinstance(decompressor, LZMA1Decompressor):
+                    data = decompressor.decompress(data, max_length)  # always give max_length for lzma1
+                else:
+                    data = decompressor.decompress(data)
                 self._unpacked[i] += len(data)
             elif len(data) == 0:
                 data = b''
@@ -708,7 +726,7 @@ class SevenZipDecompressor:
         # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
-            decompressor = get_lzma_decompressor(coders)
+            decompressor = get_lzma_decompressor(coders, unpacksizes[-1])
             self.cchain.add_filter(decompressor)
         elif not any(self.methods_map):
             for i in range(len(coders)):
@@ -718,12 +736,12 @@ class SevenZipDecompressor:
                 if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
                     for j in range(i):
                         self.cchain.add_filter(get_alternative_decompressor(coders[j], unpacksizes[j], password))
-                    self.cchain.add_filter(get_lzma_decompressor(coders[i:]))
+                    self.cchain.add_filter(get_lzma_decompressor(coders[i:], unpacksizes[i]))
                     break
             else:
                 for i in range(len(coders)):
                     if self.methods_map[i]:
-                        self.cchain.add_filter(get_lzma_decompressor([coders[i]]))
+                        self.cchain.add_filter(get_lzma_decompressor([coders[i]], unpacksizes[i]))
                     else:
                         self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
         else:
