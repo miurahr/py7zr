@@ -25,6 +25,16 @@ Removed
 Security
 --------
 
+`v0.9.2`_
+=========
+
+Changed
+-------
+
+* Utilize max_length argument for each decompressor.(#210, #211)
+* Change READ_BUFFER_SIZE 32768 for python 3.7.5 and before.
+* Extend Buffer size when necessary.(#209)
+
 
 `v0.9.1`_
 =========
@@ -707,7 +717,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.2...HEAD
+.. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
 .. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0
