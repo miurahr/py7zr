@@ -233,9 +233,6 @@ class DeflateDecompressor(ISevenZipDecompressor):
 
 class CopyCompressor(ISevenZipCompressor):
 
-    def __init__(self):
-        self._buf = bytes()
-
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return bytes(data)
 
@@ -244,9 +241,6 @@ class CopyCompressor(ISevenZipCompressor):
 
 
 class CopyDecompressor(ISevenZipDecompressor):
-
-    def __init__(self):
-        self._buf = bytes()
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return bytes(data)
