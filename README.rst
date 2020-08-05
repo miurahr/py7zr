@@ -297,23 +297,19 @@ Here is a table of algorithms.
 +---+                      +--------------------------------------------+
 |  2|                      | LZMA + BCJ(X86,ARMT,ARM,PPC,SPARC)         |
 +---+                      +--------------------------------------------+
-|  3|                      | LZMA2, LZMA, Bzip2, Deflate only           |
+|  3|                      | LZMA2, LZMA, Bzip2, Deflate, COPY          |
 +---+                      +--------------------------------------------+
 |  4|                      | Bzip2,Deflate + BCJ(X86,ARM,PPC,ARMT,SPARC)|
 +---+----------------------+--------------------------------------------+
-|  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ               |
+|  5| - Encryption         | 7zAES + LZMA2 + Delta or BCJ               |
 +---+ - Decryption         +--------------------------------------------+
 |  6|                      | 7zAES + LZMA                               |
 +---+                      +--------------------------------------------+
 |  7|                      | 7zAES + Bzip2, Deflate                     |
 +---+----------------------+--------------------------------------------+
-|  8| - Compression only   | LZMA + BCJ(IA64)                           |
+|  8| - Compression only   | LZMA + BCJ(IA64), ZStandard                |
 +---+----------------------+--------------------------------------------+
-|  9| - Extraction only    | COPY                                       |
-+---+----------------------+--------------------------------------------+
-| 10| - Unsupported        | PPMd, BCJ2, Deflate64                      |
-+---+                      +--------------------------------------------+
-| 11|                      | ZStandard                                  |
+|  9| - Unsupported        | PPMd, BCJ2, Deflate64                      |
 +---+----------------------+--------------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
