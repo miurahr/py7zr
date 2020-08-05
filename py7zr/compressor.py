@@ -248,14 +248,26 @@ class CopyDecompressor(ISevenZipDecompressor):
 
 class ZstdDecompressor(ISevenZipDecompressor):
 
-    def __init__(self):
+    def __init__(self, properties):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self._ctc = Zstd.ZstdDecompressor()  # type: ignore
+        if len(properties) == 3 or len(properties) == 5:
+            _major = properties[0]
+            _minor = properties[1]
+            _level = properties[2]
+            required_version = (_major, _minor, 0)
+        else:
+            raise UnsupportedCompressionMethodError
+        if Zstd.ZSTD_VERSION < required_version:
+            raise UnsupportedCompressionMethodError
+        if 0 < _level <= 22:
+            ctc = Zstd.ZstdDecompressor()  # type: ignore
+        else:
+            raise UnsupportedCompressionMethodError
+        self.dobj = ctc.decompressobj()  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        dobj = self._ctc.decompressobj()  # type: ignore
-        return dobj.decompress(data)
+        return self.dobj.decompress(data)
 
 
 class ZstdCompressor(ISevenZipCompressor):
@@ -851,6 +863,10 @@ class SevenZipCompressor:
         compressor = get_alternative_compressor(filter, password)
         if SupportedMethods.is_crypto(filter):
             properties = compressor.encode_filter_properties()
+        elif SupportedMethods.need_property(filter['id']):
+            if filter['id'] == FILTER_ZSTD:
+                level = 3
+                properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
         else:
             properties = None
         self.cchain.add_filter(compressor)
@@ -910,7 +926,7 @@ class SupportedMethods:
                 'filter_id': FILTER_DEFLATE, 'type': MethodsType.compressor},
                {'id': CompressionMethod.MISC_BZIP2, 'name': 'BZip2', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
-               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': False,
+               {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_ZSTD, 'type': MethodsType.compressor},
                {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_CRYPTO_AES256_SHA256, 'type': MethodsType.crypto},

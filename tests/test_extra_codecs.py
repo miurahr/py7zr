@@ -100,7 +100,8 @@ def test_zstd_decompressor():
     plain_data += plain_data
     source_data = b"(\xb5/\xfd @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
                   b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
-    decompressor = py7zr.compressor.ZstdDecompressor()
+    property = b'\x01\x04\x04\x00\x00'
+    decompressor = py7zr.compressor.ZstdDecompressor(property)
     outdata = decompressor.decompress(source_data)
     assert outdata == plain_data
 
