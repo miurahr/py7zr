@@ -22,6 +22,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
+import io
 import lzma
 import struct
 import zlib
@@ -261,14 +262,15 @@ class ZstdDecompressor(ISevenZipDecompressor):
         if Zstd.ZSTD_VERSION < required_version:
             raise UnsupportedCompressionMethodError
         if 0 < _level <= 22:
-            ctc = Zstd.ZstdDecompressor()  # type: ignore
+            self.ctc = Zstd.ZstdDecompressor()  # type: ignore
         else:
             raise UnsupportedCompressionMethodError
-        self.dobj = ctc.decompressobj()  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.dobj.decompress(data)
-
+        self.reader = self.ctc.stream_reader(io.BytesIO(data))
+        res = self.reader.read(max_length)
+        self.reader.close()
+        return res
 
 class ZstdCompressor(ISevenZipCompressor):
 

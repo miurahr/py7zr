@@ -632,6 +632,7 @@ def test_compress_files_deref_loop(tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skip(reason="Uncompleted implementation.")
 def test_compress_copy(tmp_path):
     my_filters = [{'id': py7zr.FILTER_COPY}]
     tmp_path.joinpath('src').mkdir()
@@ -778,6 +779,9 @@ def test_compress_zstd_2(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(tmp_path.joinpath('src'), 'src')
     archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
 
 
 @pytest.mark.basic
