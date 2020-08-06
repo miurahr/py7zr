@@ -795,15 +795,24 @@ class CompressorChain:
         self.filters.append(filter)
         self._unpacksizes.append(0)
 
-    def compress(self, data):
-        for i, compressor in enumerate(self.filters):
-            self._unpacksizes[i] += len(data)
-            data = compressor.compress(data)
-        self.packsize += len(data)
-        self.digest = calculate_crc32(data, self.digest)
-        return data
+    def compress(self, fd, fp, crc=0):
+        data = fd.read(READ_BLOCKSIZE)
+        insize = len(data)
+        foutsize = 0
+        while data:
+            crc = calculate_crc32(data, crc)
+            for i, compressor in enumerate(self.filters):
+                self._unpacksizes[i] += len(data)
+                data = compressor.compress(data)
+            self.packsize += len(data)
+            self.digest = calculate_crc32(data, self.digest)
+            foutsize += len(data)
+            fp.write(data)
+            data = fd.read(READ_BLOCKSIZE)
+            insize += len(data)
+        return insize, foutsize, crc
 
-    def flush(self):
+    def flush(self, fp):
         data = None
         for i, compressor in enumerate(self.filters):
             if data:
@@ -814,7 +823,8 @@ class CompressorChain:
                 data = compressor.flush()
         self.packsize += len(data)
         self.digest = calculate_crc32(data, self.digest)
-        return data
+        fp.write(data)
+        return len(data)
 
     @property
     def unpacksizes(self):
@@ -880,24 +890,11 @@ class SevenZipCompressor:
         self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter),
                                'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
-    def compress(self, fd, fp):
-        data = fd.read(READ_BLOCKSIZE)
-        insize = len(data)
-        foutsize = 0
-        crc = 0
-        while data:
-            crc = calculate_crc32(data, crc)
-            out = self.cchain.compress(data)
-            foutsize += len(out)
-            fp.write(out)
-            data = fd.read(READ_BLOCKSIZE)
-            insize += len(data)
-        return insize, foutsize, crc
+    def compress(self, fd, fp, crc=0):
+        return self.cchain.compress(fd, fp, crc)
 
     def flush(self, fp):
-        out = self.cchain.flush()
-        fp.write(out)
-        return len(out)
+        return self.cchain.flush(fp)
 
     @property
     def digest(self):
