@@ -453,8 +453,7 @@ def test_make_file_info2():
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
     filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ]
-    sevenzip_compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
-    lzc = sevenzip_compressor.cchain
+    lzc = py7zr.compressor.SevenZipCompressor(filters=filters)
     outbuf = io.BytesIO()
     _, _, _ = lzc.compress(io.BytesIO(b"Some data\n"), outbuf)
     _, _, _ = lzc.compress(io.BytesIO(b"Another piece of data\n"), outbuf)
@@ -463,12 +462,12 @@ def test_simple_compress_and_decompress():
     result = outbuf.getvalue()
     size = len(result)
     #
-    filters = sevenzip_compressor.filters
+    filters = lzc.filters
     decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
     out5 = decompressor.decompress(result)
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
     #
-    coders = sevenzip_compressor.coders
+    coders = lzc.coders
     crc = py7zr.helpers.calculate_crc32(result)
     decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, [len(out5)], crc)
     outbuf.seek(0, 0)

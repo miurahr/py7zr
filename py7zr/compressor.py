@@ -635,16 +635,44 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]], unpacksize: int):
         return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
 
-class DecompressorChain:
-    """decompressor filter chain"""
+class SevenZipDecompressor:
+    """Main decompressor object which is properly configured and bind to each 7zip folder.
+    because 7zip folder can have a custom compression method"""
 
-    def __init__(self, methods_map, input_size, unpacksizes):
-        self.filters = []  # type: List[ISevenZipDecompressor]
+    def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int],
+                 password: Optional[str] = None) -> None:
+        self.input_size = packsize
+        self.unpacksizes = unpacksizes
+        self.consumed = 0  # type: int
+        self.crc = crc
+        self.digest = 0
+        if len(coders) > 4:
+            raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
+        self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # --------- Hack for special combinations
+        # hack for LZMA1+BCJ which should be native+alternative
+        _bcj_filters = [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
+        if len(coders) >= 2:
+            target_compressor = False
+            has_bcj = False
+            bcj_index = -1
+            for i, coder in enumerate(coders):
+                filter_id = SupportedMethods.get_filter_id(coder)
+                if SupportedMethods.is_compressor_id(filter_id) and filter_id != FILTER_LZMA2:
+                    target_compressor = True
+                if filter_id in _bcj_filters:
+                    has_bcj = True
+                    bcj_index = i
+                if target_compressor and has_bcj:
+                    self.methods_map[bcj_index] = False
+                    break
+        # --------- end of Hack for special combinations
+        self.chain = []  # type: List[ISevenZipDecompressor]
         self._unpacksizes = []
-        self.input_size = input_size
+        self.input_size = self.input_size
         shift = 0
         prev = False
-        for i, r in enumerate(methods_map):
+        for i, r in enumerate(self.methods_map):
             shift += 1 if r and prev else 0
             prev = r
             self._unpacksizes.append(unpacksizes[i - shift])
@@ -652,12 +680,31 @@ class DecompressorChain:
         self.consumed = 0
         self._unused = bytearray()
         self._buf = bytearray()
-
-    def add_filter(self, filter):
-        self.filters.append(filter)
+        # ---
+        if all(self.methods_map):
+            decompressor = get_lzma_decompressor(coders, unpacksizes[-1])
+            self.chain.append(decompressor)
+        elif not any(self.methods_map):
+            for i in range(len(coders)):
+                self.chain.append(get_alternative_decompressor(coders[i], unpacksizes[i], password))
+        elif any(self.methods_map):
+            for i in range(len(coders)):
+                if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
+                    for j in range(i):
+                        self.chain.append(get_alternative_decompressor(coders[j], unpacksizes[j], password))
+                    self.chain.append(get_lzma_decompressor(coders[i:], unpacksizes[i]))
+                    break
+            else:
+                for i in range(len(coders)):
+                    if self.methods_map[i]:
+                        self.chain.append(get_lzma_decompressor([coders[i]], unpacksizes[i]))
+                    else:
+                        self.chain.append(get_alternative_decompressor(coders[i], unpacksizes[i], password))
+        else:
+            raise UnsupportedCompressionMethodError
 
     def _decompress(self, data, max_length: int):
-        for i, decompressor in enumerate(self.filters):
+        for i, decompressor in enumerate(self.chain):
             if self._unpacked[i] < self._unpacksizes[i]:
                 if isinstance(decompressor, LZMA1Decompressor):
                     data = decompressor.decompress(data, max_length)  # always give max_length for lzma1
@@ -699,101 +746,73 @@ class DecompressorChain:
                 else:
                     res = self._buf + tmp[:max_length - current_buf_len]
                     self._buf = bytearray(tmp[max_length - current_buf_len:])
+        self.digest = calculate_crc32(res, self.digest)
         return res
-
-    @property
-    def unused_size(self):
-        return len(self._unused)
-
-
-class SevenZipDecompressor:
-    """Main decompressor object which is properly configured and bind to each 7zip folder.
-    because 7zip folder can have a custom compression method"""
-
-    def __init__(self, coders: List[Dict[str, Any]], packsize: int, unpacksizes: List[int], crc: Optional[int],
-                 password: Optional[str] = None) -> None:
-        self.input_size = packsize
-        self.unpacksizes = unpacksizes
-        self.consumed = 0  # type: int
-        self.crc = crc
-        self.digest = None  # type: Optional[int]
-        if len(coders) > 4:
-            raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
-        self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
-        # --------- Hack for special combinations
-        # hack for LZMA1+BCJ which should be native+alternative
-        _bcj_filters = [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
-        if len(coders) >= 2:
-            target_compressor = False
-            has_bcj = False
-            bcj_index = -1
-            for i, coder in enumerate(coders):
-                filter_id = SupportedMethods.get_filter_id(coder)
-                if SupportedMethods.is_compressor_id(filter_id) and filter_id != FILTER_LZMA2:
-                    target_compressor = True
-                if filter_id in _bcj_filters:
-                    has_bcj = True
-                    bcj_index = i
-                if target_compressor and has_bcj:
-                    self.methods_map[bcj_index] = False
-                    break
-        # --------- end of Hack for special combinations
-        self.cchain = DecompressorChain(self.methods_map, self.input_size, unpacksizes)
-        if all(self.methods_map):
-            decompressor = get_lzma_decompressor(coders, unpacksizes[-1])
-            self.cchain.add_filter(decompressor)
-        elif not any(self.methods_map):
-            for i in range(len(coders)):
-                self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
-        elif any(self.methods_map):
-            for i in range(len(coders)):
-                if (not any(self.methods_map[:i])) and all(self.methods_map[i:]):
-                    for j in range(i):
-                        self.cchain.add_filter(get_alternative_decompressor(coders[j], unpacksizes[j], password))
-                    self.cchain.add_filter(get_lzma_decompressor(coders[i:], unpacksizes[i]))
-                    break
-            else:
-                for i in range(len(coders)):
-                    if self.methods_map[i]:
-                        self.cchain.add_filter(get_lzma_decompressor([coders[i]], unpacksizes[i]))
-                    else:
-                        self.cchain.add_filter(get_alternative_decompressor(coders[i], unpacksizes[i], password))
-        else:
-            raise UnsupportedCompressionMethodError
-
-    def decompress(self, fp, max_length: Optional[int] = None) -> bytes:
-        if max_length is not None:
-            folder_data = self.cchain.decompress(fp, max_length=max_length)
-        else:
-            folder_data = self.cchain.decompress(fp)
-        # calculate CRC with uncompressed data
-        if self.digest:
-            self.digest = calculate_crc32(folder_data, self.digest)
-        else:
-            self.digest = calculate_crc32(folder_data)
-        return folder_data
 
     def check_crc(self):
         return self.crc == self.digest
 
     @property
     def unused_size(self):
-        return self.cchain.unused_size
+        return len(self._unused)
 
 
-class CompressorChain:
-    '''compressor filter chain'''
+class SevenZipCompressor:
+    """Main compressor object to configured for each 7zip folder."""
 
-    def __init__(self, methods_map):
+    __slots__ = ['filters', 'chain', 'compressor', 'coders', 'methods_map', 'digest', 'packsize', '_unpacksizes']
+
+    def __init__(self, filters=None, password=None):
         self.filters = []  # type: List[ISevenZipCompressor]
+        self.chain = []
         self.digest = 0
         self.packsize = 0
         self._unpacksizes = []
-        self.methods_map = methods_map
+        if filters is None:
+            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
+        else:
+            self.filters = filters
+        if len(self.filters) > 4:
+            raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(self.filters)))
+        self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
+        self.coders = []
+        if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
+            self._set_native_compressors_coders(self.filters)
+            return
+        #
+        for i, f in enumerate(self.filters):
+            if f['id'] == FILTER_X86:
+                self.methods_map[i] = False
+        #
+        if not any(self.methods_map):  # all alternative
+            for filter in filters:
+                self._set_alternate_compressors_coders(filter, password)
+        elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
+            self._set_native_compressors_coders(self.filters[:-1])
+            self._set_alternate_compressors_coders(self.filters[-1], password)
+        else:
+            raise UnsupportedCompressionMethodError
 
-    def add_filter(self, filter):
-        self.filters.append(filter)
+    def _set_native_compressors_coders(self, filters):
+        self.chain.append(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
         self._unpacksizes.append(0)
+        for filter in filters:
+            self.coders.insert(0, SupportedMethods.get_coder(filter))
+
+    def _set_alternate_compressors_coders(self, filter, password=None):
+        compressor = get_alternative_compressor(filter, password)
+        if SupportedMethods.is_crypto(filter):
+            properties = compressor.encode_filter_properties()
+        elif SupportedMethods.need_property(filter['id']):
+            if filter['id'] == FILTER_ZSTD:
+                level = 3
+                properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
+        else:
+            properties = None
+        self.chain.append(compressor)
+        self._unpacksizes.append(0)
+        self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter),
+                               'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
     def compress(self, fd, fp, crc=0):
         data = fd.read(READ_BLOCKSIZE)
@@ -801,7 +820,7 @@ class CompressorChain:
         foutsize = 0
         while data:
             crc = calculate_crc32(data, crc)
-            for i, compressor in enumerate(self.filters):
+            for i, compressor in enumerate(self.chain):
                 self._unpacksizes[i] += len(data)
                 data = compressor.compress(data)
             self.packsize += len(data)
@@ -814,7 +833,7 @@ class CompressorChain:
 
     def flush(self, fp):
         data = None
-        for i, compressor in enumerate(self.filters):
+        for i, compressor in enumerate(self.chain):
             if data:
                 self._unpacksizes[i] += len(data)
                 data = compressor.compress(data)
@@ -836,77 +855,6 @@ class CompressorChain:
             prev = r
             result.insert(0, self._unpacksizes[i - shift])
         return result
-
-
-class SevenZipCompressor:
-    """Main compressor object to configured for each 7zip folder."""
-
-    __slots__ = ['filters', 'compressor', 'coders', 'cchain', 'methods_map']
-
-    def __init__(self, filters=None, password=None):
-        if filters is None:
-            self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
-        else:
-            self.filters = filters
-        if len(self.filters) > 4:
-            raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(self.filters)))
-        self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
-        self.coders = []
-        if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
-            self.cchain = CompressorChain(self.methods_map)
-            self._set_native_compressors_coders(self.filters)
-            return
-        #
-        for i, f in enumerate(self.filters):
-            if f['id'] == FILTER_X86:
-                self.methods_map[i] = False
-        #
-        self.cchain = CompressorChain(self.methods_map)
-        if not any(self.methods_map):  # all alternative
-            for filter in filters:
-                self._set_alternate_compressors_coders(filter, password)
-        elif SupportedMethods.is_crypto(self.filters[-1]) and all(self.methods_map[:-1]):  # Crypto + native compression
-            self._set_native_compressors_coders(self.filters[:-1])
-            self._set_alternate_compressors_coders(self.filters[-1], password)
-        else:
-            raise UnsupportedCompressionMethodError
-
-    def _set_native_compressors_coders(self, filters):
-        self.cchain.add_filter(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
-        for filter in filters:
-            self.coders.insert(0, SupportedMethods.get_coder(filter))
-
-    def _set_alternate_compressors_coders(self, filter, password=None):
-        compressor = get_alternative_compressor(filter, password)
-        if SupportedMethods.is_crypto(filter):
-            properties = compressor.encode_filter_properties()
-        elif SupportedMethods.need_property(filter['id']):
-            if filter['id'] == FILTER_ZSTD:
-                level = 3
-                properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
-        else:
-            properties = None
-        self.cchain.add_filter(compressor)
-        self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter),
-                               'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
-
-    def compress(self, fd, fp, crc=0):
-        return self.cchain.compress(fd, fp, crc)
-
-    def flush(self, fp):
-        return self.cchain.flush(fp)
-
-    @property
-    def digest(self):
-        return self.cchain.digest
-
-    @property
-    def unpacksizes(self):
-        return self.cchain.unpacksizes
-
-    @property
-    def packsize(self):
-        return self.cchain.packsize
 
 
 class MethodsType(Enum):
