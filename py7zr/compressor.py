@@ -753,7 +753,10 @@ class SevenZipDecompressor:
         else:
             raise UnsupportedCompressionMethodError
 
-    def decompress(self, data: bytes, max_length: Optional[int] = None) -> bytes:
+    def decompress(self, fp, max_length: Optional[int] = None) -> bytes:
+        rest_size = self.input_size - self.consumed
+        read_size = min(rest_size, READ_BLOCKSIZE)
+        data = fp.read(read_size)
         self.consumed += len(data)
         if max_length is not None:
             folder_data = self.cchain.decompress(data, max_length=max_length)

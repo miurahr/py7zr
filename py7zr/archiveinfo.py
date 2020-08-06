@@ -881,7 +881,7 @@ class Header:
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
             decompressor = folder.get_decompressor(compressed_size)
-            folder_data = decompressor.decompress(fp.read(compressed_size))[:uncompressed_size]
+            folder_data = decompressor.decompress(fp)[:uncompressed_size]
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:

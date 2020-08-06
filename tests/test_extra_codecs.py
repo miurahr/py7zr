@@ -1,3 +1,4 @@
+import io
 import os
 import pathlib
 import zlib
@@ -122,7 +123,8 @@ def test_sevenzipcompressor_aes_lzma2():
     unpacksizes = compressor.unpacksizes
     decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(outdata), unpacksizes=unpacksizes,
                                                          crc=None, password='secret')
-    revert_data = decompressor.decompress(outdata)
+    outfh = io.BytesIO(outdata)
+    revert_data = decompressor.decompress(outfh)
     assert revert_data == plain_data
 
 

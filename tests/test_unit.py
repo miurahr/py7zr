@@ -460,6 +460,7 @@ def test_simple_compress_and_decompress():
     out3 = lzc.compress(b"Even more data\n")
     out4 = lzc.flush()
     result = b"".join([out1, out2, out3, out4])
+    resultfh = io.BytesIO(result)
     size = len(result)
     #
     filters = sevenzip_compressor.filters
@@ -470,7 +471,7 @@ def test_simple_compress_and_decompress():
     coders = sevenzip_compressor.coders
     crc = py7zr.helpers.calculate_crc32(result)
     decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, [len(out5)], crc)
-    out6 = decompressor.decompress(result)
+    out6 = decompressor.decompress(resultfh)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
 
 
@@ -566,7 +567,8 @@ def test_compressor_lzma2bcj(tmp_path):
               {'method': b'\x03\x03\x01\x03', 'numinstreams': 1, 'numoutstreams': 1}]
     decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(plain_data), unpacksizes=unpacksizes,
                                                          crc=None)
-    revert_data = decompressor.decompress(outdata, max_length=len(plain_data))
+    outfh = io.BytesIO(outdata)
+    revert_data = decompressor.decompress(outfh, max_length=len(plain_data))
     assert revert_data == plain_data
 
 
