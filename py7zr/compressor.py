@@ -638,9 +638,10 @@ def get_lzma_decompressor(coders: List[Dict[str, Any]], unpacksize: int):
 class DecompressorChain:
     """decompressor filter chain"""
 
-    def __init__(self, methods_map, unpacksizes):
+    def __init__(self, methods_map, input_size, unpacksizes):
         self.filters = []  # type: List[ISevenZipDecompressor]
         self._unpacksizes = []
+        self.input_size = input_size
         shift = 0
         prev = False
         for i, r in enumerate(methods_map):
@@ -648,6 +649,7 @@ class DecompressorChain:
             prev = r
             self._unpacksizes.append(unpacksizes[i - shift])
         self._unpacked = [0 for _ in range(len(self._unpacksizes))]
+        self.consumed = 0
         self._unused = bytearray()
         self._buf = bytearray()
 
@@ -668,7 +670,13 @@ class DecompressorChain:
                 raise EOFError
         return data
 
-    def decompress(self, data, max_length: int = -1) -> bytes:
+    def decompress(self, fp, max_length: int = -1) -> bytes:
+        # read data from disk
+        rest_size = self.input_size - self.consumed
+        read_size = min(rest_size, READ_BLOCKSIZE)
+        data = fp.read(read_size)
+        self.consumed += len(data)
+        #
         if max_length < 0:
             res = self._buf + self._decompress(self._unused + data, max_length)
             self._buf = bytearray()
@@ -730,7 +738,7 @@ class SevenZipDecompressor:
                     self.methods_map[bcj_index] = False
                     break
         # --------- end of Hack for special combinations
-        self.cchain = DecompressorChain(self.methods_map, unpacksizes)
+        self.cchain = DecompressorChain(self.methods_map, self.input_size, unpacksizes)
         if all(self.methods_map):
             decompressor = get_lzma_decompressor(coders, unpacksizes[-1])
             self.cchain.add_filter(decompressor)
@@ -754,14 +762,10 @@ class SevenZipDecompressor:
             raise UnsupportedCompressionMethodError
 
     def decompress(self, fp, max_length: Optional[int] = None) -> bytes:
-        rest_size = self.input_size - self.consumed
-        read_size = min(rest_size, READ_BLOCKSIZE)
-        data = fp.read(read_size)
-        self.consumed += len(data)
         if max_length is not None:
-            folder_data = self.cchain.decompress(data, max_length=max_length)
+            folder_data = self.cchain.decompress(fp, max_length=max_length)
         else:
-            folder_data = self.cchain.decompress(data)
+            folder_data = self.cchain.decompress(fp)
         # calculate CRC with uncompressed data
         if self.digest:
             self.digest = calculate_crc32(folder_data, self.digest)
