@@ -297,7 +297,7 @@ Here is a table of algorithms.
 +---+                      +--------------------------------------------+
 |  2|                      | LZMA + BCJ(X86,ARMT,ARM,PPC,SPARC)         |
 +---+                      +--------------------------------------------+
-|  3|                      | LZMA2, LZMA, Bzip2, Deflate only           |
+|  3|                      | LZMA2, LZMA, Bzip2, Deflate, COPY          |
 +---+                      +--------------------------------------------+
 |  4|                      | Bzip2,Deflate + BCJ(X86,ARM,PPC,ARMT,SPARC)|
 +---+----------------------+--------------------------------------------+
@@ -309,23 +309,19 @@ Here is a table of algorithms.
 +---+----------------------+--------------------------------------------+
 |  8| - Compression only   | LZMA + BCJ(IA64)                           |
 +---+----------------------+--------------------------------------------+
-|  9| - Extraction only    | COPY                                       |
-+---+----------------------+--------------------------------------------+
-| 10| - Unsupported        | PPMd, BCJ2, Deflate64                      |
+|  9| - Unsupported        | PPMd, BCJ2, Deflate64                      |
 +---+                      +--------------------------------------------+
-| 11|                      | ZStandard                                  |
+| 10|                      | ZStandard                                  |
 +---+----------------------+--------------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- Decryption of filename encrypted archive is supported.
+- Decryption of filename encrypted archive is also supported.
 
 - CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
 
-- ZStandard is supported when install with pip [zstd] option.
-
-- ZStandard compression/decompression is implemented but it is not well-tested.
+- ZStandard support is under development, but not working yet.
 
 
 Use Cases
