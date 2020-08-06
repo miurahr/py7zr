@@ -479,10 +479,12 @@ def test_simple_compress_and_decompress():
 def test_sevenzipcompressor_default():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
     compressor = py7zr.compressor.SevenZipCompressor(filters=None)
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
-    assert len(outdata) > 1
+    _, _, _ = compressor.compress(indata, outdata)
+    _ = compressor.flush(outdata)
+    assert len(outdata.getvalue()) > 1
 
 
 @pytest.mark.unit
@@ -558,17 +560,18 @@ def test_compressor_lzma2bcj(tmp_path):
                   {"id": py7zr.FILTER_LZMA2, "preset": 7}]
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
     compressor = py7zr.compressor.SevenZipCompressor(filters=my_filters)
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
+    _, _, _ = compressor.compress(indata, outdata)
+    _ = compressor.flush(outdata)
     unpacksizes = compressor.unpacksizes
-    assert len(outdata) > 1
+    outdata.seek(0, 0)
     coders = [{'method': b'!', 'properties': b'\x18', 'numinstreams': 1, 'numoutstreams': 1},
               {'method': b'\x03\x03\x01\x03', 'numinstreams': 1, 'numoutstreams': 1}]
     decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(plain_data), unpacksizes=unpacksizes,
                                                          crc=None)
-    outfh = io.BytesIO(outdata)
-    revert_data = decompressor.decompress(outfh, max_length=len(plain_data))
+    revert_data = decompressor.decompress(outdata, max_length=len(plain_data))
     assert revert_data == plain_data
 
 

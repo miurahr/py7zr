@@ -880,11 +880,24 @@ class SevenZipCompressor:
         self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter),
                                'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
-    def compress(self, data):
-        return self.cchain.compress(data)
+    def compress(self, fd, fp):
+        data = fd.read(READ_BLOCKSIZE)
+        insize = len(data)
+        foutsize = 0
+        crc = 0
+        while data:
+            crc = calculate_crc32(data, crc)
+            out = self.cchain.compress(data)
+            foutsize += len(out)
+            fp.write(out)
+            data = fd.read(READ_BLOCKSIZE)
+            insize += len(data)
+        return insize, foutsize, crc
 
-    def flush(self):
-        return self.cchain.flush()
+    def flush(self, fp):
+        out = self.cchain.flush()
+        fp.write(out)
+        return len(out)
 
     @property
     def digest(self):

@@ -891,7 +891,7 @@ class Header:
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
         if pid != Property.HEADER:
-            raise TypeError('Unknown field: %r' % id)  # pragma: no-cover
+            raise TypeError('Unknown field: %r' % pid)  # pragma: no-cover
         self._extract_header_info(buffer2)
 
     def _encode_header(self, file: BinaryIO, afterheader: int, filters):
@@ -911,13 +911,8 @@ class Header:
         folder.unpacksizes = [raw_header_len]
         compressor = folder.get_compressor()
         buf.seek(0, 0)
-        data = buf.read(io.DEFAULT_BUFFER_SIZE)
-        while data:
-            out = compressor.compress(data)
-            file.write(out)
-            data = buf.read(io.DEFAULT_BUFFER_SIZE)
-        out = compressor.flush()
-        file.write(out)
+        _, _, _ = compressor.compress(buf, file)
+        compressor.flush(file)
         #
         headerstreams.packinfo.packsizes = [compressor.packsize]
         headerstreams.packinfo.crcs = [compressor.digest]
