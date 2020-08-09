@@ -453,24 +453,25 @@ def test_make_file_info2():
 @pytest.mark.unit
 def test_simple_compress_and_decompress():
     filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_DEFAULT}, ]
-    sevenzip_compressor = py7zr.compressor.SevenZipCompressor(filters=filters)
-    lzc = sevenzip_compressor.cchain
-    out1 = lzc.compress(b"Some data\n")
-    out2 = lzc.compress(b"Another piece of data\n")
-    out3 = lzc.compress(b"Even more data\n")
-    out4 = lzc.flush()
-    result = b"".join([out1, out2, out3, out4])
+    lzc = py7zr.compressor.SevenZipCompressor(filters=filters)
+    outbuf = io.BytesIO()
+    _, _, _ = lzc.compress(io.BytesIO(b"Some data\n"), outbuf)
+    _, _, _ = lzc.compress(io.BytesIO(b"Another piece of data\n"), outbuf)
+    _, _, _ = lzc.compress(io.BytesIO(b"Even more data\n"), outbuf)
+    _ = lzc.flush(outbuf)
+    result = outbuf.getvalue()
     size = len(result)
     #
-    filters = sevenzip_compressor.filters
+    filters = lzc.filters
     decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
     out5 = decompressor.decompress(result)
     assert out5 == b'Some data\nAnother piece of data\nEven more data\n'
     #
-    coders = sevenzip_compressor.coders
+    coders = lzc.coders
     crc = py7zr.helpers.calculate_crc32(result)
     decompressor = py7zr.compressor.SevenZipDecompressor(coders, size, [len(out5)], crc)
-    out6 = decompressor.decompress(result)
+    outbuf.seek(0, 0)
+    out6 = decompressor.decompress(outbuf)
     assert out6 == b'Some data\nAnother piece of data\nEven more data\n'
 
 
@@ -478,10 +479,12 @@ def test_simple_compress_and_decompress():
 def test_sevenzipcompressor_default():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
     compressor = py7zr.compressor.SevenZipCompressor(filters=None)
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
-    assert len(outdata) > 1
+    _, _, _ = compressor.compress(indata, outdata)
+    _ = compressor.flush(outdata)
+    assert len(outdata.getvalue()) > 1
 
 
 @pytest.mark.unit
@@ -557,11 +560,13 @@ def test_compressor_lzma2bcj(tmp_path):
                   {"id": py7zr.FILTER_LZMA2, "preset": 7}]
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
     compressor = py7zr.compressor.SevenZipCompressor(filters=my_filters)
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
+    _, _, _ = compressor.compress(indata, outdata)
+    _ = compressor.flush(outdata)
     unpacksizes = compressor.unpacksizes
-    assert len(outdata) > 1
+    outdata.seek(0, 0)
     coders = [{'method': b'!', 'properties': b'\x18', 'numinstreams': 1, 'numoutstreams': 1},
               {'method': b'\x03\x03\x01\x03', 'numinstreams': 1, 'numoutstreams': 1}]
     decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(plain_data), unpacksizes=unpacksizes,
@@ -597,18 +602,13 @@ def test_unit_buffer():
 
 
 @pytest.mark.unit
-def test_supported_method_is_crypto():
-    assert py7zr.compressor.SupportedMethods.is_crypto({'id': py7zr.properties.FILTER_CRYPTO_AES256_SHA256})
-
-
-@pytest.mark.unit
 def test_supported_method_is_crypto_id():
     assert py7zr.compressor.SupportedMethods.is_crypto_id(py7zr.properties.FILTER_CRYPTO_AES256_SHA256)
 
 
 @pytest.mark.unit
 def test_supported_method_get_method_id():
-    id = py7zr.compressor.SupportedMethods.get_method_id({'id': py7zr.properties.FILTER_CRYPTO_AES256_SHA256})
+    id = py7zr.compressor.SupportedMethods.get_method_id(py7zr.properties.FILTER_CRYPTO_AES256_SHA256)
     assert id == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
 
 

@@ -1025,24 +1025,9 @@ class Worker:
         out_remaining = size
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
-        zero_request = False
         while out_remaining > 0:
-            max_length = out_remaining
-            rest_size = src_end - fp.tell()
-            if rest_size == 0:
-                # now we come to end of folder.
-                tmp = decompressor.decompress(b'', max_length)
-                if len(tmp) == 0 and zero_request:  # detect infinite loop
-                    raise Exception("decompression get wrong: no output data.")
-                zero_request = True
-            else:
-                if decompressor.unused_size >= READ_BLOCKSIZE:
-                    tmp = decompressor.decompress(b'', max_length)
-                else:
-                    read_size = min(READ_BLOCKSIZE - decompressor.unused_size, rest_size)
-                    inp = fp.read(read_size)
-                    tmp = decompressor.decompress(inp, max_length)
-            if len(tmp) > 0 and out_remaining >= len(tmp):
+            tmp = decompressor.decompress(fp, out_remaining)
+            if len(tmp) > 0:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
@@ -1093,11 +1078,8 @@ class Worker:
                 num_unpack_streams += 1
                 link_target = self._find_link_target(f.origin)  # type: str
                 tgt = link_target.encode('utf-8')  # type: bytes
-                insize = len(tgt)
-                crc = calculate_crc32(tgt, 0)  # type: int
-                out = compressor.compress(tgt)
-                foutsize += len(out)
-                fp.write(out)
+                fd = io.BytesIO(tgt)
+                insize, foutsize, crc = compressor.compress(fd, fp)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
                 self.header.main_streams.substreamsinfo.digests.append(crc)
                 self.header.files_info.files[i]['digest'] = crc
@@ -1107,18 +1089,8 @@ class Worker:
             elif not f.emptystream:
                 last_file_index = i
                 num_unpack_streams += 1
-                insize = 0
-                crc = 0
                 with f.origin.open(mode='rb') as fd:
-                    data = fd.read(READ_BLOCKSIZE)
-                    insize += len(data)
-                    while data:
-                        crc = calculate_crc32(data, crc)
-                        out = compressor.compress(data)
-                        foutsize += len(out)
-                        fp.write(out)
-                        data = fd.read(READ_BLOCKSIZE)
-                        insize += len(data)
+                    insize, foutsize, crc = compressor.compress(fd, fp)
                 self.header.main_streams.substreamsinfo.digestsdefined.append(True)
                 self.header.main_streams.substreamsinfo.digests.append(crc)
                 self.header.files_info.files[i]['digest'] = crc
@@ -1126,9 +1098,7 @@ class Worker:
                 self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
                 unpacksize += insize
         else:
-            out = compressor.flush()
-            foutsize += len(out)
-            fp.write(out)
+            foutsize += compressor.flush(fp)
             if len(self.files) > 0:
                 self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header

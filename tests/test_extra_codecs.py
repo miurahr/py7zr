@@ -1,3 +1,4 @@
+import io
 import os
 import pathlib
 import zlib
@@ -114,13 +115,15 @@ def test_sevenzipcompressor_aes_lzma2():
         {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
     compressor = py7zr.compressor.SevenZipCompressor(filters=filters, password='secret')
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
-    assert len(outdata) < 96
+    insize, outsize, crc = compressor.compress(indata, outdata)
+    outsize += compressor.flush(outdata)
+    outdata.seek(0, 0)
     coders = compressor.coders
     unpacksizes = compressor.unpacksizes
-    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=len(outdata), unpacksizes=unpacksizes,
+    decompressor = py7zr.compressor.SevenZipDecompressor(coders=coders, packsize=outsize, unpacksizes=unpacksizes,
                                                          crc=None, password='secret')
     revert_data = decompressor.decompress(outdata)
     assert revert_data == plain_data
@@ -141,10 +144,13 @@ def test_sevenzipcompressor_aes_only():
         {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}
     ]
     compressor = py7zr.compressor.SevenZipCompressor(filters=filters, password='secret')
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
-    assert len(outdata) == 64
-    assert outdata != plain_data
+    indata = io.BytesIO(plain_data)
+    outdata = io.BytesIO()
+    _, _, _ = compressor.compress(indata, outdata)
+    _ = compressor.flush(outdata)
+    result = outdata.getvalue()
+    assert len(result) == 64
+    assert result != plain_data
 
 
 @pytest.mark.unit
