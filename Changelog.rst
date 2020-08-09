@@ -13,6 +13,8 @@ Added
 Changed
 -------
 
+* Handle file read/write in SevenZipCompressor/Decompressor class (#213)
+
 Fixed
 -----
 
