@@ -25,6 +25,19 @@ Removed
 Security
 --------
 
+`v0.9.3`_
+=========
+
+Fixed
+-----
+
+* Support COPY compression method.
+
+Changed
+-------
+
+* ZStandard compression/decompression handle property.
+
 `v0.9.2`_
 =========
 
@@ -717,7 +730,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.3...HEAD
+.. _v0.9.3: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.9.3
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
 .. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
