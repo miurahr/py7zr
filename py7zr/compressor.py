@@ -575,7 +575,6 @@ algorithm_class_map = {
 }  # type: Dict[int, Tuple[Any, Any]]
 
 
-
 class LZMA1Decompressor(ISevenZipDecompressor):
     def __init__(self, filters, unpacksize):
         self._decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
@@ -617,7 +616,7 @@ class SevenZipDecompressor:
                     self.methods_map[bcj_index] = False
                     break
         # --------- end of Hack for special combinations
-        self.chain = []  # type: Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]
+        self.chain = []  # type: List[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]]
         self._unpacksizes = []  # type: List[int]
         self.input_size = self.input_size
         shift = 0
@@ -776,7 +775,7 @@ class SevenZipCompressor:
         if not any(self.methods_map):  # all alternative
             for filter in filters:
                 self._set_alternate_compressors_coders(filter['id'], password)
-        elif SupportedMethods.is_crypto_id(self.filters[-1]['id']) and all(self.methods_map[:-1]):  # Crypto + native compression
+        elif SupportedMethods.is_crypto_id(self.filters[-1]['id']) and all(self.methods_map[:-1]):
             self._set_native_compressors_coders(self.filters[:-1])
             self._set_alternate_compressors_coders(self.filters[-1]['id'], password)
         else:
