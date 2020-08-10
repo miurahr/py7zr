@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from py7zr.exceptions import UnsupportedCompressionMethodError
+from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
@@ -729,6 +729,10 @@ class SevenZipDecompressor:
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
+                # Check if password given for encrypted archive
+                if SupportedMethods.is_crypto_id(filter_id) and password is None:
+                    raise PasswordRequired("Password is required for extracting given archive.")
+
         # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):

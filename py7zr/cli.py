@@ -243,17 +243,24 @@ class Cli():
             print('not a 7z file')
             return(1)
         with open(target, 'rb') as f:
-            a = py7zr.SevenZipFile(f)
-            file = sys.stdout
-            file.write("Testing archive: {}\n".format(a.filename))
-            self.print_archiveinfo(archive=a, file=file)
-            file.write('\n')
-            if a.testzip() is None:
-                file.write('Everything is Ok\n')
-                return(0)
-            else:
-                file.write('Bad 7zip file\n')
-                return(1)
+            try:
+                a = py7zr.SevenZipFile(f)
+                file = sys.stdout
+                file.write("Testing archive: {}\n".format(a.filename))
+                self.print_archiveinfo(archive=a, file=file)
+                file.write('\n')
+                if a.testzip() is None:
+                    file.write('Everything is Ok\n')
+                    return 0
+                else:
+                    file.write('Bad 7zip file\n')
+                    return 1
+            except py7zr.exceptions.Bad7zFile:
+                print('Header is corrupted. Cannot read as 7z file.')
+                return 1
+            except py7zr.exceptions.PasswordRequired:
+                print('The archive is encrypted but password is not given. FAILED.')
+                return 1
 
     def run_extract(self, args: argparse.Namespace) -> int:
         target = args.arcfile
@@ -274,6 +281,9 @@ class Cli():
         except py7zr.exceptions.Bad7zFile:
             print('Header is corrupted. Cannot read as 7z file.')
             return 1
+        except py7zr.exceptions.PasswordRequired:
+            print('The archive is encrypted, but password is not given. ABORT.')
+            return 1
 
         cb = None  # Optional[ExtractCallback]
         if verbose:
@@ -289,6 +299,9 @@ class Cli():
             return 1
         except py7zr.exceptions.DecompressionError:
             print("Error has been occurred during decompression. ABORT.")
+            return 1
+        except py7zr.exceptions.PasswordRequired:
+            print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         else:
             return 0
