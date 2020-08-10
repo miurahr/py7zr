@@ -11,6 +11,7 @@ import py7zr.archiveinfo
 import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
+from py7zr import PasswordRequired
 from py7zr.properties import CompressionMethod
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
@@ -29,6 +30,13 @@ def test_extract_encrypted_1_mem():
     archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password='secret')
     _dict = archive.readall()
     archive.close()
+
+
+@pytest.mark.files
+def test_extract_encrypted_no_password(tmp_path):
+    with pytest.raises(PasswordRequired):
+        with py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password=None) as archive:
+            archive.extractall(path=tmp_path)
 
 
 @pytest.mark.files

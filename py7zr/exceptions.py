@@ -44,3 +44,7 @@ class DecompressionError(ArchiveError):
 
 class InternalError(ArchiveError):
     pass
+
+
+class PasswordRequired(Exception):
+    pass

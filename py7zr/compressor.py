@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from py7zr.exceptions import UnsupportedCompressionMethodError
+from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
@@ -598,9 +598,7 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
-        # --------- Hack for special combinations
-        # hack for LZMA1+BCJ which should be native+alternative
-        _bcj_filters = [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
+        # Check filters combination and required parameters
         if len(coders) >= 2:
             target_compressor = False
             has_bcj = False
@@ -609,13 +607,16 @@ class SevenZipDecompressor:
                 filter_id = SupportedMethods.get_filter_id(coder)
                 if SupportedMethods.is_compressor_id(filter_id) and filter_id != FILTER_LZMA2:
                     target_compressor = True
-                if filter_id in _bcj_filters:
+                if filter_id in [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]:
                     has_bcj = True
                     bcj_index = i
+                # hack for LZMA1+BCJ which should be native+alternative
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
-        # --------- end of Hack for special combinations
+                # Check if password given for encrypted archive
+                if SupportedMethods.is_crypto_id(filter_id) and password is None:
+                    raise PasswordRequired("Password is required for extracting given archive.")
         self.chain = []  # type: List[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]]
         self._unpacksizes = []  # type: List[int]
         self.input_size = self.input_size
