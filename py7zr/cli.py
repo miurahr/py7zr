@@ -282,7 +282,7 @@ class Cli():
             print('Header is corrupted. Cannot read as 7z file.')
             return 1
         except py7zr.exceptions.PasswordRequired:
-            print('The archive seems to be encrypted, and password is required...aborted.')
+            print('The archive is encrypted, but password is not given. ABORT.')
             return 1
 
         cb = None  # Optional[ExtractCallback]
@@ -299,6 +299,9 @@ class Cli():
             return 1
         except py7zr.exceptions.DecompressionError:
             print("Error has been occurred during decompression. ABORT.")
+            return 1
+        except py7zr.exceptions.PasswordRequired:
+            print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         else:
             return 0
