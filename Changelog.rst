@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.9.4`_
+=========
+
+Changed
+-------
+
+* Raise 'PasswordRequired' exception when no password given for encrypted archive (#215, #216)
+
+
 `v0.9.3`_
 =========
 
@@ -730,7 +739,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.4...HEAD
+.. _v0.9.4: https://github.com/miurahr/py7zr/compare/v0.9.3...v0.9.4
 .. _v0.9.3: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.9.3
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
