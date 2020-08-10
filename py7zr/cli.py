@@ -243,17 +243,24 @@ class Cli():
             print('not a 7z file')
             return(1)
         with open(target, 'rb') as f:
-            a = py7zr.SevenZipFile(f)
-            file = sys.stdout
-            file.write("Testing archive: {}\n".format(a.filename))
-            self.print_archiveinfo(archive=a, file=file)
-            file.write('\n')
-            if a.testzip() is None:
-                file.write('Everything is Ok\n')
-                return(0)
-            else:
-                file.write('Bad 7zip file\n')
-                return(1)
+            try:
+                a = py7zr.SevenZipFile(f)
+                file = sys.stdout
+                file.write("Testing archive: {}\n".format(a.filename))
+                self.print_archiveinfo(archive=a, file=file)
+                file.write('\n')
+                if a.testzip() is None:
+                    file.write('Everything is Ok\n')
+                    return 0
+                else:
+                    file.write('Bad 7zip file\n')
+                    return 1
+            except py7zr.exceptions.Bad7zFile:
+                print('Header is corrupted. Cannot read as 7z file.')
+                return 1
+            except py7zr.exceptions.PasswordRequired:
+                print('The archive is encrypted but password is not given. FAILED.')
+                return 1
 
     def run_extract(self, args: argparse.Namespace) -> int:
         target = args.arcfile
@@ -273,6 +280,9 @@ class Cli():
             a = py7zr.SevenZipFile(target, 'r', password=password)
         except py7zr.exceptions.Bad7zFile:
             print('Header is corrupted. Cannot read as 7z file.')
+            return 1
+        except py7zr.exceptions.PasswordRequired:
+            print('The archive seems to be encrypted, and password is required...aborted.')
             return 1
 
         cb = None  # Optional[ExtractCallback]
