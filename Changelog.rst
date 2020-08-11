@@ -18,6 +18,8 @@ Changed
 Fixed
 -----
 
+* Catch exception in threading extraction(#218,#219)
+
 Deprecated
 ----------
 
