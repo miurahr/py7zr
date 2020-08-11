@@ -965,49 +965,63 @@ class Worker:
                     filename = getattr(fp, 'name', None)
                     self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
                     extract_threads = []
+                    exc_q = queue.Queue()
                     for i in range(numfolders):
                         p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
-                                                   self.src_start + positions[i], self.src_start + positions[i + 1], q))
+                                                   self.src_start + positions[i], self.src_start + positions[i + 1],
+                                                   q, exc_q))
                         p.start()
-                        extract_threads.append((p))
+                        extract_threads.append(p)
                     for p in extract_threads:
                         p.join()
+                    if exc_q.empty():
+                        pass
+                    else:
+                        (exc_type, exc_val, exc_tb) = exc_q.get()
+                        raise exc_type(exc_val).with_traceback(exc_tb)
         else:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0, q)
 
     def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
-                       q: Optional[queue.Queue]) -> None:
+                       q: Optional[queue.Queue], exc_q: Optional[queue.Queue] = None) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
-        if isinstance(fp, str):
-            fp = open(fp, 'rb')
-        fp.seek(src_start)
-        for f in files:
-            if q is not None:
-                q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
-            fileish = self.target_filepath.get(f.id, None)
-            if fileish is not None:
-                fileish.parent.mkdir(parents=True, exist_ok=True)
-                with fileish.open(mode='wb') as ofp:
-                    if not f.emptystream:
-                        # extract to file
+        try:
+            if isinstance(fp, str):
+                fp = open(fp, 'rb')
+            fp.seek(src_start)
+            for f in files:
+                if q is not None:
+                    q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
+                fileish = self.target_filepath.get(f.id, None)
+                if fileish is not None:
+                    fileish.parent.mkdir(parents=True, exist_ok=True)
+                    with fileish.open(mode='wb') as ofp:
+                        if not f.emptystream:
+                            # extract to file
+                            crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
+                            ofp.seek(0)
+                            if f.crc32 is not None and crc32 != f.crc32:
+                                raise CrcError("{}".format(f.filename))
+                        else:
+                            pass  # just create empty file
+                elif not f.emptystream:
+                    # read and bin off a data but check crc
+                    with NullIO() as ofp:
                         crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
-                        ofp.seek(0)
-                        if f.crc32 is not None and crc32 != f.crc32:
-                            raise CrcError("{}".format(f.filename))
-                    else:
-                        pass  # just create empty file
-            elif not f.emptystream:
-                # read and bin off a data but check crc
-                with NullIO() as ofp:
-                    crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
-                if f.crc32 is not None and crc32 != f.crc32:
-                    raise CrcError("{}".format(f.filename))
-            if q is not None:
-                q.put(('e', str(f.filename), str(f.uncompressed)))
+                    if f.crc32 is not None and crc32 != f.crc32:
+                        raise CrcError("{}".format(f.filename))
+                if q is not None:
+                    q.put(('e', str(f.filename), str(f.uncompressed)))
+        except Exception as e:
+            if exc_q is None:
+                raise e
+            else:
+                exc_tuple = sys.exc_info()
+                exc_q.put(exc_tuple)
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> int:
