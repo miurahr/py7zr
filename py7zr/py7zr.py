@@ -965,7 +965,7 @@ class Worker:
                     filename = getattr(fp, 'name', None)
                     self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
                     extract_threads = []
-                    exc_q = queue.Queue()
+                    exc_q = queue.Queue()  # type: queue.Queue
                     for i in range(numfolders):
                         p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
