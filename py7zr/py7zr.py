@@ -827,12 +827,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("Unsupported file type.")
         file_info = self._make_file_info(path, arcname, self.dereference)
+        self.header.files_info.files.append(file_info)
+        self.header.files_info.emptyfiles.append(file_info['emptystream'])
         self.files.append(file_info)
 
     def _write_archive(self):
         folder = self.header.main_streams.unpackinfo.folders[0]
         self.worker.archive(self.fp, folder, deref=self.dereference)
-        # Write header and update signature header
+        self._write_header()
+
+    def _write_header(self):
+        """Write header and update signature header."""
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
                                                                  encoded=self.encoded_header_mode)
         self.sig_header.nextheaderofs = header_pos - self.afterheader
@@ -1071,21 +1076,22 @@ class Worker:
             member = linkname
         return member
 
-    def write(self, fp: BinaryIO, deref, i, f, compressor):
-        if f.is_symlink and not deref:
+    def write(self, fp: BinaryIO, f, assym, folder):
+        compressor = folder.get_compressor()
+        if assym:
             link_target = self._find_link_target(f.origin)  # type: str
             tgt = link_target.encode('utf-8')  # type: bytes
             fd = io.BytesIO(tgt)
             insize, foutsize, crc = compressor.compress(fd, fp)
-        elif not f.emptystream:
+            fd.close()
+        else:
             with f.origin.open(mode='rb') as fd:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
-        self.header.files_info.files[i]['digest'] = crc
-        self.header.files_info.files[i]['maxsize'] = foutsize
         self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] += 1
+        return foutsize, crc
 
     def prepare_archive(self):
         self.header.main_streams.packinfo.numstreams = 1
@@ -1095,16 +1101,16 @@ class Worker:
 
     def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
-        compressor = folder.get_compressor()
         self.prepare_archive()
         last_file_index = 0
         for i, f in enumerate(self.files):
-            self.header.files_info.files.append(f.file_properties())
-            self.header.files_info.emptyfiles.append(f.emptystream)
             if (f.is_symlink and not deref) or not f.emptystream:
-                self.write(fp, deref, i, f, compressor)
+                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
+                self.header.files_info.files[i]['maxsize'] = foutsize
+                self.header.files_info.files[i]['digest'] = crc
                 last_file_index = i
         else:
+            compressor = folder.get_compressor()
             foutsize = compressor.flush(fp)
             if len(self.files) > 0:
                 if 'maxsize' in self.header.files_info.files[last_file_index]:
