@@ -501,17 +501,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             remaining_size -= block
         return digest
 
-    def _write_archive(self):
-        folder = self.header.main_streams.unpackinfo.folders[0]
-        self.worker.archive(self.fp, folder, deref=self.dereference)
-        # Write header and update signature header
-        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
-                                                                 encoded=self.encoded_header_mode)
-        self.sig_header.nextheaderofs = header_pos - self.afterheader
-        self.sig_header.calccrc(header_len, header_crc)
-        self.sig_header.write(self.fp)
-        return
-
     def _is_solid(self):
         for f in self.header.main_streams.substreamsinfo.num_unpackstreams_folders:
             if f > 1:
@@ -840,6 +829,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.files.append(file_info)
 
+    def _write_archive(self):
+        folder = self.header.main_streams.unpackinfo.folders[0]
+        self.worker.archive(self.fp, folder, deref=self.dereference)
+        # Write header and update signature header
+        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
+                                                                 encoded=self.encoded_header_mode)
+        self.sig_header.nextheaderofs = header_pos - self.afterheader
+        self.sig_header.calccrc(header_len, header_crc)
+        self.sig_header.write(self.fp)
+
     def close(self):
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
@@ -1072,54 +1071,50 @@ class Worker:
             member = linkname
         return member
 
+    def write(self, fp: BinaryIO, deref, i, f, compressor):
+        if f.is_symlink and not deref:
+            link_target = self._find_link_target(f.origin)  # type: str
+            tgt = link_target.encode('utf-8')  # type: bytes
+            fd = io.BytesIO(tgt)
+            insize, foutsize, crc = compressor.compress(fd, fp)
+        elif not f.emptystream:
+            with f.origin.open(mode='rb') as fd:
+                insize, foutsize, crc = compressor.compress(fd, fp)
+        self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+        self.header.main_streams.substreamsinfo.digests.append(crc)
+        self.header.files_info.files[i]['digest'] = crc
+        self.header.files_info.files[i]['maxsize'] = foutsize
+        self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] += 1
+
+    def prepare_archive(self):
+        self.header.main_streams.packinfo.numstreams = 1
+        self.header.main_streams.substreamsinfo.digests = []
+        self.header.main_streams.substreamsinfo.digestsdefined = []
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
+
     def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         compressor = folder.get_compressor()
-        unpacksize = 0
-        self.header.main_streams.packinfo.numstreams = 1
-        num_unpack_streams = 0
-        self.header.main_streams.substreamsinfo.digests = []
-        self.header.main_streams.substreamsinfo.digestsdefined = []
+        self.prepare_archive()
         last_file_index = 0
-        foutsize = 0
         for i, f in enumerate(self.files):
-            file_info = f.file_properties()
-            self.header.files_info.files.append(file_info)
+            self.header.files_info.files.append(f.file_properties())
             self.header.files_info.emptyfiles.append(f.emptystream)
-            foutsize = 0
-            if f.is_symlink and not deref:
+            if (f.is_symlink and not deref) or not f.emptystream:
+                self.write(fp, deref, i, f, compressor)
                 last_file_index = i
-                num_unpack_streams += 1
-                link_target = self._find_link_target(f.origin)  # type: str
-                tgt = link_target.encode('utf-8')  # type: bytes
-                fd = io.BytesIO(tgt)
-                insize, foutsize, crc = compressor.compress(fd, fp)
-                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
-                self.header.files_info.files[i]['digest'] = crc
-                self.header.files_info.files[i]['maxsize'] = foutsize
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                unpacksize += insize
-            elif not f.emptystream:
-                last_file_index = i
-                num_unpack_streams += 1
-                with f.origin.open(mode='rb') as fd:
-                    insize, foutsize, crc = compressor.compress(fd, fp)
-                self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-                self.header.main_streams.substreamsinfo.digests.append(crc)
-                self.header.files_info.files[i]['digest'] = crc
-                self.header.files_info.files[i]['maxsize'] = foutsize
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-                unpacksize += insize
         else:
-            foutsize += compressor.flush(fp)
+            foutsize = compressor.flush(fp)
             if len(self.files) > 0:
-                self.header.files_info.files[last_file_index]['maxsize'] = foutsize
+                if 'maxsize' in self.header.files_info.files[last_file_index]:
+                    self.header.files_info.files[last_file_index]['maxsize'] += foutsize
+                else:
+                    self.header.files_info.files[last_file_index]['maxsize'] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.crcs = [compressor.digest]
         self.header.main_streams.packinfo.digestdefined = [True]
         self.header.main_streams.packinfo.packsizes = [compressor.packsize]
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [num_unpack_streams]
         folder.unpacksizes = compressor.unpacksizes
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
