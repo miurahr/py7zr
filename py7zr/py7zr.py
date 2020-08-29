@@ -323,7 +323,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
-                raise NotImplementedError
+                self._real_get_contents(password)
+                self._prepare_append(filters, password)
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
         except Exception as e:
@@ -576,6 +577,25 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
                     outfilename.chmod(outfilename.stat().st_mode & ro_mask)
             return None
+
+    def _prepare_append(self, filters, password):
+        if password is not None and filters is None:
+            filters = ENCRYPTED_ARCHIVE_DEFAULT
+        elif filters is None:
+            filters = ARCHIVE_DEFAULT
+        else:
+            pass
+        folder = Folder()
+        folder.password = password
+        folder.prepare_coderinfo(filters)  # create compressor
+        self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
+        self.header.main_streams.unpackinfo.folders.append(folder)
+        self.header.main_streams.unpackinfo.numfolders += 1
+        pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+        self.fp.seek(pos)
+        self.header.main_streams.packinfo.numstreams += 1
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
+        self.worker = Worker(self.files, pos, self.header)
 
     def _prepare_write(self, filters, password):
         if password is not None and filters is None:
@@ -954,6 +974,8 @@ class Worker:
         self.files = files
         self.src_start = src_start
         self.header = header
+        self.current_file_index = len(self.files)
+        self.last_file_index = len(self.files)
 
     def extract(self, fp: BinaryIO, parallel: bool, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
@@ -1096,7 +1118,7 @@ class Worker:
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
         self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] += 1
+        self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
     def prepare_archive(self):
@@ -1104,8 +1126,6 @@ class Worker:
         self.header.main_streams.substreamsinfo.digests = []
         self.header.main_streams.substreamsinfo.digestsdefined = []
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
-        self.current_file_index = 0
-        self.last_file_index = 0
 
     def flush_archive(self, fp, folder):
         compressor = folder.get_compressor()
