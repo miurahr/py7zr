@@ -265,7 +265,6 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
-    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -451,7 +450,6 @@ def test_compress_symlink(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
-    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -478,7 +476,6 @@ def test_compress_zerofile(tmp_path):
     for i, f in enumerate(archive.header.files_info.files):
         f['emptystream'] = expected[i]
     archive._fpclose()
-    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -514,7 +511,6 @@ def test_compress_directories(tmp_path):
     for i, f in enumerate(archive.header.files_info.files):
         f['emptystream'] = True
     archive._fpclose()
-    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
