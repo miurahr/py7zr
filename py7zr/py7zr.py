@@ -316,6 +316,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         try:
             if mode == "r":
                 self._real_get_contents(password)
+                self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
+                self.worker = Worker(self.files, self.afterheader, self.header)
             elif mode in 'w':
                 self._prepare_write(filters, password)
             elif mode in 'x':
@@ -435,8 +437,145 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     else:
                         file_info['filename'] = 'contents'
             self.files.append(file_info)
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header)
+
+    def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
+                 return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
+        if callback is not None and not isinstance(callback, ExtractCallback):
+            raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
+        elif callback is not None:
+            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
+            self.reporterd.start()
+        target_junction = []  # type: List[pathlib.Path]
+        target_sym = []  # type: List[pathlib.Path]
+        target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
+        target_dirs = []  # type: List[pathlib.Path]
+        if path is not None:
+            if isinstance(path, str):
+                path = pathlib.Path(path)
+            try:
+                if not path.exists():
+                    path.mkdir(parents=True)
+                else:
+                    pass
+            except OSError as e:
+                if e.errno == errno.EEXIST and path.is_dir():
+                    pass
+                else:
+                    raise e
+        fnames = []  # type: List[str]  # check duplicated filename in one archive?
+        self.q.put(('pre', None, None))
+        for f in self.files:
+            # TODO: sanity check
+            # check whether f.filename with invalid characters: '../'
+            if f.filename.startswith('../'):
+                raise Bad7zFile
+            # When archive has a multiple files which have same name
+            # To guarantee order of archive, multi-thread decompression becomes off.
+            # Currently always overwrite by latter archives.
+            # TODO: provide option to select overwrite or skip.
+            if f.filename not in fnames:
+                outname = f.filename
+            else:
+                i = 0
+                while True:
+                    outname = f.filename + '_%d' % i
+                    if outname not in fnames:
+                        break
+            fnames.append(outname)
+            if path is not None:
+                outfilename = path.joinpath(outname)
+            else:
+                outfilename = pathlib.Path(outname)
+            if os.name == 'nt':
+                if outfilename.is_absolute():
+                    # hack for microsoft windows path length limit < 255
+                    outfilename = pathlib.WindowsPath('\\\\?\\' + str(outfilename))
+            if targets is not None and f.filename not in targets:
+                self.worker.register_filelike(f.id, None)
+                continue
+            if f.is_directory:
+                if not outfilename.exists():
+                    target_dirs.append(outfilename)
+                    target_files.append((outfilename, f.file_properties()))
+                else:
+                    pass
+            elif f.is_socket:
+                pass
+            elif return_dict:
+                fname = outfilename.as_posix()
+                _buf = io.BytesIO()
+                self._dict[fname] = _buf
+                self.worker.register_filelike(f.id, MemIO(_buf))
+            elif f.is_symlink:
+                target_sym.append(outfilename)
+                try:
+                    if outfilename.exists():
+                        outfilename.unlink()
+                except OSError as ose:
+                    if ose.errno not in [errno.ENOENT]:
+                        raise
+                self.worker.register_filelike(f.id, outfilename)
+            elif f.is_junction:
+                target_junction.append(outfilename)
+                self.worker.register_filelike(f.id, outfilename)
+            else:
+                self.worker.register_filelike(f.id, outfilename)
+                target_files.append((outfilename, f.file_properties()))
+        for target_dir in sorted(target_dirs):
+            try:
+                target_dir.mkdir(parents=True)
+            except FileExistsError:
+                if target_dir.is_dir():
+                    pass
+                elif target_dir.is_file():
+                    raise DecompressionError("Directory {} is existed as a normal file.".format(str(target_dir)))
+                else:
+                    raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
+
+        try:
+            if callback is not None:
+                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
+            else:
+                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+        except CrcError as ce:
+            raise Bad7zFile("CRC32 error on archived file {}.".format(str(ce)))
+
+        self.q.put(('post', None, None))
+        if return_dict:
+            return self._dict
+        else:
+            # create symbolic links on target path as a working directory.
+            # if path is None, work on current working directory.
+            for t in target_sym:
+                sym_dst = t.resolve()
+                with sym_dst.open('rb') as b:
+                    sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+                sym_dst.unlink()  # unlink after close().
+                sym_dst.symlink_to(pathlib.Path(sym_src))
+            # create junction point only on windows platform
+            if sys.platform.startswith('win'):
+                for t in target_junction:
+                    junction_dst = t.resolve()
+                    with junction_dst.open('rb') as b:
+                        junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                        junction_dst.unlink()
+                        _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
+            # set file properties
+            for outfilename, properties in target_files:
+                # creation time
+                creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                if creationtime is not None:
+                    os.utime(str(outfilename), times=(creationtime, creationtime))
+                if os.name == 'posix':
+                    st_mode = properties['posix_mode']
+                    if st_mode is not None:
+                        outfilename.chmod(st_mode)
+                        continue
+                # fallback: only set readonly if specified
+                if properties['readonly'] and not properties['is_directory']:
+                    ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+                    outfilename.chmod(outfilename.stat().st_mode & ro_mask)
+            return None
 
     def _prepare_write(self, filters, password):
         if password is not None and filters is None:
@@ -457,6 +596,41 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
         self.worker.prepare_archive()
+
+    def _pre_close(self):
+        folder = self.header.main_streams.unpackinfo.folders[0]
+        self.worker.post_archive(self.fp, folder)
+        self._write_header()
+
+    def _write_header(self):
+        """Write header and update signature header."""
+        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
+                                                                 encoded=self.encoded_header_mode)
+        self.sig_header.nextheaderofs = header_pos - self.afterheader
+        self.sig_header.calccrc(header_len, header_crc)
+        self.sig_header.write(self.fp)
+
+    def _writeall(self, path, arcname):
+        try:
+            if path.is_symlink() and not self.dereference:
+                self.write(path, arcname)
+            elif path.is_file():
+                self.write(path, arcname)
+            elif path.is_dir():
+                if not path.samefile('.'):
+                    self.write(path, arcname)
+                for nm in sorted(os.listdir(str(path))):
+                    arc = os.path.join(arcname, nm) if arcname is not None else None
+                    self._writeall(path.joinpath(nm), arc)
+            else:
+                return  # pathlib ignores ELOOP and return False for is_*().
+        except OSError as ose:
+            if self.dereference and ose.errno in [errno.ELOOP]:
+                return  # ignore ELOOP here, this resulted to stop looped symlink reference.
+            elif self.dereference and sys.platform == 'win32' and ose.errno in [errno.ENOENT]:
+                return  # ignore ENOENT which is happened when a case of ELOOP on windows.
+            else:
+                raise
 
     class ParseStatus:
         def __init__(self, src_pos=0):
@@ -627,145 +801,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
         self._extract(path, targets, return_dict=False)
 
-    def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
-                 return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
-        if callback is not None and not isinstance(callback, ExtractCallback):
-            raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
-        elif callback is not None:
-            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
-            self.reporterd.start()
-        target_junction = []  # type: List[pathlib.Path]
-        target_sym = []  # type: List[pathlib.Path]
-        target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
-        target_dirs = []  # type: List[pathlib.Path]
-        if path is not None:
-            if isinstance(path, str):
-                path = pathlib.Path(path)
-            try:
-                if not path.exists():
-                    path.mkdir(parents=True)
-                else:
-                    pass
-            except OSError as e:
-                if e.errno == errno.EEXIST and path.is_dir():
-                    pass
-                else:
-                    raise e
-        fnames = []  # type: List[str]  # check duplicated filename in one archive?
-        self.q.put(('pre', None, None))
-        for f in self.files:
-            # TODO: sanity check
-            # check whether f.filename with invalid characters: '../'
-            if f.filename.startswith('../'):
-                raise Bad7zFile
-            # When archive has a multiple files which have same name
-            # To guarantee order of archive, multi-thread decompression becomes off.
-            # Currently always overwrite by latter archives.
-            # TODO: provide option to select overwrite or skip.
-            if f.filename not in fnames:
-                outname = f.filename
-            else:
-                i = 0
-                while True:
-                    outname = f.filename + '_%d' % i
-                    if outname not in fnames:
-                        break
-            fnames.append(outname)
-            if path is not None:
-                outfilename = path.joinpath(outname)
-            else:
-                outfilename = pathlib.Path(outname)
-            if os.name == 'nt':
-                if outfilename.is_absolute():
-                    # hack for microsoft windows path length limit < 255
-                    outfilename = pathlib.WindowsPath('\\\\?\\' + str(outfilename))
-            if targets is not None and f.filename not in targets:
-                self.worker.register_filelike(f.id, None)
-                continue
-            if f.is_directory:
-                if not outfilename.exists():
-                    target_dirs.append(outfilename)
-                    target_files.append((outfilename, f.file_properties()))
-                else:
-                    pass
-            elif f.is_socket:
-                pass
-            elif return_dict:
-                fname = outfilename.as_posix()
-                _buf = io.BytesIO()
-                self._dict[fname] = _buf
-                self.worker.register_filelike(f.id, MemIO(_buf))
-            elif f.is_symlink:
-                target_sym.append(outfilename)
-                try:
-                    if outfilename.exists():
-                        outfilename.unlink()
-                except OSError as ose:
-                    if ose.errno not in [errno.ENOENT]:
-                        raise
-                self.worker.register_filelike(f.id, outfilename)
-            elif f.is_junction:
-                target_junction.append(outfilename)
-                self.worker.register_filelike(f.id, outfilename)
-            else:
-                self.worker.register_filelike(f.id, outfilename)
-                target_files.append((outfilename, f.file_properties()))
-        for target_dir in sorted(target_dirs):
-            try:
-                target_dir.mkdir(parents=True)
-            except FileExistsError:
-                if target_dir.is_dir():
-                    pass
-                elif target_dir.is_file():
-                    raise DecompressionError("Directory {} is existed as a normal file.".format(str(target_dir)))
-                else:
-                    raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
-
-        try:
-            if callback is not None:
-                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
-            else:
-                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
-        except CrcError as ce:
-            raise Bad7zFile("CRC32 error on archived file {}.".format(str(ce)))
-
-        self.q.put(('post', None, None))
-        if return_dict:
-            return self._dict
-        else:
-            # create symbolic links on target path as a working directory.
-            # if path is None, work on current working directory.
-            for t in target_sym:
-                sym_dst = t.resolve()
-                with sym_dst.open('rb') as b:
-                    sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
-                sym_dst.unlink()  # unlink after close().
-                sym_dst.symlink_to(pathlib.Path(sym_src))
-            # create junction point only on windows platform
-            if sys.platform.startswith('win'):
-                for t in target_junction:
-                    junction_dst = t.resolve()
-                    with junction_dst.open('rb') as b:
-                        junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
-                        junction_dst.unlink()
-                        _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
-            # set file properties
-            for outfilename, properties in target_files:
-                # creation time
-                creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
-                if creationtime is not None:
-                    os.utime(str(outfilename), times=(creationtime, creationtime))
-                if os.name == 'posix':
-                    st_mode = properties['posix_mode']
-                    if st_mode is not None:
-                        outfilename.chmod(st_mode)
-                        continue
-                # fallback: only set readonly if specified
-                if properties['readonly'] and not properties['is_directory']:
-                    ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-                    outfilename.chmod(outfilename.stat().st_mode & ro_mask)
-            return None
-
     def reporter(self, callback: ExtractCallback):
         while True:
             try:
@@ -800,28 +835,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def _writeall(self, path, arcname):
-        try:
-            if path.is_symlink() and not self.dereference:
-                self.write(path, arcname)
-            elif path.is_file():
-                self.write(path, arcname)
-            elif path.is_dir():
-                if not path.samefile('.'):
-                    self.write(path, arcname)
-                for nm in sorted(os.listdir(str(path))):
-                    arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self._writeall(path.joinpath(nm), arc)
-            else:
-                return  # pathlib ignores ELOOP and return False for is_*().
-        except OSError as ose:
-            if self.dereference and ose.errno in [errno.ELOOP]:
-                return  # ignore ELOOP here, this resulted to stop looped symlink reference.
-            elif self.dereference and sys.platform == 'win32' and ose.errno in [errno.ENOENT]:
-                return  # ignore ENOENT which is happened when a case of ELOOP on windows.
-            else:
-                raise
-
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
         if isinstance(file, str):
@@ -836,19 +849,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[0]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
-
-    def _pre_close(self):
-        folder = self.header.main_streams.unpackinfo.folders[0]
-        self.worker.post_archive(self.fp, folder)
-        self._write_header()
-
-    def _write_header(self):
-        """Write header and update signature header."""
-        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
-                                                                 encoded=self.encoded_header_mode)
-        self.sig_header.nextheaderofs = header_pos - self.afterheader
-        self.sig_header.calccrc(header_len, header_crc)
-        self.sig_header.write(self.fp)
 
     def close(self):
         """Flush all the data into archive and close it.
