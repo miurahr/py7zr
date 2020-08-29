@@ -597,9 +597,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.worker = Worker(self.files, self.afterheader, self.header)
         self.worker.prepare_archive()
 
-    def _pre_close(self):
-        folder = self.header.main_streams.unpackinfo.folders[0]
-        self.worker.post_archive(self.fp, folder)
+    def _write_flush(self):
+        folder = self.header.main_streams.unpackinfo.folders[-1]
+        self.worker.flush_archive(self.fp, folder)
         self._write_header()
 
     def _write_header(self):
@@ -847,7 +847,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
         self.files.append(file_info)
-        folder = self.header.main_streams.unpackinfo.folders[0]
+        folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
     def close(self):
@@ -855,7 +855,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         When close py7zr start reading target and writing actual archive file.
         """
         if 'w' in self.mode:
-            self._pre_close()
+            self._write_flush()
         if 'r' in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
@@ -1107,7 +1107,7 @@ class Worker:
         self.current_file_index = 0
         self.last_file_index = 0
 
-    def post_archive(self, fp, folder):
+    def flush_archive(self, fp, folder):
         compressor = folder.get_compressor()
         foutsize = compressor.flush(fp)
         if len(self.files) > 0:
