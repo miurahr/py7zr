@@ -317,23 +317,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if mode == "r":
                 self._real_get_contents(password)
             elif mode in 'w':
-                if password is not None and filters is None:
-                    filters = ENCRYPTED_ARCHIVE_DEFAULT
-                elif filters is None:
-                    filters = ARCHIVE_DEFAULT
-                else:
-                    pass
-                folder = Folder()
-                folder.password = password
-                folder.prepare_coderinfo(filters)
-                self.files = ArchiveFileList()
-                self.sig_header = SignatureHeader()
-                self.sig_header._write_skelton(self.fp)
-                self.afterheader = self.fp.tell()
-                self.header = Header.build_header([folder])
-                self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
-                self.fp.seek(self.afterheader)
-                self.worker = Worker(self.files, self.afterheader, self.header)
+                self._prepare_write(filters, password)
             elif mode in 'x':
                 raise NotImplementedError
             elif mode == 'a':
@@ -453,6 +437,26 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.files.append(file_info)
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
+
+    def _prepare_write(self, filters, password):
+        if password is not None and filters is None:
+            filters = ENCRYPTED_ARCHIVE_DEFAULT
+        elif filters is None:
+            filters = ARCHIVE_DEFAULT
+        else:
+            pass
+        folder = Folder()
+        folder.password = password
+        folder.prepare_coderinfo(filters)
+        self.files = ArchiveFileList()
+        self.sig_header = SignatureHeader()
+        self.sig_header._write_skelton(self.fp)
+        self.afterheader = self.fp.tell()
+        self.header = Header.build_header([folder])
+        self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
+        self.fp.seek(self.afterheader)
+        self.worker = Worker(self.files, self.afterheader, self.header)
+        self.worker.prepare_archive()
 
     class ParseStatus:
         def __init__(self, src_pos=0):
@@ -1098,30 +1102,34 @@ class Worker:
         self.header.main_streams.substreamsinfo.digests = []
         self.header.main_streams.substreamsinfo.digestsdefined = []
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
+        self.current_file_index = 0
+        self.last_file_index = 0
 
-    def archive(self, fp: BinaryIO, folder, deref=False):
-        """Run archive task for specified 7zip folder."""
-        self.prepare_archive()
-        last_file_index = 0
-        for i, f in enumerate(self.files):
-            if (f.is_symlink and not deref) or not f.emptystream:
-                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
-                self.header.files_info.files[i]['maxsize'] = foutsize
-                self.header.files_info.files[i]['digest'] = crc
-                last_file_index = i
-        else:
-            compressor = folder.get_compressor()
-            foutsize = compressor.flush(fp)
-            if len(self.files) > 0:
-                if 'maxsize' in self.header.files_info.files[last_file_index]:
-                    self.header.files_info.files[last_file_index]['maxsize'] += foutsize
-                else:
-                    self.header.files_info.files[last_file_index]['maxsize'] = foutsize
+    def post_archive(self, fp, folder):
+        compressor = folder.get_compressor()
+        foutsize = compressor.flush(fp)
+        if len(self.files) > 0:
+            if 'maxsize' in self.header.files_info.files[self.last_file_index]:
+                self.header.files_info.files[self.last_file_index]['maxsize'] += foutsize
+            else:
+                self.header.files_info.files[self.last_file_index]['maxsize'] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.crcs = [compressor.digest]
         self.header.main_streams.packinfo.digestdefined = [True]
         self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         folder.unpacksizes = compressor.unpacksizes
+
+    def archive(self, fp: BinaryIO, folder, deref=False):
+        """Run archive task for specified 7zip folder."""
+        while self.current_file_index < len(self.files):
+            f = self.files[self.current_file_index]
+            if (f.is_symlink and not deref) or not f.emptystream:
+                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
+                self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
+                self.header.files_info.files[self.current_file_index]['digest'] = crc
+                self.last_file_index = self.current_file_index
+            self.current_file_index += 1
+        self.post_archive(fp, folder)
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
