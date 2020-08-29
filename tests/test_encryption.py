@@ -112,7 +112,7 @@ def test_encrypt_file_1(tmp_path):
     archive.set_encoded_header_mode(False)
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
-    archive._write_archive()
+    archive._write_flush()
     assert len(archive.header.main_streams.unpackinfo.folders[0].coders[0]['properties']) == 18
     assert archive.header.main_streams.substreamsinfo.unpacksizes == [11]
     assert archive.header.main_streams.unpackinfo.folders[0].unpacksizes == [17, 11]
