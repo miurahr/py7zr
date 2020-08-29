@@ -296,7 +296,7 @@ It can be observed as follows when taken hex dump.
 Signature
 ^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain b'7z\xbc\xaf\x27\x1c'.
+The first six bytes of a 7-zip file SHALL always contain b'7z\\xbc\\xaf\\x27\\x1c'.
 
 Version Number
 ^^^^^^^^^^^^^^
