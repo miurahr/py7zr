@@ -13,11 +13,13 @@ Added
 Changed
 -------
 
+* Compression will be happened when call write() not close() (#222, #226)
 * Handle file read/write in SevenZipCompressor/Decompressor class (#213)
 
 Fixed
 -----
 
+* Fix specification typo.
 * Catch exception in threading extraction(#218,#219)
 
 Deprecated
