@@ -835,7 +835,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[0]
-        self.worker._archive(self.fp, self.files, folder, deref=self.dereference)
+        self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
     def _pre_close(self):
         folder = self.header.main_streams.unpackinfo.folders[0]
@@ -1121,7 +1121,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         folder.unpacksizes = compressor.unpacksizes
 
-    def _archive(self, fp: BinaryIO, files, folder, deref=False):
+    def archive(self, fp: BinaryIO, files, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if (f.is_symlink and not deref) or not f.emptystream:
@@ -1130,11 +1130,6 @@ class Worker:
             self.header.files_info.files[self.current_file_index]['digest'] = crc
             self.last_file_index = self.current_file_index
         self.current_file_index += 1
-
-    def archive(self, fp: BinaryIO, folder, deref=False):
-        """Run archive task for specified 7zip folder."""
-        while self.current_file_index < len(self.files):
-            self._archive(fp, self.files, folder, deref)
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
