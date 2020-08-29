@@ -835,9 +835,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
         self.files.append(file_info)
 
-    def _write_archive(self):
+    def _pre_close(self):
         folder = self.header.main_streams.unpackinfo.folders[0]
         self.worker.archive(self.fp, folder, deref=self.dereference)
+        self.worker.post_archive(self.fp, folder)
         self._write_header()
 
     def _write_header(self):
@@ -853,7 +854,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         When close py7zr start reading target and writing actual archive file.
         """
         if 'w' in self.mode:
-            self._write_archive()
+            self._pre_close()
         if 'r' in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
@@ -1119,17 +1120,19 @@ class Worker:
         self.header.main_streams.packinfo.packsizes = [compressor.packsize]
         folder.unpacksizes = compressor.unpacksizes
 
+    def _archive(self, fp: BinaryIO, f, folder, deref=False):
+        """Run archive task for specified 7zip folder."""
+        if (f.is_symlink and not deref) or not f.emptystream:
+            foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
+            self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
+            self.header.files_info.files[self.current_file_index]['digest'] = crc
+            self.last_file_index = self.current_file_index
+        self.current_file_index += 1
+
     def archive(self, fp: BinaryIO, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         while self.current_file_index < len(self.files):
-            f = self.files[self.current_file_index]
-            if (f.is_symlink and not deref) or not f.emptystream:
-                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
-                self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
-                self.header.files_info.files[self.current_file_index]['digest'] = crc
-                self.last_file_index = self.current_file_index
-            self.current_file_index += 1
-        self.post_archive(fp, folder)
+            self._archive(fp,self.files[self.current_file_index], folder, deref)
 
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
