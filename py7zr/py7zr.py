@@ -773,9 +773,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
-        f['creationtime'] = fstat.st_ctime
-        f['lastwritetime'] = fstat.st_mtime
-        f['lastaccesstime'] = fstat.st_atime
+        f['creationtime'] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
+        f['lastwritetime'] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
+        f['lastaccesstime'] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
     # --------------------------------------------------------------------------
@@ -875,6 +875,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         When close py7zr start reading target and writing actual archive file.
         """
         if 'w' in self.mode:
+            self._write_flush()
+        if 'a' in self.mode:
             self._write_flush()
         if 'r' in self.mode:
             if self.reporterd is not None:

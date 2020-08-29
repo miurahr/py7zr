@@ -52,10 +52,6 @@ def write_crcs(file: BinaryIO, crcs):
         write_uint32(file, crc)
 
 
-def read_bytes(file: BinaryIO, length: int) -> Tuple[bytes, ...]:
-    return unpack(b'B' * length, file.read(length))
-
-
 def read_byte(file: BinaryIO) -> int:
     return ord(file.read(1))
 
@@ -244,18 +240,18 @@ class PackInfo:
 
     def write(self, file: BinaryIO):
         assert self.packpos is not None
-        numstreams = len(self.packsizes)
+        assert self.numstreams == len(self.packsizes)
         write_byte(file, Property.PACK_INFO)
         write_uint64(file, self.packpos)
-        write_uint64(file, numstreams)
+        write_uint64(file, self.numstreams)
         write_byte(file, Property.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
         if self.enable_digests:
-            assert len(self.crcs) == numstreams
+            assert len(self.crcs) == self.numstreams
             write_byte(file, Property.CRC)
             write_boolean(file, self.digestdefined, True)
-            for i in range(numstreams):
+            for i in range(self.numstreams):
                 if self.digestdefined[i]:
                     write_uint32(file, self.crcs[i])
         write_byte(file, Property.END)
@@ -744,7 +740,7 @@ class FilesInfo:
         write_byte(fp, b'\x00')
         for i, file in enumerate(self.files):
             if defined[i]:
-                write_real_uint64(fp, ArchiveTimestamp.from_datetime(file[name]))
+                write_real_uint64(fp, file[name])
             else:
                 pass
 
@@ -821,8 +817,8 @@ class FilesInfo:
         # Name
         self._write_names(file)
         # timestamps
-        self._write_times(file, Property.CREATION_TIME, 'creationtime')
-        self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
+        # self._write_times(file, Property.CREATION_TIME, 'creationtime')
+        # self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
         self._write_times(file, Property.LAST_WRITE_TIME, 'lastwritetime')
         # start_pos
         # FIXME: TBD
@@ -991,7 +987,9 @@ class SignatureHeader:
 
     def _read(self, file: BinaryIO) -> None:
         file.seek(len(MAGIC_7Z), 0)
-        self.version = read_bytes(file, 2)
+        major_version = file.read(1)
+        minor_version = file.read(1)
+        self.version = (major_version, minor_version)
         self.startheadercrc, _ = read_uint32(file)
         self.nextheaderofs, data = read_real_uint64(file)
         crc = calculate_crc32(data)

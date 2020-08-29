@@ -886,3 +886,20 @@ def test_compress_small_files(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+def test_compress_append(tmp_path):
+    target = tmp_path.joinpath('target.7z')
+    shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    archive = py7zr.SevenZipFile(target, mode='a')
+    archive.encoded_header_mode = False
+    archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    archive._write_flush()
+    archive._fpclose()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
