@@ -75,7 +75,7 @@ def test_compress_directory_encoded_header(tmp_path):
     archive.set_encoded_header_mode(True)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     assert len(archive.files) == 2
-    archive._write_archive()
+    archive._pre_close()
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.packinfo.packsizes == [17]
     assert archive.header.main_streams.unpackinfo.numfolders == 1
@@ -110,7 +110,7 @@ def test_compress_files_encoded_header(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(True)
     archive.writeall('.')
-    archive._write_archive()
+    archive._pre_close()
     assert len(archive.files) == 4
     assert len(archive.header.files_info.files) == 4
     expected = [True, False, False, False]
@@ -196,7 +196,7 @@ def test_compress_directory(tmp_path):
     archive.set_encoded_header_mode(False)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     assert len(archive.files) == 2
-    archive._write_archive()
+    archive._pre_close()
     assert archive.header.main_streams.packinfo.numstreams == 1
     assert archive.header.main_streams.packinfo.packsizes == [17]
     assert archive.header.main_streams.unpackinfo.numfolders == 1
@@ -231,7 +231,7 @@ def test_compress_files_1(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
-    archive._write_archive()
+    archive._pre_close()
     assert len(archive.files) == 4
     assert len(archive.header.files_info.files) == 4
     expected = [True, False, False, False]
@@ -265,7 +265,7 @@ def test_compress_files_1(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
-    # split archive.close() into _write_archive() and _fpclose()
+    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -415,7 +415,7 @@ def test_compress_symlink(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=filters)
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
-    archive._write_archive()
+    archive._pre_close()
     assert len(archive.header.files_info.files) == 6
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [5]
     assert len(archive.files) == 6
@@ -451,7 +451,7 @@ def test_compress_symlink(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[0].digestdefined is False
     assert archive.header.main_streams.unpackinfo.folders[0].crc is None
     archive._fpclose()
-    # split archive.close() into _write_archive() and _fpclose()
+    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -469,7 +469,7 @@ def test_compress_zerofile(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
-    archive._write_archive()
+    archive._pre_close()
     assert len(archive.header.files_info.files) == 1
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
     assert len(archive.files) == 1
@@ -478,7 +478,7 @@ def test_compress_zerofile(tmp_path):
     for i, f in enumerate(archive.header.files_info.files):
         f['emptystream'] = expected[i]
     archive._fpclose()
-    # split archive.close() into _write_archive() and _fpclose()
+    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
@@ -510,11 +510,11 @@ def test_compress_directories(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w')
     archive.set_encoded_header_mode(False)
     archive.writeall('.')
-    archive._write_archive()
+    archive._pre_close()
     for i, f in enumerate(archive.header.files_info.files):
         f['emptystream'] = True
     archive._fpclose()
-    # split archive.close() into _write_archive() and _fpclose()
+    # split archive.close() into _pre_close() and _fpclose()
     reader = py7zr.SevenZipFile(target, 'r')
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
@@ -583,7 +583,7 @@ def test_compress_lzma2_bcj(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(tmp_path / "src", "src")
-    archive._write_archive()
+    archive._pre_close()
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [12]
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
@@ -640,7 +640,7 @@ def test_compress_copy(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(tmp_path / "src", "src")
-    archive._write_archive()
+    archive._pre_close()
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [12]
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numinstreams'] == 1
     assert archive.header.main_streams.unpackinfo.folders[0].coders[0]['numoutstreams'] == 1
@@ -671,7 +671,7 @@ def test_compress_multi_filter_delta(tmp_path):
     for f in archive.files:
         assert f.filename in ('src', pathlib.Path('src').joinpath('bra.txt').as_posix())
     archive.set_encoded_header_mode(False)
-    archive._write_archive()
+    archive._pre_close()
     assert len(archive.header.files_info.files) == 2
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
     assert len(archive.header.files_info.files) == 2
