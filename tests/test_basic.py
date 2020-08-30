@@ -313,13 +313,31 @@ def test_cli_encrypted_wrong_password(monkeypatch, tmp_path, capsys):
 
     monkeypatch.setattr(getpass, "getpass", _getpasswd)
 
-    expected = 'The archive is corrupted, or password is wrong if given. ABORT.\n'
+    expected = 'The archive is corrupted, or password is wrong. ABORT.\n'
 
     arcfile = os.path.join(testdata_path, "encrypted_1.7z")
     cli = py7zr.cli.Cli()
     cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
     out, err = capsys.readouterr()
     assert out == expected
+
+
+@pytest.mark.cli
+def test_cli_encrypted_zero_length_password(monkeypatch, tmp_path, capsys):
+
+    def _getpasswd():
+        return ''
+
+    monkeypatch.setattr(getpass, "getpass", _getpasswd)
+
+    expected = 'The archive is corrupted, or password is wrong. ABORT.\n'
+
+    arcfile = os.path.join(testdata_path, "encrypted_1.7z")
+    cli = py7zr.cli.Cli()
+    cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
+    out, err = capsys.readouterr()
+    assert out == expected
+
 
 @pytest.mark.basic
 def test_digests():

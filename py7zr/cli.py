@@ -16,7 +16,6 @@
 #    You should have received a copy of the GNU Lesser General Public
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-import _lzma
 import argparse
 import getpass
 import lzma
@@ -29,6 +28,7 @@ import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, List, Optional
 
+import _lzma  # type: ignore
 import texttable  # type: ignore
 
 import py7zr
@@ -287,7 +287,10 @@ class Cli():
             print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         except lzma.LZMAError or _lzma.LZMAError:
-            print('The archive is corrupted, or password is wrong if given. ABORT.')
+            if password is None:
+                print('The archive is corrupted. ABORT.')
+            else:
+                print('The archive is corrupted, or password is wrong. ABORT.')
             return 1
 
         cb = None  # Optional[ExtractCallback]
@@ -309,7 +312,10 @@ class Cli():
             print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         except lzma.LZMAError or _lzma.LZMAError:
-            print('The archive is corrupted, or password is wrong if given. ABORT.')
+            if password is None:
+                print('The archive is corrupted. ABORT.')
+            else:
+                print('The archive is corrupted, or password is wrong. ABORT.')
             return 1
         else:
             return 0
