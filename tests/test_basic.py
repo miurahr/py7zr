@@ -384,6 +384,17 @@ def test_archive_already_exist(tmp_path, capsys):
 
 @pytest.mark.cli
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_archive_append(tmp_path):
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path / "target.7z"
+    shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    cli.run(['a', str(target), source])
+
+
+@pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_without_extension(tmp_path, capsys):
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
     target = str(tmp_path / "target")
