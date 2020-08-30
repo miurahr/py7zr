@@ -225,6 +225,9 @@ class ArchiveTimestamp(int):
     def __repr__(self):
         return '%s(%d)' % (type(self).__name__, self)
 
+    def __index__(self):
+        return self.__int__()
+
     def totimestamp(self) -> float:
         """Convert 7z FILETIME to Python timestamp."""
         # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)

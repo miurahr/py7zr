@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* Support "APPEND" mode. User can open SevenZipFile() class with mode='a' (#227)
+
 Changed
 -------
 

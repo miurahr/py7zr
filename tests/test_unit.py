@@ -31,7 +31,7 @@ def test_py7zr_signatureheader():
                              b'\x00\x00\x00\x00\x00\x00\x00\xb9\xb8\xe4\xbf')
     header = py7zr.archiveinfo.SignatureHeader.retrieve(header_data)
     assert header is not None
-    assert header.version == (0, 2)
+    assert header.version == (b'\x00', b'\x02')
     assert header.nextheaderofs == 160
 
 
@@ -317,6 +317,7 @@ def test_write_packinfo():
     packinfo.crcs = [py7zr.helpers.calculate_crc32(b'abcd')]
     packinfo.digestdefined = [True]
     packinfo.enable_digests = True
+    packinfo.numstreams = 1
     buffer = io.BytesIO()
     packinfo.write(buffer)
     actual = buffer.getvalue()
