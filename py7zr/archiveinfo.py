@@ -910,6 +910,7 @@ class Header:
         _, _, _ = compressor.compress(buf, file)
         compressor.flush(file)
         #
+        headerstreams.packinfo.numstreams = 1
         headerstreams.packinfo.packsizes = [compressor.packsize]
         headerstreams.packinfo.crcs = [compressor.digest]
         # actual header start position
