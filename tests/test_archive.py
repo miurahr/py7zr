@@ -906,3 +906,25 @@ def test_compress_append(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_append_files_2(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    os.chdir(str(tmp_path.joinpath('src')))
+    with py7zr.SevenZipFile(target, 'a') as archive:
+        archive.writeall('.')
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.test()
+    #
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
