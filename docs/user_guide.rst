@@ -90,6 +90,10 @@ Command-line options
 
    Create 7zip archive from base_directory
 
+.. option:: a <7z file> <base_dir>
+
+   Append files from base_dir to existent 7zip archive.
+
 .. option:: i <7z file>
 
    Show archive information of specified 7zip archive.

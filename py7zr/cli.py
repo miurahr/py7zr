@@ -110,6 +110,10 @@ class Cli():
         create_parser.add_argument("arcfile", help="7z archive file")
         create_parser.add_argument("filenames", nargs="+", help="filenames to archive")
         create_parser.add_argument("-v", "--volume", nargs=1, help="Create volumes.")
+        append_parser = subparsers.add_parser('a')
+        append_parser.set_defaults(func=self.run_append)
+        append_parser.add_argument("arcfile", help="7z archive file")
+        append_parser.add_argument("filenames", nargs="+", help="filenames to archive")
         test_parser = subparsers.add_parser('t')
         test_parser.set_defaults(func=self.run_test)
         test_parser.add_argument("arcfile", help="7z archive file")
@@ -345,6 +349,27 @@ class Cli():
         size = self._volumesize_unitconv(volume_size)
         self._split_file(target, size)
         target.unlink()
+        return(0)
+
+    def run_append(self, args):
+        sztarget = args.arcfile  # type: str
+        filenames = args.filenames  # type: List[str]
+        if not sztarget.endswith('.7z'):
+            sys.stderr.write("Error: specified archive file is invalid.")
+            self.show_help(args)
+            exit(1)
+        target = pathlib.Path(sztarget)
+        if not target.exists():
+            sys.stderr.write('Archive file does not exists!\n')
+            self.show_help(args)
+            exit(1)
+        with py7zr.SevenZipFile(target, 'a') as szf:
+            for path in filenames:
+                src = pathlib.Path(path)
+                if src.is_dir():
+                    szf.writeall(src)
+                else:
+                    szf.write(src)
         return(0)
 
     def _split_file(self, filepath, size):
