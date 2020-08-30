@@ -121,6 +121,12 @@ You can run command script py7zr like as follows;
 
     $ py7zr t test.7z
 
+* Append files to archive
+
+.. code-block::
+
+    $ py7zr a test.7z test_dir
+
 * Show information
 
 .. code-block::

@@ -166,7 +166,7 @@ def test_py7zr_is_not_7zfile(tmp_path):
 @pytest.mark.cli
 def test_cli_help(capsys):
 
-    expected = 'usage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
+    expected = 'usage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
         cli.run(["-h"])
@@ -177,7 +177,7 @@ def test_cli_help(capsys):
 @pytest.mark.cli
 def test_cli_no_subcommand(capsys):
     expected = py7zr.cli.Cli._get_version()
-    expected += '\nusage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
+    expected += '\nusage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     cli.run([])
     out, err = capsys.readouterr()
@@ -380,6 +380,17 @@ def test_archive_already_exist(tmp_path, capsys):
         cli.run(['c', str(target), source])
     out, err = capsys.readouterr()
     assert err == expected
+
+
+@pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_archive_append(tmp_path):
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path / "target.7z"
+    shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    source = str(tmp_path / 'src')
+    cli = py7zr.cli.Cli()
+    cli.run(['a', str(target), source])
 
 
 @pytest.mark.cli
