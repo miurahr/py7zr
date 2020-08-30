@@ -291,7 +291,10 @@ class Cli():
             print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         except lzma.LZMAError or _lzma.LZMAError:
-            print('The archive is corrupted, or password is wrong if given. ABORT.')
+            if password is None:
+                print('The archive is corrupted. ABORT.')
+            else:
+                print('The archive is corrupted, or password is wrong. ABORT.')
             return 1
 
         cb = None  # Optional[ExtractCallback]
@@ -313,7 +316,10 @@ class Cli():
             print('The archive is encrypted, but password is not given. ABORT.')
             return 1
         except lzma.LZMAError or _lzma.LZMAError:
-            print('The archive is corrupted, or password is wrong if given. ABORT.')
+            if password is None:
+                print('The archive is corrupted. ABORT.')
+            else:
+                print('The archive is corrupted, or password is wrong. ABORT.')
             return 1
         else:
             return 0
