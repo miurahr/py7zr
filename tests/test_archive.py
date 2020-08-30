@@ -898,6 +898,9 @@ def test_compress_append(tmp_path):
     archive._write_flush()
     archive._fpclose()
     #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+    #
     if shutil.which('7z'):
         result = subprocess.run(['7z', 't', (tmp_path / 'target.7z').as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:

@@ -588,12 +588,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = Folder()
         folder.password = password
         folder.prepare_coderinfo(filters)  # create compressor
-        self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
+        self.header.main_streams.packinfo.enable_digests = False  # FIXME
         self.header.main_streams.unpackinfo.folders.append(folder)
         self.header.main_streams.unpackinfo.numfolders += 1
         pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
         self.fp.seek(pos)
-        self.header.main_streams.packinfo.numstreams += 1
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
         self.worker = Worker(self.files, pos, self.header)
 
@@ -1124,10 +1123,12 @@ class Worker:
         return foutsize, crc
 
     def prepare_archive(self):
-        self.header.main_streams.packinfo.numstreams = 1
+        self.header.main_streams.packinfo.numstreams = 0
         self.header.main_streams.substreamsinfo.digests = []
         self.header.main_streams.substreamsinfo.digestsdefined = []
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
+        self.header.main_streams.packinfo.packsizes = []
+        self.header.main_streams.packinfo.crcs = []
 
     def flush_archive(self, fp, folder):
         compressor = folder.get_compressor()
@@ -1138,9 +1139,10 @@ class Worker:
             else:
                 self.header.files_info.files[self.last_file_index]['maxsize'] = foutsize
         # Update size data in header
-        self.header.main_streams.packinfo.crcs = [compressor.digest]
-        self.header.main_streams.packinfo.digestdefined = [True]
-        self.header.main_streams.packinfo.packsizes = [compressor.packsize]
+        self.header.main_streams.packinfo.numstreams += 1
+        self.header.main_streams.packinfo.crcs.append(compressor.digest)
+        self.header.main_streams.packinfo.digestdefined.append(True)
+        self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
     def archive(self, fp: BinaryIO, files, folder, deref=False):
