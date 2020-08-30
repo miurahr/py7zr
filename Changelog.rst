@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+* CLI: Support append mode command line.(#228)
 * Support "APPEND" mode. User can open SevenZipFile() class with mode='a' (#227)
 
 Changed
@@ -21,6 +22,7 @@ Changed
 Fixed
 -----
 
+* CLI: don't raise exception when password is wrong or not given.(#229)
 * Fix specification typo.
 * Catch exception in threading extraction(#218,#219)
 
