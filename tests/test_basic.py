@@ -166,7 +166,7 @@ def test_py7zr_is_not_7zfile(tmp_path):
 @pytest.mark.cli
 def test_cli_help(capsys):
 
-    expected = 'usage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
+    expected = 'usage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
         cli.run(["-h"])
@@ -177,7 +177,7 @@ def test_cli_help(capsys):
 @pytest.mark.cli
 def test_cli_no_subcommand(capsys):
     expected = py7zr.cli.Cli._get_version()
-    expected += '\nusage: py7zr [-h] [--version] {l,x,c,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
+    expected += '\nusage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     cli.run([])
     out, err = capsys.readouterr()
