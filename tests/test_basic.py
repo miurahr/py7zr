@@ -2,6 +2,7 @@ import getpass
 import lzma
 import os
 import re
+import shutil
 import sys
 
 import pytest
@@ -95,11 +96,11 @@ def test_basic_not_implemented_yet1(tmp_path):
 
 
 @pytest.mark.api
-def test_basic_not_implemented_yet3(tmp_path):
-    with tmp_path.joinpath('test_a.7z').open('w') as f:
-        f.write('foo')
-    with pytest.raises(NotImplementedError):
-        py7zr.SevenZipFile(tmp_path.joinpath('test_a.7z'), mode='a')
+def test_basic_append_mode(tmp_path):
+    target = tmp_path.joinpath('test_a.7z')
+    shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    with py7zr.SevenZipFile(target, mode='a') as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
 
 
 @pytest.mark.api
