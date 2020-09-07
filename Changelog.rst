@@ -16,6 +16,7 @@ Added
 Changed
 -------
 
+* setup: set minimum required python version as >=3.5
 * Compression will be happened when call write() not close() (#222, #226)
 * Handle file read/write in SevenZipCompressor/Decompressor class (#213)
 
