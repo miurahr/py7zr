@@ -37,7 +37,7 @@ from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
-from py7zr.compressor import get_methods_names_string
+from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
@@ -438,6 +438,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     else:
                         file_info['filename'] = 'contents'
             self.files.append(file_info)
+        if not self.password_protected and self.header.main_streams is not None:
+            # Check specified coders have a crypt method or not.
+            self.password_protected = any([SupportedMethods.needs_password(folder.coders)
+                                           for folder in self.header.main_streams.unpackinfo.folders])
 
     def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
                  return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
@@ -791,6 +795,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
                            self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
                            total_uncompressed)
+
+    def needs_password(self) -> bool:
+        return self.password_protected
 
     def list(self) -> List[FileInfo]:
         """Returns contents information """
