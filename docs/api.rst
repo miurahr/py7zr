@@ -184,7 +184,7 @@ SevenZipFile Object
    or return ``None`` when the archive don't have a CRC record.
 
 
--.. method:: SevenZipFile.testzip()
+.. method:: SevenZipFile.testzip()
 
     Read all the files in the archive and check their CRCs.
     Return the name of the first bad file, or else return ``None``.
