@@ -122,6 +122,12 @@ SevenZipFile Object
    Return a list of archive files by name.
 
 
+.. method:: SevenZipFile.needs_password()
+
+   Return `True` if the archive is encrypted, or is going to create
+   encrypted archive. Otherwise return `False`
+
+
 .. method:: SevenZipFile.extractall(path=None)
 
    Extract all members from the archive to current working directory.  *path*
