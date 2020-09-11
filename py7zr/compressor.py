@@ -712,6 +712,9 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # Check if password given for encrypted archive
+        if SupportedMethods.needs_password(coders) and password is None:
+            raise PasswordRequired("Password is required for extracting given archive.")
         # --------- Hack for special combinations
         # hack for LZMA1+BCJ which should be native+alternative
         _bcj_filters = [FILTER_X86, FILTER_ARM, FILTER_ARMTHUMB, FILTER_POWERPC, FILTER_SPARC]
@@ -729,10 +732,6 @@ class SevenZipDecompressor:
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
-                # Check if password given for encrypted archive
-                if SupportedMethods.is_crypto_id(filter_id) and password is None:
-                    raise PasswordRequired("Password is required for extracting given archive.")
-
         # --------- end of Hack for special combinations
         self.cchain = DecompressorChain(self.methods_map, unpacksizes)
         if all(self.methods_map):
@@ -942,7 +941,10 @@ class SupportedMethods:
 
     @classmethod
     def get_filter_id(cls, coder):
-        return cls._find_method('id', coder['method'])['filter_id']
+        method = cls._find_method('id', coder['method'])
+        if method is None:
+            return None
+        return method['filter_id']
 
     @classmethod
     def is_native_filter(cls, filter) -> bool:
@@ -1004,6 +1006,16 @@ class SupportedMethods:
         else:
             properties = None
         return {'method': method, 'properties': properties, 'numinstreams': 1, 'numoutstreams': 1}
+
+    @classmethod
+    def needs_password(cls, coders) -> bool:
+        for coder in coders:
+            filter_id = SupportedMethods.get_filter_id(coder)
+            if filter_id is None:
+                continue
+            if SupportedMethods.is_crypto_id(filter_id):
+                return True
+        return False
 
 
 def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
