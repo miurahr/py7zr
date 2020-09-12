@@ -598,6 +598,9 @@ class SevenZipDecompressor:
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+        # Check if password given for encrypted archive
+        if SupportedMethods.needs_password(coders) and password is None:
+            raise PasswordRequired("Password is required for extracting given archive.")
         # Check filters combination and required parameters
         if len(coders) >= 2:
             target_compressor = False
@@ -614,9 +617,6 @@ class SevenZipDecompressor:
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
-                # Check if password given for encrypted archive
-                if SupportedMethods.is_crypto_id(filter_id) and password is None:
-                    raise PasswordRequired("Password is required for extracting given archive.")
         self.chain = []  # type: List[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]]
         self._unpacksizes = []  # type: List[int]
         self.input_size = self.input_size
