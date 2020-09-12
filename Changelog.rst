@@ -26,6 +26,15 @@ Security
 --------
 
 
+`v0.9.7`_
+=========
+
+Fixed
+-----
+
+* Raise PasswordRequired when encrypted header and no password given(#238)
+
+
 `v0.9.6`_
 =========
 
@@ -757,7 +766,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.7...HEAD
+.. _v0.9.7: https://github.com/miurahr/py7zr/compare/v0.9.6...v0.9.7
 .. _v0.9.6: https://github.com/miurahr/py7zr/compare/v0.9.5...v0.9.6
 .. _v0.9.5: https://github.com/miurahr/py7zr/compare/v0.9.4...v0.9.5
 .. _v0.9.4: https://github.com/miurahr/py7zr/compare/v0.9.3...v0.9.4
