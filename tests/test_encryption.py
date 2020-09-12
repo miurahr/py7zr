@@ -34,8 +34,8 @@ def test_extract_encrypted_1_mem():
 
 @pytest.mark.files
 def test_extract_encrypted_no_password(tmp_path):
-    with pytest.raises(PasswordRequired):
-        with py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password=None) as archive:
+    with py7zr.SevenZipFile(testdata_path.joinpath('encrypted_1.7z').open(mode='rb'), password=None) as archive:
+        with pytest.raises(PasswordRequired):
             archive.extractall(path=tmp_path)
 
 
@@ -43,6 +43,13 @@ def test_extract_encrypted_no_password(tmp_path):
 def test_extract_header_encrypted_no_password(tmp_path):
     with pytest.raises(PasswordRequired):
         with py7zr.SevenZipFile(testdata_path.joinpath('encrypted_3.7z').open(mode='rb'), password=None) as archive:
+            archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
+def test_extract_header_encrypted_no_password_2(tmp_path):
+    with pytest.raises(PasswordRequired):
+        with py7zr.SevenZipFile(testdata_path.joinpath('encrypted_4.7z').open(mode='rb'), password=None) as archive:
             archive.extractall(path=tmp_path)
 
 
