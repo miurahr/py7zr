@@ -927,7 +927,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
-            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
+            self.worker.extract(self.fp, parallel=(not self.password_protected), skip_notarget=False)  # TODO: print progress
         except CrcError as crce:
             return str(crce)
         else:
@@ -985,7 +985,7 @@ class Worker:
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files)
 
-    def extract(self, fp: BinaryIO, parallel: bool, q=None) -> None:
+    def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
@@ -999,6 +999,9 @@ class Worker:
                 if not parallel:
                     self.extract_single(fp, empty_files, 0, 0, q)
                     for i in range(numfolders):
+                        if skip_notarget:
+                            if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
+                                continue
                         self.extract_single(fp, folders[i].files, self.src_start + positions[i],
                                             self.src_start + positions[i + 1], q)
                 else:
@@ -1007,6 +1010,9 @@ class Worker:
                     extract_threads = []
                     exc_q = queue.Queue()  # type: queue.Queue
                     for i in range(numfolders):
+                        if skip_notarget:
+                            if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
+                                continue
                         p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
                                                    self.src_start + positions[i], self.src_start + positions[i + 1],
