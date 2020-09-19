@@ -927,7 +927,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
-            self.worker.extract(self.fp, parallel=(not self.password_protected))  # TODO: print progress
+            self.worker.extract(self.fp, parallel=(not self.password_protected), skip_notarget=False)  # TODO: print progress
         except CrcError as crce:
             return str(crce)
         else:
@@ -985,13 +985,13 @@ class Worker:
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files)
 
-    def extract(self, fp: BinaryIO, parallel: bool, q=None) -> None:
+    def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
             numfolders = self.header.main_streams.unpackinfo.numfolders
             if numfolders == 1:
-                self.extract_single(fp, self.files, self.src_start, src_end, q)
+                self.extract_single(fp, self.files, self.src_start, src_end, q, skip_notarget=skip_notarget)
             else:
                 folders = self.header.main_streams.unpackinfo.folders
                 positions = self.header.main_streams.packinfo.packpositions
@@ -999,18 +999,24 @@ class Worker:
                 if not parallel:
                     self.extract_single(fp, empty_files, 0, 0, q)
                     for i in range(numfolders):
+                        if skip_notarget:
+                            if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
+                                continue
                         self.extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                            self.src_start + positions[i + 1], q)
+                                            self.src_start + positions[i + 1], q, skip_notarget=skip_notarget)
                 else:
                     filename = getattr(fp, 'name', None)
                     self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
                     extract_threads = []
                     exc_q = queue.Queue()  # type: queue.Queue
                     for i in range(numfolders):
+                        if skip_notarget:
+                            if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
+                                continue
                         p = threading.Thread(target=self.extract_single,
                                              args=(filename, folders[i].files,
                                                    self.src_start + positions[i], self.src_start + positions[i + 1],
-                                                   q, exc_q))
+                                                   q, exc_q, skip_notarget))
                         p.start()
                         extract_threads.append(p)
                     for p in extract_threads:
@@ -1025,7 +1031,7 @@ class Worker:
             self.extract_single(fp, empty_files, 0, 0, q)
 
     def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
-                       q: Optional[queue.Queue], exc_q: Optional[queue.Queue] = None) -> None:
+                       q: Optional[queue.Queue], exc_q: Optional[queue.Queue] = None, skip_notarget=True) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
@@ -1033,11 +1039,15 @@ class Worker:
             if isinstance(fp, str):
                 fp = open(fp, 'rb')
             fp.seek(src_start)
+            just_check = []  # type: List[ArchiveFile]
             for f in files:
                 if q is not None:
                     q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
                 fileish = self.target_filepath.get(f.id, None)
                 if fileish is not None:
+                    # delayed execution of crc check.
+                    self._check(fp, just_check, src_end)
+                    just_check = []
                     fileish.parent.mkdir(parents=True, exist_ok=True)
                     with fileish.open(mode='wb') as ofp:
                         if not f.emptystream:
@@ -1049,19 +1059,26 @@ class Worker:
                         else:
                             pass  # just create empty file
                 elif not f.emptystream:
-                    # read and bin off a data but check crc
-                    with NullIO() as ofp:
-                        crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
-                    if f.crc32 is not None and crc32 != f.crc32:
-                        raise CrcError("{}".format(f.filename))
+                    just_check.append(f)
                 if q is not None:
                     q.put(('e', str(f.filename), str(f.uncompressed)))
+            if not skip_notarget:
+                # delayed execution of crc check.
+                self._check(fp, just_check, src_end)
         except Exception as e:
             if exc_q is None:
                 raise e
             else:
                 exc_tuple = sys.exc_info()
                 exc_q.put(exc_tuple)
+
+    def _check(self, fp, check_target, src_end):
+        # delayed execution of crc check.
+        for f in check_target:
+            with NullIO() as ofp:
+                crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
+            if f.crc32 is not None and crc32 != f.crc32:
+                raise CrcError("{}".format(f.filename))
 
     def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
                    size: int, compressed_size: Optional[int], src_end: int) -> int:
