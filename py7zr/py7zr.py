@@ -1039,7 +1039,7 @@ class Worker:
             if isinstance(fp, str):
                 fp = open(fp, 'rb')
             fp.seek(src_start)
-            just_check = []
+            just_check = []  # type: List[ArchiveFile]
             for f in files:
                 if q is not None:
                     q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
