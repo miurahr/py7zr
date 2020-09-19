@@ -10,6 +10,27 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
+Changed
+-------
+
+Fixed
+-----
+
+Deprecated
+----------
+
+Removed
+-------
+
+Security
+--------
+
+`v0.10.0b1`_
+============
+
+Added
+-----
+
 * SevenZipFile.needs_password() method.(#208, #235)
 * CLI: Support append mode command line.(#228)
 * Support "APPEND" mode. User can open SevenZipFile() class with mode='a' (#227)
@@ -17,6 +38,11 @@ Added
 Changed
 -------
 
+* read(), extract(): improve performance when specifying parts of archived file,
+  by skipping rest of arcvhive when target file has extracted.(#239,#242)
+* read(), extract(): improve performance when specifying parts of archived file,
+  by not running threads for unused compression blocks(folders).(#239,#242)
+* docs: improve API documentation.(#244)
 * setup: set minimum required python version as >=3.5
 * Compression will be happened when call write() not close() (#222, #226)
 * Handle file read/write in SevenZipCompressor/Decompressor class (#213)
@@ -28,15 +54,6 @@ Fixed
 * CLI: don't raise exception when password is wrong or not given.(#229)
 * Fix specification typo.
 * Catch exception in threading extraction(#218,#219)
-
-Deprecated
-----------
-
-Removed
--------
-
-Security
---------
 
 `v0.9.2`_
 =========
@@ -730,7 +747,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b1...HEAD
+.. _v0.10.0b1: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0b1
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
 .. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
