@@ -142,6 +142,10 @@ SevenZipFile Object
    'targets' is a list of archived files to be extracted. py7zr looks for files
    and directories as same as specified in 'targets'.
 
+   Once extract() called, the SevenZipFIle object become exhausted and EOF state.
+   If you want to call read(), readall(), extract(), extractall() again,
+   you should call reset() before it.
+
    **CAUTION** when specifying files and not specifying parent directory,
    py7zr will fails with no such directory. When you want to extract file
    'somedir/somefile' then pass a list: ['somedirectory', 'somedir/somefile']
@@ -150,27 +154,51 @@ SevenZipFile Object
    Please see 'tests/test_basic.py: test_py7zr_extract_and_getnames()' for
    example code.
 
+.. code-block:: python
+
+   filter_pattern = re.compile(r'scripts.*')
+   with SevenZipFile('archive.7z', 'r') as zip:
+        allfiles = zip.getnames()
+        targets = [f if filter_pattern.match(f) for f in allfiles]
+   with SevenZipFile('archive.7z', 'r') as zip:
+        zip.extract(targets=targets)
+
 
 .. method:: SevenZipFile.readall()
 
    Extract all members from the archive to memory and returns dictionary object.
    Returned dictionary has a form of Dict[filename: str, BinaryIO: io.ByteIO object].
-   So you can get extracted data from dictionary value as such
+   Once readall() called, the SevenZipFIle object become exhausted and EOF state.
+   If you want to call read(), readall(), extract(), extractall() again,
+   you should call reset() before it.
+   You can get extracted data from dictionary value as such
 
 .. code-block:: python
 
    with SevenZipFile('archive.7z', 'r') as zip:
-        archives = zip.readall()
-        for fname in zip.readall():
-            bio = archives[fname]
-            data = bio.read()
+       for fname, bio in zip.readall().items():
+           print('{:s}: {:X}...'.format(name, bio.read(10))
 
 
-.. method:: SevenZipFile.read(target=None)
+.. method:: SevenZipFile.read(targets=None)
 
-   Extract specified pathspec archived files to dictionary object.
+   Extract specified list of target archived files to dictionary object.
    'targets' is a list of archived files to be extracted. py7zr looks for files
    and directories as same as specified in 'targets'.
+   When targets is None, it behave as same as readall().
+   Once read() called, the SevenZipFIle object become exhausted and EOF state.
+   If you want to call read(), readall(), extract(), extractall() again,
+   you should call reset() before it.
+
+.. code-block:: python
+
+   filter_pattern = re.compile(r'scripts.*')
+   with SevenZipFile('archive.7z', 'r') as zip:
+        allfiles = zip.getnames()
+        targets = [f if filter_pattern.match(f) for f in allfiles]
+   with SevenZipFile('archive.7z', 'r') as zip:
+        for fname, bio in zip.read(targets).items():
+            print('{:s}: {:X}...'.format(name, bio.read(10))
 
 
 .. method:: SevenZipFile.list()
