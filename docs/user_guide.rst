@@ -104,7 +104,7 @@ Command-line options
 
 
 Common command options
--------------------------
+----------------------
 
 .. option:: -P --password
 
@@ -122,6 +122,89 @@ Create command options
 .. option:: -v | --volume {Size}[b|k|m|g]
 
    Create multi-volume archive with Size. Usable with 'c' sub-command.
+
+
+Programming APIs
+================
+
+Extraction
+----------
+
+Here is a several example for extraction from your python program.
+You can write it with very clean syntax because py7zr supports context maanager.
+
+.. code-block:: python
+
+    import py7zr
+    with py7zr.SevenZipFile("Archive.7z", 'r') as archive:
+        archive.wxtractall(path="/tmp")
+
+
+This example extract a 7-zip archive file "Archive.7z" into "/tmp" target directory.
+
+
+Make archive
+------------
+
+Here is a simple example to make 7-zip archive.
+
+.. code-block:: python
+
+    import py7zr
+    with py7zr.SevenZipFile("Archive.7z", 'w') as archive:
+        archive.writeall("target/")
+
+
+Append files to archive
+-----------------------
+
+Here is a simple example to append some files into existent
+7-zip archive.
+
+.. code-block:: python
+
+    import py7zr
+    with py7zr.SevenZipFile("Archive.7z", 'a') as archive:
+        archive.write("additional_file.txt")
+
+
+Extraction from multi-volume archive
+------------------------------------
+
+You should concatenate multi-volume archives into single archive file before
+call py7zr, or consider using files wrapping class that handle multiple files
+as a virtual single file, (ex. multivolumefile library)
+
+
+.. code-block:: python
+
+    import py7zr
+    filenames = ['example.7z.001', 'example.7z.002']
+    with open('result.7z', 'ab') as outfile:  # append in binary mode
+        for fname in filenames:
+            with open(fname, 'rb') as infile:        # open in binary mode also
+                outfile.write(infile.read())
+    with py7zr.SevenZipFile("result.7z", "r") as archive:
+        archive.extractall()
+    os.unlink("result.7z)
+
+Here is another example. This example use multivolumefile library.
+The multivolumefile library is in pre-alpha status, so it is not recommend to use
+production system.
+
+.. code-block:: bash
+
+    pip install py7zr multivolumefile
+
+.. code-block:: python
+
+    import multivolumefile
+    import py7zr
+    filenames = ['example.7z.001', 'example.7z.002']
+    with multivolumefile.open(filenames, mode='rb') as target_archive:
+        with SevenZipFile(target_archive, 'r') as archive:
+            archive.extractall()
+
 
 
 Presentation material
