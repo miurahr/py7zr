@@ -18,11 +18,6 @@ from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
 
-try:
-    import multivolumefile as MVF
-except ImportError:
-    MVF = None
-
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
 
@@ -474,17 +469,3 @@ def test_extract_multi_exception(tmp_path):
     with pytest.raises(py7zr.exceptions.UnsupportedCompressionMethodError):
         with py7zr.SevenZipFile(testdata_path.joinpath('issue_218.7z').open(mode='rb')) as ar:
             ar.extractall(tmp_path)
-
-
-@pytest.mark.files
-@pytest.mark.skipif(MVF is None, reason="multivolume support is not loaded.")
-def test_extract_multi_volume(tmp_path):
-    with testdata_path.joinpath('lzma2bcj.7z').open('rb') as src:
-        with tmp_path.joinpath('lzma2bcj.7z.001').open('wb') as tgt:
-            tgt.write(src.read(25000))
-        with tmp_path.joinpath('lzma2bcj.7z.002').open('wb') as tgt:
-            tgt.write(src.read(27337))
-    names = [tmp_path.joinpath('lzma2bcj.7z.001'), tmp_path.joinpath('lzma2bcj.7z.002')]
-    with MVF.open(names, mode='rb') as tgt:
-        with py7zr.SevenZipFile(tgt) as arc:
-            arc.extractall(tmp_path.joinpath('tgt'))
