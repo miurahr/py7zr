@@ -179,7 +179,7 @@ as a virtual single file, (ex. multivolumefile library)
 .. code-block:: python
 
     import py7zr
-    filenames = ['example.7z.001', 'example.7z.002']
+    filenames = ['example.7z.0001', 'example.7z.0002']
     with open('result.7z', 'ab') as outfile:  # append in binary mode
         for fname in filenames:
             with open(fname, 'rb') as infile:        # open in binary mode also
@@ -196,15 +196,31 @@ production system.
 
     pip install py7zr multivolumefile
 
+
+When there are files named, 'example.7z.0001', 'example.7z.0002', and so on,
+following code will extract multi-volume archive.
+
 .. code-block:: python
 
     import multivolumefile
     import py7zr
-    filenames = ['example.7z.001', 'example.7z.002']
-    with multivolumefile.open(filenames, mode='rb') as target_archive:
+    with multivolumefile.open('example.7z', mode='rb') as target_archive:
         with SevenZipFile(target_archive, 'r') as archive:
             archive.extractall()
 
+
+If you want to create multi volume archive using multivolumefile library,
+following example do it for you.
+
+.. code-block:: python
+
+    import multivolumefile
+    import py7zr
+
+    target = pathlib.Path('/target/directory/')
+    with multivolumefile.open('example.7z', mode='wb', volume_size=10240) as target_archive:
+        with SevenZipFile(target_archive, 'w') as archive:
+            archive.writeall(target, 'target')
 
 
 Presentation material
