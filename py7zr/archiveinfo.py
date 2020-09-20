@@ -827,6 +827,20 @@ class FilesInfo:
         write_byte(file, Property.END)
 
 
+class WriteWithCrc:
+    """Thin wrapper for file object to calculate crc32 when write called."""
+    def __init__(self, fp: BinaryIO):
+        self._fp = fp
+        self.digest = 0
+
+    def write(self, data):
+        self.digest = calculate_crc32(data, self.digest)
+        return self._fp.write(data)
+
+    def tell(self):
+        return self._fp.tell()
+
+
 class Header:
     """ the archive header """
 
@@ -915,30 +929,31 @@ class Header:
         headerstreams.packinfo.crcs = [compressor.digest]
         # actual header start position
         startpos = file.tell()
-        headerstreams.write(file)
-        return startpos
+        crcfile = WriteWithCrc(file)
+        headerstreams.write(crcfile)  # type: ignore  # noqa
+        digest = crcfile.digest
+        return startpos, digest
 
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
         startpos = file.tell()
         if encrypted:
             filters = ENCRYPTED_HEADER_DEFAULT
-            startpos = self._encode_header(file, afterheader, filters)
+            startpos, headercrc = self._encode_header(file, afterheader, filters)
         elif encoded:
             filters = ENCODED_HEADER_DEFAULT
-            startpos = self._encode_header(file, afterheader, filters)
+            startpos, headercrc = self._encode_header(file, afterheader, filters)
         else:
-            write_byte(file, Property.HEADER)
+            crcfile = WriteWithCrc(file)
+            write_byte(crcfile, Property.HEADER)  # type: ignore  # noqa
             if self.main_streams is not None:
-                self.main_streams.write(file)
+                self.main_streams.write(crcfile)
             if self.files_info is not None:
-                self.files_info.write(file)
-            write_byte(file, Property.END)
+                self.files_info.write(crcfile)
+            write_byte(crcfile, Property.END)  # type: ignore
+            headercrc = crcfile.digest
         endpos = file.tell()
         header_len = endpos - startpos
-        file.seek(startpos, io.SEEK_SET)
-        crc = calculate_crc32(file.read(header_len))
-        file.seek(endpos, io.SEEK_SET)
-        return startpos, header_len, crc
+        return startpos, header_len, headercrc
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
