@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.9.8`_
+=========
+
+Changed
+-------
+
+* Avoid re-read header data from fike, otherwise calculate CRC32 when writing header.(#246)
+
 
 `v0.9.7`_
 =========
@@ -766,7 +774,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.8...HEAD
+.. _v0.9.8: https://github.com/miurahr/py7zr/compare/v0.9.7...v0.9.8
 .. _v0.9.7: https://github.com/miurahr/py7zr/compare/v0.9.6...v0.9.7
 .. _v0.9.6: https://github.com/miurahr/py7zr/compare/v0.9.5...v0.9.6
 .. _v0.9.5: https://github.com/miurahr/py7zr/compare/v0.9.4...v0.9.5
