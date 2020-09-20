@@ -938,7 +938,7 @@ class Header:
         # actual header start position
         startpos = file.tell()
         crcfile = WriteWithCrc(file)
-        headerstreams.write(crcfile)
+        headerstreams.write(crcfile)  # type: ignore  # noqa
         digest = crcfile.digest
         return startpos, digest
 
@@ -952,12 +952,12 @@ class Header:
             startpos, headercrc = self._encode_header(file, afterheader, filters)
         else:
             crcfile = WriteWithCrc(file)
-            write_byte(crcfile, Property.HEADER)
+            write_byte(crcfile, Property.HEADER)  # type: ignore  # noqa
             if self.main_streams is not None:
                 self.main_streams.write(crcfile)
             if self.files_info is not None:
                 self.files_info.write(crcfile)
-            write_byte(crcfile, Property.END)
+            write_byte(crcfile, Property.END)  # type: ignore
             headercrc = crcfile.digest
         endpos = file.tell()
         header_len = endpos - startpos
