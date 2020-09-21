@@ -59,7 +59,7 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     out, err = capsys.readouterr()
     assert expected == out
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -88,7 +88,7 @@ def test_compress_directory_encoded_header(tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.testzip() is None
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -147,7 +147,7 @@ def test_compress_files_encoded_header(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -203,7 +203,7 @@ def test_compress_directory(tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.testzip() is None
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -267,7 +267,7 @@ def test_compress_files_1(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         assert archive.test()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -301,7 +301,7 @@ def test_compress_with_simple_filter(tmp_path):
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -322,7 +322,7 @@ def test_compress_with_custom_filter(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as arc:
         assert arc.test()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -344,7 +344,7 @@ def test_compress_files_2(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -368,7 +368,7 @@ def test_compress_files_3(tmp_path):
     dc = filecmp.dircmp(tmp_path.joinpath('src'), tmp_path.joinpath('tgt'))
     assert dc.diff_files == []
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -452,7 +452,7 @@ def test_compress_zerofile(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt'))
     reader.close()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -484,7 +484,7 @@ def test_compress_directories(tmp_path):
     reader.extractall(path=tmp_path.joinpath('tgt1'))
     reader.close()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -570,7 +570,7 @@ def test_compress_lzma2_bcj(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -611,7 +611,7 @@ def test_compress_copy(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -658,7 +658,7 @@ def test_compress_multi_filter_delta(tmp_path):
         assert archive.header.main_streams.unpackinfo.folders[0].crc is None
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -673,7 +673,7 @@ def test_compress_deflate(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -747,7 +747,7 @@ def test_compress_arm64(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
 
 
 @pytest.mark.basic
@@ -762,7 +762,7 @@ def test_compress_ppc(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
 
 
 @pytest.mark.basic
@@ -777,7 +777,7 @@ def test_compress_ia64(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
 
 
 @pytest.mark.basic
@@ -792,7 +792,7 @@ def test_compress_sparc(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
 
 
 @pytest.mark.basic
@@ -807,7 +807,7 @@ def test_compress_armt(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
 
 
 @pytest.mark.basic
@@ -820,7 +820,7 @@ def test_compress_small_files(tmp_path):
     with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w') as archive:
         archive.writeall(tmp_path.joinpath('t'), 't')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -837,7 +837,7 @@ def test_compress_append(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.extractall(path=tmp_path / 'tgt')
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
 
 
@@ -856,5 +856,5 @@ def test_append_files_2(tmp_path):
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.test()
     #
-    p7zip_test(tmp_path/'target.7z')
+    p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
