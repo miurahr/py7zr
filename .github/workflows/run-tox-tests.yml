@@ -26,8 +26,11 @@ jobs:
       - name: Install C library(Windows)
         if: runner.os == 'Windows'
         run: |
-          wget https://libarchive.org/downloads/libarchive-v3.4.3-win64.zip
-          unzip libarchive-v3.4.3-win64.zip
+          $url = "https://libarchive.org/downloads/libarchive-v3.4.3-win64.zip"
+          $file = "libarchive-v3.4.3-win64.zip"
+          (New-Object System.Net.WebClient).DownloadFile($url, $file)
+          Expand-Archive -LiteralPath libarchive-v3.4.3-win64.zip  -DestinationPath libarchive
+          Get-ChildItem -Filter "archive.dll" -Recurse -File
           echo ("::set-env name=LIBARCHIVE::" + $env:GITHUB_WORKSPACE + "/libarchive/bin/archive.dll")
       - name: Install dependencies
         run: |
