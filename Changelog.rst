@@ -25,6 +25,21 @@ Removed
 Security
 --------
 
+`v0.10.0b2`_
+============
+
+Added
+-----
+
+* Compatibility test with python-libarchive-c/libarchive for compression(#247)
+* Document: express how to handle multi-volume archive (#243)
+
+Changed
+-------
+
+* Calculate CRC32 of header without re-reading header from disk again.(#245)
+
+
 `v0.10.0b1`_
 ============
 
@@ -747,7 +762,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b2...HEAD
+.. _v0.10.0b2: https://github.com/miurahr/py7zr/compare/v0.10.0b1...v0.10.0b2
 .. _v0.10.0b1: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0b1
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
