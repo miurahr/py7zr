@@ -20,6 +20,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
+      - name: Install system library(linux)
+        if: runner.os == 'linux'
+        run: sudo apt install libarchive-dev
+      - name: Install C library(Windows)
+        if: runner.os == 'Windows'
+        run: |
+          wget https://libarchive.org/downloads/libarchive-v3.4.3-win64.zip
+          unzip libarchive-v3.4.3-win64.zip
+          echo ("::set-env name=LIBARCHIVE::" + $env:GITHUB_WORKSPACE + "/libarchive/bin/archive.dll")
       - name: Install dependencies
         run: |
           pip install -U pip
