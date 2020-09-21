@@ -4,9 +4,18 @@ import functools
 import hashlib
 import os
 import pathlib
+import shutil
+import subprocess
 from datetime import datetime, timezone
 
+import pytest
+
 import py7zr
+
+try:
+    import libarchive.public as LAPublic
+except ImportError:
+    LAPublic = None
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
@@ -53,3 +62,27 @@ def ltime(dt_utc):
 
 def ltime2(y, m, d, h, min, s):
     return ltime(datetime(y, m, d, h, min, s))
+
+
+def p7zip_test(archive):
+    if shutil.which('7z'):
+        result = subprocess.run(['7z', 't', archive.as_posix()], stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail('7z command report error')
+
+
+def libarchive_extract(archive, tmpdir):
+    if LAPublic:
+        if not tmpdir.exists():
+            tmpdir.mkdir(parents=True)
+        with LAPublic.file_reader(str(archive)) as e:
+            for entry in e:
+                if entry.filetype.IFDIR:
+                    tmpdir.joinpath(entry.pathname).mkdir(parents=True)
+                elif entry.filetype.IFLNK:
+                    tmpdir.joinpath(entry.pathname).link_to(entry.symlink_targetpath)
+                else:
+                    with tmpdir.joinpath(entry.pathname).open(mode='wb') as f:
+                        for block in entry.get_blocks():
+                            f.write(block)
