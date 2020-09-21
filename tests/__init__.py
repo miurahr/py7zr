@@ -2,12 +2,10 @@ import asyncio
 import binascii
 import functools
 import hashlib
-import inspect
 import os
 import pathlib
 import shutil
 import subprocess
-import sys
 from datetime import datetime, timezone
 
 import pytest
