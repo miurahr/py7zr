@@ -379,6 +379,11 @@ class BCJFilter:
         return i
 
     def _x86_code(self) -> int:
+        """
+        The code algorithm from liblzma/simple/x86.c
+        It is slightly different from LZMA-SDK's bra86.c
+        :return: buffer position
+        """
         size = len(self.buffer)
         if size < 5:
             return 0

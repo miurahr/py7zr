@@ -38,3 +38,9 @@ def test_compress_to_multi_volume(tmp_path):
     target = tmp_path.joinpath('target.7z.0001')
     assert target.exists()
     assert target.stat().st_size == 10240
+
+
+@pytest.mark.file
+def test_bcj_file(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('copy_bcj_1.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
