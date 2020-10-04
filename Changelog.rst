@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.9.9`_
+=========
+
+Fixed
+-----
+
+* (backport) Fix BCJ filter issue failing a certain data when LZMA+BCJ compression(#240, #250)
+
 `v0.9.8`_
 =========
 
@@ -774,7 +782,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.8...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.9...HEAD
+.. _v0.9.9: https://github.com/miurahr/py7zr/compare/v0.9.8...v0.9.9
 .. _v0.9.8: https://github.com/miurahr/py7zr/compare/v0.9.7...v0.9.8
 .. _v0.9.7: https://github.com/miurahr/py7zr/compare/v0.9.6...v0.9.7
 .. _v0.9.6: https://github.com/miurahr/py7zr/compare/v0.9.5...v0.9.6
