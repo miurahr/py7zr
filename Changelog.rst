@@ -25,6 +25,11 @@ Removed
 Security
 --------
 
+`v0.10.0`_
+==========
+
+* Release is same as v0.10.0b3.
+
 `v0.10.0b3`_
 ============
 
@@ -772,7 +777,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0...HEAD
+.. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.10.0b3...v0.10.0
 .. _v0.10.0b3: https://github.com/miurahr/py7zr/compare/v0.10.0b2...v0.10.0b3
 .. _v0.10.0b2: https://github.com/miurahr/py7zr/compare/v0.10.0b1...v0.10.0b2
 .. _v0.10.0b1: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0b1
