@@ -434,6 +434,8 @@ class BCJFilter:
             else:
                 buffer_pos += 1
                 self.prev_mask |= 1
+                if self.buffer[buffer_pos + 3] in [0, 0xff]:
+                    self.prev_mask |= 0x10
         self.current_position += buffer_pos
         return buffer_pos
 
