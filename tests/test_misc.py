@@ -1,9 +1,14 @@
 import os
 import pathlib
+import shutil
+import subprocess
+import sys
 
 import pytest
 
 import py7zr
+
+from . import libarchive_extract, p7zip_test
 
 try:
     import multivolumefile as MVF
@@ -38,3 +43,34 @@ def test_compress_to_multi_volume(tmp_path):
     target = tmp_path.joinpath('target.7z.0001')
     assert target.exists()
     assert target.stat().st_size == 10240
+
+
+@pytest.mark.misc
+def test_copy_bcj_file(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('copy_bcj_1.7z').open(mode='rb')) as ar:
+        ar.extractall(tmp_path)
+
+
+@pytest.mark.misc
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="Case uses gcc and posix path on linux/mac")
+def test_bcj_file(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    # build test target data
+    if shutil.which('gcc'):
+        result = subprocess.run(['gcc', '-std=c99', '-fPIC',
+                                 '-o', tmp_path.joinpath('src').joinpath('bcj_test').as_posix(),
+                                 '-c', testdata_path.joinpath('bcj_test.c').as_posix()],
+                                stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            return 0
+        #
+        tmp_path.joinpath('tgt').mkdir()
+        tmp_path.joinpath('tgt2').mkdir()
+        my_filters = [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_COPY}]
+        with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), filters=my_filters, mode='w') as ar:
+            ar.write(tmp_path.joinpath('src/bcj_test'), 'bcj_test')
+        target = tmp_path.joinpath('target.7z')
+        with py7zr.SevenZipFile(target, 'r') as ar:
+            ar.extractall(tmp_path.joinpath('tgt'))
+        p7zip_test(target)
+        libarchive_extract(target, tmp_path / 'tgt2')
