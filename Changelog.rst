@@ -25,6 +25,16 @@ Removed
 Security
 --------
 
+`v0.10.0b3`_
+============
+
+Fixed
+-----
+
+* Fix BCJ(x86) filter code with a missing logic which cause extraction error
+  for certain data. (#249, #250)
+
+
 `v0.10.0b2`_
 ============
 
@@ -762,7 +772,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.0b3...HEAD
+.. _v0.10.0b3: https://github.com/miurahr/py7zr/compare/v0.10.0b2...v0.10.0b3
 .. _v0.10.0b2: https://github.com/miurahr/py7zr/compare/v0.10.0b1...v0.10.0b2
 .. _v0.10.0b1: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0b1
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
