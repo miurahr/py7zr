@@ -40,7 +40,7 @@ from py7zr.properties import COMMAND_HELP_STRING, READ_BLOCKSIZE
 try:
     from importlib import metadata as importlib_metadata  # type: ignore
 except ImportError:
-    import importlib_metadata  # type: ignore
+    import importlib_metadata  # type: ignore  # for python < 3.8
 
 
 class CliExtractCallback(ExtractCallback):

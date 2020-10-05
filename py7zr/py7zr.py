@@ -24,11 +24,13 @@
 #
 """Read 7zip format archives."""
 import collections.abc
+import contextlib
 import datetime
 import errno
 import functools
 import io
 import os
+import pathlib
 import queue
 import stat
 import sys
@@ -41,13 +43,6 @@ from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
-
-if sys.version_info < (3, 6):
-    import contextlib2 as contextlib
-    import pathlib2 as pathlib
-else:
-    import contextlib
-    import pathlib
 
 if sys.platform.startswith('win'):
     import _winapi

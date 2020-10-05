@@ -19,6 +19,8 @@ Fixed
 Deprecated
 ----------
 
+* Drop support for python 3.5 which become end-of-line in Sept. 2020.
+
 Removed
 -------
 
