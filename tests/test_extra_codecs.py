@@ -15,6 +15,11 @@ try:
     import zstandard as Zstd  # type: ignore  # noqa
 except ImportError:
     Zstd = None
+try:
+    import ppmd as Ppmd  # type: ignore
+except ImportError:
+    Ppmd = None
+
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
@@ -183,6 +188,7 @@ def test_extract_bzip2(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
 def test_extract_ppmd(tmp_path):
     with pytest.raises(UnsupportedCompressionMethodError):
         archive = py7zr.SevenZipFile(testdata_path.joinpath('ppmd.7z').open(mode='rb'))
@@ -212,6 +218,7 @@ def test_extract_p7zip_zstd(tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
 def test_compress_ppmd(tmp_path):
     my_filters = [{"id": py7zr.FILTER_PPMD, 'level': 6, 'mem': 16}]
     target = tmp_path.joinpath('target.7z')
