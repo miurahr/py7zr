@@ -22,6 +22,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
+import io
 import lzma
 import struct
 import zlib
@@ -246,6 +247,36 @@ class CopyDecompressor(ISevenZipDecompressor):
         return bytes(data)
 
 
+class BufferRW(io.BufferedIOBase):
+
+    def __init__(self):
+        self._buf = bytearray()
+
+    def writable(self):
+        return True
+
+    def write(self, b: Union[bytes, bytearray, memoryview]):
+        self._buf += b
+
+    def readable(self):
+        return True
+
+    def read(self, size: Optional[int] = -1):
+        if size is None or size < 0:
+            length: int = len(self._buf)
+        else:
+            length = size
+        result = bytes(self._buf[:length])
+        self._buf[:] = self._buf[length:]
+        return result
+
+    def readinto(self, b) -> int:
+        length = min(len(self._buf), len(b))
+        b[:] = self._buf[:length]
+        self._buf[:] = self._buf[length:]
+        return length
+
+
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
@@ -275,13 +306,23 @@ class ZstdCompressor(ISevenZipCompressor):
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self._ctc = Zstd.ZstdCompressor()  # type: ignore
+        self._buf = BufferRW()
+        _ctc = Zstd.ZstdCompressor()  # type: ignore
+        self._compressor = _ctc.stream_writer(self._buf)
+        self.flushed = False
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._ctc.compress(data)  # type: ignore
+        self._compressor.write(data)
+        result = self._buf.read()
+        return result
 
     def flush(self):
-        return b''
+        if self.flushed:
+            return b''
+        self._compressor.flush(Zstd.FLUSH_FRAME)
+        self.flushed = True
+        result = self._buf.read()
+        return result
 
 
 class BCJFilter:
