@@ -254,16 +254,13 @@ class ZstdDecompressor(ISevenZipDecompressor):
         if len(properties) == 3 or len(properties) == 5:
             _major = properties[0]
             _minor = properties[1]
-            _level = properties[2]
             required_version = (_major, _minor, 0)
         else:
             raise UnsupportedCompressionMethodError
         if Zstd.ZSTD_VERSION < required_version:
             raise UnsupportedCompressionMethodError
-        if 0 < _level <= 22:
-            ctc = Zstd.ZstdDecompressor()  # type: ignore
-        else:
-            raise UnsupportedCompressionMethodError
+
+        ctc = Zstd.ZstdDecompressor()  # type: ignore
         self.dobj = ctc.decompressobj()  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
