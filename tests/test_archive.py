@@ -22,7 +22,7 @@ from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 from . import libarchive_extract, ltime, p7zip_test
 
 try:
-    import zstd as Zstd
+    import zstandard as Zstd  # type: ignore
 except ImportError:
     Zstd = None
 
