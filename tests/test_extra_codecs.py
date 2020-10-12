@@ -9,11 +9,17 @@ from Crypto.Cipher import AES
 import py7zr
 import py7zr.compressor
 from py7zr.exceptions import UnsupportedCompressionMethodError
+from tests import p7zip_test
 
 try:
     import zstandard as Zstd  # type: ignore  # noqa
 except ImportError:
     Zstd = None
+try:
+    import ppmd as Ppmd  # type: ignore
+except ImportError:
+    Ppmd = None
+
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
@@ -182,6 +188,7 @@ def test_extract_bzip2(tmp_path):
 
 
 @pytest.mark.files
+@pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
 def test_extract_ppmd(tmp_path):
     with pytest.raises(UnsupportedCompressionMethodError):
         archive = py7zr.SevenZipFile(testdata_path.joinpath('ppmd.7z').open(mode='rb'))
@@ -208,3 +215,15 @@ def test_extract_zstd(tmp_path):
 def test_extract_p7zip_zstd(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('p7zip-zstd.7z').open('rb')) as archive:
         archive.extractall(path=tmp_path)
+
+
+@pytest.mark.basic
+@pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
+def test_compress_ppmd(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_PPMD, 'level': 6, 'mem': 16}]
+    target = tmp_path.joinpath('target.7z')
+    archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
+    archive.writeall(os.path.join(testdata_path, "src"), "src")
+    archive.close()
+    #
+    p7zip_test(tmp_path / 'target.7z')
