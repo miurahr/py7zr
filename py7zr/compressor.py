@@ -36,12 +36,17 @@ from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
-                              FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE, CompressionMethod)
+                              FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE,
+                              CompressionMethod)
 
 try:
     import zstandard as Zstd  # type: ignore
 except ImportError:
     Zstd = None
+try:
+    import ppmd as Ppmd  # type: ignore
+except ImportError:
+    Ppmd = None
 
 
 class ISevenZipCompressor(ABC):
@@ -251,7 +256,7 @@ class ZstdDecompressor(ISevenZipDecompressor):
     def __init__(self, properties):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        if len(properties) == 3 or len(properties) == 5:
+        if len(properties) in [3, 5]:
             _major = properties[0]
             _minor = properties[1]
             required_version = (_major, _minor, 0)
@@ -294,6 +299,41 @@ class ZstdCompressor(ISevenZipCompressor):
         self.flushed = True
         result = self._buf.read()
         return result
+
+
+class PpmdDecompressor(ISevenZipDecompressor):
+
+    def __init__(self, properties: bytes):
+        if Ppmd is None:
+            raise UnsupportedCompressionMethodError
+        if not isinstance(properties, bytes):
+            raise UnsupportedCompressionMethodError
+        if len(properties) == 5:
+            level, mem = struct.unpack("<BL", properties)
+        elif len(properties) == 7:
+            level, mem, _, _ = struct.unpack("<BLBB", properties)
+        else:
+            raise UnsupportedCompressionMethodError
+        mem_order = mem >> 20
+        self.decoder = Ppmd.PpmdBufferDecoder(level, mem_order)  # type: ignore
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
+        result = self.decoder.decode(data, max_length)  # type: ignore
+        return result
+
+
+class PpmdCompressor(ISevenZipCompressor):
+
+    def __init__(self, level: int, mem: int):
+        if Ppmd is None:
+            raise UnsupportedCompressionMethodError
+        self.encoder = Ppmd.PpmdBufferEncoder(level, mem)  # type: ignore
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self.encoder.encode(data)  # type: ignore
+
+    def flush(self):
+        return self.encoder.flush()
 
 
 class BCJFilter:
@@ -582,6 +622,7 @@ class BCJEncoder(ISevenZipCompressor, BCJFilter):
 
 algorithm_class_map = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
+    FILTER_PPMD: (PpmdCompressor, None),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
@@ -756,6 +797,9 @@ class SevenZipDecompressor:
             raise UnsupportedCompressionMethodError('Unknown method code:{}'.format(coder['method']))
         if filter_id not in algorithm_class_map:
             raise UnsupportedCompressionMethodError('Unknown method filter_id:{}'.format(filter_id))
+        if algorithm_class_map[filter_id][1] is None:
+            raise UnsupportedCompressionMethodError(
+                'Decompression is not supported by {}.'.format(SupportedMethods.get_method_name_id(filter_id)))
         #
         if SupportedMethods.is_crypto_id(filter_id):
             return algorithm_class_map[filter_id][1](coder['properties'], password)
@@ -793,11 +837,11 @@ class SevenZipCompressor:
                 self.methods_map[i] = False
         #
         if not any(self.methods_map):  # all alternative
-            for filter in filters:
-                self._set_alternate_compressors_coders(filter['id'], password)
+            for f in filters:
+                self._set_alternate_compressors_coders(f, password)
         elif SupportedMethods.is_crypto_id(self.filters[-1]['id']) and all(self.methods_map[:-1]):
             self._set_native_compressors_coders(self.filters[:-1])
-            self._set_alternate_compressors_coders(self.filters[-1]['id'], password)
+            self._set_alternate_compressors_coders(self.filters[-1], password)
         else:
             raise UnsupportedCompressionMethodError
 
@@ -807,21 +851,27 @@ class SevenZipCompressor:
         for filter in filters:
             self.coders.insert(0, SupportedMethods.get_coder(filter))
 
-    def _set_alternate_compressors_coders(self, filter_id, password=None):
+    def _set_alternate_compressors_coders(self, alt_filter, password=None):
+        filter_id = alt_filter['id']
+        properties = None
         if filter_id not in algorithm_class_map:
             raise UnsupportedCompressionMethodError
         elif SupportedMethods.is_crypto_id(filter_id):
             compressor = algorithm_class_map[filter_id][0](password)
-        else:
-            compressor = algorithm_class_map[filter_id][0]()
-        if SupportedMethods.is_crypto_id(filter_id):
-            properties = compressor.encode_filter_properties()
         elif SupportedMethods.need_property(filter_id):
             if filter_id == FILTER_ZSTD:
                 level = 3
                 properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
+                compressor = algorithm_class_map[filter_id][0]()
+            elif filter_id == FILTER_PPMD:
+                order = alt_filter.get('level', 6)
+                mem_size = alt_filter.get('mem', 16) << 20
+                properties = struct.pack("<BLBB", order, mem_size, 0, 0)
+                compressor = algorithm_class_map[filter_id][0](order, mem_size)
         else:
-            properties = None
+            compressor = algorithm_class_map[filter_id][0]()
+        if SupportedMethods.is_crypto_id(filter_id):
+            properties = compressor.encode_filter_properties()
         self.chain.append(compressor)
         self._unpacksizes.append(0)
         self.coders.insert(0, {'method': SupportedMethods.get_method_id(filter_id),
@@ -906,6 +956,8 @@ class SupportedMethods:
                 'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
                {'id': CompressionMethod.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_ZSTD, 'type': MethodsType.compressor},
+               {'id': CompressionMethod.PPMD, 'name': 'PPMd', 'native': False, 'need_prop': True,
+                'filter_id': FILTER_PPMD, 'type': MethodsType.compressor},
                {'id': CompressionMethod.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_CRYPTO_AES256_SHA256, 'type': MethodsType.crypto},
                ]
@@ -913,6 +965,11 @@ class SupportedMethods:
     @classmethod
     def _find_method(cls, key_id, key_value):
         return next((item for item in cls.methods if item[key_id] == key_value), None)
+
+    @classmethod
+    def get_method_name_id(cls, filter_id):
+        method = cls._find_method('filter_id', filter_id)
+        return method['name']
 
     @classmethod
     def get_filter_id(cls, coder):
@@ -988,8 +1045,8 @@ class SupportedMethods:
 
 def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
     # list of known method names with a display priority order
-    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'ZStandard', 'LZ4*', 'BCJ2*',
-                        'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
+    methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'PPMd', 'ZStandard',
+                        'LZ4*', 'BCJ2*', 'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
     unsupported_methods = {CompressionMethod.P7Z_BCJ2: 'BCJ2*',
                            CompressionMethod.MISC_LZ4: 'LZ4*',
                            CompressionMethod.MISC_DEFLATE64: 'DEFLATE64*'}

@@ -263,6 +263,7 @@ Codecs and hashes:
 040108       DEFLATE
 040202         BZip2
 04f71101   ZStandard
+030401          PPMd
 06f10701       7zAES
 {}
 '''.format(expected_checks)
