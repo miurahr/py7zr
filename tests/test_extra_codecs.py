@@ -1,6 +1,7 @@
 import io
 import os
 import pathlib
+import struct
 import zlib
 
 import pytest
@@ -89,28 +90,64 @@ def test_copy_decompressor():
 
 @pytest.mark.unit
 @pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
-def test_zstd_compressor():
+def test_zstd_compressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    plain_data += plain_data
     compressor = py7zr.compressor.ZstdCompressor()
     outdata = compressor.compress(plain_data)
+    outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
-    expected = b"(\xb5/\xfd @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
-               b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
-    assert outdata == expected
+    compressed = b"\x28\xb5\x2f\xfd" \
+                 b"\x00XE\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
+                 b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
+    assert outdata == compressed
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
-def test_zstd_decompressor():
+def test_zstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
-    source_data = b"(\xb5/\xfd @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
-                  b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
+    compressed = b"\x28\xb5\x2f\xfd"\
+                 b"\x00XE\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
+                 b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     property = b'\x01\x04\x04\x00\x00'
     decompressor = py7zr.compressor.ZstdDecompressor(property)
-    outdata = decompressor.decompress(source_data)
+    outdata = decompressor.decompress(compressed)
     assert outdata == plain_data
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
+def test_zstd_decompressor_2():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    compressed_0 = b"\x28\xb5\x2f\xfd"
+    compressed_1 = b" @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4"
+    compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
+    property = b'\x01\x04\x04\x00\x00'
+    decompressor = py7zr.compressor.ZstdDecompressor(property)
+    outdata = decompressor.decompress(compressed_0)
+    outdata += decompressor.decompress(compressed_1)
+    outdata += decompressor.decompress(compressed_2)
+    assert outdata == plain_data
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
+def test_zstd_compressor_decompressor():
+    compressor = py7zr.compressor.ZstdCompressor()
+    compressed = b''
+    for i in range(255):
+        compressed += compressor.compress(struct.Struct(">B").pack(i) * 16384)
+    compressed += compressor.flush()
+    assert len(compressed) == 999
+    assert compressed[0:4] == b"\x28\xb5\x2f\xfd"
+    property = b'\x01\x04\x04\x00\x00'
+    decompressor = py7zr.compressor.ZstdDecompressor(property)
+    extracted = b''
+    extracted += decompressor.decompress(compressed)
+    assert len(extracted) == 16384 * 255
+    assert extracted[:10] == b'\0\0\0\0\0\0\0\0\0\0'
 
 
 @pytest.mark.unit

@@ -33,7 +33,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_crc32, calculate_key
+from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
                               FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE,
@@ -254,22 +254,19 @@ class CopyDecompressor(ISevenZipDecompressor):
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
-        if Zstd is None:
+        if Zstd is None or len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
-        if len(properties) in [3, 5]:
-            _major = properties[0]
-            _minor = properties[1]
-            required_version = (_major, _minor, 0)
-        else:
-            raise UnsupportedCompressionMethodError
-        if Zstd.ZSTD_VERSION < required_version:
-            raise UnsupportedCompressionMethodError
-
-        ctc = Zstd.ZstdDecompressor()  # type: ignore
-        self.dobj = ctc.decompressobj()  # type: ignore
+        self._buf = BufferedRW()
+        ctx = Zstd.ZstdDecompressor()  # type: ignore
+        self._decompressor = ctx.stream_writer(self._buf)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.dobj.decompress(data)
+        self._decompressor.write(data)
+        if max_length > 0:
+            result = self._buf.read(max_length)
+        else:
+            result = self._buf.read()
+        return result
 
 
 class ZstdCompressor(ISevenZipCompressor):
@@ -277,13 +274,23 @@ class ZstdCompressor(ISevenZipCompressor):
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self._ctc = Zstd.ZstdCompressor()  # type: ignore
+        self._buf = BufferedRW()
+        ctx = Zstd.ZstdCompressor()  # type: ignore
+        self._compressor = ctx.stream_writer(self._buf)
+        self.flushed = False
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._ctc.compress(data)  # type: ignore
+        self._compressor.write(data)
+        result = self._buf.read()
+        return result
 
     def flush(self):
-        return b''
+        if self.flushed:
+            return None
+        self._compressor.flush(Zstd.FLUSH_FRAME)
+        self.flushed = True
+        result = self._buf.read()
+        return result
 
 
 class PpmdDecompressor(ISevenZipDecompressor):

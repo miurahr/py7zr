@@ -20,7 +20,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #
+import array
 import ctypes
+import io
+import mmap
 import os
 import pathlib
 import platform
@@ -33,6 +36,7 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
+from py7zr.properties import READ_BLOCKSIZE
 
 
 def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
@@ -400,3 +404,43 @@ class Buffer:
 
     def __bytes__(self):
         return bytes(self._buf[0:self._buflen])
+
+
+class BufferedRW(io.BufferedIOBase):
+
+    def __init__(self):
+        self._buf = bytearray()
+
+    def writable(self):
+        return True
+
+    def write(self, b: Union[bytes, bytearray, memoryview, array.array, mmap.mmap]):
+        if isinstance(b, mmap.mmap):
+            size = b.size()
+            current = b.tell()
+            if size - current > READ_BLOCKSIZE:
+                self._buf += b.read(READ_BLOCKSIZE)
+            elif size - current > 0:
+                self._buf += b.read(size - current)
+        elif isinstance(b, array.array):
+            self._buf += b.tobytes()
+        else:
+            self._buf += b
+
+    def readable(self):
+        return True
+
+    def read(self, size: Optional[int] = -1):
+        if size is None or size < 0:
+            length: int = len(self._buf)
+        else:
+            length = size
+        result = bytes(self._buf[:length])
+        self._buf[:] = self._buf[length:]
+        return result
+
+    def readinto(self, b) -> int:
+        length = min(len(self._buf), len(b))
+        b[:] = self._buf[:length]
+        self._buf[:] = self._buf[length:]
+        return length
