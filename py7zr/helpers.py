@@ -31,7 +31,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import Any, BinaryIO, Optional, Union
+from typing import BinaryIO, Optional, Union
 
 import _hashlib  # type: ignore  # noqa
 
@@ -414,7 +414,7 @@ class BufferedRW(io.BufferedIOBase):
     def writable(self):
         return True
 
-    def write(self, b: Union[bytes, bytearray, memoryview, array.array[Any], mmap.mmap]):
+    def write(self, b: Union[bytes, bytearray, memoryview, array.array, mmap.mmap]):
         if isinstance(b, mmap.mmap):
             size = b.size()
             current = b.tell()
