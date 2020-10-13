@@ -290,46 +290,35 @@ Compression Methods supported
 'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
 It also support BZip2 and Deflate that are implemented in python core libraries,
 and ZStandard with third party libraries.
-`py7zr`, python3 core `lzma module`_ and `liblzma` do not support some algorithms
-such as PPMd, BCJ2 and Deflate64.
 
-Here is a table of algorithms.
+Supported algorithms are:
 
-+---+----------------------+--------------------------------------------+
-|  #| Category             | Algorithm combination                      |
-+===+======================+============================================+
-|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,        |
-|   | - Decompression      | IA64, ARMT, SPARC)                         |
-+---+                      +--------------------------------------------+
-|  2|                      | LZMA + BCJ(X86,ARMT,ARM,PPC,SPARC)         |
-+---+                      +--------------------------------------------+
-|  3|                      | LZMA2, LZMA, Bzip2, Deflate, COPY          |
-+---+                      +--------------------------------------------+
-|  4|                      | Bzip2,Deflate + BCJ(X86,ARM,PPC,ARMT,SPARC)|
-+---+----------------------+--------------------------------------------+
-|  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ               |
-+---+ - Decryption         +--------------------------------------------+
-|  6|                      | 7zAES + LZMA                               |
-+---+                      +--------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate                     |
-+---+----------------------+--------------------------------------------+
-|  8| - Compression only   | LZMA + BCJ(IA64)                           |
-+---+                      +--------------------------------------------+
-|  9|     (experimental)   | PPMd                                       |
-+---+----------------------+--------------------------------------------+
-|  9| - Unsupported        | BCJ2, Deflate64                            |
-+---+                      +--------------------------------------------+
-| 10|                      | ZStandard                                  |
-+---+----------------------+--------------------------------------------+
+* compress
+    * LZMA2
+    * LZMA
+    * Bzip2
+    * Deflate
+    * Copy
+    * Zstandard
+
+* crypt
+    * 7zAES
+
+* Filters
+    * Delta
+    * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
+
+* Compression only support(experimental)
+    * PPMd
+
+* No supported
+    * BCJ2
+    * Deflate64
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- Decryption of filename encrypted archive is also supported.
-
-- CAUTION: Specifying an unsupported algorithm combination may produce a broken archive.
-
-- ZStandard support is under development, but not working yet.
+- You need to run `pip install py7zr[zstd]` to enable zstandard support.
 
 
 Use Cases
