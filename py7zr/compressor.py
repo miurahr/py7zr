@@ -254,19 +254,11 @@ class CopyDecompressor(ISevenZipDecompressor):
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
-        if Zstd is None:
-            raise UnsupportedCompressionMethodError
-        if len(properties) in [3, 5]:
-            _major = properties[0]
-            _minor = properties[1]
-            required_version = (_major, _minor, 0)
-        else:
-            raise UnsupportedCompressionMethodError
-        if Zstd.ZSTD_VERSION < required_version:
+        if Zstd is None or len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
-        cctx = Zstd.ZstdDecompressor()  # type: ignore
-        self._decompressor = cctx.stream_writer(self._buf)
+        ctx = Zstd.ZstdDecompressor()  # type: ignore
+        self._decompressor = ctx.stream_writer(self._buf)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         self._decompressor.write(data)
@@ -283,8 +275,8 @@ class ZstdCompressor(ISevenZipCompressor):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
-        cctx = Zstd.ZstdCompressor()  # type: ignore
-        self._compressor = cctx.stream_writer(self._buf)
+        ctx = Zstd.ZstdCompressor()  # type: ignore
+        self._compressor = ctx.stream_writer(self._buf)
         self.flushed = False
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
