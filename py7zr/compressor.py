@@ -22,7 +22,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import bz2
-import io
 import lzma
 import struct
 import zlib
@@ -34,7 +33,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_crc32, calculate_key
+from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
                               FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE, CompressionMethod)
@@ -247,36 +246,6 @@ class CopyDecompressor(ISevenZipDecompressor):
         return bytes(data)
 
 
-class BufferRW(io.BufferedIOBase):
-
-    def __init__(self):
-        self._buf = bytearray()
-
-    def writable(self):
-        return True
-
-    def write(self, b: Union[bytes, bytearray, memoryview]):
-        self._buf += b
-
-    def readable(self):
-        return True
-
-    def read(self, size: Optional[int] = -1):
-        if size is None or size < 0:
-            length: int = len(self._buf)
-        else:
-            length = size
-        result = bytes(self._buf[:length])
-        self._buf[:] = self._buf[length:]
-        return result
-
-    def readinto(self, b) -> int:
-        length = min(len(self._buf), len(b))
-        b[:] = self._buf[:length]
-        self._buf[:] = self._buf[length:]
-        return length
-
-
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
@@ -285,20 +254,22 @@ class ZstdDecompressor(ISevenZipDecompressor):
         if len(properties) == 3 or len(properties) == 5:
             _major = properties[0]
             _minor = properties[1]
-            _level = properties[2]
             required_version = (_major, _minor, 0)
         else:
             raise UnsupportedCompressionMethodError
         if Zstd.ZSTD_VERSION < required_version:
             raise UnsupportedCompressionMethodError
-        if 0 < _level <= 22:
-            ctc = Zstd.ZstdDecompressor()  # type: ignore
-        else:
-            raise UnsupportedCompressionMethodError
-        self.dobj = ctc.decompressobj()  # type: ignore
+        self._buf = BufferedRW()
+        cctx = Zstd.ZstdDecompressor()  # type: ignore
+        self._decompressor = cctx.stream_writer(self._buf)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.dobj.decompress(data)
+        self._decompressor.write(data)
+        if max_length > 0:
+            result = self._buf.read(max_length)
+        else:
+            result = self._buf.read()
+        return result
 
 
 class ZstdCompressor(ISevenZipCompressor):
@@ -306,9 +277,9 @@ class ZstdCompressor(ISevenZipCompressor):
     def __init__(self):
         if Zstd is None:
             raise UnsupportedCompressionMethodError
-        self._buf = BufferRW()
-        _ctc = Zstd.ZstdCompressor()  # type: ignore
-        self._compressor = _ctc.stream_writer(self._buf)
+        self._buf = BufferedRW()
+        cctx = Zstd.ZstdCompressor()  # type: ignore
+        self._compressor = cctx.stream_writer(self._buf)
         self.flushed = False
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
@@ -318,7 +289,7 @@ class ZstdCompressor(ISevenZipCompressor):
 
     def flush(self):
         if self.flushed:
-            return b''
+            return None
         self._compressor.flush(Zstd.FLUSH_FRAME)
         self.flushed = True
         result = self._buf.read()

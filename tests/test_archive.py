@@ -733,6 +733,9 @@ def test_compress_zstd_2(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(tmp_path.joinpath('src'), 'src')
     archive.close()
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
 
 
 @pytest.mark.basic
