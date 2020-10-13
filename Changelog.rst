@@ -10,8 +10,6 @@ All notable changes to this project will be documented in this file.
 Added
 -----
 
-* Add PPMd compression support(experimental).
-
 Changed
 -------
 
@@ -21,13 +19,26 @@ Fixed
 Deprecated
 ----------
 
-* Drop support for python 3.5 which become end-of-line in Sept. 2020.
-
 Removed
 -------
 
 Security
 --------
+
+Added
+-----
+
+* Add PPMd compression support(experimental).
+
+Fixed
+-----
+
+* Fix zstandard compression/decompression.(#258)
+
+Deprecated
+----------
+
+* Drop support for python 3.5 which become end-of-line in Sept. 2020.
 
 `v0.10.1`_
 ==========
