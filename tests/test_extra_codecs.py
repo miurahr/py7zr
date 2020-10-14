@@ -227,10 +227,9 @@ def test_extract_bzip2(tmp_path):
 @pytest.mark.files
 @pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
 def test_extract_ppmd(tmp_path):
-    with pytest.raises(UnsupportedCompressionMethodError):
-        archive = py7zr.SevenZipFile(testdata_path.joinpath('ppmd.7z').open(mode='rb'))
-        archive.extractall(path=tmp_path)
-        archive.close()
+    archive = py7zr.SevenZipFile(testdata_path.joinpath('ppmd.7z').open(mode='rb'))
+    archive.extractall(path=tmp_path)
+    archive.close()
 
 
 @pytest.mark.files
@@ -262,5 +261,19 @@ def test_compress_ppmd(tmp_path):
     archive = py7zr.SevenZipFile(target, 'w', filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
     archive.close()
+    #
+    p7zip_test(tmp_path / 'target.7z')
+
+
+@pytest.mark.basic
+@pytest.mark.skipif(Ppmd is None, reason="ppmd library does not exist.")
+def test_compress_ppmd_2(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath('bzip2_2.7z').open(mode='rb')) as arc:
+        arc.extractall(path=tmp_path)
+    my_filters = [{"id": py7zr.FILTER_PPMD, 'level': 6, 'mem': 16}]
+    target = tmp_path.joinpath('target.7z')
+    with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+        archive.encoded_header_mode = False
+        archive.writeall(tmp_path.joinpath('10000SalesRecords.csv'))
     #
     p7zip_test(tmp_path / 'target.7z')

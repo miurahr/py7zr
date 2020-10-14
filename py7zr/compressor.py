@@ -306,11 +306,14 @@ class PpmdDecompressor(ISevenZipDecompressor):
             level, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
             raise UnsupportedCompressionMethodError
-        mem_order = mem >> 20
-        self.decoder = Ppmd.PpmdBufferDecoder(level, mem_order)  # type: ignore
+        self.decoder = Ppmd.PpmdBufferDecoder(level, mem)  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
-        result = self.decoder.decode(data, max_length)  # type: ignore
+        if max_length > 0:
+            size = min(READ_BLOCKSIZE, max_length)
+            result = self.decoder.decode(data, size)
+        else:
+            result = self.decoder.decode(data, 1)
         return result
 
 
@@ -614,7 +617,7 @@ class BCJEncoder(ISevenZipCompressor, BCJFilter):
 
 algorithm_class_map = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
-    FILTER_PPMD: (PpmdCompressor, None),
+    FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
