@@ -41,11 +41,16 @@ You can install py7zr as usual other libraries using pip.
 
     $ pip install py7zr
 
-When you want to handle extra codecs (ZStandard) then add extra requirements to command line
+When you want to handle extra codecs then add extra requirements to command line
+Py7zr supports following extra codecs;
+
+* `zstd`: ZStandard
+* `ppmd`: PPMd
 
 .. code-block::
 
-    $ pip install py7zr[zstd]
+    $ pip install py7zr[zstd,ppmd]
+
 
 
 Documents
@@ -308,7 +313,7 @@ Supported algorithms are:
     * Delta
     * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
 
-* Compression only support(experimental)
+* experimental
     * PPMd
 
 * No supported
