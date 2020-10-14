@@ -9,7 +9,6 @@ from Crypto.Cipher import AES
 
 import py7zr
 import py7zr.compressor
-from py7zr.exceptions import UnsupportedCompressionMethodError
 from tests import p7zip_test
 
 try:
