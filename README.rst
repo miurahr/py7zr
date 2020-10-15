@@ -329,13 +329,19 @@ Dependencies
 
 There are several dependencies to support algorithms and CLI expressions.
 
-Package                                                | Purpose
--------------------------------------------------------|-------------------
-[Pycryptodome](https://pypi.org/project/pycryptodome/) | Support 7zAES encryption
-[ppmd-cffi](https://pypi.org/project/ppmd-cffi/)       | Support PPMd compression
-[zstandard](https://pypi.org/project/zstandard)        | Support ZStandard compression
-[texttable](https://pypi.org/project/texttable)        | CLI
--------------------------------------------------------|-------------------
+================  ================================
+Package           Purpose
+================  ================================
+`Pycryptodome`_   Support 7zAES encryption
+`ppmd-cffi`_      Support PPMd compression
+`zstandard`_      Support ZStandard compression
+`texttable`_      CLI
+================  ================================
+
+.. _`Pycryptodome` : https://pypi.org/project/pycryptodome/
+.. _`ppmd-cffi` : https://pypi.org/project/ppmd-cffi/
+.. _`zstandard` : https://pypi.org/project/zstandard
+.. _`texttable` : https://pypi.org/project/texttable
 
 
 Use Cases
