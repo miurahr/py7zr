@@ -425,7 +425,8 @@ def test_decompress_small_files(tmp_path):
         f.write('1')
     with tmp_path.joinpath('t/b').open('w') as f:
         f.write('2')
-    result = subprocess.run(['7z', 'a', (tmp_path / 'target.7z').as_posix(), (tmp_path / 't')], stdout=subprocess.PIPE)
+    result = subprocess.run(['7z', 'a', (tmp_path / 'target.7z').as_posix(), (tmp_path / 't').as_posix()],
+                            stdout=subprocess.PIPE)
     if result.returncode != 0:
         print(result.stdout)
         pytest.fail('7z command report error')
