@@ -259,31 +259,31 @@ such as PPMd, BCJ2 and Deflate64.
 
 Here is a table of algorithms.
 
-+---+----------------------+------------------------------------------+
-|  #| Category             | Algorithm combination                    |
-+===+======================+==========================================+
-|  1| - Compression        | LZMA2 + Delta or BCJ(X86, ARM, PPC,      |
-|   | - Decompression      | IA64, ARMT, SPARC)                       |
++---+----------------------+------------|-----------------------------+
+|  #| Category             | Algorithm  | Note                        |
++===+======================+============|=============================+
+|  1| - Compression        | LZMA2      |                             |
++---+ - Decompression      +------------------------------------------+
+|  2|                      | LZMA       |                             |
 +---+                      +------------------------------------------+
-|  2|                      | LZMA + BCJ(X86,ARMT,ARM,PPC,SPARC)       |
+|  3|                      | Bzip2      |                             |
 +---+                      +------------------------------------------+
-|  3|                      | LZMA2, LZMA, Bzip2, Deflate only         |
+|  4|                      | Deflate    |                             |
 +---+                      +------------------------------------------+
-|  4|                      | Bzip2,Deflate+BCJ(X86,ARM,PPC,ARMT,SPARC)|
-+---+----------------------+------------------------------------------+
-|  6| - Encryption         | 7zAES + LZMA2 + Delta or BCJ             |
-+---+ - Decryption         +------------------------------------------+
-|  6|                      | 7zAES + LZMA                             |
+|  5|                      | COPY       |                             |
 +---+                      +------------------------------------------+
-|  7|                      | 7zAES + Bzip2, Deflate                   |
-+---+----------------------+------------------------------------------+
-|  8| - Compression only   | LZMA + BCJ(IA64)                         |
-+---+----------------------+------------------------------------------+
-|  9| - Extraction only    | COPY                                     |
-+---+----------------------+------------------------------------------+
-| 10| - Unsupported        | PPMd, BCJ2, Deflate64                    |
+|  6|                      | PPMd       | require extra [ppmd]        |
 +---+                      +------------------------------------------+
-| 11|                      | ZStandard                                |
+|  7|                      | ZStandard  | require extra [zstd]        |
++---+----------------------+------------------------------------------+
+|  8| - Filter             | BCJ(X86, ARM, PPC, ARMT, SPARC, IA64)    |
++---+                      +------------------------------------------+
+|  9|                      | Delta      |                             |
++---+----------------------+------------------------------------------+
+| 10| - Encryption         | 7zAES      | depend on pycryptodome      |
+|   | - Decryption         |            |                             |
++---+----------------------+------------------------------------------+
+| 11| - Unsupported        | BCJ2, Deflate64                          |
 +---+----------------------+------------------------------------------+
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
@@ -291,11 +291,8 @@ Here is a table of algorithms.
 
 - Decryption of filename encrypted archive is supported.
 
-- CAUTION: Specifying an unsupported algorithms combination may produce a broken archive or raise exception.
-
 - ZStandard is supported when install with pip [zstd] option.
 
-- ZStandard compression/decompression is implemented but it is not well-tested.
 
 
 Possible filters value
