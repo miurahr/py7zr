@@ -30,13 +30,20 @@ jobs:
           $file = "libarchive-v3.4.3-win64.zip"
           (New-Object System.Net.WebClient).DownloadFile($url, $file)
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
-          echo "LIBARCHIVE=" + (Get-ChildItem -Filter "archive.dll" -Recurse -File | Select-Object -ExpandProperty FullName)  >> $GITHUB_ENV
       - name: Install dependencies
         run: |
           pip install -U pip
           pip install tox tox-gh-actions coveralls
       - name: Test project with tox
+        if: runner.os != 'Windows'
         run: tox
+       - name: Test project with tox(windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo LIBARCHIVE="$LIBARCHIVE"
+          tox
+        env:
+          - LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
       - name: Send coverage to coveralls
         run: coveralls
         env:
