@@ -319,12 +319,14 @@ def test_cli_encrypted_wrong_password(monkeypatch, tmp_path, capsys):
 
     arcfile = os.path.join(testdata_path, "encrypted_1.7z")
     cli = py7zr.cli.Cli()
-    cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
+    result = cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
     out, err = capsys.readouterr()
+    assert result == 1
     assert out == expected
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.hexversion == 0x030900F0, reason="It lead segfault on py3.9.0")
 def test_cli_encrypted_zero_length_password(monkeypatch, tmp_path, capsys):
 
     def _getpasswd():
@@ -336,8 +338,9 @@ def test_cli_encrypted_zero_length_password(monkeypatch, tmp_path, capsys):
 
     arcfile = os.path.join(testdata_path, "encrypted_1.7z")
     cli = py7zr.cli.Cli()
-    cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
+    result = cli.run(["x", "--password", arcfile, str(tmp_path.resolve())])
     out, err = capsys.readouterr()
+    assert result == 1
     assert out == expected
 
 
