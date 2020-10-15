@@ -29,6 +29,7 @@ Added
 -----
 
 * PPMd compression/decompression support.
+* methods to set header encode mode, encode or encrypted.
 
 Fixed
 -----
