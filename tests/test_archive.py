@@ -578,6 +578,8 @@ def test_compress_lzma2_bcj(tmp_path):
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
+@pytest.mark.skipif(sys.platform.startswith("win") and sys.version_info < (3, 7),
+                    reason="requires python3.7 or higher for windows")
 def test_compress_files_deref_loop(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
