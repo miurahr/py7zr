@@ -244,6 +244,17 @@ SevenZipFile Object
    then archive listed as ['c', 'c/d.txt'], the former as directory.
 
 
+.. method:: SevenZipFile.set_encrypted_header(mode)
+
+   Set header encryption mode. When encrypt header, set mode to `True`, otherwise `False`.
+   Default is `False`.
+
+
+.. method:: SevenZipFile.set_encoded_header_mode(mode)
+
+   Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
+   Default is `True`.
+
 
 Compression Methods
 ===================

@@ -266,8 +266,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[List[Dict[str, int]]] = None, dereference=False, password: Optional[str] = None,
-                 header_encryption=False) -> None:
+                 *, filters: Optional[List[Dict[str, int]]] = None, dereference=False,
+                 password: Optional[str] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
@@ -326,6 +326,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._fpclose()
             raise e
         self.encoded_header_mode = True
+        self.header_encryption = False
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
         self.reporterd = None  # type: Optional[threading.Thread]
@@ -623,7 +624,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _write_header(self):
         """Write header and update signature header."""
         (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
-                                                                 encoded=self.encoded_header_mode)
+                                                                 encoded=self.encoded_header_mode,
+                                                                 encrypted=self.header_encryption)
         self.sig_header.nextheaderofs = header_pos - self.afterheader
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
@@ -673,7 +675,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def set_encoded_header_mode(self, mode: bool) -> None:
-        self.encoded_header_mode = mode
+        if mode:
+            self.encoded_header_mode = True
+        else:
+            self.encoded_header_mode = False
+            self.header_encryption = False
+
+    def set_encrypted_header(self, mode: bool) -> None:
+        if mode:
+            self.encoded_header_mode = True
+            self.header_encryption = True
+        else:
+            self.header_encryption = False
 
     @staticmethod
     def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
