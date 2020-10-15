@@ -38,7 +38,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           tox
-       - name: Test project with tox(windows)
+      - name: Test project with tox(windows)
         if: runner.os == 'Windows'
         run: |
           echo LIBARCHIVE="$LIBARCHIVE"
