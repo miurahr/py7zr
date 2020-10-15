@@ -36,16 +36,18 @@ jobs:
           pip install tox tox-gh-actions coveralls
       - name: Test project with tox
         if: runner.os != 'Windows'
-        run: tox
+        run: |
+          tox
        - name: Test project with tox(windows)
         if: runner.os == 'Windows'
         run: |
           echo LIBARCHIVE="$LIBARCHIVE"
           tox
         env:
-          - LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
+          LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
       - name: Send coverage to coveralls
-        run: coveralls
+        run: |
+          coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           COVERALLS_PARALLEL: true
