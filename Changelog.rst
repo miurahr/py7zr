@@ -28,7 +28,7 @@ Security
 Added
 -----
 
-* Add PPMd compression support(experimental).
+* PPMd compression/decompression support.
 
 Fixed
 -----

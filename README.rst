@@ -304,6 +304,7 @@ Supported algorithms are:
     * Bzip2
     * Deflate
     * Copy
+    * PPMd
     * Zstandard
 
 * crypt
@@ -313,9 +314,6 @@ Supported algorithms are:
     * Delta
     * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
 
-* experimental
-    * PPMd
-
 * No supported
     * BCJ2
     * Deflate64
@@ -324,6 +322,20 @@ Supported algorithms are:
   but not work with original 7-zip because the original does not implement the feature.
 
 - You need to run `pip install py7zr[zstd]` to enable zstandard support.
+
+
+Dependencies
+============
+
+There are several dependencies to support algorithms and CLI expressions.
+
+Package                                                | Purpose
+-------------------------------------------------------|-------------------
+[Pycryptodome](https://pypi.org/project/pycryptodome/) | Support 7zAES encryption
+[ppmd-cffi](https://pypi.org/project/ppmd-cffi/)       | Support PPMd compression
+[zstandard](https://pypi.org/project/zstandard)        | Support ZStandard compression
+[texttable](https://pypi.org/project/texttable)        | CLI
+-------------------------------------------------------|-------------------
 
 
 Use Cases
