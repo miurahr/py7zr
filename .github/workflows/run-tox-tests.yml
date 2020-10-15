@@ -41,7 +41,7 @@ jobs:
       - name: Test project with tox(windows)
         if: runner.os == 'Windows'
         run: |
-          echo LIBARCHIVE="$LIBARCHIVE"
+          echo LIBARCHIVE="${env:LIBARCHIVE}"
           tox
         env:
           LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
