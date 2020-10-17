@@ -326,7 +326,7 @@ def test_cli_encrypted_wrong_password(monkeypatch, tmp_path, capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.hexversion == 0x030900F0, reason="It lead segfault on py3.9.0")
+@pytest.mark.skipif(sys.hexversion == 0x030900F0, reason="bpo-42057")
 def test_cli_encrypted_zero_length_password(monkeypatch, tmp_path, capsys):
 
     def _getpasswd():
