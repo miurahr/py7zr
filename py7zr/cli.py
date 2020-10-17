@@ -141,7 +141,7 @@ class Cli():
     def show_help(self, args):
         self.show_version()
         self.parser.print_help()
-        return(0)
+        return 0
 
     def run_info(self, args):
         self.show_version()
@@ -175,7 +175,7 @@ class Cli():
         verbose = args.verbose
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
-            return(1)
+            return 1
         with open(target, 'rb') as f:
             a = py7zr.SevenZipFile(f)
             file = sys.stdout
@@ -226,7 +226,7 @@ class Cli():
                                                       f.uncompressed, extra, f.filename))
             file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
-        return(0)
+        return 0
 
     @staticmethod
     def print_archiveinfo(archive, file):
@@ -247,7 +247,7 @@ class Cli():
         target = args.arcfile
         if not py7zr.is_7zfile(target):
             print('not a 7z file')
-            return(1)
+            return 1
         with open(target, 'rb') as f:
             try:
                 a = py7zr.SevenZipFile(f)
@@ -281,7 +281,7 @@ class Cli():
                 password = getpass.getpass()
             except getpass.GetPassWarning:
                 sys.stderr.write('Warning: your password may be shown.\n')
-                return(1)
+                return 1
         try:
             a = py7zr.SevenZipFile(target, 'r', password=password)
         except py7zr.exceptions.Bad7zFile:
@@ -359,11 +359,11 @@ class Cli():
                 else:
                     szf.write(src)
         if volume_size is None:
-            return (0)
+            return 0
         size = self._volumesize_unitconv(volume_size)
         self._split_file(target, size)
         target.unlink()
-        return(0)
+        return 0
 
     def run_append(self, args):
         sztarget = args.arcfile  # type: str
@@ -384,7 +384,7 @@ class Cli():
                     szf.writeall(src)
                 else:
                     szf.write(src)
-        return(0)
+        return 0
 
     def _split_file(self, filepath, size):
         chapters = 0
