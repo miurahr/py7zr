@@ -1,6 +1,6 @@
 language: python
 dist: focal
-sudo: false
+sudo: true
 matrix:
   include:
     - python: pypy3.6-7.3.1
@@ -11,6 +11,7 @@ matrix:
       env: TOXENV=py38 PYTEST_ADDOPTS="--benchmark-skip"
 
 install:
+  - sudo apt install p7zip-full libarchive-dev
   - pip install tox-travis
 
 script: tox
