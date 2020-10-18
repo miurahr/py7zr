@@ -118,10 +118,7 @@ if sys.platform == "win32":
         #  - the size of two NUL terminators in bytes */
 
         target_is_path = isinstance(path, pathlib.Path)
-        if target_is_path:
-            target = str(path)
-        else:
-            target = path
+        target = str(path)
         CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
         CreateFileW.restype = HANDLE
         DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
