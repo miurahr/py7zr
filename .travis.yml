@@ -1,16 +1,14 @@
 language: python
-dist: bionic
+dist: focal
 sudo: false
 matrix:
   include:
-    - python: 3.7
-      env: TOXENV=check PYTEST_ADDOPTS=""
-    - python: 3.7
-      env: TOXENV=docs PYTEST_ADDOPTS=""
-    - python: 3.7
-      env: TOXENV=mypy PYTEST_ADDOPTS=""
-    - python: pypy3.6-7.2.0
+    - python: pypy3.6-7.3.1
+      arch: amd64
       env: TOXENV=pypy3 PYTEST_ADDOPTS="--benchmark-skip"
+    - python: 3.8
+      arch: arm64
+      env: TOXENV=py38 PYTEST_ADDOPTS="--benchmark-skip"
 
 install:
   - pip install tox-travis
