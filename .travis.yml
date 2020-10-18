@@ -10,8 +10,13 @@ matrix:
       arch: arm64
       env: TOXENV=py38 PYTEST_ADDOPTS="--benchmark-skip"
 
+before_install:
+  - sudo apt-get -y install p7zip-full libarchive-dev
+addons:
+  apt:
+    update: true
+
 install:
-  - sudo apt install p7zip-full libarchive-dev
   - pip install tox-travis
 
 script: tox
