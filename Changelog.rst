@@ -28,8 +28,10 @@ Security
 Added
 -----
 
-* PPMd compression/decompression support.
-* methods to set header encode mode, encode or encrypted.
+* PPMd compression/decompression support.(#255)
+* New API to set methods to set header encode mode, encode or encrypted.(#259)
+* Support Python 3.9.(#261)
+* Support arm64/aarch64 architecture on Linux.(#262)
 
 Fixed
 -----
