@@ -316,7 +316,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
                 self._buf.write(data)
                 size = min(READ_BLOCKSIZE, max_length)
                 res = bytearray()
-                while self._buf.size > 0 and len(res) < size:
+                while len(self._buf) > 0 and len(res) < size:
                     res += self.decoder.decode(1)
                 return bytes(res)
             else:
