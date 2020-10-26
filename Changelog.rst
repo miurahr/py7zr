@@ -13,6 +13,8 @@ Added
 Changed
 -------
 
+* PPMd: Use stream encoder/decoder instead of buffered one.
+
 Fixed
 -----
 
