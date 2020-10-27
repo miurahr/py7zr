@@ -307,26 +307,32 @@ class PpmdDecompressor(ISevenZipDecompressor):
         else:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
-        self.decoder = Ppmd.PpmdDecoder(self._buf, level, mem)  # type: ignore
+        self.decoder = None
+        self.level = level
+        self.mem = mem
+        self.initialized = False
+
+    def _init2(self):
+        self.decoder = Ppmd.PpmdDecoder(self._buf, self.level, self.mem)  # type: ignore
+        self.initialized = True
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
-        res = b''
-        if len(data) > 0:
-            if max_length > 0:
-                self._buf.write(data)
-                size = min(READ_BLOCKSIZE, max_length)
-                res = bytearray()
-                while len(self._buf) > 0 and len(res) < size:
-                    res += self.decoder.decode(1)
-                return bytes(res)
-            else:
-                self._buf.write(data)
-                res = self.decoder.decode(1)
-        elif max_length == -1:
-            res = self.decoder.decode(1)
-        else:
-            res = self.decoder.decode(max_length)
-        return res
+        self._buf.write(data)
+        if not self.initialized:
+            if len(self._buf) <= 4:
+                return b''
+            self._init2()
+        assert self.decoder is not None
+        if max_length <= 0:
+            return self.decoder.decode(1)
+        if len(data) == 0:
+            return self.decoder.decode(max_length)
+        #
+        size = min(READ_BLOCKSIZE, max_length)
+        res = bytearray()
+        while len(self._buf) > 0 and len(res) < size:
+            res += self.decoder.decode(1)
+        return bytes(res)
 
 
 class PpmdCompressor(ISevenZipCompressor):
