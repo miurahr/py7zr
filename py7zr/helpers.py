@@ -444,3 +444,6 @@ class BufferedRW(io.BufferedIOBase):
         b[:] = self._buf[:length]
         self._buf[:] = self._buf[length:]
         return length
+
+    def __len__(self):
+        return len(self._buf)

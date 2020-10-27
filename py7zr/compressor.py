@@ -306,15 +306,27 @@ class PpmdDecompressor(ISevenZipDecompressor):
             level, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
             raise UnsupportedCompressionMethodError
-        self.decoder = Ppmd.PpmdBufferDecoder(level, mem)  # type: ignore
+        self._buf = BufferedRW()
+        self.decoder = Ppmd.PpmdDecoder(self._buf, level, mem)  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
-        if max_length > 0:
-            size = min(READ_BLOCKSIZE, max_length)
-            result = self.decoder.decode(data, size)
+        res = b''
+        if len(data) > 0:
+            if max_length > 0:
+                self._buf.write(data)
+                size = min(READ_BLOCKSIZE, max_length)
+                res = bytearray()
+                while len(self._buf) > 0 and len(res) < size:
+                    res += self.decoder.decode(1)
+                return bytes(res)
+            else:
+                self._buf.write(data)
+                res = self.decoder.decode(1)
+        elif max_length == -1:
+            res = self.decoder.decode(1)
         else:
-            result = self.decoder.decode(data, 1)
-        return result
+            res = self.decoder.decode(max_length)
+        return res
 
 
 class PpmdCompressor(ISevenZipCompressor):
@@ -322,13 +334,16 @@ class PpmdCompressor(ISevenZipCompressor):
     def __init__(self, level: int, mem: int):
         if Ppmd is None:
             raise UnsupportedCompressionMethodError
-        self.encoder = Ppmd.PpmdBufferEncoder(level, mem)  # type: ignore
+        self._buf = BufferedRW()
+        self.encoder = Ppmd.PpmdEncoder(self._buf, level, mem)  # type: ignore
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encoder.encode(data)  # type: ignore
+        self.encoder.encode(data)
+        return self._buf.read()
 
     def flush(self):
-        return self.encoder.flush()
+        self.encoder.flush()
+        return self._buf.read()
 
 
 class BCJFilter:
