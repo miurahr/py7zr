@@ -319,10 +319,10 @@ class PpmdDecompressor(ISevenZipDecompressor):
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
         self._buf.write(data)
         if not self.initialized:
-            if len(self._buf) > 4:
-                self._init2()
-            else:
+            if len(self._buf) <= 4:
                 return b''
+            self._init2()
+        assert self.decoder is not None
         if max_length <= 0:
             return self.decoder.decode(1)
         if len(data) == 0:
