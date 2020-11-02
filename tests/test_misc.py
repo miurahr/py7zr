@@ -74,11 +74,3 @@ def test_bcj_file(tmp_path):
             ar.extractall(tmp_path.joinpath('tgt'))
         p7zip_test(target)
         libarchive_extract(target, tmp_path / 'tgt2')
-
-
-def test_issue266(tmp_path):
-    file_path = testdata_path.joinpath("src/bra.txt")
-    z_path = tmp_path.joinpath("Logs.7z")
-    shutil.copy(testdata_path.joinpath("lzma2bcj.7z"), z_path)
-    with py7zr.SevenZipFile(z_path, 'a') as archive:
-        archive.write(file=file_path)
