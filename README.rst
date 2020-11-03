@@ -321,8 +321,9 @@ Supported algorithms are:
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- You need to run `pip install py7zr[zstd]` to enable zstandard support.
+- You need to run `pip install py7zr[zstd]` to enable ZStandard support.
 
+- You need to run `pip install py7zr[ppmd]` to enable PPMd support.
 
 Dependencies
 ============
