@@ -328,6 +328,8 @@ class Folder:
             if hasattributes:
                 proplen = read_uint64(file)
                 c['properties'] = file.read(proplen)
+            else:
+                c['properties'] = None
             self.coders.append(c)
         num_bindpairs = totalout - 1
         for i in range(num_bindpairs):

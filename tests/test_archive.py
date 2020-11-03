@@ -847,6 +847,20 @@ def test_compress_append(tmp_path):
 
 
 @pytest.mark.files
+def test_compress_append_2(tmp_path):
+    target = tmp_path.joinpath('target.7z')
+    shutil.copy(os.path.join(testdata_path, "lzma2bcj.7z"), target)
+    with py7zr.SevenZipFile(target, mode='a') as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.extractall(path=tmp_path / 'tgt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.files
 @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_append_files_2(tmp_path):
     tmp_path.joinpath('src').mkdir()
