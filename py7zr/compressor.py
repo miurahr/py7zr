@@ -313,7 +313,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
         self.initialized = False
 
     def _init2(self):
-        self.decoder = Ppmd.PpmdDecoder(self._buf, self.level, self.mem)  # type: ignore
+        self.decoder = Ppmd.Ppmd7Decoder(self._buf, self.level, self.mem)  # type: ignore
         self.initialized = True
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
@@ -341,7 +341,7 @@ class PpmdCompressor(ISevenZipCompressor):
         if Ppmd is None:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
-        self.encoder = Ppmd.PpmdEncoder(self._buf, level, mem)  # type: ignore
+        self.encoder = Ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         self.encoder.encode(data)
