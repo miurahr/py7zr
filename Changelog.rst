@@ -13,8 +13,6 @@ Added
 Changed
 -------
 
-* PPMd: Use stream encoder/decoder instead of buffered one.
-
 Fixed
 -----
 
@@ -27,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.11.0`_
+==========
+
+Changed
+-------
+
+* PPMd: Use stream encoder/decoder instead of buffered one.
+* PPMd: Use ppmd-cffi@v0.3.1 and later.(#268)
+
 Added
 -----
 
@@ -38,6 +45,7 @@ Added
 Fixed
 -----
 
+* Append mode cause error when target archive use LZMA2+BCJ.(#266)
 * Fix zstandard compression/decompression.(#258)
 
 Deprecated
@@ -230,7 +238,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.10.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.0...HEAD
+.. _v0.10.2: https://github.com/miurahr/py7zr/compare/v0.10.1...v0.11.0
 .. _v0.10.1: https://github.com/miurahr/py7zr/compare/v0.10.0...v0.10.1
 .. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.10.0b3...v0.10.0
 .. _v0.10.0b3: https://github.com/miurahr/py7zr/compare/v0.10.0b2...v0.10.0b3
