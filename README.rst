@@ -321,9 +321,9 @@ Supported algorithms are:
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- You need to run `pip install py7zr[zstd]` to enable ZStandard support.
+- You need to run **`pip install py7zr[zstd]`** to enable ZStandard support.
 
-- You need to run `pip install py7zr[ppmd]` to enable PPMd support.
+- You need to run **`pip install py7zr[ppmd]`** to enable PPMd support.
 
 Dependencies
 ============
@@ -333,9 +333,9 @@ There are several dependencies to support algorithms and CLI expressions.
 ================  ================================
 Package           Purpose
 ================  ================================
-`Pycryptodome`_   Support 7zAES encryption
-`ppmd-cffi`_      Support PPMd compression
-`zstandard`_      Support ZStandard compression
+`Pycryptodome`_   7zAES encryption
+`ppmd-cffi`_      PPMd compression(optional)
+`zstandard`_      ZStandard compression(optional)
 `texttable`_      CLI
 ================  ================================
 
