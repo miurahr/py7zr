@@ -37,7 +37,7 @@ Install
 
 You can install py7zr as usual other libraries using pip.
 
-.. code-block::
+.. code-block:: shell
 
     $ pip install py7zr
 
@@ -47,7 +47,7 @@ Py7zr supports following extra codecs;
 * `zstd`: ZStandard
 * `ppmd`: PPMd
 
-.. code-block::
+.. code-block:: shell
 
     $ pip install py7zr[zstd,ppmd]
 
@@ -91,56 +91,56 @@ You can run command script py7zr like as follows;
 
 * List archive contents
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr l test.7z
 
 * Extract archive
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr x test.7z
 
 * Extract archive with password
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr x -P test.7z
       password?: ****
 
 * Create and compress to archive
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr c target.7z test_dir
 
 * Create multi-volume archive
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr c -v 500k target.7z test_dir
 
 * Test archive
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr t test.7z
 
 * Append files to archive
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr a test.7z test_dir
 
 * Show information
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr i
 
 * Show version
 
-.. code-block::
+.. code-block:: shell
 
     $ py7zr --version
 
@@ -155,7 +155,7 @@ Decompression/Decryption
 
 Here is a code snippet how to decompress some file in your application.
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -167,7 +167,7 @@ Here is a code snippet how to decompress some file in your application.
 
 You can also use 'with' block because py7zr provide context manager(v0.6 and later).
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -181,7 +181,7 @@ You can also use 'with' block because py7zr provide context manager(v0.6 and lat
 py7zr also supports extraction of single or selected files by 'extract(targets=['file path'])'.
 Note: if you specify only a file but not a parent directory, it will fail.
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
     import re
@@ -195,7 +195,7 @@ Note: if you specify only a file but not a parent directory, it will fail.
 
 py7zr support an extraction of password protected archive.(v0.6 and later)
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -207,7 +207,7 @@ Compression/Encryption
 
 Here is a code snippet how to produce archive.
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -217,7 +217,7 @@ Here is a code snippet how to produce archive.
 
 To create encrypted archive, please pass a password.
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -227,7 +227,7 @@ To create encrypted archive, please pass a password.
 
 To create archive with algorithms such as zstandard, you can call with custom filter.
 
-.. code-block::
+.. code-block:: python
 
     import py7zr
 
@@ -242,7 +242,7 @@ shutil helper
 
 py7zr also support `shutil`  interface.
 
-.. code-block::
+.. code-block:: python
 
     from py7zr import pack_7zarchvie, unpack_7zarchive
     import shutil
