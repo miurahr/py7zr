@@ -725,6 +725,7 @@ class SevenZipDecompressor:
         self.consumed = 0
         self._unused = bytearray()
         self._buf = bytearray()
+        self._pos = 0
         # ---
         if all(self.methods_map):
             decompressor = self._get_lzma_decompressor(coders, unpacksizes[-1])
@@ -770,15 +771,16 @@ class SevenZipDecompressor:
         self.consumed += len(data)
         #
         if max_length < 0:
-            res = self._buf + self._decompress(self._unused + data, max_length)
+            res = self._buf[self._pos:] + self._decompress(self._unused + data, max_length)
             self._buf = bytearray()
             self._unused = bytearray()
+            self._pos = 0
         else:
-            current_buf_len = len(self._buf)
+            current_buf_len = len(self._buf) - self._pos
             if current_buf_len >= max_length:
                 self._unused.extend(data)
-                res = self._buf[:max_length]
-                self._buf = self._buf[max_length:]
+                res = self._buf[self._pos:self._pos + max_length]
+                self._pos += max_length
             else:
                 if len(self._unused) > 0:
                     tmp = self._decompress(self._unused + data, max_length)
@@ -786,11 +788,13 @@ class SevenZipDecompressor:
                 else:
                     tmp = self._decompress(data, max_length)
                 if current_buf_len + len(tmp) <= max_length:
-                    res = self._buf + tmp
+                    res = self._buf[self._pos:] + tmp
                     self._buf = bytearray()
+                    self._pos = 0
                 else:
-                    res = self._buf + tmp[:max_length - current_buf_len]
+                    res = self._buf[self._pos:] + tmp[:max_length - current_buf_len]
                     self._buf = bytearray(tmp[max_length - current_buf_len:])
+                    self._pos = 0
         self.digest = calculate_crc32(res, self.digest)
         return res
 
