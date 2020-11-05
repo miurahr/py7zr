@@ -460,9 +460,19 @@ class BCJFilter:
         view = memoryview(self.buffer)
         limit = size - 5
         buffer_pos = 0
+        pos1 = 0
+        pos2 = 0
         while buffer_pos <= limit:
-            pos1 = self.buffer.find(0xe9, buffer_pos, limit)
-            pos2 = self.buffer.find(0xe8, buffer_pos, limit)
+            # --
+            # The following is pythonic way as same as
+            # if self.buffer[buffer_pos] not in [0xe9, 0xe8]:
+            #    buffer_pos += 1
+            #     continue
+            # --
+            if pos1 >= 0:
+                pos1 = self.buffer.find(0xe9, buffer_pos, limit)
+            if pos2 >= 0:
+                pos2 = self.buffer.find(0xe8, buffer_pos, limit)
             if pos1 < 0 and pos2 < 0:
                 buffer_pos = limit + 1
                 break
@@ -472,7 +482,7 @@ class BCJFilter:
                 buffer_pos = pos1
             else:
                 buffer_pos = min(pos1, pos2)
-            assert view[buffer_pos] == 0xe9 or view[buffer_pos] == 0xe8
+            # --
             offset = self.current_position + buffer_pos - self.prev_pos
             self.prev_pos = self.current_position + buffer_pos
             if offset > 5:
