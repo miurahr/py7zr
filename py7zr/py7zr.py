@@ -562,7 +562,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         junction_dst.unlink()
                         _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
             # set file properties
-            for outfilename, properties in target_files:              
+            for outfilename, properties in target_files:
                 # creation time
                 creationtime = None
                 try:
