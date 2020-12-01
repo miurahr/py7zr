@@ -13,5 +13,6 @@ Contributors, listed alphabetically, are:
 * Joachim Bauch -- pylzma orginator
 * Kazuya Fujioka -- Fix zero file problem
 * Kyle Altendorf -- Fix multithreading problem (#82)
+* @padremayi -- Fix crash on wrong crationtime in archive (#175)
 * @royopa -- Fix typo (#108)
 * @Zoynels -- Mmeory IO API(#111, #119)
