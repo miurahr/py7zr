@@ -562,9 +562,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         junction_dst.unlink()
                         _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
             # set file properties
-            for outfilename, properties in target_files:
+            for outfilename, properties in target_files:              
                 # creation time
-                creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                creationtime = None
+                try:
+                    creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                except KeyError:
+                    pass
                 if creationtime is not None:
                     os.utime(str(outfilename), times=(creationtime, creationtime))
                 if os.name == 'posix':
