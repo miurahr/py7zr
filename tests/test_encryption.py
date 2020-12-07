@@ -220,3 +220,26 @@ def test_encrypt_file_4(tmp_path):
         if result.returncode != 0:
             print(result.stdout)
             pytest.fail('7z command report error')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_encrypt_file_5(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path))
+    with py7zr.SevenZipFile(target, mode='w', password="test123", header_encryption=True) as archive:
+        archive.writeall('src', arcname='src')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_encrypt_file_6(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path))
+    with py7zr.SevenZipFile(target, mode='w', password="test123") as archive:
+        archive.set_encrypted_header(True)
+        archive.writeall('src', arcname='src')
