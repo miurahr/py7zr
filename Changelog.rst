@@ -25,6 +25,20 @@ Removed
 Security
 --------
 
+`v0.11.1`_
+==========
+
+Changed
+-------
+* Improve BCJ filter performance with LZMA1, ZStd compressions.
+
+Fixed
+-----
+
+* Fix to allow writing encrypted header(#280)
+* Avoid crash when creationtime is wrong or Unix epoch. (#275,#276)
+
+
 `v0.11.0`_
 ==========
 
@@ -238,8 +252,9 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.0...HEAD
-.. _v0.10.2: https://github.com/miurahr/py7zr/compare/v0.10.1...v0.11.0
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.1...HEAD
+.. _v0.11.1: https://github.com/miurahr/py7zr/compare/v0.11.0...v0.11.1
+.. _v0.11.0: https://github.com/miurahr/py7zr/compare/v0.10.1...v0.11.0
 .. _v0.10.1: https://github.com/miurahr/py7zr/compare/v0.10.0...v0.10.1
 .. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.10.0b3...v0.10.0
 .. _v0.10.0b3: https://github.com/miurahr/py7zr/compare/v0.10.0b2...v0.10.0b3
