@@ -267,7 +267,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
                  *, filters: Optional[List[Dict[str, int]]] = None, dereference=False,
-                 password: Optional[str] = None) -> None:
+                 password: Optional[str] = None, header_encryption: bool = False) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
@@ -307,6 +307,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.mode = mode  # type: ignore  #noqa
         else:
             raise TypeError("invalid file: {}".format(type(file)))
+        self.encoded_header_mode = True
+        self.header_encryption = header_encryption
         self._fileRefCnt = 1
         try:
             if mode == "r":
@@ -325,8 +327,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self.encoded_header_mode = True
-        self.header_encryption = False
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
         self.reporterd = None  # type: Optional[threading.Thread]
@@ -615,6 +615,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
         self.header = Header.build_header([folder])
+        self.header.password = password
         self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header)
