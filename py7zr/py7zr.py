@@ -563,14 +563,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
             # set file properties
             for outfilename, properties in target_files:
-                # creation time
-                creationtime = None
+                # mtime
+                lastmodified = None
                 try:
-                    creationtime = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                    lastmodified = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
                 except KeyError:
                     pass
-                if creationtime is not None:
-                    os.utime(str(outfilename), times=(creationtime, creationtime))
+                if lastmodified is not None:
+                    os.utime(str(outfilename), times=(lastmodified, lastmodified))
                 if os.name == 'posix':
                     st_mode = properties['posix_mode']
                     if st_mode is not None:
@@ -815,12 +815,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def list(self) -> List[FileInfo]:
         """Returns contents information """
         alist = []  # type: List[FileInfo]
-        creationtime = None  # type: Optional[datetime.datetime]
+        lastmodified = None  # type: Optional[datetime.datetime]
         for f in self.files:
             if f.lastwritetime is not None:
-                creationtime = filetime_to_dt(f.lastwritetime)
+                lastmodified = filetime_to_dt(f.lastwritetime)
             alist.append(FileInfo(f.filename, f.compressed, f.uncompressed, f.archivable, f.is_directory,
-                                  creationtime, f.crc32))
+                                  lastmodified, f.crc32))
         return alist
 
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
