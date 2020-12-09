@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Fix test failure when running on pypi source(#279)
+
 Deprecated
 ----------
 
