@@ -48,11 +48,11 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.testzip() is None
     archive.close()
-    ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
+    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
     expected = "total 1 files and directories in archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(mtime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
@@ -166,11 +166,11 @@ def test_compress_file_0(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, 'r')
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] == 1
     assert archive.testzip() is None
-    ctime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_ctime)
+    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
     expected = "total 1 files and directories in archive\n" \
                "   Date      Time    Attr         Size   Compressed  Name\n" \
                "------------------- ----- ------------ ------------  ------------------------\n"
-    expected += "{} ....A           33           37  test1.txt\n".format(ltime(ctime))
+    expected += "{} ....A           33           37  test1.txt\n".format(ltime(mtime))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
