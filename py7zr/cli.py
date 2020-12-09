@@ -203,11 +203,11 @@ class Cli():
             file.write('------------------- ----- ------------ ------------  ------------------------\n')
             for f in archive_list:
                 if f.creationtime is not None:
-                    creationdate = f.creationtime.astimezone(Local).strftime("%Y-%m-%d")
-                    creationtime = f.creationtime.astimezone(Local).strftime("%H:%M:%S")
+                    lastwritedate = f.creationtime.astimezone(Local).strftime("%Y-%m-%d")
+                    lastwritetime = f.creationtime.astimezone(Local).strftime("%H:%M:%S")
                 else:
-                    creationdate = '         '
-                    creationtime = '         '
+                    lastwritedate = '         '
+                    lastwritetime = '         '
                 if f.is_directory:
                     attrib = 'D...'
                 else:
@@ -222,7 +222,7 @@ class Cli():
                     extra = '             '
                 else:
                     extra = '%12d ' % (f.compressed)
-                file.write('%s %s %s %12d %s %s\n' % (creationdate, creationtime, attrib,
+                file.write('%s %s %s %12d %s %s\n' % (lastwritedate, lastwritetime, attrib,
                                                       f.uncompressed, extra, f.filename))
             file.write('------------------- ----- ------------ ------------  ------------------------\n')
 
