@@ -897,7 +897,7 @@ class Header:
             folder_data = bytearray()
             while remaining > 0:
                 folder_data += decompressor.decompress(fp, max_length=remaining)
-                remaining -= len(folder_data)
+                remaining = uncompressed_size - len(folder_data)
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:
