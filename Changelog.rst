@@ -16,6 +16,8 @@ Changed
 Fixed
 -----
 
+* Fix test failure when running on pypi source(#279)
+
 Deprecated
 ----------
 
@@ -24,23 +26,6 @@ Removed
 
 Security
 --------
-
-
-
-`v0.11.2`_
-==========
-
-
-Fixed
------
-
-* Fix test failure when running on pypi source(#279)
-
-Security
---------
-
-* Drop issue_218.7z test data which has a blackmoon trojan(#285)
-
 
 `v0.11.1`_
 ==========
@@ -269,8 +254,7 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.2...HEAD
-.. _v0.11.2: https://github.com/miurahr/py7zr/compare/v0.11.1...v0.11.2
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.1...HEAD
 .. _v0.11.1: https://github.com/miurahr/py7zr/compare/v0.11.0...v0.11.1
 .. _v0.11.0: https://github.com/miurahr/py7zr/compare/v0.10.1...v0.11.0
 .. _v0.10.1: https://github.com/miurahr/py7zr/compare/v0.10.0...v0.10.1
