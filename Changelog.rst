@@ -25,6 +25,14 @@ Removed
 Security
 --------
 
+`v0.9.10`_
+==========
+
+Security
+--------
+
+* Drop issue_218.7z test data wihch is reported a blackmoon trojan(#285)
+
 `v0.9.9`_
 =========
 
@@ -782,7 +790,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.9...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.9.10...HEAD
+.. _v0.9.10: https://github.com/miurahr/py7zr/compare/v0.9.9...v0.9.10
 .. _v0.9.9: https://github.com/miurahr/py7zr/compare/v0.9.8...v0.9.9
 .. _v0.9.8: https://github.com/miurahr/py7zr/compare/v0.9.7...v0.9.8
 .. _v0.9.7: https://github.com/miurahr/py7zr/compare/v0.9.6...v0.9.7
