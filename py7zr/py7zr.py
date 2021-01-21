@@ -1153,10 +1153,14 @@ class Worker:
         else:
             with f.origin.open(mode='rb') as fd:
                 insize, foutsize, crc = compressor.compress(fd, fp)
-        self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-        self.header.main_streams.substreamsinfo.digests.append(crc)
-        self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
+        if insize > 0:
+            self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+            self.header.main_streams.substreamsinfo.digests.append(crc)
+            if self.header.main_streams.substreamsinfo.unpacksizes is None:
+                self.header.main_streams.substreamsinfo.unpacksizes = [insize]
+            else:
+                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+            self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
     def prepare_archive(self):
