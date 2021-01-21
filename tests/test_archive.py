@@ -877,3 +877,20 @@ def test_append_files_2(tmp_path):
     #
     p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_append_empty_files(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    with tmp_path.joinpath('src').joinpath('1.txt').open(mode='w') as w:
+        pass
+    with tmp_path.joinpath('src').joinpath('2.txt').open(mode='w') as w:
+        pass
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    with py7zr.SevenZipFile(target, 'w') as archive:
+        archive.writeall('1.txt')
+    with py7zr.SevenZipFile(target, 'a') as archive:
+        archive.writeall('2.txt')
