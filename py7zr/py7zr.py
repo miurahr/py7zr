@@ -370,7 +370,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             packinfo = self.header.main_streams.packinfo
             packsizes = packinfo.packsizes
             subinfo = self.header.main_streams.substreamsinfo
-            unpacksizes = subinfo.unpacksizes if subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
+            unpacksizes = subinfo.unpacksizes if subinfo is not None and subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
         else:
             subinfo = None
             folders = None
@@ -756,7 +756,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
-                f['emptystream'] = False
+                f['emptystream'] = (target.stat().st_size == 0)
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['uncompressed'] = fstat.st_size
         else:
@@ -784,7 +784,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_file():
-                f['emptystream'] = False
+                f['emptystream'] = (target.stat().st_size == 0)
                 f['uncompressed'] = fstat.st_size
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
@@ -1153,13 +1153,15 @@ class Worker:
         else:
             with f.origin.open(mode='rb') as fd:
                 insize, foutsize, crc = compressor.compress(fd, fp)
-        if insize > 0:
-            self.header.main_streams.substreamsinfo.digestsdefined.append(True)
-            self.header.main_streams.substreamsinfo.digests.append(crc)
-            if self.header.main_streams.substreamsinfo.unpacksizes is None:
-                self.header.main_streams.substreamsinfo.unpacksizes = [insize]
-            else:
-                self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+        self.header.main_streams.substreamsinfo.digestsdefined.append(True)
+        self.header.main_streams.substreamsinfo.digests.append(crc)
+        if self.header.main_streams.substreamsinfo.unpacksizes is None:
+            self.header.main_streams.substreamsinfo.unpacksizes = [insize]
+        else:
+            self.header.main_streams.substreamsinfo.unpacksizes.append(insize)
+        if self.header.main_streams.substreamsinfo.num_unpackstreams_folders is None:
+            self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [1]
+        else:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
