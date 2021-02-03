@@ -891,6 +891,12 @@ def test_append_empty_files(tmp_path):
     target = tmp_path.joinpath('target.7z')
     os.chdir(str(tmp_path.joinpath('src')))
     with py7zr.SevenZipFile(target, 'w') as archive:
-        archive.writeall('1.txt')
+        archive.write('1.txt')
     with py7zr.SevenZipFile(target, 'a') as archive:
-        archive.writeall('2.txt')
+        archive.write('2.txt')
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.test()
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
