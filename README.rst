@@ -13,9 +13,6 @@
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
-.. image:: https://travis-ci.com/miurahr/py7zr.svg?branch=master
-  :target: https://travis-ci.com/miurahr/py7zr
-
 .. image:: https://github.com/miurahr/py7zr/workflows/Run%20Tox%20tests/badge.svg
   :target: https://github.com/miurahr/py7zr/actions
 
@@ -31,6 +28,26 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+=======
+WARNING
+=======
+
+**Test archive data, which affected a malware,  have been existed from Aug, 2020 - 20, Jan, 2021!**
+
+All the git history is re-writed, so please remove your local and fork copy of the git repository,
+and clone again(if necessary)!
+
+Problematic file is named `issue_218.7z` and `issue_218_2.7z`.
+
+**There is NO affected in library itself.**  and the test execution also does not extract the malware file.
+There is no problem when you install py7zr with `pip` command.
+
+Release that has a clean source:
+
+- v0.11.3
+- v0.10.2
+- v0.9.10
+- v0.9.4 and before
 
 Install
 =======
