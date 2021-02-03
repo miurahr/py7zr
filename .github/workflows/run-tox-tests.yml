@@ -65,8 +65,9 @@ jobs:
           architecture: x64
       - name: Tell Coveralls that the parallel build is finished
         run: |
-          pip install -U coveralls
-          coveralls --finish
+          curl -k \
+              https://coveralls.io/webhook?repo_token=$COVERALLS_REPO_TOKEN \
+              -d "payload[build_num]=$GITHUB_SHA&payload[status]=done"
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

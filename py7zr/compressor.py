@@ -40,13 +40,15 @@ from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_
                               CompressionMethod)
 
 try:
-    import zstandard as Zstd  # type: ignore
+    import zstandard as Zstd
+    ZstdImport = True
 except ImportError:
-    Zstd = None
+    ZstdImport = False
 try:
     import ppmd as Ppmd  # type: ignore
+    PpmdImport = True
 except ImportError:
-    Ppmd = None
+    PpmdImport = False
 
 
 class ISevenZipCompressor(ABC):
@@ -254,7 +256,7 @@ class CopyDecompressor(ISevenZipDecompressor):
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
-        if Zstd is None or len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
+        if not ZstdImport or len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         ctx = Zstd.ZstdDecompressor()  # type: ignore
@@ -272,7 +274,7 @@ class ZstdDecompressor(ISevenZipDecompressor):
 class ZstdCompressor(ISevenZipCompressor):
 
     def __init__(self):
-        if Zstd is None:
+        if not ZstdImport:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         ctx = Zstd.ZstdCompressor()  # type: ignore
@@ -296,7 +298,7 @@ class ZstdCompressor(ISevenZipCompressor):
 class PpmdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties: bytes):
-        if Ppmd is None:
+        if not PpmdImport:
             raise UnsupportedCompressionMethodError
         if not isinstance(properties, bytes):
             raise UnsupportedCompressionMethodError
@@ -338,7 +340,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
 class PpmdCompressor(ISevenZipCompressor):
 
     def __init__(self, level: int, mem: int):
-        if Ppmd is None:
+        if not PpmdImport:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         self.encoder = Ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
