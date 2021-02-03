@@ -370,7 +370,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
             packinfo = self.header.main_streams.packinfo
             packsizes = packinfo.packsizes
             subinfo = self.header.main_streams.substreamsinfo
-            unpacksizes = subinfo.unpacksizes if subinfo is not None and subinfo.unpacksizes is not None else [x.unpacksizes[-1] for x in folders]
+            if subinfo is not None and subinfo.unpacksizes is not None:
+                unpacksizes = subinfo.unpacksizes
+            else:
+                unpacksizes = [x.unpacksizes[-1] for x in folders]
         else:
             subinfo = None
             folders = None
