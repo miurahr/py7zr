@@ -24,13 +24,6 @@ using standard 'pip' command as like follows;
     $ pip install py7zr
 
 
-When you want to use an extension that support ZStandard, please use following command line.
-
-.. code-block:: bash
-
-    $ pip install py7zr[zstd]
-
-
 Run Command
 -----------
 

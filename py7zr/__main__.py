@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #    Pure python p7zr implementation
-#    Copyright (C) 2019,2020 Hiroshi Miura
+#    Copyright (C) 2019-2021 Hiroshi Miura
 #
 #    This library is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU Lesser General Public

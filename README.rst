@@ -44,7 +44,7 @@ There is no problem when you install py7zr with `pip` command.
 
 Release that has a clean source:
 
-- v0.11.3
+- v0.11.3 and later
 - v0.10.2
 - v0.9.10
 - v0.9.4 and before
@@ -58,17 +58,6 @@ You can install py7zr as usual other libraries using pip.
 
     $ pip install py7zr
 
-When you want to handle extra codecs then add extra requirements to command line
-Py7zr supports following extra codecs;
-
-* `zstd`: ZStandard
-* `ppmd`: PPMd
-
-.. code-block:: shell
-
-    $ pip install py7zr[zstd,ppmd]
-
-
 
 Documents
 =========
@@ -78,7 +67,7 @@ User manuals
 
 * `User Guide`_ for latest version.
 
-* `API guide`_ for latest version.
+* `API Guide`_ for latest version.
 
 * `Manual`_ for stable version.
 
@@ -90,11 +79,11 @@ Developer guide
 * `7z file specification`_
 
 
-.. _`manual` : https://py7zr.readthedocs.io/en/stable/
-
 .. _`User Guide`: https://py7zr.readthedocs.io/en/latest/user_guide.html
 
-.. _`API guide` : https://py7zr.readthedocs.io/en/latest/api.html
+.. _`API Guide` : https://py7zr.readthedocs.io/en/latest/api.html
+
+.. _`Manual` : https://py7zr.readthedocs.io/en/stable/
 
 .. _`Contributor guide` : https://py7zr.readthedocs.io/en/latest/contribution.html
 
@@ -338,10 +327,6 @@ Supported algorithms are:
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- You need to run **`pip install py7zr[zstd]`** to enable ZStandard support.
-
-- You need to run **`pip install py7zr[ppmd]`** to enable PPMd support.
-
 Dependencies
 ============
 
@@ -351,8 +336,8 @@ There are several dependencies to support algorithms and CLI expressions.
 Package           Purpose
 ================  ================================
 `Pycryptodome`_   7zAES encryption
-`ppmd-cffi`_      PPMd compression(optional)
-`zstandard`_      ZStandard compression(optional)
+`ppmd-cffi`_      PPMd compression
+`zstandard`_      ZStandard compression
 `texttable`_      CLI
 ================  ================================
 
@@ -376,7 +361,7 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019,2020 Hiroshi Miura
+* Copyright (C) 2019-2021 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov
