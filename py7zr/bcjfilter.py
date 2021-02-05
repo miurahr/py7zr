@@ -219,3 +219,63 @@ class BCJFilter:
 
     def flush(self):
         return bytes(self.buffer)
+
+
+class BCJDecoder(BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self.x86_code, 5, False, size)
+
+
+class BCJEncoder(BCJFilter):
+
+    def __init__(self):
+        super().__init__(self.x86_code, 5, True)
+
+
+class SparcDecoder(BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self.sparc_code, 4, False, size)
+
+
+class SparcEncoder(BCJFilter):
+
+    def __init__(self):
+        super().__init__(self.sparc_code, 4, True)
+
+
+class PpcDecoder(BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self.ppc_code, 4, False, size)
+
+
+class PpcEncoder(BCJFilter):
+
+    def __init__(self):
+        super().__init__(self.ppc_code, 4, True)
+
+
+class ArmtDecoder(BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self.armt_code, 4, False, size)
+
+
+class ArmtEncoder(BCJFilter):
+
+    def __init__(self):
+        super().__init__(self.armt_code, 4, True)
+
+
+class ArmDecoder(BCJFilter):
+
+    def __init__(self, size: int):
+        super().__init__(self.arm_code, 4, False, size)
+
+
+class ArmEncoder(BCJFilter):
+
+    def __init__(self):
+        super().__init__(self.arm_code, 4, True)
