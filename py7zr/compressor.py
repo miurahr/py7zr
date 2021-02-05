@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from bcj import BCJFilter
 import ppmd as Ppmd  # type: ignore
 import zstandard as Zstd
 from Crypto.Cipher import AES
@@ -41,10 +42,6 @@ from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_
                               FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE,
                               CompressionMethod)
 
-try:
-    from bcj import BCJFilter  # type: ignore
-except ImportError:
-    from py7zr.bcjfilter import BCJFilter
 
 class ISevenZipCompressor(ABC):
 
