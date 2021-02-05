@@ -343,31 +343,28 @@ class PpmdCompressor(ISevenZipCompressor):
 class BcjSparcDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(self._sparc_code, 4, False, size)
+        super().__init__(self.sparc_code, 4, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self._decode(data)
+        return self.decode(data)
 
 
 class BcjSparcEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(self._sparc_code, 4, True)
+        super().__init__(self.sparc_code, 4, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._encode(data)
-
-    def flush(self):
-        return self._flush()
+        return self.encode(data)
 
 
 class BcjPpcDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(self._ppc_code, 4, False, size)
+        super().__init__(self.ppc_code, 4, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self._decode(data)
+        return self.decode(data)
 
 
 class BcjPpcEncoder(ISevenZipCompressor, BCJFilter):
@@ -376,73 +373,61 @@ class BcjPpcEncoder(ISevenZipCompressor, BCJFilter):
         super().__init__(self._ppc_code, 4, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._encode(data)
-
-    def flush(self):
-        return self._flush()
+        return self.encode(data)
 
 
 class BcjArmtDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(self._armt_code, 4, False, size)
+        super().__init__(self.armt_code, 4, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self._decode(data)
+        return self.decode(data)
 
 
 class BcjArmtEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(self._armt_code, 4, True)
+        super().__init__(self.armt_code, 4, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._encode(data)
-
-    def flush(self):
-        return self._flush()
+        return self.encode(data)
 
 
 class BcjArmDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(self._arm_code, 4, False, size)
+        super().__init__(self.arm_code, 4, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self._decode(data)
+        return self.decode(data)
 
 
 class BcjArmEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(self._arm_code, 4, True)
+        super().__init__(self.arm_code, 4, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._encode(data)
-
-    def flush(self):
-        return self._flush()
+        return self.encode(data)
 
 
 class BCJDecoder(ISevenZipDecompressor, BCJFilter):
 
     def __init__(self, size: int):
-        super().__init__(self._x86_code, 5, False, size)
+        super().__init__(self.x86_code, 5, False, size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self._decode(data)
+        return self.decode(data)
 
 
 class BCJEncoder(ISevenZipCompressor, BCJFilter):
 
     def __init__(self):
-        super().__init__(self._x86_code, 5, True)
+        super().__init__(self.x86_code, 5, True)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self._encode(data)
-
-    def flush(self):
-        return self._flush()
+        return self.encode(data)
 
 
 algorithm_class_map = {

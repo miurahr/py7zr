@@ -40,7 +40,7 @@ class BCJFilter:
         self._method = func
         self._readahead = readahead
 
-    def _sparc_code(self):
+    def sparc_code(self):
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
@@ -57,7 +57,7 @@ class BCJFilter:
         self.current_position = i
         return i
 
-    def _ppc_code(self):
+    def ppc_code(self):
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
@@ -83,7 +83,7 @@ class BCJFilter:
         b = bytes([(val >> 11) & 0xFF, 0xF0 | ((val >> 19) & 0x07), val & 0xFF, 0xF8 | ((val >> 8) & 0x07)])
         return b
 
-    def _armt_code(self) -> int:
+    def armt_code(self) -> int:
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
@@ -101,7 +101,7 @@ class BCJFilter:
         self.current_position += i
         return i
 
-    def _arm_code(self) -> int:
+    def arm_code(self) -> int:
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
@@ -117,7 +117,7 @@ class BCJFilter:
         self.current_position += i
         return i
 
-    def _x86_code(self) -> int:
+    def x86_code(self) -> int:
         """
         The code algorithm from liblzma/simple/x86.c
         It is slightly different from LZMA-SDK's bra86.c
@@ -197,7 +197,7 @@ class BCJFilter:
         self.current_position += buffer_pos
         return buffer_pos
 
-    def _decode(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decode(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         self.buffer.extend(data)
         pos = self._method()
         if self.current_position > self.stream_size - self._readahead:
@@ -210,12 +210,12 @@ class BCJFilter:
             self.buffer = self.buffer[pos:]
         return tmp
 
-    def _encode(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def encode(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         self.buffer.extend(data)
         pos = self._method()
         tmp = bytes(self.buffer[:pos])
         self.buffer = self.buffer[pos:]
         return tmp
 
-    def _flush(self):
+    def flush(self):
         return bytes(self.buffer)
