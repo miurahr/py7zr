@@ -29,9 +29,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import bcj
 import ppmd as Ppmd  # type: ignore
 import zstandard as Zstd
-from bcj import BCJFilter
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
@@ -340,94 +340,109 @@ class PpmdCompressor(ISevenZipCompressor):
         return self._buf.read()
 
 
-class BcjSparcDecoder(ISevenZipDecompressor, BCJFilter):
+class BcjSparcDecoder(ISevenZipDecompressor):
 
     def __init__(self, size: int):
-        super().__init__(self.sparc_code, 4, False, size)
+        self.decoder = bcj.SparcDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.decode(data)
+        return self.decoder.decode(data)
 
 
-class BcjSparcEncoder(ISevenZipCompressor, BCJFilter):
+class BcjSparcEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        super().__init__(self.sparc_code, 4, True)
+        self.encoder = bcj.SparcEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encode(data)
+        return self.encoder.encode(data)
+
+    def flush(self):
+        return self.encoder.flush()
 
 
-class BcjPpcDecoder(ISevenZipDecompressor, BCJFilter):
+class BcjPpcDecoder(ISevenZipDecompressor):
 
     def __init__(self, size: int):
-        super().__init__(self.ppc_code, 4, False, size)
+        self.decoder = bcj.PpcDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.decode(data)
+        return self.decoder.decode(data)
 
 
-class BcjPpcEncoder(ISevenZipCompressor, BCJFilter):
+class BcjPpcEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        super().__init__(self._ppc_code, 4, True)
+        self.encoder = bcj.PpcEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encode(data)
+        return self.encoder.encode(data)
+
+    def flush(self):
+        return self.encoder.flush()
 
 
-class BcjArmtDecoder(ISevenZipDecompressor, BCJFilter):
+class BcjArmtDecoder(ISevenZipDecompressor):
 
     def __init__(self, size: int):
-        super().__init__(self.armt_code, 4, False, size)
+        self.decoder = bcj.ArmtDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.decode(data)
+        return self.decoder.decode(data)
 
 
-class BcjArmtEncoder(ISevenZipCompressor, BCJFilter):
+class BcjArmtEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        super().__init__(self.armt_code, 4, True)
+        self.encoder = bcj.ArmtEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encode(data)
+        return self.encoder.encode(data)
+
+    def flush(self):
+        return self.encoder.flush()
 
 
-class BcjArmDecoder(ISevenZipDecompressor, BCJFilter):
+class BcjArmDecoder(ISevenZipDecompressor):
 
     def __init__(self, size: int):
-        super().__init__(self.arm_code, 4, False, size)
+        self.decoder = bcj.ArmDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.decode(data)
+        return self.decoder.decode(data)
 
 
-class BcjArmEncoder(ISevenZipCompressor, BCJFilter):
+class BcjArmEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        super().__init__(self.arm_code, 4, True)
+        self.encoder =  bcj.ArmEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encode(data)
+        return self.encoder.encode(data)
+
+    def flush(self):
+        return self.encoder.flush()
 
 
-class BCJDecoder(ISevenZipDecompressor, BCJFilter):
+class BCJDecoder(ISevenZipDecompressor):
 
     def __init__(self, size: int):
-        super().__init__(self.x86_code, 5, False, size)
+        self.decoder = bcj.BCJDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        return self.decode(data)
+        return self.decoder.decode(data)
 
 
-class BCJEncoder(ISevenZipCompressor, BCJFilter):
+class BCJEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        super().__init__(self.x86_code, 5, True)
+        self.encoder = bcj.BCJEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        return self.encode(data)
+        return self.encoder.encode(data)
+
+    def flush(self):
+        return self.encoder.flush()
 
 
 algorithm_class_map = {
