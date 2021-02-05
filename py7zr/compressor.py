@@ -415,7 +415,7 @@ class BcjArmDecoder(ISevenZipDecompressor):
 class BcjArmEncoder(ISevenZipCompressor):
 
     def __init__(self):
-        self.encoder =  bcj.ArmEncoder()
+        self.encoder = bcj.ArmEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
