@@ -29,9 +29,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from bcj import BCJFilter
 import ppmd as Ppmd  # type: ignore
 import zstandard as Zstd
+from bcj import BCJFilter
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
