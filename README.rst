@@ -13,9 +13,6 @@
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
-.. image:: https://travis-ci.com/miurahr/py7zr.svg?branch=master
-  :target: https://travis-ci.com/miurahr/py7zr
-
 .. image:: https://github.com/miurahr/py7zr/workflows/Run%20Tox%20tests/badge.svg
   :target: https://github.com/miurahr/py7zr/actions
 
@@ -31,6 +28,26 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+=======
+WARNING
+=======
+
+**Test archive data, which affected a malware,  have been existed from Aug, 2020 - 20, Jan, 2021!**
+
+All the git history is re-writed, so please remove your local and fork copy of the git repository,
+and clone again(if necessary)!
+
+Problematic file is named `issue_218.7z` and `issue_218_2.7z`.
+
+**There is NO affected in library itself.**  and the test execution also does not extract the malware file.
+There is no problem when you install py7zr with `pip` command.
+
+Release that has a clean source:
+
+- v0.11.3 and later
+- v0.10.2
+- v0.9.10
+- v0.9.4 and before
 
 Install
 =======
@@ -41,17 +58,6 @@ You can install py7zr as usual other libraries using pip.
 
     $ pip install py7zr
 
-When you want to handle extra codecs then add extra requirements to command line
-Py7zr supports following extra codecs;
-
-* `zstd`: ZStandard
-* `ppmd`: PPMd
-
-.. code-block:: shell
-
-    $ pip install py7zr[zstd,ppmd]
-
-
 
 Documents
 =========
@@ -61,7 +67,7 @@ User manuals
 
 * `User Guide`_ for latest version.
 
-* `API guide`_ for latest version.
+* `API Guide`_ for latest version.
 
 * `Manual`_ for stable version.
 
@@ -73,11 +79,11 @@ Developer guide
 * `7z file specification`_
 
 
-.. _`manual` : https://py7zr.readthedocs.io/en/stable/
-
 .. _`User Guide`: https://py7zr.readthedocs.io/en/latest/user_guide.html
 
-.. _`API guide` : https://py7zr.readthedocs.io/en/latest/api.html
+.. _`API Guide` : https://py7zr.readthedocs.io/en/latest/api.html
+
+.. _`Manual` : https://py7zr.readthedocs.io/en/stable/
 
 .. _`Contributor guide` : https://py7zr.readthedocs.io/en/latest/contribution.html
 
@@ -321,10 +327,6 @@ Supported algorithms are:
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
 
-- You need to run **`pip install py7zr[zstd]`** to enable ZStandard support.
-
-- You need to run **`pip install py7zr[ppmd]`** to enable PPMd support.
-
 Dependencies
 ============
 
@@ -334,8 +336,8 @@ There are several dependencies to support algorithms and CLI expressions.
 Package           Purpose
 ================  ================================
 `Pycryptodome`_   7zAES encryption
-`ppmd-cffi`_      PPMd compression(optional)
-`zstandard`_      ZStandard compression(optional)
+`ppmd-cffi`_      PPMd compression
+`zstandard`_      ZStandard compression
 `texttable`_      CLI
 ================  ================================
 
@@ -359,7 +361,7 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019,2020 Hiroshi Miura
+* Copyright (C) 2019-2021 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov

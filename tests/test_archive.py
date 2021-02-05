@@ -441,7 +441,7 @@ def test_compress_zerofile(tmp_path):
     archive.writeall('.')
     archive._write_flush()
     assert len(archive.header.files_info.files) == 1
-    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [0]
     assert len(archive.files) == 1
     assert len(archive.header.files_info.files) == 1
     expected = [True]
@@ -871,6 +871,29 @@ def test_append_files_2(tmp_path):
     os.chdir(str(tmp_path.joinpath('src')))
     with py7zr.SevenZipFile(target, 'a') as archive:
         archive.writeall('.')
+    #
+    with py7zr.SevenZipFile(target, 'r') as archive:
+        archive.test()
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.files
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_append_empty_files(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    tmp_path.joinpath('tgt').mkdir()
+    with tmp_path.joinpath('src').joinpath('1.txt').open(mode='w') as w:
+        pass
+    with tmp_path.joinpath('src').joinpath('2.txt').open(mode='w') as w:
+        pass
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    with py7zr.SevenZipFile(target, 'w') as archive:
+        archive.write('1.txt')
+    with py7zr.SevenZipFile(target, 'a') as archive:
+        archive.write('2.txt')
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.test()

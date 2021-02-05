@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -29,6 +29,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import ppmd as Ppmd  # type: ignore
+import zstandard as Zstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
@@ -40,18 +42,9 @@ from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_
                               CompressionMethod)
 
 try:
-    import zstandard as Zstd  # type: ignore
-except ImportError:
-    Zstd = None
-try:
-    import ppmd as Ppmd  # type: ignore
-except ImportError:
-    Ppmd = None
-try:
     from bcj import BCJFilter  # type: ignore
 except ImportError:
     from py7zr.bcjfilter import BCJFilter
-
 
 class ISevenZipCompressor(ABC):
 
@@ -258,7 +251,7 @@ class CopyDecompressor(ISevenZipDecompressor):
 class ZstdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties):
-        if Zstd is None or len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
+        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         ctx = Zstd.ZstdDecompressor()  # type: ignore
@@ -276,8 +269,6 @@ class ZstdDecompressor(ISevenZipDecompressor):
 class ZstdCompressor(ISevenZipCompressor):
 
     def __init__(self):
-        if Zstd is None:
-            raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         ctx = Zstd.ZstdCompressor()  # type: ignore
         self._compressor = ctx.stream_writer(self._buf)
@@ -300,8 +291,6 @@ class ZstdCompressor(ISevenZipCompressor):
 class PpmdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties: bytes):
-        if Ppmd is None:
-            raise UnsupportedCompressionMethodError
         if not isinstance(properties, bytes):
             raise UnsupportedCompressionMethodError
         if len(properties) == 5:
@@ -342,8 +331,6 @@ class PpmdDecompressor(ISevenZipDecompressor):
 class PpmdCompressor(ISevenZipCompressor):
 
     def __init__(self, level: int, mem: int):
-        if Ppmd is None:
-            raise UnsupportedCompressionMethodError
         self._buf = BufferedRW()
         self.encoder = Ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
 

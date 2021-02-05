@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #    Pure python p7zr implementation
-#    Copyright (C) 2019 Hiroshi Miura
+#    Copyright (C) 2019-2021 Hiroshi Miura
 #
 #    This library is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@ from py7zr.properties import (CHECK_CRC32, CHECK_CRC64, CHECK_NONE, CHECK_SHA256
                               PRESET_DEFAULT, PRESET_EXTREME)
 from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7zarchive, unpack_7zarchive
 
-__copyright__ = 'Copyright (C) 2019,2020 Hiroshi Miura'
+__copyright__ = 'Copyright (C) 2019-2021 Hiroshi Miura'
 
 try:
     __version__ = version(__name__)

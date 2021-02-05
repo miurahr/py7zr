@@ -25,6 +25,19 @@ Removed
 Security
 --------
 
+`v0.12.0`_
+==========
+
+Changed
+-------
+
+* PPMd and ZStandard is now one of default algorithms(#269)
+* Increment copyright year
+
+Fixed
+-----
+
+* Crash when append files to an empty files archive(#286)
 
 
 `v0.11.3`_
@@ -95,39 +108,11 @@ Fixed
 `v0.10.0`_
 ==========
 
-* Release is same as v0.10.0b3.
-
-`v0.10.0b3`_
-============
-
-Fixed
------
-
-* Fix BCJ(x86) filter code with a missing logic which cause extraction error
-  for certain data. (#249, #250)
-
-
-`v0.10.0b2`_
-============
-
 Added
 -----
 
 * Compatibility test with python-libarchive-c/libarchive for compression(#247)
 * Document: express how to handle multi-volume archive (#243)
-
-Changed
--------
-
-* Calculate CRC32 of header without re-reading header from disk again.(#245)
-
-
-`v0.10.0b1`_
-============
-
-Added
------
-
 * SevenZipFile.needs_password() method.(#208, #235)
 * CLI: Support append mode command line.(#228)
 * Support "APPEND" mode. User can open SevenZipFile() class with mode='a' (#227)
@@ -135,6 +120,7 @@ Added
 Changed
 -------
 
+* Calculate CRC32 of header without re-reading header from disk again.(#245)
 * read(), extract(): improve performance when specifying parts of archived file,
   by skipping rest of arcvhive when target file has extracted.(#239,#242)
 * read(), extract(): improve performance when specifying parts of archived file,
@@ -147,6 +133,8 @@ Changed
 Fixed
 -----
 
+* Fix BCJ(x86) filter code with a missing logic which cause extraction error
+  for certain data. (#249, #250)
 * Raise PasswordRequired when encrypted header without passing password (#234, #237)
 * CLI: don't raise exception when password is wrong or not given.(#229)
 * Fix specification typo.
@@ -268,15 +256,13 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.11.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.12.0...HEAD
+.. _v0.12.0: https://github.com/miurahr/py7zr/compare/v0.11.3...v0.12.0
 .. _v0.11.3: https://github.com/miurahr/py7zr/compare/v0.11.1...v0.11.3
 .. _v0.11.1: https://github.com/miurahr/py7zr/compare/v0.11.0...v0.11.1
 .. _v0.11.0: https://github.com/miurahr/py7zr/compare/v0.10.1...v0.11.0
 .. _v0.10.1: https://github.com/miurahr/py7zr/compare/v0.10.0...v0.10.1
-.. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.10.0b3...v0.10.0
-.. _v0.10.0b3: https://github.com/miurahr/py7zr/compare/v0.10.0b2...v0.10.0b3
-.. _v0.10.0b2: https://github.com/miurahr/py7zr/compare/v0.10.0b1...v0.10.0b2
-.. _v0.10.0b1: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0b1
+.. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0
 .. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
 .. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
 .. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
