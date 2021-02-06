@@ -42,9 +42,9 @@ from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_
                               CompressionMethod)
 
 try:
-    import bcj as BCJFilter
+    import bcj as BCJFilter  # type: ignore # noqa
 except ImportError:
-    import py7zr.bcjfilter as BCJFilter
+    import py7zr.bcjfilter as BCJFilter  # type: ignore # noqa
 
 
 class ISevenZipCompressor(ABC):
