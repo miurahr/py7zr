@@ -34,13 +34,17 @@ import zstandard as Zstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-import py7zr.bcjfilter as BCJFilter
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
                               FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE,
                               CompressionMethod)
+
+try:
+    import bcj as BCJFilter  # type: ignore # noqa
+except ImportError:
+    import py7zr.bcjfilter as BCJFilter  # type: ignore # noqa
 
 
 class ISevenZipCompressor(ABC):
