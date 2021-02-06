@@ -35,7 +35,6 @@ import queue
 import stat
 import sys
 import threading
-from time import timezone
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
