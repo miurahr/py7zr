@@ -804,13 +804,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f['lastaccesstime'] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
-    def _make_file_info_from_name(self, data, arcname: str) -> Dict[str, Any]:
+    def _make_file_info_from_name(self, bio, size: int, arcname: str) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
         f['origin'] = None
-        f['data'] = io.BytesIO(data)
+        f['data'] = bio
         f['filename'] = pathlib.Path(arcname).as_posix()
-        f['uncompressed'] = len(data)
-        f['emptystream'] = (len(data) == 0)
+        f['uncompressed'] = size
+        f['emptystream'] = (size == 0)
         f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
         f['creationtime'] = ArchiveTimestamp.from_now()
         f['lastwritetime'] = ArchiveTimestamp.from_now()
@@ -911,17 +911,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    def writestr(self, data: Union[bytes, bytearray, memoryview], arcname: str):
-        if not (isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview)):
-            raise ValueError("Unsupported data type.")
-        if not isinstance(arcname, str):
-            raise ValueError("Unsupported arcname")
-        file_info = self._make_file_info_from_name(data, arcname)
+    def writebio(self, bio: BinaryIO, size, arcname: str):
+        file_info = self._make_file_info_from_name(bio, size, arcname)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=False)
+
+    def writestr(self, data: Union[bytes, bytearray, memoryview], arcname: str):
+        if not (isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview)):
+            raise ValueError("Unsupported data type.")
+        if not isinstance(arcname, str):
+            raise ValueError("Unsupported arcname")
+        self.writebio(io.BytesIO(data), len(data), arcname)
 
     def close(self):
         """Flush all the data into archive and close it.
