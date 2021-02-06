@@ -35,6 +35,7 @@ import queue
 import stat
 import sys
 import threading
+from time import timezone
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
@@ -143,6 +144,13 @@ class ArchiveFile:
         if self._test_attribute(FILE_ATTRIBUTE_UNIX_EXTENSION):
             return attributes >> 16
         return None
+
+    def data(self) -> Optional[BinaryIO]:
+        return self._get_property('data')
+
+    def has_strdata(self) -> bool:
+        """True if file content is set by writestr() method otherwise False."""
+        return ('data' in self._file_info)
 
     @property
     def is_symlink(self) -> bool:
@@ -797,6 +805,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f['lastaccesstime'] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
+    def _make_file_info_from_name(self, data, arcname: str) -> Dict[str, Any]:
+        f = {}  # type: Dict[str, Any]
+        f['origin'] = None
+        f['data'] = io.BytesIO(data)
+        f['filename'] = pathlib.Path(arcname).as_posix()
+        f['uncompressed'] = len(data)
+        f['emptystream'] = (len(data) == 0)
+        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+        f['creationtime'] = ArchiveTimestamp.from_now()
+        f['lastwritetime'] = ArchiveTimestamp.from_now()
+        return f
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> List[str]:
@@ -891,6 +911,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
+
+    def writestr(self, data: Union[bytes, bytearray, memoryview], arcname: str):
+        if not (isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview)):
+            raise ValueError("Unsupported data type.")
+        if not isinstance(arcname, str):
+            raise ValueError("Unsupported arcname")
+        file_info = self._make_file_info_from_name(data, arcname)
+        self.header.files_info.files.append(file_info)
+        self.header.files_info.emptyfiles.append(file_info['emptystream'])
+        self.files.append(file_info)
+        folder = self.header.main_streams.unpackinfo.folders[-1]
+        self.worker.archive(self.fp, self.files, folder, deref=False)
 
     def close(self):
         """Flush all the data into archive and close it.
@@ -1145,17 +1177,7 @@ class Worker:
             member = linkname
         return member
 
-    def write(self, fp: BinaryIO, f, assym, folder):
-        compressor = folder.get_compressor()
-        if assym:
-            link_target = self._find_link_target(f.origin)  # type: str
-            tgt = link_target.encode('utf-8')  # type: bytes
-            fd = io.BytesIO(tgt)
-            insize, foutsize, crc = compressor.compress(fd, fp)
-            fd.close()
-        else:
-            with f.origin.open(mode='rb') as fd:
-                insize, foutsize, crc = compressor.compress(fd, fp)
+    def _after_write(self, insize, foutsize, crc):
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
         if self.header.main_streams.substreamsinfo.unpacksizes is None:
@@ -1167,6 +1189,24 @@ class Worker:
         else:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
+
+    def write(self, fp: BinaryIO, f, assym, folder):
+        compressor = folder.get_compressor()
+        if assym:
+            link_target = self._find_link_target(f.origin)  # type: str
+            tgt = link_target.encode('utf-8')  # type: bytes
+            fd = io.BytesIO(tgt)
+            insize, foutsize, crc = compressor.compress(fd, fp)
+            fd.close()
+        else:
+            with f.origin.open(mode='rb') as fd:
+                insize, foutsize, crc = compressor.compress(fd, fp)
+        return self._after_write(insize, foutsize, crc)
+
+    def writestr(self, fp: BinaryIO, f, folder):
+        compressor = folder.get_compressor()
+        insize, foutsize, crc = compressor.compress(f.data(), fp)
+        return self._after_write(insize, foutsize, crc)
 
     def prepare_archive(self):
         self.header.main_streams.packinfo.numstreams = 0
@@ -1194,7 +1234,12 @@ class Worker:
     def archive(self, fp: BinaryIO, files, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
-        if (f.is_symlink and not deref) or not f.emptystream:
+        if f.has_strdata():
+            foutsize, crc = self.writestr(fp, f, folder)
+            self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
+            self.header.files_info.files[self.current_file_index]['digest'] = crc
+            self.last_file_index = self.current_file_index
+        elif (f.is_symlink and not deref) or not f.emptystream:
             foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
             self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
             self.header.files_info.files[self.current_file_index]['digest'] = crc

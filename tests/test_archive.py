@@ -593,6 +593,18 @@ def test_compress_files_deref_loop(tmp_path):
 
 
 @pytest.mark.basic
+def test_compress_writestr(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    data = b'this is data'
+    with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+        archive.writestr(data, 'src.txt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.basic
 def test_compress_copy(tmp_path):
     my_filters = [{'id': py7zr.FILTER_COPY}]
     tmp_path.joinpath('src').mkdir()
