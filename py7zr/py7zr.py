@@ -35,7 +35,7 @@ import queue
 import stat
 import sys
 import threading
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union, TextIO
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
