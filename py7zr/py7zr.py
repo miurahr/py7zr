@@ -35,7 +35,7 @@ import queue
 import stat
 import sys
 import threading
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union, TextIO
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -911,7 +911,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    def writebio(self, bio: BinaryIO, size, arcname: str):
+    def writef(self, bio: BinaryIO, arcname: str):
+        if isinstance(bio, io.BytesIO):
+            size = bio.getbuffer().nbytes
+        elif isinstance(bio, io.BufferedIOBase):
+            size = bio.__sizeof__()
+        elif isinstance(bio, io.TextIOBase):
+            raise ValueError("Unsupported file object type: please open file with Binary mode.")
+        elif hasattr(bio, "read"):
+            # Unkown objet type but it has read() method; allow duck typing
+            pass
+        else:
+            raise ValueError("Wrong argument passed as BinaryIO.")
         file_info = self._make_file_info_from_name(bio, size, arcname)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
@@ -919,12 +930,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=False)
 
-    def writestr(self, data: Union[bytes, bytearray, memoryview], arcname: str):
-        if not (isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview)):
-            raise ValueError("Unsupported data type.")
+    def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
-        self.writebio(io.BytesIO(data), len(data), arcname)
+        if isinstance(data, str):
+            self.writef(io.BytesIO(data.encode('UTF-8')), arcname)
+        elif isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview):
+            self.writef(io.BytesIO(data), arcname)
+        else:
+            raise ValueError("Unsupported data type.")
 
     def close(self):
         """Flush all the data into archive and close it.
