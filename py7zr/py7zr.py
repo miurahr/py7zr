@@ -917,12 +917,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif isinstance(bio, io.BufferedIOBase):
             size = bio.__sizeof__()
         elif isinstance(bio, io.TextIOBase):
+            # First check whether is it Text?
             raise ValueError("Unsupported file object type: please open file with Binary mode.")
-        elif hasattr(bio, "read"):
-            # Unkown objet type but it has read() method; allow duck typing
-            pass
+        elif hasattr(bio, "read") and hasattr(bio, "__len__"):
+            # Allow objet type which has read() and length methods for duck typing
+            size = len(bio)
+        elif hasattr(bio, "read") and hasattr(bio, "__sizeof__"):
+            size = bio.__sizeof__()
         else:
-            raise ValueError("Wrong argument passed as BinaryIO.")
+            raise ValueError("Wrong argument passed for bio.")
         file_info = self._make_file_info_from_name(bio, size, arcname)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info['emptystream'])
