@@ -914,15 +914,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def writef(self, bio: BinaryIO, arcname: str):
         if isinstance(bio, io.BytesIO):
             size = bio.getbuffer().nbytes
-        elif isinstance(bio, io.BufferedIOBase):
-            size = bio.__sizeof__()
         elif isinstance(bio, io.TextIOBase):
             # First check whether is it Text?
             raise ValueError("Unsupported file object type: please open file with Binary mode.")
-        elif hasattr(bio, "read") and hasattr(bio, "__len__"):
-            # Allow objet type which has read() and length methods for duck typing
-            size = len(bio)
+        elif isinstance(bio, io.BufferedIOBase):
+            size = bio.__sizeof__()
         elif hasattr(bio, "read") and hasattr(bio, "__sizeof__"):
+            # Allow objet type which has read() and length methods for duck typing
             size = bio.__sizeof__()
         else:
             raise ValueError("Wrong argument passed for bio.")
