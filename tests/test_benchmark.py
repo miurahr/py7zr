@@ -26,6 +26,21 @@ def test_extract_benchmark(tmp_path, benchmark, data, password):
 
 
 @pytest.mark.benchmark
+@pytest.mark.parametrize("source", ['mblock_1.7z'])
+def test_compress_benchmark(tmp_path, benchmark, source):
+    srcpath = tmp_path.joinpath('src')
+    srcpath.mkdir(exist_ok=True)
+    with py7zr.SevenZipFile(os.path.join(testdata_path, source), 'r') as szf:
+        szf.extractall(path=srcpath)
+
+    def compressor(source_path, target):
+        with py7zr.SevenZipFile(target, 'w') as szf:
+            szf.writeall(source_path)
+
+    benchmark(compressor, srcpath, tmp_path.joinpath('target.7z'))
+
+
+@pytest.mark.benchmark
 def test_benchmark_calculate_key1(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
