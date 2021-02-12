@@ -245,6 +245,10 @@ class ArchiveTimestamp(int):
     def from_datetime(val):
         return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)
 
+    @staticmethod
+    def from_now():
+        return ArchiveTimestamp((_time.time() - TIMESTAMP_ADJUST) * 10000000.0)
+
 
 def islink(path):
     """

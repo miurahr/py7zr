@@ -144,6 +144,13 @@ class ArchiveFile:
             return attributes >> 16
         return None
 
+    def data(self) -> Optional[BinaryIO]:
+        return self._get_property('data')
+
+    def has_strdata(self) -> bool:
+        """True if file content is set by writestr() method otherwise False."""
+        return ('data' in self._file_info)
+
     @property
     def is_symlink(self) -> bool:
         """True if file is a symbolic link, otherwise False."""
@@ -797,6 +804,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f['lastaccesstime'] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
+    def _make_file_info_from_name(self, bio, size: int, arcname: str) -> Dict[str, Any]:
+        f = {}  # type: Dict[str, Any]
+        f['origin'] = None
+        f['data'] = bio
+        f['filename'] = pathlib.Path(arcname).as_posix()
+        f['uncompressed'] = size
+        f['emptystream'] = (size == 0)
+        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+        f['creationtime'] = ArchiveTimestamp.from_now()
+        f['lastwritetime'] = ArchiveTimestamp.from_now()
+        return f
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> List[str]:
@@ -891,6 +910,44 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
+
+    def writef(self, bio: BinaryIO, arcname: str):
+        if isinstance(bio, io.BytesIO):
+            size = bio.getbuffer().nbytes
+        elif isinstance(bio, io.TextIOBase):
+            # First check whether is it Text?
+            raise ValueError("Unsupported file object type: please open file with Binary mode.")
+        elif hasattr(bio, "read") and hasattr(bio, "__sizeof__"):
+            # CPython's io.BufferedIOBase or io.BufferedReader has __sizeof__, but
+            # pypy3 don't have. So first check __sizeof__ and then goes to alternative.
+            # Also allowing objet type which has read() and length methods for duck typing
+            size = bio.__sizeof__()
+        elif isinstance(bio, io.BufferedIOBase):
+            # come here when subtype of io.BufferedIOBase that don't have __sizeof__ (eg. pypy)
+            # alternative for `size = bio.__sizeof__()`
+            current = bio.tell()
+            bio.seek(0, os.SEEK_END)
+            last = bio.tell()
+            bio.seek(current, os.SEEK_SET)
+            size = last - current
+        else:
+            raise ValueError("Wrong argument passed for argument bio.")
+        file_info = self._make_file_info_from_name(bio, size, arcname)
+        self.header.files_info.files.append(file_info)
+        self.header.files_info.emptyfiles.append(file_info['emptystream'])
+        self.files.append(file_info)
+        folder = self.header.main_streams.unpackinfo.folders[-1]
+        self.worker.archive(self.fp, self.files, folder, deref=False)
+
+    def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
+        if not isinstance(arcname, str):
+            raise ValueError("Unsupported arcname")
+        if isinstance(data, str):
+            self.writef(io.BytesIO(data.encode('UTF-8')), arcname)
+        elif isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview):
+            self.writef(io.BytesIO(data), arcname)
+        else:
+            raise ValueError("Unsupported data type.")
 
     def close(self):
         """Flush all the data into archive and close it.
@@ -1145,17 +1202,7 @@ class Worker:
             member = linkname
         return member
 
-    def write(self, fp: BinaryIO, f, assym, folder):
-        compressor = folder.get_compressor()
-        if assym:
-            link_target = self._find_link_target(f.origin)  # type: str
-            tgt = link_target.encode('utf-8')  # type: bytes
-            fd = io.BytesIO(tgt)
-            insize, foutsize, crc = compressor.compress(fd, fp)
-            fd.close()
-        else:
-            with f.origin.open(mode='rb') as fd:
-                insize, foutsize, crc = compressor.compress(fd, fp)
+    def _after_write(self, insize, foutsize, crc):
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
         if self.header.main_streams.substreamsinfo.unpacksizes is None:
@@ -1167,6 +1214,24 @@ class Worker:
         else:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
+
+    def write(self, fp: BinaryIO, f, assym, folder):
+        compressor = folder.get_compressor()
+        if assym:
+            link_target = self._find_link_target(f.origin)  # type: str
+            tgt = link_target.encode('utf-8')  # type: bytes
+            fd = io.BytesIO(tgt)
+            insize, foutsize, crc = compressor.compress(fd, fp)
+            fd.close()
+        else:
+            with f.origin.open(mode='rb') as fd:
+                insize, foutsize, crc = compressor.compress(fd, fp)
+        return self._after_write(insize, foutsize, crc)
+
+    def writestr(self, fp: BinaryIO, f, folder):
+        compressor = folder.get_compressor()
+        insize, foutsize, crc = compressor.compress(f.data(), fp)
+        return self._after_write(insize, foutsize, crc)
 
     def prepare_archive(self):
         self.header.main_streams.packinfo.numstreams = 0
@@ -1194,7 +1259,12 @@ class Worker:
     def archive(self, fp: BinaryIO, files, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
-        if (f.is_symlink and not deref) or not f.emptystream:
+        if f.has_strdata():
+            foutsize, crc = self.writestr(fp, f, folder)
+            self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
+            self.header.files_info.files[self.current_file_index]['digest'] = crc
+            self.last_file_index = self.current_file_index
+        elif (f.is_symlink and not deref) or not f.emptystream:
             foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
             self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
             self.header.files_info.files[self.current_file_index]['digest'] = crc
