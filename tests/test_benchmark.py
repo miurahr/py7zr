@@ -26,18 +26,22 @@ def test_extract_benchmark(tmp_path, benchmark, data, password):
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize("source", ['mblock_1.7z'])
-def test_compress_benchmark(tmp_path, benchmark, source):
+@pytest.mark.parametrize("source, filter", [
+                                            ('mblock_1.7z', [{"id": py7zr.FILTER_ZSTD}]),
+                                            ('mblock_1.7z', [{"id": py7zr.FILTER_X86},
+                                                             {"id": py7zr.FILTER_LZMA2, "preset": 7}])
+                                    ])
+def test_compress_benchmark(tmp_path, benchmark, source, filter):
     srcpath = tmp_path.joinpath('src')
     srcpath.mkdir(exist_ok=True)
     with py7zr.SevenZipFile(os.path.join(testdata_path, source), 'r') as szf:
         szf.extractall(path=srcpath)
 
-    def compressor(source_path, target):
-        with py7zr.SevenZipFile(target, 'w') as szf:
+    def compressor(source_path, target, filter):
+        with py7zr.SevenZipFile(target, 'w', filters=filter) as szf:
             szf.writeall(source_path)
 
-    benchmark(compressor, srcpath, tmp_path.joinpath('target.7z'))
+    benchmark(compressor, srcpath, tmp_path.joinpath('target.7z'), filter)
 
 
 @pytest.mark.benchmark
