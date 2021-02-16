@@ -18,6 +18,7 @@ target_dict = {"zstd": [{"id": py7zr.FILTER_ZSTD}],
                "bzip2+aes": [{"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}],
                "lzma2+aes": [{"id": py7zr.FILTER_LZMA2, "preset": 7}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]}
 
+
 @pytest.mark.benchmark
 @pytest.mark.parametrize("name", targets)
 def test_benchmark_filters_compress(tmp_path, benchmark, name):
