@@ -27,4 +27,4 @@ jobs:
         run: |
           tox
         env:
-          PYTEST_ADDOPTS: --benchmark-only --no-cov
+          PYTEST_ADDOPTS: --benchmark-only
