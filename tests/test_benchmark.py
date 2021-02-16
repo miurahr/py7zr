@@ -28,7 +28,8 @@ def test_benchmark_filters_compress(tmp_path, benchmark, name):
             szf.writeall(tmp_path.joinpath('src'), 'src')
 
     def setup():
-        tmp_path.joinpath('target.7z').unlink(missing_ok=True)
+        if tmp_path.joinpath('target.7z').exists():
+            tmp_path.joinpath('target.7z').unlink()
 
     with py7zr.SevenZipFile(os.path.join(testdata_path, 'mblock_1.7z'), 'r') as szf:
         szf.extractall(path=tmp_path.joinpath('src'))
