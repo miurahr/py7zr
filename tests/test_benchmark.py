@@ -42,7 +42,7 @@ def test_benchmark_filters_compress(tmp_path, benchmark, name):
     else:
         password = None
     benchmark.extra_info['data_size'] = source_size
-    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size )
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
     benchmark.pedantic(compressor, setup=setup, args=[filters, password], iterations=1, rounds=3)
 
 
@@ -71,7 +71,7 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name):
     with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w', filters=filters, password=password) as szf:
         szf.writeall(tmp_path.joinpath('src'), 'src')
     benchmark.extra_info['data_size'] = source_size
-    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size )
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
     benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
 
 
