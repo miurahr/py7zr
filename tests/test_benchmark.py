@@ -1,7 +1,6 @@
 import os
 import platform
 import shutil
-import tempfile
 
 import pytest
 
@@ -10,14 +9,14 @@ import py7zr.helpers
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
-targets = ["zstd", "bzip2", "lzma+bcj", "lzma2+bcj", "lzma2+bcj+aes", "zstd+aes"]
+targets = ["zstd", "bzip2", "lzma+bcj", "lzma2+bcj", "lzma2+aes", "bzip2+aes"]
 target_dict = {"zstd": [{"id": py7zr.FILTER_ZSTD}],
                "bzip2": [{"id": py7zr.FILTER_BZIP2}],
                "lzma+bcj": [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA, "preset": 7}],
                "lzma2+bcj": [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA2, "preset": 7}],
                "zstd+aes": [{"id": py7zr.FILTER_ZSTD}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}],
-               "lzma2+bcj+aes": [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA2, "preset": 7},
-                                 {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]}
+               "bzip2+aes": [{"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}],
+               "lzma2+aes": [{"id": py7zr.FILTER_LZMA2, "preset": 7}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]}
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize("name", targets)
@@ -60,6 +59,7 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name):
         password = None
     with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w', filters=filters, password=password) as szf:
         szf.writeall(tmp_path.joinpath('src'), 'src')
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / 24601000)
     benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
 
 
