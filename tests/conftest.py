@@ -47,3 +47,6 @@ def pytest_benchmark_update_json(config, benchmarks, output_json):
             benchmark['params'].pop('data')
         if 'data' in benchmark['stats']:
             benchmark['stats'].pop('data')
+        if benchmark['extra_info'].get('data_size', None) is not None:
+            rate = benchmark['extra_info'].get('data_size', None) / benchmark['stats']['mean']
+            benchmark['extra_info']['rate'] = rate
