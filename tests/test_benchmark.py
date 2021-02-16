@@ -42,8 +42,8 @@ def test_benchmark_filters_compress(tmp_path, benchmark, name):
     else:
         password = None
     benchmark.extra_info['data_size'] = source_size
-    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
     benchmark.pedantic(compressor, setup=setup, args=[filters, password], iterations=1, rounds=3)
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
 
 
 @pytest.mark.benchmark
@@ -76,7 +76,6 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name):
 
 
 @pytest.mark.benchmark
-@pytest.mark.skip(reason="manual run")
 def test_benchmark_calculate_key1(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
@@ -88,7 +87,6 @@ def test_benchmark_calculate_key1(benchmark):
 
 @pytest.mark.benchmark
 @pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Pypy has a bug around ctypes")
-@pytest.mark.skip(reason="manual run")
 def test_benchmark_calculate_key2(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
@@ -99,7 +97,6 @@ def test_benchmark_calculate_key2(benchmark):
 
 
 @pytest.mark.benchmark
-@pytest.mark.skip(reason="manual run")
 def test_benchmark_calculate_key3(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19

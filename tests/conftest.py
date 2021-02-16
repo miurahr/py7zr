@@ -33,6 +33,8 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
         s = bench['name'].split('_')
         if len(s) == 4 and s[2] == 'filters':
             groupname = s[3].split('[')[0]
+        elif len(s) == 4 and s[2] == 'calculate':
+            groupname = 'key_calculation'
         else:
             groupname = 'others'
         group = result.setdefault("%s: %s" % (groupname, bench['group']), [])
