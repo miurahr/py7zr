@@ -2,13 +2,13 @@ import argparse
 import os
 import pathlib
 
-from PyGithub import github
+import github
 import bench_result as bench
 
 
 def post_comment(jsonfile, token, repository, issue_number):
     body = bench.generate_comment(bench.read_results_json(jsonfile))
-    g = github(token)
+    g = github.Github(token)
     repo = g.get_repo(repository)
     issue = repo.get_issue(number=issue_number)
     issue.create_comment(body)
