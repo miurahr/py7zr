@@ -29,25 +29,9 @@ jobs:
         env:
           PYTEST_ADDOPTS: '--benchmark-only --no-cov --benchmark-json=${{ github.workspace }}/results_${{ matrix.python_version }}.json'
       - name: post result to issue
-        shell: python
         run: |
-          import os
-          import pathlib
-          from PyGithub import github
-          import utils.bench_result as bench
-          json_file = pathlib.Path(os.getenv("RESULTS_FILE"))
-          token = os.getenv("GITHUB_TOKEN")
-          repository = os.getenv("REPOSITORY")
-          issue = os.getenv("ISSUE")
-          body = bench.generate_comment(bench.read_results_json(json_file))
-          g = Github(token)
-          repo = g.get_repo(repository)
-          issue = repo.get_issue(number=issue)
-          issue.create_comment(body)
-          exit(0)
+          python utils/bench_commit_issue.py ${{ github.workspace }}/results_${{ matrix.python_version }}.json
         env:
-          RESULTS_FILE: ${{ github.workspace }}/results_${{ matrix.python_version }}.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTHONPATH: ${{ github.workspace }}/utils
           REPOSITORY: miurahr/py7zr
           ISSUE: 297
