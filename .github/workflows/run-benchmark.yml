@@ -27,7 +27,7 @@ jobs:
         run: |
           tox
         env:
-          PYTEST_ADDOPTS: '--benchmark-only --no-cov --benchmark-save=${{ github.workspace }}/results.json'
+          PYTEST_ADDOPTS: '--benchmark-only --no-cov --benchmark-json=${{ github.workspace }}/results_${{ matrix.python_version }}.json'
       - name: post result to issue
         shell: python
         run: |
@@ -46,7 +46,7 @@ jobs:
           issue.create_comment(body)
           exit(0)
         env:
-          RESULTS_FILE: ${{ github.workspace }}/results.json
+          RESULTS_FILE: ${{ github.workspace }}/results_${{ matrix.python_version }}.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHONPATH: ${{ github.workspace }}/utils
           REPOSITORY: miurahr/py7zr
