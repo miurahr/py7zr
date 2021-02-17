@@ -64,7 +64,7 @@ def main():
     parser = argparse.ArgumentParser(prog='benchmark_result')
     parser.add_argument('jsonfile', type=pathlib.Path, nargs=1, help='pytest-benchmark saved result.')
     args = parser.parse_args()
-    body = generate_comment(read_results_json(args.jsonf))
+    body = generate_comment(read_results_json(args.jsonfile))
     print(body)
 
 
