@@ -6,13 +6,14 @@ include LICENSE
 include .coveragerc
 include tox.ini
 recursive-include py7zr *.py
-recursive-include utils *.py
 recursive-include tests *.py
 recursive-include tests *.txt
 recursive-include tests *.7z
 recursive-include tests *.0
 recursive-include tests *.bin
 recursive-include tests *.c
+recursive-include utils *.py
+recursive-include utils *.txt
 recursive-include docs *.bat
 recursive-include docs *.dot
 recursive-include docs *.png
