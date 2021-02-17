@@ -2,7 +2,6 @@ import argparse
 import json
 import pathlib
 import sys
-from typing import Any, Optional
 
 import texttable  # type: ignore
 
