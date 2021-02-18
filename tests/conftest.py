@@ -38,7 +38,8 @@ def pytest_benchmark_update_json(config, benchmarks, output_json):
 
 def pytest_benchmark_update_machine_info(config, machine_info):
     cpu_info = cpuinfo.get_cpu_info()
-    machine_info['cpu']['vendor_id_raw'] = cpu_info['vendor_id_raw']
-    machine_info['cpu']['hardware_raw'] = cpu_info['hardware_raw']
-    machine_info['cpu']['brand_raw'] = cpu_info['brand_raw']
-    machine_info['cpu']['hz_actual_friendly'] = cpu_info['hz_actual_friendly']
+    brand = cpu_info.get('brand_raw', None)
+    if brand is None:
+        brand = '{} core(s) {} CPU '.format(cpu_info.get('count', 'unknown'), cpu_info.get('arch', 'unknown'))
+    machine_info['cpu']['brand'] = brand
+    machine_info['cpu']['hz_actual_friendly'] = cpu_info.get('hz_actual_friendly', 'unknown')
