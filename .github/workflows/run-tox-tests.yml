@@ -49,6 +49,7 @@ jobs:
           LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
           PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
       - name: Send coverage to coveralls
+        if: github.ref == 'refs/heads/master'
         run: |
           coveralls
         env:
@@ -60,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     name: finish parallel build
     needs: build
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Setup python
         uses: actions/setup-python@v1
