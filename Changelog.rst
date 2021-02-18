@@ -25,13 +25,29 @@ Removed
 Security
 --------
 
+`v0.13.0`_
+==========
+
+Added
+-----
+
+* Add writestr() and writef() methods in SevenZipFile class.(#290,#293)
+* Add benchmark tests for compression algorithms(#295)
+* Track benchmark results on Github issue(#296)
+
+Changed
+-------
+
+* Refactoring BCF Filter classes, and move to individual module.(#292)
+
+
 `v0.12.0`_
 ==========
 
 Changed
 -------
 
-* PPMd and ZStandard is now one of default algorithms(#269)
+* PPMd and ZStandard is now one of default algorithms(#289)
 * Increment copyright year
 
 Fixed
@@ -256,7 +272,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.12.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.13.0...HEAD
+.. _v0.13.0: https://github.com/miurahr/py7zr/compare/v0.12.0...v0.13.0
 .. _v0.12.0: https://github.com/miurahr/py7zr/compare/v0.11.3...v0.12.0
 .. _v0.11.3: https://github.com/miurahr/py7zr/compare/v0.11.1...v0.11.3
 .. _v0.11.1: https://github.com/miurahr/py7zr/compare/v0.11.0...v0.11.1
