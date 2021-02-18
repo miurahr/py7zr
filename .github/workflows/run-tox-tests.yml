@@ -38,6 +38,8 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           tox
+        env:
+          PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
       - name: Test project with tox(windows)
         if: runner.os == 'Windows'
         run: |
@@ -45,6 +47,7 @@ jobs:
           tox
         env:
           LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
+          PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
       - name: Send coverage to coveralls
         run: |
           coveralls

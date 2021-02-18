@@ -1,6 +1,6 @@
 import os
 import platform
-import tempfile
+import shutil
 
 import pytest
 
@@ -8,24 +8,70 @@ import py7zr
 import py7zr.helpers
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
+targets = [("zstd", [{"id": py7zr.FILTER_ZSTD}]),
+           ("bzip2", [{"id": py7zr.FILTER_BZIP2}]),
+           ("lzma+bcj", [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA, "preset": 7}]),
+           ("lzma2+bcj", [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]),
+           ("bzip2+aes", [{"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]),
+           ("lzma2+aes", [{"id": py7zr.FILTER_LZMA2, "preset": 7}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}])
+           ]
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize("data, password", [('solid.7z', None),
-                                            ('mblock_1.7z', None),
-                                            ('encrypted_1.7z', 'secret')])
-def test_extract_benchmark(tmp_path, benchmark, data, password):
+@pytest.mark.benchmark(group='compress')
+@pytest.mark.parametrize("name, filters", targets)
+def test_benchmark_filters_compress(tmp_path, benchmark, name, filters):
 
-    def extractor(path, target, password):
-        target_path = tempfile.mkdtemp(dir=str(path))
-        szf = py7zr.SevenZipFile(os.path.join(testdata_path, target), 'r', password=password)
-        szf.extractall(path=target_path)
-        szf.close()
+    def compressor(filters, password):
+        with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w', filters=filters, password=password) as szf:
+            szf.writeall(tmp_path.joinpath('src'), 'src')
 
-    benchmark(extractor, tmp_path, data, password)
+    def setup():
+        if tmp_path.joinpath('target.7z').exists():
+            tmp_path.joinpath('target.7z').unlink()
+
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'mblock_1.7z'), 'r') as szf:
+        szf.extractall(path=tmp_path.joinpath('src'))
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'mblock_1.7z'), 'r') as szf:
+        archive_info = szf.archiveinfo()
+        source_size = archive_info.uncompressed
+    if name.endswith('aes'):
+        password = 'secret'
+    else:
+        password = None
+    benchmark.extra_info['data_size'] = source_size
+    benchmark.pedantic(compressor, setup=setup, args=[filters, password], iterations=1, rounds=3)
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
 
 
-@pytest.mark.benchmark
+@pytest.mark.benchmark(group='decompress')
+@pytest.mark.parametrize("name, filters", targets)
+def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
+
+    def decompressor(secret):
+        with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'r', password=secret) as szf:
+            szf.extractall(tmp_path.joinpath('tgt'))
+
+    def setup():
+        shutil.rmtree(tmp_path.joinpath('tgt'), ignore_errors=True)
+
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'mblock_1.7z'), 'r') as szf:
+        szf.extractall(path=tmp_path.joinpath('src'))
+    with py7zr.SevenZipFile(os.path.join(testdata_path, 'mblock_1.7z'), 'r') as szf:
+        archive_info = szf.archiveinfo()
+        source_size = archive_info.uncompressed
+
+    if name.endswith('aes'):
+        password = 'secret'
+    else:
+        password = None
+    with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w', filters=filters, password=password) as szf:
+        szf.writeall(tmp_path.joinpath('src'), 'src')
+    benchmark.extra_info['data_size'] = source_size
+    benchmark.extra_info['ratio'] = str(tmp_path.joinpath('target.7z').stat().st_size / source_size)
+    benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
+
+
+@pytest.mark.benchmark(group='calculate_key')
 def test_benchmark_calculate_key1(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19
@@ -35,7 +81,7 @@ def test_benchmark_calculate_key1(benchmark):
     assert key == expected
 
 
-@pytest.mark.benchmark
+@pytest.mark.benchmark(group='calculate_key')
 @pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Pypy has a bug around ctypes")
 def test_benchmark_calculate_key2(benchmark):
     password = 'secret'.encode('utf-16LE')
@@ -46,7 +92,7 @@ def test_benchmark_calculate_key2(benchmark):
     assert key == expected
 
 
-@pytest.mark.benchmark
+@pytest.mark.benchmark(group='calculate_key')
 def test_benchmark_calculate_key3(benchmark):
     password = 'secret'.encode('utf-16LE')
     cycles = 19

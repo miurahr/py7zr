@@ -6,15 +6,12 @@ strategy:
     Python36:
       python.version: '3.6'
       TOXENV: py36
-      addopts: --benchmark-skip
     Python37:
       python.version: '3.7'
       TOXENV: py37
-      addopts: --benchmark-skip
     Python38:
       python.version: '3.8'
       TOXENV: py38
-      addopts: --benchmark-skip
 
 steps:
 - task: UsePythonVersion@0
@@ -28,5 +25,5 @@ steps:
 - script: |
     tox -e py
   env:
-    PYTEST_ADDOPTS: $(addopts)
+    PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
   displayName: 'Run Tox'

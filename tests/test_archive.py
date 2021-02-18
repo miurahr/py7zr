@@ -2,6 +2,7 @@ import binascii
 import ctypes
 import filecmp
 import hashlib
+import io
 import lzma
 import os
 import pathlib
@@ -590,6 +591,64 @@ def test_compress_files_deref_loop(tmp_path):
     tmp_path.joinpath('src/lib/parent').symlink_to(tmp_path.joinpath('src/lib'), target_is_directory=True)
     with py7zr.SevenZipFile(target, 'w', dereference=True) as archive:
         archive.writeall('.')
+
+
+@pytest.mark.basic
+def test_compress_writestr1(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    data = b'this is data'
+    with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+        archive.writestr(data, 'src.txt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.basic
+def test_compress_writestr2(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    data = 'this is data'
+    with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+        archive.writestr(data, 'src.txt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.basic
+def test_compress_writef1(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    data = b'this is data'
+    with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+        archive.writef(io.BytesIO(data), 'src.txt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.basic
+def test_compress_writef2(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    with open(os.path.join(testdata_path, "test1.txt"), 'rb') as src:
+        with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+            archive.writef(src, 'test1.txt')
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.basic
+def test_compress_writef3(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
+    target = tmp_path.joinpath('target.7z')
+    with pytest.raises(ValueError):
+        with open(os.path.join(testdata_path, "test1.txt"), 'r') as src:
+            with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
+                archive.writef(src, 'test1.txt')
 
 
 @pytest.mark.basic
