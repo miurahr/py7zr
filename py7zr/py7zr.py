@@ -939,7 +939,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=False)
 
-    def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
+    def writestr(self, arcname: str, data: Union[str, bytes, bytearray, memoryview]):
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
         if isinstance(data, str):
@@ -1228,7 +1228,7 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: BinaryIO, f, folder):
+    def writestr(self, f, fp: BinaryIO, folder):
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
@@ -1260,7 +1260,7 @@ class Worker:
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
-            foutsize, crc = self.writestr(fp, f, folder)
+            foutsize, crc = self.writestr(f, fp, folder)
             self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
             self.header.files_info.files[self.current_file_index]['digest'] = crc
             self.last_file_index = self.current_file_index

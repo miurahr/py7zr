@@ -599,7 +599,7 @@ def test_compress_writestr1(tmp_path):
     target = tmp_path.joinpath('target.7z')
     data = b'this is data'
     with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
-        archive.writestr(data, 'src.txt')
+        archive.writestr('src.txt', data)
     #
     p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
@@ -611,7 +611,7 @@ def test_compress_writestr2(tmp_path):
     target = tmp_path.joinpath('target.7z')
     data = 'this is data'
     with py7zr.SevenZipFile(target, 'w', filters=my_filters) as archive:
-        archive.writestr(data, 'src.txt')
+        archive.writestr('src.txt', data)
     #
     p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
