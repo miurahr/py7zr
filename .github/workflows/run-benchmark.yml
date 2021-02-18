@@ -32,6 +32,6 @@ jobs:
           PYTEST_ADDOPTS: '--benchmark-only --no-cov --benchmark-json=${JSONFILE}'
       - name: post result to issue
         run: |
-          python utils/bench_comment_issue.py ${JSONFILE} ${GITHUB_REPOSITORY} ${ISSUE_NUMBER}
+          python utils/github_comment_bench.py ${JSONFILE} ${GITHUB_REPOSITORY} ${ISSUE_NUMBER} ${GITHUB_RUN_ID}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
