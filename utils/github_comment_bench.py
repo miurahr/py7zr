@@ -10,10 +10,10 @@ class CommentBenchmark:
 
     def __init__(self):
         parser = argparse.ArgumentParser(prog='bench_comment_issue')
-        parser.add_argument('jsonfile', type=pathlib.Path, nargs=1, help='pytest-benchmark saved result')
-        parser.add_argument('repository', type=str, nargs=1, help='Repository to post comment')
-        parser.add_argument('issue_number', type=int, nargs=1, help='Issue number to post comment')
-        parser.add_argument('run_id', type=int, nargs=1, help='Run ID of github actions')
+        parser.add_argument('jsonfile', type=pathlib.Path, help='pytest-benchmark saved result')
+        parser.add_argument('repository', help='Repository to post comment')
+        parser.add_argument('issue_number', type=int, help='Issue number to post comment')
+        parser.add_argument('run_id', help='Run ID of github actions')
         args = parser.parse_args()
         self.jsonfile = args.jsonfile
         self.repository = args.repository
