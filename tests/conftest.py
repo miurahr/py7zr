@@ -2,6 +2,7 @@
 # Thanks to Guilherme Salgado.
 import os
 
+import cpuinfo
 import pytest
 from pyannotate_runtime import collect_types
 
@@ -33,3 +34,11 @@ def pytest_benchmark_update_json(config, benchmarks, output_json):
         if 'data_size' in benchmark['extra_info']:
             rate = benchmark['extra_info'].get('data_size', 0.0) / benchmark['stats']['mean']
             benchmark['extra_info']['rate'] = rate
+
+
+def pytest_benchmark_update_machine_info(config, machine_info):
+    cpu_info = cpuinfo.get_cpu_info()
+    machine_info['cpu']['vendor_id_raw'] = cpu_info['vendor_id_raw']
+    machine_info['cpu']['hardware_raw'] = cpu_info['hardware_raw']
+    machine_info['cpu']['brand_raw'] = cpu_info['brand_raw']
+    machine_info['cpu']['hz_actual_friendly'] = cpu_info['hz_actual_friendly']
