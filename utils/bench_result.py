@@ -50,7 +50,7 @@ def generate_comment(root: dict, md=False):
         comment_body += '\n\n### Compression benchmarks\n\n'
         comment_body += generate_table(benchmarks, 'compress', type='github')
         comment_body += '\n\n### Decompression benchmarks\n\n'
-        comment_body += generate_table(benchmarks, 'compress', type='github')
+        comment_body += generate_table(benchmarks, 'decompress', type='github')
 
     else:
         comment_body = 'Benchmark results\n--------------\n\n'

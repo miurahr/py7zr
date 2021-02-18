@@ -22,7 +22,7 @@ class CommentBenchmark:
 
     def post_comment(self):
         body = bench.generate_comment(bench.read_results_json(self.jsonfile), md=True)
-        body += '\n   Posted from [the action](https://github.com/{}/runs/{})\n'.format(self.repository, self.run_id)
+        body += '\n   Posted from [the action](https://github.com/{}/actions/runs/{})\n'.format(self.repository, self.run_id)
         token = os.getenv("GITHUB_TOKEN")
         g = github.Github(token)
         repo = g.get_repo(self.repository)
