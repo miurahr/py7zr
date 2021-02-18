@@ -1,2 +1,2 @@
 PyGithub
-texttable
+tabulate
