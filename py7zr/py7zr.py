@@ -911,7 +911,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    def writef(self, bio: BinaryIO, arcname: str):
+    def writed(self, targets: Dict[str, IO[Any]]) -> None:
+        for target, input in targets.items():
+            self.writef(input, target)
+
+    def writef(self, bio: IO[Any], arcname: str):
         if isinstance(bio, io.BytesIO):
             size = bio.getbuffer().nbytes
         elif isinstance(bio, io.TextIOBase):

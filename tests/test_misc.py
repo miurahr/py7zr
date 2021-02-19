@@ -74,3 +74,11 @@ def test_bcj_file(tmp_path):
             ar.extractall(tmp_path.joinpath('tgt'))
         p7zip_test(target)
         libarchive_extract(target, tmp_path / 'tgt2')
+
+
+@pytest.mark.files
+def test_read_writed(tmp_path):
+    with py7zr.SevenZipFile(tmp_path.joinpath('target.7z'), 'w') as target:
+        with py7zr.SevenZipFile(testdata_path.joinpath('mblock_1.7z').open(mode='rb')) as source:
+            target.writed(source.readall())
+    p7zip_test(tmp_path / 'target.7z')
