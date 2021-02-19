@@ -347,6 +347,19 @@ Package           Purpose
 .. _`texttable` : https://pypi.org/project/texttable
 
 
+Performance
+===========
+
+You can find a compression and decompression benchmark results at
+[Github issue](https://github.com/miurahr/py7zr/issues/297) and [wiki page](https://github.com/miurahr/py7zr/wiki/Benchmarks)
+
+Benchmarks are run with Github Actions manually triggered at
+[Github actions workflow](https://github.com/miurahr/py7zr/actions/workflows/run-benchmark.yml)
+
+py7zr works well, but slower than `7-zip` and `p7zip` C implementation by several reasons.
+When compression/decompression **speed** is quite important, it is recommended to use these
+alternatives through `subprocess.run` python interface.
+
 Use Cases
 =========
 
