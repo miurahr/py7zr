@@ -8,7 +8,7 @@ import py7zr
 import py7zr.helpers
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
-targets = [("zstd", [{"id": py7zr.FILTER_ZSTD}]),
+targets = [("zstd", [{"id": py7zr.FILTER_ZSTD, 'level': 3}]),
            ("bzip2", [{"id": py7zr.FILTER_BZIP2}]),
            ("lzma+bcj", [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA, "preset": 7}]),
            ("lzma2+bcj", [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]),
