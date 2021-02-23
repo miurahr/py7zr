@@ -29,14 +29,14 @@ import datetime
 import errno
 import functools
 import io
-import multiprocessing
 import os
 import pathlib
 import queue
 import stat
 import sys
-import threading
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from multiprocessing import Process
+from threading import Thread
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -339,7 +339,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
-        self.reporterd = None  # type: Optional[threading.Thread]
+        self.reporterd = None  # type: Optional[Thread]
         self.q = queue.Queue()  # type: queue.Queue[Any]
 
     def __enter__(self):
@@ -457,7 +457,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if callback is not None and not isinstance(callback, ExtractCallback):
             raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
         elif callback is not None:
-            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
+            self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
@@ -1065,9 +1065,9 @@ class Worker:
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files)
         if mp:
-            self.concurrent = multiprocessing.Process
+            self.concurrent = Process  # type: Union[Type[Thread], Type[Process]]
         else:
-            self.concurrent = threading.Thread
+            self.concurrent = Thread
 
     def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
@@ -1098,9 +1098,9 @@ class Worker:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
                                 continue
                         p = self.concurrent(target=self.extract_single,
-                                             args=(filename, folders[i].files,
-                                                   self.src_start + positions[i], self.src_start + positions[i + 1],
-                                                   q, exc_q, skip_notarget))
+                                            args=(filename, folders[i].files,
+                                                  self.src_start + positions[i], self.src_start + positions[i + 1],
+                                                  q, exc_q, skip_notarget))
                         p.start()
                         concurrent_tasks.append(p)
                     for p in concurrent_tasks:
