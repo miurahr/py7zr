@@ -93,10 +93,10 @@ def test_copy_decompressor():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstd library is not exist.")
+@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
 def test_zstd_compressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    compressor = py7zr.zstdfilter.ZstdCompressor()
+    compressor = py7zr.zstdfilter.ZstdCompressor(level=3)
     outdata = compressor.compress(plain_data)
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
@@ -107,7 +107,7 @@ def test_zstd_compressor_1():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(pyzstd is None, reason="zstd library is not exist.")
+@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
 def test_pyzstd_compressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     compressor = py7zr.pyzstdfilter.ZstdCompressor(level=3)
@@ -121,7 +121,7 @@ def test_pyzstd_compressor_1():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstd library is not exist.")
+@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
 def test_zstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
@@ -135,7 +135,7 @@ def test_zstd_decompressor_1():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(pyzstd is None, reason="zstd library is not exist.")
+@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
 def test_pyzstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
@@ -149,7 +149,7 @@ def test_pyzstd_decompressor_1():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstd library is not exist.")
+@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
 def test_zstd_decompressor_2():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
@@ -158,6 +158,22 @@ def test_zstd_decompressor_2():
     compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     property = b'\x01\x04\x04\x00\x00'
     decompressor = py7zr.zstdfilter.ZstdDecompressor(property)
+    outdata = decompressor.decompress(compressed_0)
+    outdata += decompressor.decompress(compressed_1)
+    outdata += decompressor.decompress(compressed_2)
+    assert outdata == plain_data
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
+def test_pyzstd_decompressor_2():
+    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
+    plain_data += plain_data
+    compressed_0 = b"\x28\xb5\x2f\xfd"
+    compressed_1 = b" @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4"
+    compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
+    property = b'\x01\x04\x04\x00\x00'
+    decompressor = py7zr.pyzstdfilter.ZstdDecompressor(property)
     outdata = decompressor.decompress(compressed_0)
     outdata += decompressor.decompress(compressed_1)
     outdata += decompressor.decompress(compressed_2)
