@@ -279,7 +279,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
-        self._config = RuntimeConstant(blocksize=blocksize)
+        self.block_size = RuntimeConstant(blocksize=blocksize).READ_BLOCKSIZE
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed: bool = False
@@ -722,7 +722,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         remaining_size = size
         digest = 0
         while remaining_size > 0:
-            block = min(self._config.READ_BLOCKSIZE, remaining_size)
+            block = min(self.block_size, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest

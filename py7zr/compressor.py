@@ -647,7 +647,7 @@ class SevenZipDecompressor:
 class SevenZipCompressor:
     """Main compressor object to configured for each 7zip folder."""
 
-    __slots__ = ['filters', 'chain', 'compressor', 'coders', 'methods_map', 'digest', 'packsize', '_config',
+    __slots__ = ['filters', 'chain', 'compressor', 'coders', 'methods_map', 'digest', 'packsize', '_block_size',
                  '_unpacksizes']
 
     def __init__(self, filters=None, password=None):
@@ -656,7 +656,7 @@ class SevenZipCompressor:
         self.digest = 0
         self.packsize = 0
         self._unpacksizes = []
-        self.block_size = RuntimeConstant().READ_BLOCKSIZE
+        self._block_size = RuntimeConstant().READ_BLOCKSIZE
         if filters is None:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:
@@ -715,7 +715,7 @@ class SevenZipCompressor:
                                'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
     def compress(self, fd, fp, crc=0):
-        data = fd.read(self.block_size)
+        data = fd.read(self._block_size)
         insize = len(data)
         foutsize = 0
         while data:
@@ -727,7 +727,7 @@ class SevenZipCompressor:
             self.digest = calculate_crc32(data, self.digest)
             foutsize += len(data)
             fp.write(data)
-            data = fd.read(self.block_size)
+            data = fd.read(self._block_size)
             insize += len(data)
         return insize, foutsize, crc
 
