@@ -42,7 +42,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
+from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, RuntimeConstant
 
 if sys.platform.startswith('win'):
     import _winapi
@@ -274,16 +274,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
                  *, filters: Optional[List[Dict[str, int]]] = None, dereference=False,
-                 password: Optional[str] = None, header_encryption: bool = False) -> None:
+                 password: Optional[str] = None, header_encryption: bool = False,
+                 blocksize: Optional[int] = None) -> None:
         if mode not in ('r', 'w', 'x', 'a'):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
+        self._config = RuntimeConstant(blocksize=blocksize)
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
-            self._filePassed = False  # type: bool
-            self.filename = file  # type: str
+            self._filePassed: bool = False
+            self.filename: str = file
             if mode == 'r':
-                self.fp = open(file, 'rb')  # type: BinaryIO
+                self.fp: BinaryIO = open(file, 'rb')
             elif mode == 'w':
                 self.fp = open(file, 'w+b')
             elif mode == 'x':
@@ -720,7 +722,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         remaining_size = size
         digest = 0
         while remaining_size > 0:
-            block = min(READ_BLOCKSIZE, remaining_size)
+            block = min(self._config.READ_BLOCKSIZE, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest
