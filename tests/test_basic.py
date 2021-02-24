@@ -175,6 +175,7 @@ def test_cli_help(capsys):
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_cli_no_subcommand(capsys):
     expected = py7zr.cli.Cli._get_version()
     expected += '\nusage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
@@ -234,6 +235,7 @@ Everything is Ok
 
 
 @pytest.mark.cli
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_cli_info(capsys):
     expected = py7zr.cli.Cli._get_version()
     if lzma.is_check_supported(lzma.CHECK_CRC64):
@@ -405,7 +407,7 @@ def test_archive_creation(tmp_path, capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_archive_already_exist(tmp_path, capsys):
     expected = 'Archive file exists!\n'
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
