@@ -23,12 +23,16 @@ jobs:
       - name: Install system library(linux)
         if: runner.os == 'linux'
         run: sudo apt install libarchive-dev
-      - name: Install C library(Windows)
+      - name: Download libarchive(Windows)
+        if: runner.os == 'Windows'
+        uses: carlosperate/download-file-action@v1.0.3
+        with:
+          file-url: "https://libarchive.org/downloads/libarchive-v3.4.3-win64.zip"
+          file-name: "libarchive-v3.4.3-win64.zip"
+      - name: Install libarchive(Windows)
         if: runner.os == 'Windows'
         run: |
-          $url = "https://libarchive.org/downloads/libarchive-v3.4.3-win64.zip"
           $file = "libarchive-v3.4.3-win64.zip"
-          (New-Object System.Net.WebClient).DownloadFile($url, $file)
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
       - name: Install dependencies
         run: |
@@ -40,7 +44,7 @@ jobs:
           tox
         env:
           PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
-      - name: Test project with tox(windows)
+      - name: Test project with tox (windows)
         if: runner.os == 'Windows'
         run: |
           echo LIBARCHIVE="${env:LIBARCHIVE}"
