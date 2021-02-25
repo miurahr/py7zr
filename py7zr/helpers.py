@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 #
 # This library is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
-from py7zr.properties import READ_BLOCKSIZE
+from py7zr.properties import RuntimeConstant
 
 
 def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
@@ -414,6 +414,7 @@ class BufferedRW(io.BufferedIOBase):
 
     def __init__(self):
         self._buf = bytearray()
+        self.block_size = RuntimeConstant().READ_BLOCKSIZE
 
     def writable(self):
         return True
@@ -422,8 +423,8 @@ class BufferedRW(io.BufferedIOBase):
         if isinstance(b, mmap.mmap):
             size = b.size()
             current = b.tell()
-            if size - current > READ_BLOCKSIZE:
-                self._buf += b.read(READ_BLOCKSIZE)
+            if size - current > self.block_size:
+                self._buf += b.read(self.block_size)
             elif size - current > 0:
                 self._buf += b.read(size - current)
         elif isinstance(b, array.array):

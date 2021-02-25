@@ -37,11 +37,11 @@ from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
-                              FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, READ_BLOCKSIZE,
-                              CompressionMethod)
+                              FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, CompressionMethod,
+                              RuntimeConstant)
 
 try:
-    import bcj as BCJFilter  # type: ignore # noqa
+    import bcj as BCJFilter  # type: ignore  # noqa
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
 try:
@@ -100,7 +100,7 @@ class AESCompressor(ISevenZipCompressor):
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
         self.flushed = False
-        self.buf = Buffer(size=READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE * 2)
+        self.buf = Buffer(size=RuntimeConstant().READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE * 2)
 
     def encode_filter_properties(self):
         saltsize = len(self.salt)
@@ -175,7 +175,7 @@ class AESDecompressor(ISevenZipDecompressor):
                 iv += bytes('\x00' * (16 - ivsize), 'ascii')
             key = calculate_key(password.encode('utf-16LE'), numcyclespower, salt, 'sha256')
             self.cipher = AES.new(key, AES.MODE_CBC, iv)
-            self.buf = Buffer(size=READ_BLOCKSIZE + 16)
+            self.buf = Buffer(size=RuntimeConstant().READ_BLOCKSIZE + 16)
         else:
             raise UnsupportedCompressionMethodError
 
@@ -265,6 +265,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
             level, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
             raise UnsupportedCompressionMethodError
+        self.block_size = RuntimeConstant().READ_BLOCKSIZE
         self._buf = BufferedRW()
         self.decoder = None
         self.level = level
@@ -287,7 +288,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
         if len(data) == 0:
             return self.decoder.decode(max_length)
         #
-        size = min(READ_BLOCKSIZE, max_length)
+        size = min(self.block_size, max_length)
         res = bytearray()
         while len(self._buf) > 0 and len(res) < size:
             res += self.decoder.decode(1)
@@ -446,9 +447,10 @@ class SevenZipDecompressor:
                  password: Optional[str] = None) -> None:
         self.input_size = packsize
         self.unpacksizes = unpacksizes
-        self.consumed = 0  # type: int
+        self.consumed: int = 0
         self.crc = crc
-        self.digest = 0
+        self.digest: int = 0
+        self.block_size: int = RuntimeConstant().READ_BLOCKSIZE
         if len(coders) > 4:
             raise UnsupportedCompressionMethodError('Maximum cascade of filters is 4 but got {}.'.format(len(coders)))
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
@@ -525,7 +527,7 @@ class SevenZipDecompressor:
     def decompress(self, fp, max_length: int = -1) -> bytes:
         # read data from disk
         rest_size = self.input_size - self.consumed
-        read_size = min(rest_size, READ_BLOCKSIZE)
+        read_size = min(rest_size, self.block_size)
         data = fp.read(read_size)
         self.consumed += len(data)
         #
@@ -610,14 +612,16 @@ class SevenZipDecompressor:
 class SevenZipCompressor:
     """Main compressor object to configured for each 7zip folder."""
 
-    __slots__ = ['filters', 'chain', 'compressor', 'coders', 'methods_map', 'digest', 'packsize', '_unpacksizes']
+    __slots__ = ['filters', 'chain', 'compressor', 'coders', 'methods_map', 'digest', 'packsize', '_block_size',
+                 '_unpacksizes']
 
     def __init__(self, filters=None, password=None):
-        self.filters = []  # type: List[ISevenZipCompressor]
+        self.filters: List[ISevenZipCompressor] = []
         self.chain = []
         self.digest = 0
         self.packsize = 0
         self._unpacksizes = []
+        self._block_size = RuntimeConstant().READ_BLOCKSIZE
         if filters is None:
             self.filters = [{"id": lzma.FILTER_LZMA2, "preset": 7 | lzma.PRESET_EXTREME}]
         else:
@@ -676,7 +680,7 @@ class SevenZipCompressor:
                                'properties': properties, 'numinstreams': 1, 'numoutstreams': 1})
 
     def compress(self, fd, fp, crc=0):
-        data = fd.read(READ_BLOCKSIZE)
+        data = fd.read(self._block_size)
         insize = len(data)
         foutsize = 0
         while data:
@@ -688,7 +692,7 @@ class SevenZipCompressor:
             self.digest = calculate_crc32(data, self.digest)
             foutsize += len(data)
             fp.write(data)
-            data = fd.read(READ_BLOCKSIZE)
+            data = fd.read(self._block_size)
             insize += len(data)
         return insize, foutsize, crc
 
