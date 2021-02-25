@@ -1,7 +1,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019,2020 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -25,16 +25,11 @@ import lzma
 import platform
 import sys
 from enum import Enum
+from typing import Any, Dict, Optional
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
-if platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
-    READ_BLOCKSIZE = 1048576  # type: int
-elif sys.version_info >= (3, 7, 5):
-    READ_BLOCKSIZE = 1048576
-else:
-    READ_BLOCKSIZE = 32768
-QUEUELEN = READ_BLOCKSIZE * 2
+
 COMMAND_HELP_STRING = '''<Commands>
   c : Create archive with files
   i : Show information about supported formats
@@ -42,6 +37,27 @@ COMMAND_HELP_STRING = '''<Commands>
   t : Test integrity of archive
   x : eXtract files with full paths
 '''
+
+
+class RuntimeConstant:
+
+    __shared_state: Dict[Any, Any] = {}
+
+    def __init__(self, blocksize: Optional[int] = None):
+        self.__dict__ = self.__shared_state
+        if blocksize is not None:
+            self._READ_BLOCKSIZE: int = blocksize
+        elif platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
+            self._READ_BLOCKSIZE = 1048576
+        elif sys.version_info >= (3, 7, 5):
+            self._READ_BLOCKSIZE = 1048576
+        else:
+            self._READ_BLOCKSIZE = 32768
+
+    @property
+    def READ_BLOCKSIZE(self) -> int:
+        return self._READ_BLOCKSIZE
+
 
 # Exposed constants
 FILTER_LZMA = lzma.FILTER_LZMA1
