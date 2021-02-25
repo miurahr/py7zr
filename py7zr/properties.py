@@ -41,7 +41,7 @@ COMMAND_HELP_STRING = '''<Commands>
 
 class RuntimeConstant:
 
-    __shared_state: Dict[Any, Any]  = {}
+    __shared_state: Dict[Any, Any] = {}
 
     def __init__(self, blocksize: Optional[int] = None):
         self.__dict__ = self.__shared_state
