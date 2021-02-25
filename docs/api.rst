@@ -345,7 +345,7 @@ Deflate
     ``[{'id': FILTER_DEFLATE}]``
 
 ZStandard
-    ``[{'id': FILTER_ZSTD}]``
+    ``[{'id': FILTER_ZSTD, 'level': 3}]``
 
 7zAES + LZMA2 + Delta
     ``[{'id': FILTER_DELTA}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
@@ -364,6 +364,7 @@ ZStandard
 
 7zAES + ZStandard
     ``[{'id': FILTER_ZSTD}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
 
 .. rubric:: Footnotes
 

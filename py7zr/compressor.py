@@ -30,7 +30,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import ppmd as Ppmd  # type: ignore
-import zstandard as Zstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
@@ -45,6 +44,12 @@ try:
     import bcj as BCJFilter  # type: ignore  # noqa
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
+try:
+    import pyzstd  # noqa
+
+    import py7zr.pyzstdfilter as Zstd  # type: ignore  # noqa
+except ImportError:
+    import py7zr.zstdfilter as Zstd  # type: ignore  # noqa
 
 
 class ISevenZipCompressor(ABC):
@@ -249,46 +254,6 @@ class CopyDecompressor(ISevenZipDecompressor):
         return bytes(data)
 
 
-class ZstdDecompressor(ISevenZipDecompressor):
-
-    def __init__(self, properties):
-        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > Zstd.ZSTD_VERSION:
-            raise UnsupportedCompressionMethodError
-        self._buf = BufferedRW()
-        ctx = Zstd.ZstdDecompressor()  # type: ignore
-        self._decompressor = ctx.stream_writer(self._buf)
-
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
-        self._decompressor.write(data)
-        if max_length > 0:
-            result = self._buf.read(max_length)
-        else:
-            result = self._buf.read()
-        return result
-
-
-class ZstdCompressor(ISevenZipCompressor):
-
-    def __init__(self):
-        self._buf = BufferedRW()
-        ctx = Zstd.ZstdCompressor()  # type: ignore
-        self._compressor = ctx.stream_writer(self._buf)
-        self.flushed = False
-
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self._compressor.write(data)
-        result = self._buf.read()
-        return result
-
-    def flush(self):
-        if self.flushed:
-            return None
-        self._compressor.flush(Zstd.FLUSH_FRAME)
-        self.flushed = True
-        result = self._buf.read()
-        return result
-
-
 class PpmdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties: bytes):
@@ -451,7 +416,7 @@ class BCJEncoder(ISevenZipCompressor):
 
 
 algorithm_class_map = {
-    FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
+    FILTER_ZSTD: (Zstd.ZstdCompressor, Zstd.ZstdDecompressor),
     FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
@@ -697,9 +662,9 @@ class SevenZipCompressor:
             compressor = algorithm_class_map[filter_id][0](password)
         elif SupportedMethods.need_property(filter_id):
             if filter_id == FILTER_ZSTD:
-                level = 3
+                level = alt_filter.get('level', 3)
                 properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
-                compressor = algorithm_class_map[filter_id][0]()
+                compressor = algorithm_class_map[filter_id][0](level=level)
             elif filter_id == FILTER_PPMD:
                 order = alt_filter.get('level', 6)
                 mem_size = alt_filter.get('mem', 16) << 20
