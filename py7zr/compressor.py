@@ -83,7 +83,7 @@ class AESCompressor(ISevenZipCompressor):
     AES_CBC_BLOCKSIZE = 16
 
     def __init__(self, password: str) -> None:
-        self.cycles = 19  # FIXME
+        self.cycles = 19  # as same as p7zip
         self.iv = get_random_bytes(16)
         self.salt = b''
         self.method = CompressionMethod.CRYPT_AES256_SHA256
@@ -94,10 +94,9 @@ class AESCompressor(ISevenZipCompressor):
         self.buf = Buffer(size=READ_BLOCKSIZE + self.AES_CBC_BLOCKSIZE * 2)
 
     def encode_filter_properties(self):
-        # cycles = secrets.SystemRandom().randint(1, 23)
         saltsize = len(self.salt)
         ivsize = len(self.iv)
-        ivfirst = 1  # FIXME: it should always 1
+        ivfirst = 1  # it should always 1
         saltfirst = 1 if len(self.salt) > 0 else 0
         firstbyte = (self.cycles + (ivfirst << 6) + (saltfirst << 7)).to_bytes(1, 'little')
         secondbyte = (((ivsize - 1) & 0x0f) + (((saltsize - saltfirst) << 4) & 0xf0)).to_bytes(1, 'little')
@@ -136,7 +135,8 @@ class AESCompressor(ISevenZipCompressor):
 
     def flush(self):
         if len(self.buf) > 0:
-            padlen = -len(self.buf) & 15  # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
+            # padlen = 16 - currentlen % 16 if currentlen % 16 > 0 else 0
+            padlen = -len(self.buf) & 15
             self.buf.add(bytes(padlen))
             res = self.cipher.encrypt(self.buf.view)
             self.buf.reset()

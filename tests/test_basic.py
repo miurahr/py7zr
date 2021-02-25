@@ -165,7 +165,6 @@ def test_py7zr_is_not_7zfile(tmp_path):
 
 @pytest.mark.cli
 def test_cli_help(capsys):
-
     expected = 'usage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
