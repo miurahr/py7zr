@@ -1,17 +1,15 @@
 import io
 import os
 import pathlib
-import struct
 import zlib
 
+import ppmd as Ppmd  # type: ignore
 import pytest
 from Crypto.Cipher import AES
 
 import py7zr
 import py7zr.compressor
 from tests import p7zip_test
-
-import ppmd as Ppmd  # type: ignore
 
 try:
     import zstandard  # type: ignore  # noqa
