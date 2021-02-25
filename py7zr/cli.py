@@ -131,7 +131,7 @@ class Cli():
     @staticmethod
     def _get_version():
         dist = importlib_metadata.distribution('py7zr')
-        module_name = dist.entry_points[0].name
+        module_name = dist.entry_points.pop().name
         py_version = platform.python_version()
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
@@ -235,7 +235,7 @@ class Cli():
         file.write("Type = 7z\n")
         fstat = os.stat(archive.filename)
         file.write("Phisical Size = {}\n".format(fstat.st_size))
-        file.write("Headers Size = {}\n".format(archive.header.size))  # fixme.
+        file.write("Headers Size = {}\n".format(archive.header.size))
         file.write("Method = {}\n".format(archive._get_method_names()))
         if archive._is_solid():
             file.write("Solid = {}\n".format('+'))
