@@ -5,6 +5,7 @@ import hashlib
 import io
 import lzma
 import os
+import pathlib
 import stat
 import struct
 import sys
@@ -16,11 +17,6 @@ import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
-
-if sys.version_info < (3, 6):
-    import pathlib2 as pathlib
-else:
-    import pathlib
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 
