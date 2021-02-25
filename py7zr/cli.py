@@ -18,6 +18,7 @@
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 import argparse
 import getpass
+import inspect
 import lzma
 import os
 import pathlib
@@ -36,11 +37,6 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
 from py7zr.properties import COMMAND_HELP_STRING, READ_BLOCKSIZE
-
-try:
-    from importlib import metadata as importlib_metadata  # type: ignore
-except ImportError:
-    import importlib_metadata  # type: ignore  # for python < 3.8
 
 
 class CliExtractCallback(ExtractCallback):
@@ -130,8 +126,8 @@ class Cli():
 
     @staticmethod
     def _get_version():
-        dist = importlib_metadata.distribution('py7zr')
-        module_name = dist.entry_points.pop().name
+        s = inspect.stack()
+        module_name = inspect.getmodule(s[0][0]).__name__
         py_version = platform.python_version()
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
