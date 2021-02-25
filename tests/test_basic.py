@@ -2,7 +2,6 @@ import getpass
 import lzma
 import os
 import pathlib
-import platform
 import re
 import shutil
 import sys
@@ -162,7 +161,6 @@ def test_py7zr_is_not_7zfile(tmp_path):
 
 @pytest.mark.cli
 def test_cli_help(capsys):
-
     expected = 'usage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
@@ -172,7 +170,6 @@ def test_cli_help(capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(platform.python_version_tuple() == (3, 6, 13), reason="Fails on python 3.6.13")
 def test_cli_no_subcommand(capsys):
     expected = py7zr.cli.Cli._get_version()
     expected += '\nusage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
@@ -232,7 +229,6 @@ Everything is Ok
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(platform.python_version_tuple() == (3, 6, 13), reason="Fails on python 3.6.13")
 def test_cli_info(capsys):
     expected = py7zr.cli.Cli._get_version()
     if lzma.is_check_supported(lzma.CHECK_CRC64):
