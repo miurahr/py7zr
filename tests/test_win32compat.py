@@ -11,7 +11,6 @@ import py7zr.win32compat
 PATH_PREFIX = '\\\\?\\'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_symlink_readlink_absolute(tmp_path):
@@ -33,7 +32,6 @@ def test_symlink_readlink_absolute(tmp_path):
     assert slink.open('r').read() == 'Original'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_symlink_readlink_relative(tmp_path):

@@ -1,6 +1,8 @@
 import getpass
 import lzma
 import os
+import pathlib
+import platform
 import re
 import shutil
 import sys
@@ -14,11 +16,6 @@ import py7zr.cli
 import py7zr.properties
 
 from . import check_output, decode_all, ltime2
-
-if sys.version_info < (3, 6):
-    import pathlib2 as pathlib
-else:
-    import pathlib
 
 testdata_path = os.path.join(os.path.dirname(__file__), 'data')
 os.umask(0o022)
@@ -175,7 +172,7 @@ def test_cli_help(capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
+@pytest.mark.skipif(platform.python_version_tuple() == (3, 6, 13), reason="Fails on python 3.6.13")
 def test_cli_no_subcommand(capsys):
     expected = py7zr.cli.Cli._get_version()
     expected += '\nusage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help'
@@ -235,7 +232,7 @@ Everything is Ok
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
+@pytest.mark.skipif(platform.python_version_tuple() == (3, 6, 13), reason="Fails on python 3.6.13")
 def test_cli_info(capsys):
     expected = py7zr.cli.Cli._get_version()
     if lzma.is_check_supported(lzma.CHECK_CRC64):
@@ -394,7 +391,6 @@ def test_non7z_list(capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_creation(tmp_path, capsys):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -423,7 +419,6 @@ def test_archive_already_exist(tmp_path, capsys):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_append(tmp_path):
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_2.7z'), path=tmp_path.joinpath('src'))
     target = tmp_path / "target.7z"
@@ -434,7 +429,6 @@ def test_archive_append(tmp_path):
 
 
 @pytest.mark.cli
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_archive_without_extension(tmp_path, capsys):
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
     target = str(tmp_path / "target")
