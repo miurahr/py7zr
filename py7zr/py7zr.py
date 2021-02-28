@@ -37,6 +37,8 @@ import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
+import multivolumefile
+
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names_string
@@ -246,9 +248,10 @@ class ArchiveFileListIterator(collections.abc.Iterator):
 class ArchiveInfo:
     """Hold archive information"""
 
-    def __init__(self, filename, size, header_size, method_names, solid, blocks, uncompressed):
+    def __init__(self, filename, stat, header_size, method_names, solid, blocks, uncompressed):
+        self.stat = stat
         self.filename = filename
-        self.size = size
+        self.size = stat.st_size
         self.header_size = header_size
         self.method_names = method_names
         self.solid = solid
@@ -309,6 +312,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             else:
                 raise ValueError("File open error.")
             self.mode = mode
+        elif isinstance(file, multivolumefile.MultiVolume):
+            self._filePassed = True
+            self.fp = file
+            self.filename = None
+            self.mode = mode  # type: ignore  #noqa
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
@@ -827,9 +835,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return list(map(lambda x: x.filename, self.files))
 
     def archiveinfo(self) -> ArchiveInfo:
-        fstat = os.stat(self.filename)
         total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
-        return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
+        if isinstance(self.fp, multivolumefile.MultiVolume):
+            fname = self.fp.name
+            fstat = self.fp.stat()
+        else:
+            fname = self.filename
+            fstat = os.stat(fname)
+        return ArchiveInfo(fname, fstat, self.header.size, self._get_method_names(),
                            self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
                            total_uncompressed)
 
