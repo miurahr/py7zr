@@ -32,7 +32,7 @@ Fixed
 -----
 
 * Backport fix of empty file archive(#305,#310)
-
+* CLI: Fix getting module_name on 3.6.13(#308)
 
 `v0.13.0`_
 ==========
