@@ -7,11 +7,11 @@ include .coveragerc
 include tox.ini
 recursive-include py7zr *.py
 recursive-include tests *.py
-recursive-include tests *.txt
-recursive-include tests *.7z
-recursive-include tests *.0
-recursive-include tests *.bin
-recursive-include tests *.c
+recursive-include tests/data *.txt
+recursive-include tests/data *.7z
+recursive-include tests/data *.0*
+recursive-include tests/data *.bin
+recursive-include tests/data *.c
 recursive-include utils *.py
 recursive-include utils *.txt
 recursive-include docs *.bat
