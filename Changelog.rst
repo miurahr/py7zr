@@ -25,6 +25,15 @@ Removed
 Security
 --------
 
+`v0.13.1`_
+==========
+
+Fixed
+-----
+
+* Backport fix of empty file archive(#305,#310)
+
+
 `v0.13.0`_
 ==========
 
@@ -272,7 +281,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.13.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.13.1...HEAD
+.. _v0.13.1: https://github.com/miurahr/py7zr/compare/v0.13.0...v0.13.1
 .. _v0.13.0: https://github.com/miurahr/py7zr/compare/v0.12.0...v0.13.0
 .. _v0.12.0: https://github.com/miurahr/py7zr/compare/v0.11.3...v0.12.0
 .. _v0.11.3: https://github.com/miurahr/py7zr/compare/v0.11.1...v0.11.3
