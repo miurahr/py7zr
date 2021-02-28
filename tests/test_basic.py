@@ -646,15 +646,19 @@ total 19 files and directories in solid archive
     expected += "{} ....A         5282               mingw64/include/szlib.h\n".format(ltime2(2008, 11, 11, 16, 12, 56))
     expected += "{} ....A        60008               mingw64/lib/libszip.a\n".format(ltime2(2017, 1, 23, 6, 2, 47))
     expected += "{} ....A        10900               mingw64/lib/libszip.dll.a\n".format(ltime2(2017, 1, 23, 6, 2, 39))
-    expected += "{} ....A         1986               mingw64/share/doc/szip/COPYING\n".format(ltime2(2008, 1, 24, 23, 8, 43))
-    expected += "{} ....A         1544               mingw64/share/doc/szip/HISTORY.txt\n".format(ltime2(2010, 7, 14, 13, 43, 15))
-    expected += "{} ....A         3544               mingw64/share/doc/szip/INSTALL\n".format(ltime2(2008, 11, 11, 16, 12, 56))
-    expected += "{} ....A          564               mingw64/share/doc/szip/README\n".format(ltime2(2007, 8, 20, 18, 47, 21))
-    expected += "{} ....A          513               mingw64/share/doc/szip/RELEASE.txt\n".format(ltime2(2010, 7, 14, 13, 43, 15))
+    expected += "{} ....A         1986               mingw64/share/doc/szip/COPYING\n".format(ltime2(2008, 1, 24,
+                                                                                                     23, 8, 43))
+    expected += "{} ....A         1544               mingw64/share/doc/szip/HISTORY.txt\n".format(ltime2(2010, 7, 14,
+                                                                                                         13, 43, 15))
+    expected += "{} ....A         3544               mingw64/share/doc/szip/INSTALL\n".format(ltime2(2008, 11, 11,
+                                                                                                     16, 12, 56))
+    expected += "{} ....A          564               mingw64/share/doc/szip/README\n".format(ltime2(2007, 8, 20,
+                                                                                                    18, 47, 21))
+    expected += "{} ....A          513               mingw64/share/doc/szip/RELEASE.txt\n".format(ltime2(2010, 7, 14,
+                                                                                                         13, 43, 15))
     expected += "{} ....A        66352        24924  mingw64/bin/libszip-0.dll\n".format(ltime2(2017, 1, 23, 6, 2, 47))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
     cli.run(["l", "--verbose", arcfile])
     out, err = capsys.readouterr()
     assert out == expected
-

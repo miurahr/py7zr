@@ -37,7 +37,7 @@ import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
-import multivolumefile
+import multivolumefile  # type: ignore
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -286,7 +286,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed: bool = False
-            self.filename: str = file
+            self.filename: Optional[str] = file
             if mode == 'r':
                 self.fp: BinaryIO = open(file, 'rb')
             elif mode == 'w':
