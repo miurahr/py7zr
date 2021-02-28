@@ -768,7 +768,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['emptystream'] = True
                 f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
-                f['emptystream'] = (target.stat().st_size == 0)
+                f['emptystream'] = False
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['uncompressed'] = fstat.st_size
         else:
@@ -796,7 +796,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
             elif target.is_file():
-                f['emptystream'] = (target.stat().st_size == 0)
+                f['emptystream'] = False
                 f['uncompressed'] = fstat.st_size
                 f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
                 f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)

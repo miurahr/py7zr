@@ -442,7 +442,7 @@ def test_compress_zerofile(tmp_path):
     archive.writeall('.')
     archive._write_flush()
     assert len(archive.header.files_info.files) == 1
-    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [0]
+    assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders == [1]
     assert len(archive.files) == 1
     assert len(archive.header.files_info.files) == 1
     expected = [True]
@@ -956,6 +956,24 @@ def test_append_empty_files(tmp_path):
     #
     with py7zr.SevenZipFile(target, 'r') as archive:
         archive.test()
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.files
+def test_archive_emptyfile_1(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    with tmp_path.joinpath('src', 'x').open(mode='wb') as f:
+        f.write(b'')
+    archive = py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'w')
+    archive.write(tmp_path.joinpath('src', 'x'), 'y')
+    archive.close()
+    #
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'r') as arc:
+        arc.extractall(path=tmp_path / "tgt")
+    #
+    assert tmp_path.joinpath('tgt', 'y').is_file()
     #
     p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
