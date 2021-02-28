@@ -236,3 +236,19 @@ def test_encrypt_file_6(tmp_path):
     with py7zr.SevenZipFile(target, mode='w', password="test123") as archive:
         archive.set_encrypted_header(True)
         archive.writeall('src', arcname='src')
+
+
+@pytest.mark.files
+def test_encrypt_emptyfile_1(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    with tmp_path.joinpath('src', 'x').open(mode='wb') as f:
+        f.write(b'')
+    archive = py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'w', password='123')
+    archive.set_encrypted_header(True)
+    archive.write(tmp_path.joinpath('src', 'x'), 'y')
+    archive.close()
+    #
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'r', password='123') as arc:
+        arc.extractall(path=tmp_path / "tgt")
+    #
+    assert tmp_path.joinpath('tgt', 'y').is_file()

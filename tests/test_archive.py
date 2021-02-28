@@ -967,7 +967,6 @@ def test_archive_emptyfile_1(tmp_path):
     with tmp_path.joinpath('src', 'x').open(mode='wb') as f:
         f.write(b'')
     archive = py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'w')
-    archive.set_encrypted_header(True)
     archive.write(tmp_path.joinpath('src', 'x'), 'y')
     archive.close()
     #
