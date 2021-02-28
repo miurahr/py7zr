@@ -96,7 +96,6 @@ def test_extract_encrypted_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_0(tmp_path):
     filters = [
         {"id": py7zr.FILTER_LZMA},
@@ -124,7 +123,6 @@ def test_encrypt_file_0(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_1(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w', password='secret')
@@ -150,7 +148,6 @@ def test_encrypt_file_1(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_2(tmp_path):
     filters = [{"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath('src').mkdir()
@@ -174,7 +171,6 @@ def test_encrypt_file_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_3(tmp_path):
     filters = [{"id": py7zr.FILTER_DELTA}, {"id": py7zr.FILTER_LZMA2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath('src').mkdir()
@@ -199,7 +195,6 @@ def test_encrypt_file_3(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.skip(reason="The combination which cannot handle correctly.")
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_4(tmp_path):
     filters = [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath('src').mkdir()
@@ -223,7 +218,6 @@ def test_encrypt_file_4(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_5(tmp_path):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -234,7 +228,6 @@ def test_encrypt_file_5(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_encrypt_file_6(tmp_path):
     tmp_path.joinpath('src').mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
@@ -243,3 +236,19 @@ def test_encrypt_file_6(tmp_path):
     with py7zr.SevenZipFile(target, mode='w', password="test123") as archive:
         archive.set_encrypted_header(True)
         archive.writeall('src', arcname='src')
+
+
+@pytest.mark.files
+def test_encrypt_file_7(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    with tmp_path.joinpath('src', 'x').open(mode='wb') as f:
+        f.write(b'')
+    archive = py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'w', password='123')
+    archive.set_encrypted_header(True)
+    archive.write(tmp_path.joinpath('src', 'x'), 'y')
+    archive.close()
+    #
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'r', password='123') as arc:
+        arc.extractall(path=tmp_path / "tgt")
+    #
+    assert tmp_path.joinpath('tgt', 'y').is_file()
