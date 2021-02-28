@@ -959,3 +959,22 @@ def test_append_empty_files(tmp_path):
     #
     p7zip_test(tmp_path / 'target.7z')
     libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
+
+
+@pytest.mark.files
+def test_archive_emptyfile_1(tmp_path):
+    tmp_path.joinpath('src').mkdir()
+    with tmp_path.joinpath('src', 'x').open(mode='wb') as f:
+        f.write(b'')
+    archive = py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'w')
+    archive.set_encrypted_header(True)
+    archive.write(tmp_path.joinpath('src', 'x'), 'y')
+    archive.close()
+    #
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), 'r') as arc:
+        arc.extractall(path=tmp_path / "tgt")
+    #
+    assert tmp_path.joinpath('tgt', 'y').is_file()
+    #
+    p7zip_test(tmp_path / 'target.7z')
+    libarchive_extract(tmp_path / 'target.7z', tmp_path.joinpath('tgt2'))
