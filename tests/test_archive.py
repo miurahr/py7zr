@@ -35,7 +35,6 @@ def check_bit(val, mask):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_single_encoded_header(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -65,7 +64,6 @@ def test_compress_single_encoded_header(capsys, tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_directory_encoded_header(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -94,7 +92,6 @@ def test_compress_directory_encoded_header(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_encoded_header(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -153,7 +150,6 @@ def test_compress_files_encoded_header(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_file_0(capsys, tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -180,7 +176,6 @@ def test_compress_file_0(capsys, tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_directory(tmp_path):
     target = tmp_path.joinpath('target.7z')
     archive = py7zr.SevenZipFile(target, 'w')
@@ -209,7 +204,6 @@ def test_compress_directory(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_1(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -294,7 +288,6 @@ def test_register_archive_format(tmp_path):
 
 
 @pytest.mark.api
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_with_simple_filter(tmp_path):
     my_filters = [{"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT}, ]
     target = tmp_path.joinpath('target.7z')
@@ -307,7 +300,6 @@ def test_compress_with_simple_filter(tmp_path):
 
 
 @pytest.mark.api
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_with_custom_filter(tmp_path):
     my_filters = [
         {"id": py7zr.FILTER_DELTA, "dist": 5},
@@ -328,7 +320,6 @@ def test_compress_with_custom_filter(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_files_2(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -350,7 +341,6 @@ def test_compress_files_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_compress_files_3(tmp_path):
@@ -374,7 +364,6 @@ def test_compress_files_3(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_compress_symlink(tmp_path):
@@ -429,7 +418,6 @@ def test_compress_symlink(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_zerofile(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -458,7 +446,6 @@ def test_compress_zerofile(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_compress_directories(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt1').mkdir()
@@ -490,7 +477,6 @@ def test_compress_directories(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_compress_absolute_symlink_as_relative(tmp_path):
@@ -518,7 +504,6 @@ def test_compress_absolute_symlink_as_relative(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 def test_compress_files_deref(tmp_path):
@@ -576,7 +561,6 @@ def test_compress_lzma2_bcj(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
                     reason="Administrator rights is required to make symlink on windows")
 @pytest.mark.skipif(sys.platform.startswith("win") and sys.version_info < (3, 7),
@@ -920,7 +904,6 @@ def test_compress_append_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_append_files_2(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()
@@ -939,7 +922,6 @@ def test_append_files_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 def test_append_empty_files(tmp_path):
     tmp_path.joinpath('src').mkdir()
     tmp_path.joinpath('tgt').mkdir()

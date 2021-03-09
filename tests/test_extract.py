@@ -339,7 +339,6 @@ def test_close_unlink(tmp_path):
 
 @pytest.mark.files
 @pytest.mark.asyncio
-@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
 @pytest.mark.skipif(hasattr(sys, 'pypy_version_info'), reason="Not working with pypy3")
 def test_asyncio_executor(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, 'test_1.7z'), str(tmp_path.joinpath('test_1.7z')))
