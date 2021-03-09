@@ -1,6 +1,7 @@
 import ctypes
 import os
 import pathlib
+import platform
 import shutil
 import subprocess
 import sys
@@ -91,6 +92,22 @@ def test_extract_encrypted_2(tmp_path):
     assert archive.header.main_streams.unpackinfo.folders[1].coders[0]['method'] == CompressionMethod.CRYPT_AES256_SHA256
     assert archive.header.main_streams.unpackinfo.folders[1].coders[1]['method'] == CompressionMethod.LZMA2
     assert archive.header.main_streams.unpackinfo.folders[1].coders[2]['method'] == CompressionMethod.P7Z_BCJ
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
+def test_extract_encrypted_5(tmp_path):
+    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_5.7z').open(mode='rb'), password='secret')
+    archive.extractall(path=tmp_path)
+    archive.close()
+
+
+@pytest.mark.files
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
+def test_extract_encrypted_6(tmp_path):
+    archive = py7zr.SevenZipFile(testdata_path.joinpath('encrypted_6.7z').open(mode='rb'), password='secret')
     archive.extractall(path=tmp_path)
     archive.close()
 
@@ -194,7 +211,6 @@ def test_encrypt_file_3(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skip(reason="The combination which cannot handle correctly.")
 def test_encrypt_file_4(tmp_path):
     filters = [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_BZIP2}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath('src').mkdir()
@@ -236,6 +252,24 @@ def test_encrypt_file_6(tmp_path):
     with py7zr.SevenZipFile(target, mode='w', password="test123") as archive:
         archive.set_encrypted_header(True)
         archive.writeall('src', arcname='src')
+
+
+@pytest.mark.files
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
+def test_encrypt_file_7(tmp_path):
+    filters = [{"id": py7zr.FILTER_ZSTD}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
+    tmp_path.joinpath('src').mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, 'test_1.7z'), path=tmp_path.joinpath('src'))
+    target = tmp_path.joinpath('target.7z')
+    os.chdir(str(tmp_path.joinpath('src')))
+    archive = py7zr.SevenZipFile(target, 'w', password='secret', filters=filters)
+    archive.writeall('.')
+    archive.close()
+    #
+    tmp_path.joinpath('tgt').mkdir()
+    reader = py7zr.SevenZipFile(target, 'r', password='secret')
+    reader.extractall(path=tmp_path.joinpath('tgt'))
+    reader.close()
 
 
 @pytest.mark.files
