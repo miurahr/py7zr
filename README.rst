@@ -270,10 +270,7 @@ Required Python versions
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
-Minimum required version is Python 3.5.
-Two additional library is required only on Python3.5; contextlib2 and pathlib2.
-
-Compression is supported on Python 3.6 and later.
+Minimum required version is Python 3.6.
 Multi-volume archive creation issupported on Python 3.7 and later.
 
 There are other runtime requrements; texttable, pycryptodome
@@ -337,13 +334,13 @@ Package           Purpose
 ================  ================================
 `Pycryptodome`_   7zAES encryption
 `ppmd-cffi`_      PPMd compression
-`zstandard`_      ZStandard compression
+`pyzstd`_         ZStandard compression
 `texttable`_      CLI
 ================  ================================
 
 .. _`Pycryptodome` : https://pypi.org/project/pycryptodome/
 .. _`ppmd-cffi` : https://pypi.org/project/ppmd-cffi/
-.. _`zstandard` : https://pypi.org/project/zstandard
+.. _`pyzstd` : https://pypi.org/project/pyzstd
 .. _`texttable` : https://pypi.org/project/texttable
 
 
