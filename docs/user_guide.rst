@@ -130,7 +130,7 @@ You can write it with very clean syntax because py7zr supports context maanager.
 
     import py7zr
     with py7zr.SevenZipFile("Archive.7z", 'r') as archive:
-        archive.wxtractall(path="/tmp")
+        archive.extractall(path="/tmp")
 
 
 This example extract a 7-zip archive file "Archive.7z" into "/tmp" target directory.
