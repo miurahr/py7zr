@@ -24,7 +24,6 @@ import binascii
 import lzma
 import platform
 import sys
-from enum import Enum
 from typing import Any, Dict, Optional
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
@@ -93,11 +92,7 @@ ENCRYPTED_ARCHIVE_DEFAULT = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT},
 ENCRYPTED_HEADER_DEFAULT = [{'id': FILTER_CRYPTO_AES256_SHA256}]
 
 
-class ByteEnum(bytes, Enum):
-    pass
-
-
-class Property(ByteEnum):
+class Property:
     """Hold 7zip property fixed values."""
     END = binascii.unhexlify('00')
     HEADER = binascii.unhexlify('01')
@@ -127,7 +122,7 @@ class Property(ByteEnum):
     DUMMY = binascii.unhexlify('19')
 
 
-class CompressionMethod(ByteEnum):
+class CompressionMethod:
     """Hold fixed values for method parameter."""
     COPY = binascii.unhexlify('00')
     DELTA = binascii.unhexlify('03')

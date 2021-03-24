@@ -44,12 +44,7 @@ try:
     import bcj as BCJFilter  # type: ignore  # noqa
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
-try:
-    import pyzstd  # noqa
-
-    import py7zr.pyzstdfilter as Zstd  # type: ignore  # noqa
-except ImportError:
-    import py7zr.zstdfilter as Zstd  # type: ignore  # noqa
+import py7zr.pyzstdfilter as Zstd
 
 
 class ISevenZipCompressor(ABC):
