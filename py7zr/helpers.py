@@ -273,9 +273,8 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
     When called with Path object, return also Path object.
     When called with path argument as bytes, return result as a bytes.
     """
-    is_path_pathlib = isinstance(path, pathlib.Path)
     if sys.version_info >= (3, 9):
-        if is_path_pathlib and dir_fd is None:
+        if isinstance(path, pathlib.Path) and dir_fd is None:
             return path.readlink()
         else:
             return os.readlink(path, dir_fd=dir_fd)
@@ -284,7 +283,7 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
         # Hack to handle a wrong type of results
         if isinstance(res, bytes):
             res = os.fsdecode(res)
-        if is_path_pathlib:
+        if isinstance(path, pathlib.Path):
             return pathlib.Path(res)
         else:
             return res
