@@ -12,7 +12,6 @@ import py7zr.compressor
 import py7zr.pyzstdfilter
 from tests import p7zip_test
 
-
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
 
@@ -92,7 +91,6 @@ def test_pyzstd_compressor_1():
     assert outdata == compressed
 
 
-
 @pytest.mark.unit
 def test_pyzstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
@@ -104,7 +102,6 @@ def test_pyzstd_decompressor_1():
     decompressor = py7zr.pyzstdfilter.ZstdDecompressor(property)
     outdata = decompressor.decompress(compressed)
     assert outdata == plain_data
-
 
 
 @pytest.mark.unit
