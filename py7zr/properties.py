@@ -24,7 +24,6 @@ import binascii
 import lzma
 import platform
 import sys
-from enum import Enum
 from typing import Any, Dict, Optional
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
