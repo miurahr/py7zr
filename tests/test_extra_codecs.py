@@ -9,20 +9,9 @@ from Crypto.Cipher import AES
 
 import py7zr
 import py7zr.compressor
+import py7zr.pyzstdfilter
 from tests import p7zip_test
 
-try:
-    import zstandard  # type: ignore  # noqa
-
-    import py7zr.zstdfilter
-except ImportError:
-    zstandard = None
-try:
-    import pyzstd  # type: ignore  # noqa
-
-    import py7zr.pyzstdfilter
-except ImportError:
-    pyzstd = None
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath('data')
 os.umask(0o022)
@@ -91,21 +80,6 @@ def test_copy_decompressor():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
-def test_zstd_compressor_1():
-    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    compressor = py7zr.zstdfilter.ZstdCompressor(level=3)
-    outdata = compressor.compress(plain_data)
-    outdata = compressor.compress(plain_data)
-    outdata += compressor.flush()
-    compressed = b"\x28\xb5\x2f\xfd" \
-                 b"\x00XE\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
-                 b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
-    assert outdata == compressed
-
-
-@pytest.mark.unit
-@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
 def test_pyzstd_compressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     compressor = py7zr.pyzstdfilter.ZstdCompressor(level=3)
@@ -118,22 +92,8 @@ def test_pyzstd_compressor_1():
     assert outdata == compressed
 
 
-@pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
-def test_zstd_decompressor_1():
-    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    plain_data += plain_data
-    compressed = b"\x28\xb5\x2f\xfd"\
-                 b"\x00XE\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4" \
-                 b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
-    property = b'\x01\x04\x04\x00\x00'
-    decompressor = py7zr.zstdfilter.ZstdDecompressor(property)
-    outdata = decompressor.decompress(compressed)
-    assert outdata == plain_data
-
 
 @pytest.mark.unit
-@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
 def test_pyzstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
@@ -146,24 +106,8 @@ def test_pyzstd_decompressor_1():
     assert outdata == plain_data
 
 
-@pytest.mark.unit
-@pytest.mark.skipif(zstandard is None, reason="zstandard library is not exist.")
-def test_zstd_decompressor_2():
-    plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    plain_data += plain_data
-    compressed_0 = b"\x28\xb5\x2f\xfd"
-    compressed_1 = b" @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4"
-    compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
-    property = b'\x01\x04\x04\x00\x00'
-    decompressor = py7zr.zstdfilter.ZstdDecompressor(property)
-    outdata = decompressor.decompress(compressed_0)
-    outdata += decompressor.decompress(compressed_1)
-    outdata += decompressor.decompress(compressed_2)
-    assert outdata == plain_data
-
 
 @pytest.mark.unit
-@pytest.mark.skipif(pyzstd is None, reason="pyzstd library is not exist.")
 def test_pyzstd_decompressor_2():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
@@ -263,20 +207,6 @@ def test_extract_ppmd(tmp_path):
 @pytest.mark.files
 def test_extract_deflate(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath('deflate.7z').open(mode='rb')) as archive:
-        archive.extractall(path=tmp_path)
-
-
-@pytest.mark.files
-@pytest.mark.skipif(zstandard is None, reason="zstandard library does not exist.")
-def test_extract_zstd(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('zstd.7z').open(mode='rb')) as archive:
-        archive.extractall(path=tmp_path)
-
-
-@pytest.mark.files
-@pytest.mark.skipif(zstandard is None, reason="zstandard library does not exist.")
-def test_extract_p7zip_zstd(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath('p7zip-zstd.7z').open('rb')) as archive:
         archive.extractall(path=tmp_path)
 
 
