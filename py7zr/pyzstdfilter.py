@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+from typing import Optional
 
 import pyzstd
 
@@ -27,7 +28,7 @@ ZSTD_VERSION = (1, 4, 8)
 
 class ZstdCompressor:
 
-    def __init__(self, level):
+    def __init__(self, level: int, blocksize: Optional[int] = None ):
         self.compressor = pyzstd.ZstdCompressor(level)
 
     def compress(self, data):
@@ -39,7 +40,7 @@ class ZstdCompressor:
 
 class ZstdDecompressor:
 
-    def __init__(self, properties):
+    def __init__(self, properties, blocksize: Optional[int] = None):
         if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
         self.decompressor = pyzstd.ZstdDecompressor()

@@ -36,7 +36,7 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
-from py7zr.properties import RuntimeConstant
+from py7zr.properties import get_default_blocksize
 
 
 def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
@@ -411,9 +411,12 @@ class Buffer:
 
 class BufferedRW(io.BufferedIOBase):
 
-    def __init__(self):
+    def __init__(self, blocksize: Optional[int] = None):
         self._buf = bytearray()
-        self.block_size = RuntimeConstant().READ_BLOCKSIZE
+        if blocksize:
+            self.block_size = blocksize
+        else:
+            self.block_size = get_default_blocksize()
 
     def writable(self):
         return True

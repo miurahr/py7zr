@@ -38,24 +38,13 @@ COMMAND_HELP_STRING = '''<Commands>
 '''
 
 
-class RuntimeConstant:
-
-    __shared_state: Dict[Any, Any] = {}
-
-    def __init__(self, blocksize: Optional[int] = None):
-        self.__dict__ = self.__shared_state
-        if blocksize is not None:
-            self._READ_BLOCKSIZE: int = blocksize
-        elif platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
-            self._READ_BLOCKSIZE = 1048576
-        elif sys.version_info >= (3, 7, 5):
-            self._READ_BLOCKSIZE = 1048576
-        else:
-            self._READ_BLOCKSIZE = 32768
-
-    @property
-    def READ_BLOCKSIZE(self) -> int:
-        return self._READ_BLOCKSIZE
+def get_default_blocksize():
+    if platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
+        return 1048576
+    elif sys.version_info >= (3, 7, 5):
+        return 1048576
+    else:
+        return 32768
 
 
 # Exposed constants
@@ -92,8 +81,14 @@ ENCRYPTED_ARCHIVE_DEFAULT = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT},
 ENCRYPTED_HEADER_DEFAULT = [{'id': FILTER_CRYPTO_AES256_SHA256}]
 
 
-class Property:
+class Constant:
+    def __setattr__(self, *_):
+        pass
+
+
+class Property(Constant):
     """Hold 7zip property fixed values."""
+
     END = binascii.unhexlify('00')
     HEADER = binascii.unhexlify('01')
     ARCHIVE_PROPERTIES = binascii.unhexlify('02')
@@ -122,7 +117,10 @@ class Property:
     DUMMY = binascii.unhexlify('19')
 
 
-class CompressionMethod:
+PROPERTY = Property()
+
+
+class CompressionMethod(Constant):
     """Hold fixed values for method parameter."""
     COPY = binascii.unhexlify('00')
     DELTA = binascii.unhexlify('03')
@@ -165,3 +163,6 @@ class CompressionMethod:
     CRYPT_ZIPCRYPT = binascii.unhexlify('06f10101')
     CRYPT_RAR29AES = binascii.unhexlify('06f10303')
     CRYPT_AES256_SHA256 = binascii.unhexlify('06f10701')
+
+
+COMPRESSIONMETHOD = CompressionMethod()

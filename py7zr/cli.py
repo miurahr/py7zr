@@ -36,7 +36,7 @@ import py7zr
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
-from py7zr.properties import COMMAND_HELP_STRING, RuntimeConstant
+from py7zr.properties import COMMAND_HELP_STRING, get_default_blocksize
 
 
 class CliExtractCallback(ExtractCallback):
@@ -386,7 +386,7 @@ class Cli():
         chapters = 0
         written = [0, 0]
         total_size = filepath.stat().st_size
-        block_size = RuntimeConstant().READ_BLOCKSIZE
+        block_size = get_default_blocksize()
         with filepath.open('rb') as src:
             while written[0] <= total_size:
                 with open(str(filepath) + '.%03d' % chapters, 'wb') as tgt:
