@@ -37,7 +37,7 @@ from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
 from py7zr.properties import (FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2, FILTER_COPY, FILTER_CRYPTO_AES256_SHA256,
                               FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64, FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC,
-                              FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, COMPRESSIONMETHOD,
+                              FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD, MAGIC_7Z, COMPRESSION_METHOD,
                               get_default_blocksize)
 
 try:
@@ -90,7 +90,7 @@ class AESCompressor(ISevenZipCompressor):
         self.cycles = 19  # as same as p7zip
         self.iv = get_random_bytes(16)
         self.salt = b''
-        self.method = COMPRESSIONMETHOD.CRYPT_AES256_SHA256
+        self.method = COMPRESSION_METHOD.CRYPT_AES256_SHA256
         key = calculate_key(password.encode('utf-16LE'), self.cycles, self.salt, 'sha256')
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
@@ -743,35 +743,35 @@ class SupportedMethods:
     """Hold list of methods."""
 
     formats = [{'name': "7z", 'magic': MAGIC_7Z}]
-    methods = [{'id': COMPRESSIONMETHOD.COPY, 'name': 'COPY', 'native': False, 'need_prop': False,
+    methods = [{'id': COMPRESSION_METHOD.COPY, 'name': 'COPY', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_COPY, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.LZMA2, 'name': "LZMA2", 'native': True, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.LZMA2, 'name': "LZMA2", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_LZMA2, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.DELTA, 'name': "DELTA", 'native': True, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.DELTA, 'name': "DELTA", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_DELTA, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.LZMA, 'name': "LZMA", 'native': True, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.LZMA, 'name': "LZMA", 'native': True, 'need_prop': True,
                 'filter_id': FILTER_LZMA, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.P7Z_BCJ, 'name': "BCJ", 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.P7Z_BCJ, 'name': "BCJ", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_X86, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.BCJ_PPC, 'name': 'PPC', 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.BCJ_PPC, 'name': 'PPC', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_POWERPC, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.BCJ_IA64, 'name': 'IA64', 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.BCJ_IA64, 'name': 'IA64', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_IA64, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.BCJ_ARM, 'name': "ARM", 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.BCJ_ARM, 'name': "ARM", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_ARM, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.BCJ_ARMT, 'name': "ARMT", 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.BCJ_ARMT, 'name': "ARMT", 'native': True, 'need_prop': False,
                 'filter_id': FILTER_ARMTHUMB, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.BCJ_SPARC, 'name': 'SPARC', 'native': True, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.BCJ_SPARC, 'name': 'SPARC', 'native': True, 'need_prop': False,
                 'filter_id': FILTER_SPARC, 'type': MethodsType.filter},
-               {'id': COMPRESSIONMETHOD.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.MISC_DEFLATE, 'name': 'DEFLATE', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_DEFLATE, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.MISC_BZIP2, 'name': 'BZip2', 'native': False, 'need_prop': False,
+               {'id': COMPRESSION_METHOD.MISC_BZIP2, 'name': 'BZip2', 'native': False, 'need_prop': False,
                 'filter_id': FILTER_BZIP2, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.MISC_ZSTD, 'name': 'ZStandard', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_ZSTD, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.PPMD, 'name': 'PPMd', 'native': False, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.PPMD, 'name': 'PPMd', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_PPMD, 'type': MethodsType.compressor},
-               {'id': COMPRESSIONMETHOD.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False, 'need_prop': True,
+               {'id': COMPRESSION_METHOD.CRYPT_AES256_SHA256, 'name': '7zAES', 'native': False, 'need_prop': True,
                 'filter_id': FILTER_CRYPTO_AES256_SHA256, 'type': MethodsType.crypto},
                ]
 
@@ -860,9 +860,9 @@ def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
     # list of known method names with a display priority order
     methods_namelist = ['LZMA2', 'LZMA', 'BZip2', 'DEFLATE', 'DEFLATE64*', 'delta', 'COPY', 'PPMd', 'ZStandard',
                         'LZ4*', 'BCJ2*', 'BCJ', 'ARM', 'ARMT', 'IA64', 'PPC', 'SPARC', '7zAES']
-    unsupported_methods = {COMPRESSIONMETHOD.P7Z_BCJ2: 'BCJ2*',
-                           COMPRESSIONMETHOD.MISC_LZ4: 'LZ4*',
-                           COMPRESSIONMETHOD.MISC_DEFLATE64: 'DEFLATE64*'}
+    unsupported_methods = {COMPRESSION_METHOD.P7Z_BCJ2: 'BCJ2*',
+                           COMPRESSION_METHOD.MISC_LZ4: 'LZ4*',
+                           COMPRESSION_METHOD.MISC_DEFLATE64: 'DEFLATE64*'}
     methods_names = []
     for coders in coders_lists:
         for coder in coders:

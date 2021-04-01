@@ -35,7 +35,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, PROPERTY
+from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, PROPERTY
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b'\x00'
@@ -654,21 +654,21 @@ class FilesInfo:
         numemptystreams = 0
         while True:
             prop = fp.read(1)
-            if int(prop) == int(PROPERTY.END):
+            if prop == PROPERTY.END:
                 break
             size = read_uint64(fp)
-            if int(prop) == int(PROPERTY.DUMMY):
+            if prop == PROPERTY.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
                 continue
             buffer = io.BytesIO(fp.read(size))
-            if int(prop) == int(PROPERTY.EMPTY_STREAM):
+            if prop == PROPERTY.EMPTY_STREAM:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
                 list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
                 numemptystreams += isempty.count(True)
-            elif int(prop) == int(PROPERTY.EMPTY_FILE):
+            elif prop == PROPERTY.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
-            elif int(prop) == int(PROPERTY.NAME):
+            elif prop == PROPERTY.NAME:
                 external = buffer.read(1)
                 if external == b'\x00':
                     self._read_name(buffer)
@@ -678,13 +678,13 @@ class FilesInfo:
                     fp.seek(dataindex, 0)
                     self._read_name(fp)
                     fp.seek(current_pos, 0)
-            elif int(prop) == int(PROPERTY.CREATION_TIME):
+            elif prop == PROPERTY.CREATION_TIME:
                 self._read_times(buffer, 'creationtime')
-            elif int(prop) == int(PROPERTY.LAST_ACCESS_TIME):
+            elif prop == PROPERTY.LAST_ACCESS_TIME:
                 self._read_times(buffer, 'lastaccesstime')
-            elif int(prop) == int(PROPERTY.LAST_WRITE_TIME):
+            elif prop == PROPERTY.LAST_WRITE_TIME:
                 self._read_times(buffer, 'lastwritetime')
-            elif int(prop) == int(PROPERTY.ATTRIBUTES):
+            elif prop == PROPERTY.ATTRIBUTES:
                 defined = read_boolean(buffer, numfiles, checkall=True)
                 external = buffer.read(1)
                 if external == b'\x00':
@@ -696,7 +696,7 @@ class FilesInfo:
                     fp.seek(dataindex, 0)
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
-            elif int(prop) == int(PROPERTY.START_POS):
+            elif prop == PROPERTY.START_POS:
                 self._read_start_pos(buffer)
             else:
                 raise Bad7zFile('invalid type %r' % prop)  # pragma: no-cover
@@ -943,10 +943,10 @@ class Header:
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
         startpos = file.tell()
         if encrypted:
-            filters = ENCRYPTED_HEADER_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_HEADER_FILTER
             startpos, headercrc = self._encode_header(file, afterheader, filters)
         elif encoded:
-            filters = ENCODED_HEADER_DEFAULT
+            filters = DEFAULT_FILTERS.ENCODED_HEADER_FILTER
             startpos, headercrc = self._encode_header(file, afterheader, filters)
         else:
             crcfile = WriteWithCrc(file)

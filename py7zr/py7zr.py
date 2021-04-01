@@ -42,7 +42,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, get_default_blocksize
+from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
 
 if sys.platform.startswith('win'):
     import _winapi
@@ -599,9 +599,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _prepare_append(self, filters, password):
         if password is not None and filters is None:
-            filters = ENCRYPTED_ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_ARCHIVE_FILTER
         elif filters is None:
-            filters = ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
         folder = Folder()
@@ -617,9 +617,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _prepare_write(self, filters, password):
         if password is not None and filters is None:
-            filters = ENCRYPTED_ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_ARCHIVE_FILTER
         elif filters is None:
-            filters = ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
         folder = Folder()

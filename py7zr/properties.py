@@ -24,7 +24,7 @@ import binascii
 import lzma
 import platform
 import sys
-from typing import Any, Dict, Optional
+
 
 MAGIC_7Z = binascii.unhexlify('377abcaf271c')
 FINISH_7Z = binascii.unhexlify('377abcaf271d')
@@ -75,15 +75,22 @@ FILTER_COPY = 0x33
 FILTER_ZSTD = 0x35
 FILTER_PPMD = 0x36
 
-ARCHIVE_DEFAULT = [{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}]
-ENCODED_HEADER_DEFAULT = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}]
-ENCRYPTED_ARCHIVE_DEFAULT = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]
-ENCRYPTED_HEADER_DEFAULT = [{'id': FILTER_CRYPTO_AES256_SHA256}]
-
 
 class Constant:
+    """Constant base class."""
     def __setattr__(self, *_):
         pass
+
+
+class DefaultFilters(Constant):
+    """Default filter values."""
+    ARCHIVE_FILTER = [{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}]
+    ENCODED_HEADER_FILTER = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}]
+    ENCRYPTED_ARCHIVE_FILTER = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]
+    ENCRYPTED_HEADER_FILTER = [{'id': FILTER_CRYPTO_AES256_SHA256}]
+
+
+DEFAULT_FILTERS = DefaultFilters()
 
 
 class Property(Constant):
@@ -165,4 +172,4 @@ class CompressionMethod(Constant):
     CRYPT_AES256_SHA256 = binascii.unhexlify('06f10701')
 
 
-COMPRESSIONMETHOD = CompressionMethod()
+COMPRESSION_METHOD = CompressionMethod()
