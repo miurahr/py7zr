@@ -9,7 +9,6 @@ from Crypto.Cipher import AES
 
 import py7zr
 import py7zr.compressor
-import py7zr.pyzstdfilter
 from tests import p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -85,7 +84,7 @@ def test_copy_decompressor():
 @pytest.mark.unit
 def test_pyzstd_compressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
-    compressor = py7zr.pyzstdfilter.ZstdCompressor(level=3)
+    compressor = py7zr.compressor.ZstdCompressor(level=3)
     outdata = compressor.compress(plain_data)
     outdata = compressor.compress(plain_data)
     outdata += compressor.flush()
@@ -107,7 +106,7 @@ def test_pyzstd_decompressor_1():
         b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     )
     property = b"\x01\x04\x04\x00\x00"
-    decompressor = py7zr.pyzstdfilter.ZstdDecompressor(property)
+    decompressor = py7zr.compressor.ZstdDecompressor(property)
     outdata = decompressor.decompress(compressed)
     assert outdata == plain_data
 
@@ -120,7 +119,7 @@ def test_pyzstd_decompressor_2():
     compressed_1 = b" @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4"
     compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     property = b"\x01\x04\x04\x00\x00"
-    decompressor = py7zr.pyzstdfilter.ZstdDecompressor(property)
+    decompressor = py7zr.compressor.ZstdDecompressor(property)
     outdata = decompressor.decompress(compressed_0)
     outdata += decompressor.decompress(compressed_1)
     outdata += decompressor.decompress(compressed_2)

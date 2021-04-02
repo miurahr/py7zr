@@ -30,6 +30,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import ppmd as Ppmd  # type: ignore
+import pyzstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
@@ -60,7 +61,8 @@ try:
     import bcj as BCJFilter  # type: ignore  # noqa
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
-import py7zr.pyzstdfilter as Zstd
+
+ZSTD_VERSION = (1, 4, 8)
 
 
 class ISevenZipCompressor(ABC):
@@ -407,8 +409,29 @@ class BCJEncoder(ISevenZipCompressor):
         return self.encoder.flush()
 
 
+class ZstdCompressor:
+    def __init__(self, level):
+        self.compressor = pyzstd.ZstdCompressor(level)
+
+    def compress(self, data):
+        return self.compressor.compress(data)
+
+    def flush(self):
+        return self.compressor.flush()
+
+
+class ZstdDecompressor:
+    def __init__(self, properties):
+        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > ZSTD_VERSION:
+            raise UnsupportedCompressionMethodError
+        self.decompressor = pyzstd.ZstdDecompressor()
+
+    def decompress(self, data):
+        return self.decompressor.decompress(data)
+
+
 algorithm_class_map = {
-    FILTER_ZSTD: (Zstd.ZstdCompressor, Zstd.ZstdDecompressor),
+    FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
     FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
@@ -685,7 +708,7 @@ class SevenZipCompressor:
         elif SupportedMethods.need_property(filter_id):
             if filter_id == FILTER_ZSTD:
                 level = alt_filter.get("level", 3)
-                properties = struct.pack("BBBBB", Zstd.ZSTD_VERSION[0], Zstd.ZSTD_VERSION[1], level, 0, 0)
+                properties = struct.pack("BBBBB", ZSTD_VERSION[0], ZSTD_VERSION[1], level, 0, 0)
                 compressor = algorithm_class_map[filter_id][0](level=level)
             elif filter_id == FILTER_PPMD:
                 order = alt_filter.get("level", 6)
