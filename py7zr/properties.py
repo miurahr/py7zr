@@ -26,16 +26,16 @@ import platform
 import sys
 from typing import Any, Dict, Optional
 
-MAGIC_7Z = binascii.unhexlify('377abcaf271c')
-FINISH_7Z = binascii.unhexlify('377abcaf271d')
+MAGIC_7Z = binascii.unhexlify("377abcaf271c")
+FINISH_7Z = binascii.unhexlify("377abcaf271d")
 
-COMMAND_HELP_STRING = '''<Commands>
+COMMAND_HELP_STRING = """<Commands>
   c : Create archive with files
   i : Show information about supported formats
   l : List contents of archive
   t : Test integrity of archive
   x : eXtract files with full paths
-'''
+"""
 
 
 class RuntimeConstant:
@@ -46,7 +46,11 @@ class RuntimeConstant:
         self.__dict__ = self.__shared_state
         if blocksize is not None:
             self._READ_BLOCKSIZE: int = blocksize
-        elif platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
+        elif platform.python_implementation() == "PyPy" and sys.version_info >= (
+            3,
+            6,
+            9,
+        ):
             self._READ_BLOCKSIZE = 1048576
         elif sys.version_info >= (3, 7, 5):
             self._READ_BLOCKSIZE = 1048576
@@ -86,82 +90,90 @@ FILTER_COPY = 0x33
 FILTER_ZSTD = 0x35
 FILTER_PPMD = 0x36
 
-ARCHIVE_DEFAULT = [{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}]
+ARCHIVE_DEFAULT = [
+    {"id": FILTER_X86},
+    {"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT},
+]
 ENCODED_HEADER_DEFAULT = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}]
-ENCRYPTED_ARCHIVE_DEFAULT = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]
-ENCRYPTED_HEADER_DEFAULT = [{'id': FILTER_CRYPTO_AES256_SHA256}]
+ENCRYPTED_ARCHIVE_DEFAULT = [
+    {"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT},
+    {"id": FILTER_CRYPTO_AES256_SHA256},
+]
+ENCRYPTED_HEADER_DEFAULT = [{"id": FILTER_CRYPTO_AES256_SHA256}]
 
 
 class Property:
     """Hold 7zip property fixed values."""
-    END = binascii.unhexlify('00')
-    HEADER = binascii.unhexlify('01')
-    ARCHIVE_PROPERTIES = binascii.unhexlify('02')
-    ADDITIONAL_STREAMS_INFO = binascii.unhexlify('03')
-    MAIN_STREAMS_INFO = binascii.unhexlify('04')
-    FILES_INFO = binascii.unhexlify('05')
-    PACK_INFO = binascii.unhexlify('06')
-    UNPACK_INFO = binascii.unhexlify('07')
-    SUBSTREAMS_INFO = binascii.unhexlify('08')
-    SIZE = binascii.unhexlify('09')
-    CRC = binascii.unhexlify('0a')
-    FOLDER = binascii.unhexlify('0b')
-    CODERS_UNPACK_SIZE = binascii.unhexlify('0c')
-    NUM_UNPACK_STREAM = binascii.unhexlify('0d')
-    EMPTY_STREAM = binascii.unhexlify('0e')
-    EMPTY_FILE = binascii.unhexlify('0f')
-    ANTI = binascii.unhexlify('10')
-    NAME = binascii.unhexlify('11')
-    CREATION_TIME = binascii.unhexlify('12')
-    LAST_ACCESS_TIME = binascii.unhexlify('13')
-    LAST_WRITE_TIME = binascii.unhexlify('14')
-    ATTRIBUTES = binascii.unhexlify('15')
-    COMMENT = binascii.unhexlify('16')
-    ENCODED_HEADER = binascii.unhexlify('17')
-    START_POS = binascii.unhexlify('18')
-    DUMMY = binascii.unhexlify('19')
+
+    END = binascii.unhexlify("00")
+    HEADER = binascii.unhexlify("01")
+    ARCHIVE_PROPERTIES = binascii.unhexlify("02")
+    ADDITIONAL_STREAMS_INFO = binascii.unhexlify("03")
+    MAIN_STREAMS_INFO = binascii.unhexlify("04")
+    FILES_INFO = binascii.unhexlify("05")
+    PACK_INFO = binascii.unhexlify("06")
+    UNPACK_INFO = binascii.unhexlify("07")
+    SUBSTREAMS_INFO = binascii.unhexlify("08")
+    SIZE = binascii.unhexlify("09")
+    CRC = binascii.unhexlify("0a")
+    FOLDER = binascii.unhexlify("0b")
+    CODERS_UNPACK_SIZE = binascii.unhexlify("0c")
+    NUM_UNPACK_STREAM = binascii.unhexlify("0d")
+    EMPTY_STREAM = binascii.unhexlify("0e")
+    EMPTY_FILE = binascii.unhexlify("0f")
+    ANTI = binascii.unhexlify("10")
+    NAME = binascii.unhexlify("11")
+    CREATION_TIME = binascii.unhexlify("12")
+    LAST_ACCESS_TIME = binascii.unhexlify("13")
+    LAST_WRITE_TIME = binascii.unhexlify("14")
+    ATTRIBUTES = binascii.unhexlify("15")
+    COMMENT = binascii.unhexlify("16")
+    ENCODED_HEADER = binascii.unhexlify("17")
+    START_POS = binascii.unhexlify("18")
+    DUMMY = binascii.unhexlify("19")
 
 
 class CompressionMethod:
     """Hold fixed values for method parameter."""
-    COPY = binascii.unhexlify('00')
-    DELTA = binascii.unhexlify('03')
-    BCJ = binascii.unhexlify('04')
-    PPC = binascii.unhexlify('05')
-    IA64 = binascii.unhexlify('06')
-    ARM = binascii.unhexlify('07')
-    ARMT = binascii.unhexlify('08')
-    SPARC = binascii.unhexlify('09')
+
+    COPY = binascii.unhexlify("00")
+    DELTA = binascii.unhexlify("03")
+    BCJ = binascii.unhexlify("04")
+    PPC = binascii.unhexlify("05")
+    IA64 = binascii.unhexlify("06")
+    ARM = binascii.unhexlify("07")
+    ARMT = binascii.unhexlify("08")
+    SPARC = binascii.unhexlify("09")
     # SWAP = 02..
-    SWAP2 = binascii.unhexlify('020302')
-    SWAP4 = binascii.unhexlify('020304')
+    SWAP2 = binascii.unhexlify("020302")
+    SWAP4 = binascii.unhexlify("020304")
     # 7Z = 03..
-    LZMA = binascii.unhexlify('030101')
-    PPMD = binascii.unhexlify('030401')
-    P7Z_BCJ = binascii.unhexlify('03030103')
-    P7Z_BCJ2 = binascii.unhexlify('0303011B')
-    BCJ_PPC = binascii.unhexlify('03030205')
-    BCJ_IA64 = binascii.unhexlify('03030401')
-    BCJ_ARM = binascii.unhexlify('03030501')
-    BCJ_ARMT = binascii.unhexlify('03030701')
-    BCJ_SPARC = binascii.unhexlify('03030805')
-    LZMA2 = binascii.unhexlify('21')
+    LZMA = binascii.unhexlify("030101")
+    PPMD = binascii.unhexlify("030401")
+    P7Z_BCJ = binascii.unhexlify("03030103")
+    P7Z_BCJ2 = binascii.unhexlify("0303011B")
+    BCJ_PPC = binascii.unhexlify("03030205")
+    BCJ_IA64 = binascii.unhexlify("03030401")
+    BCJ_ARM = binascii.unhexlify("03030501")
+    BCJ_ARMT = binascii.unhexlify("03030701")
+    BCJ_SPARC = binascii.unhexlify("03030805")
+    LZMA2 = binascii.unhexlify("21")
     # MISC : 04..
-    MISC_ZIP = binascii.unhexlify('0401')
-    MISC_BZIP2 = binascii.unhexlify('040202')
-    MISC_DEFLATE = binascii.unhexlify('040108')
-    MISC_DEFLATE64 = binascii.unhexlify('040109')
-    MISC_Z = binascii.unhexlify('0405')
-    MISC_LZH = binascii.unhexlify('0406')
-    NSIS_DEFLATE = binascii.unhexlify('040901')
-    NSIS_BZIP2 = binascii.unhexlify('040902')
+    MISC_ZIP = binascii.unhexlify("0401")
+    MISC_BZIP2 = binascii.unhexlify("040202")
+    MISC_DEFLATE = binascii.unhexlify("040108")
+    MISC_DEFLATE64 = binascii.unhexlify("040109")
+    MISC_Z = binascii.unhexlify("0405")
+    MISC_LZH = binascii.unhexlify("0406")
+    NSIS_DEFLATE = binascii.unhexlify("040901")
+    NSIS_BZIP2 = binascii.unhexlify("040902")
     #
-    MISC_ZSTD = binascii.unhexlify('04f71101')
-    MISC_BROTLI = binascii.unhexlify('04f71102')
-    MISC_LZ4 = binascii.unhexlify('04f71104')
-    MISC_LZS = binascii.unhexlify('04f71105')
-    MISC_LIZARD = binascii.unhexlify('04f71106')
+    MISC_ZSTD = binascii.unhexlify("04f71101")
+    MISC_BROTLI = binascii.unhexlify("04f71102")
+    MISC_LZ4 = binascii.unhexlify("04f71104")
+    MISC_LZS = binascii.unhexlify("04f71105")
+    MISC_LIZARD = binascii.unhexlify("04f71106")
     # CRYPTO 06..
-    CRYPT_ZIPCRYPT = binascii.unhexlify('06f10101')
-    CRYPT_RAR29AES = binascii.unhexlify('06f10303')
-    CRYPT_AES256_SHA256 = binascii.unhexlify('06f10701')
+    CRYPT_ZIPCRYPT = binascii.unhexlify("06f10101")
+    CRYPT_RAR29AES = binascii.unhexlify("06f10303")
+    CRYPT_AES256_SHA256 = binascii.unhexlify("06f10701")

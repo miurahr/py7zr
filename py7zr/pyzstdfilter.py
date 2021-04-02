@@ -26,7 +26,6 @@ ZSTD_VERSION = (1, 4, 8)
 
 
 class ZstdCompressor:
-
     def __init__(self, level):
         self.compressor = pyzstd.ZstdCompressor(level)
 
@@ -38,7 +37,6 @@ class ZstdCompressor:
 
 
 class ZstdDecompressor:
-
     def __init__(self, properties):
         if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > ZSTD_VERSION:
             raise UnsupportedCompressionMethodError

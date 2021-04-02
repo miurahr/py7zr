@@ -38,13 +38,13 @@ from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, Property
 
 MAX_LENGTH = 65536
-P7ZIP_MAJOR_VERSION = b'\x00'
-P7ZIP_MINOR_VERSION = b'\x04'
+P7ZIP_MAJOR_VERSION = b"\x00"
+P7ZIP_MINOR_VERSION = b"\x04"
 
 
 def read_crcs(file: BinaryIO, count: int) -> List[int]:
     data = file.read(4 * count)
-    return [unpack('<L', data[i * 4:i * 4 + 4])[0] for i in range(count)]
+    return [unpack("<L", data[i * 4 : i * 4 + 4])[0] for i in range(count)]
 
 
 def write_crcs(file: BinaryIO, crcs):
@@ -68,20 +68,20 @@ def write_byte(file: BinaryIO, data):
 def read_real_uint64(file: BinaryIO) -> Tuple[int, bytes]:
     """read 8 bytes, return unpacked value as a little endian unsigned long long, and raw data."""
     res = file.read(8)
-    a = unpack('<Q', res)[0]
+    a = unpack("<Q", res)[0]
     return a, res
 
 
 def read_uint32(file: BinaryIO) -> Tuple[int, bytes]:
     """read 4 bytes, return unpacked value as a little endian unsigned long, and raw data."""
     res = file.read(4)
-    a = unpack('<L', res)[0]
+    a = unpack("<L", res)[0]
     return a, res
 
 
 def write_uint32(file: BinaryIO, value):
     """write uint32 value in 4 bytes."""
-    b = pack('<L', value)
+    b = pack("<L", value)
     file.write(b)
 
 
@@ -90,8 +90,16 @@ def read_uint64(file: BinaryIO) -> int:
     b = ord(file.read(1))
     if b == 255:
         return read_real_uint64(file)[0]
-    blen = [(0b01111111, 0), (0b10111111, 1), (0b11011111, 2), (0b11101111, 3),
-            (0b11110111, 4), (0b11111011, 5), (0b11111101, 6), (0b11111110, 7)]
+    blen = [
+        (0b01111111, 0),
+        (0b10111111, 1),
+        (0b11011111, 2),
+        (0b11101111, 3),
+        (0b11110111, 4),
+        (0b11111011, 5),
+        (0b11111101, 6),
+        (0b11111110, 7),
+    ]
     mask = 0x80
     vlen = 8
     for v, l in blen:
@@ -102,14 +110,14 @@ def read_uint64(file: BinaryIO) -> int:
     if vlen == 0:
         return b & (mask - 1)
     val = file.read(vlen)
-    value = int.from_bytes(val, byteorder='little')
+    value = int.from_bytes(val, byteorder="little")
     highpart = b & (mask - 1)
     return value + (highpart << (vlen * 8))
 
 
 def write_real_uint64(file: BinaryIO, value: int):
     """write 8 bytes, as an unsigned long long."""
-    file.write(pack('<Q', value))
+    file.write(pack("<Q", value))
 
 
 def write_uint64(file: BinaryIO, value: int):
@@ -128,32 +136,32 @@ def write_uint64(file: BinaryIO, value: int):
     |  11111111    BYTE y[8]  :                         y
     """
     if value < 0x80:
-        file.write(pack('B', value))
+        file.write(pack("B", value))
         return
-    if value > 0x01ffffffffffffff:
-        file.write(b'\xff')
-        file.write(value.to_bytes(8, 'little'))
+    if value > 0x01FFFFFFFFFFFFFF:
+        file.write(b"\xff")
+        file.write(value.to_bytes(8, "little"))
         return
     byte_length = (value.bit_length() + 7) // 8
-    ba = bytearray(value.to_bytes(byte_length, 'little'))
+    ba = bytearray(value.to_bytes(byte_length, "little"))
     high_byte = int(ba[-1])
     if high_byte < 2 << (8 - byte_length - 1):
         for x in range(byte_length - 1):
             high_byte |= 0x80 >> x
-        file.write(pack('B', high_byte))
-        file.write(ba[:byte_length - 1])
+        file.write(pack("B", high_byte))
+        file.write(ba[: byte_length - 1])
     else:
         mask = 0x80
         for x in range(byte_length):
             mask |= 0x80 >> x
-        file.write(pack('B', mask))
+        file.write(pack("B", mask))
         file.write(ba)
 
 
 def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> List[bool]:
     if checkall:
         all_defined = file.read(1)
-        if all_defined != unhexlify('00'):
+        if all_defined != unhexlify("00"):
             return [True] * count
     result = []
     b = 0
@@ -169,10 +177,10 @@ def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> List[boo
 
 def write_boolean(file: BinaryIO, booleans: List[bool], all_defined: bool = False):
     if all_defined and reduce(and_, booleans, True):
-        file.write(b'\x01')
+        file.write(b"\x01")
         return
     elif all_defined:
-        file.write(b'\x00')
+        file.write(b"\x00")
     o = bytearray(-(-len(booleans) // 8))
     for i, b in enumerate(booleans):
         if b:
@@ -182,30 +190,38 @@ def write_boolean(file: BinaryIO, booleans: List[bool], all_defined: bool = Fals
 
 def read_utf16(file: BinaryIO) -> str:
     """read a utf-16 string from file"""
-    val = ''
+    val = ""
     for _ in range(MAX_LENGTH):
         ch = file.read(2)
-        if ch == unhexlify('0000'):
+        if ch == unhexlify("0000"):
             break
-        val += ch.decode('utf-16LE')
+        val += ch.decode("utf-16LE")
     return val
 
 
 def write_utf16(file: BinaryIO, val: str):
     """write a utf-16 string to file"""
     for c in val:
-        file.write(c.encode('utf-16LE'))
-    file.write(b'\x00\x00')
+        file.write(c.encode("utf-16LE"))
+    file.write(b"\x00\x00")
 
 
 def bits_to_bytes(bit_length: int) -> int:
-    return - (-bit_length // 8)
+    return -(-bit_length // 8)
 
 
 class PackInfo:
     """ information about packed streams """
 
-    __slots__ = ['packpos', 'numstreams', 'packsizes', 'packpositions', 'crcs', 'digestdefined', 'enable_digests']
+    __slots__ = [
+        "packpos",
+        "numstreams",
+        "packsizes",
+        "packpositions",
+        "crcs",
+        "digestdefined",
+        "enable_digests",
+    ]
 
     def __init__(self) -> None:
         self.packpos = 0  # type: int
@@ -234,7 +250,7 @@ class PackInfo:
                         self.crcs.append(read_uint32(file)[0])
                 pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover  # noqa
+            raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover  # noqa
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
         return self
 
@@ -270,7 +286,7 @@ class Bond:
 
 
 class Folder:
-    """ a "Folder" represents a stream of compressed data.
+    """a "Folder" represents a stream of compressed data.
     coders: list of coder
     num_coders: length of coders
     coder: hash list
@@ -278,8 +294,21 @@ class Folder:
     unpacksizes: uncompressed sizes of outstreams
     """
 
-    __slots__ = ['unpacksizes', 'solid', 'coders', 'digestdefined', 'num_bindpairs', 'num_packedstreams',
-                 'bindpairs', 'packed_indices', 'crc', 'compressor', 'decompressor', 'files', 'password']
+    __slots__ = [
+        "unpacksizes",
+        "solid",
+        "coders",
+        "digestdefined",
+        "num_bindpairs",
+        "num_packedstreams",
+        "bindpairs",
+        "packed_indices",
+        "crc",
+        "compressor",
+        "decompressor",
+        "files",
+        "password",
+    ]
 
     def __init__(self) -> None:
         self.unpacksizes = []  # type: List[int]
@@ -310,30 +339,35 @@ class Folder:
         totalout = 0
         for _ in range(num_coders):
             b = read_byte(file)
-            methodsize = b & 0xf
+            methodsize = b & 0xF
             iscomplex = b & 0x10 == 0x10
             hasattributes = b & 0x20 == 0x20
             if methodsize > 0:
-                c = {'method': file.read(methodsize)}  # type: Dict[str, Any]
+                c = {"method": file.read(methodsize)}  # type: Dict[str, Any]
             else:
-                c = {'method': b'\x00'}
+                c = {"method": b"\x00"}
             if iscomplex:
-                c['numinstreams'] = read_uint64(file)
-                c['numoutstreams'] = read_uint64(file)
+                c["numinstreams"] = read_uint64(file)
+                c["numoutstreams"] = read_uint64(file)
             else:
-                c['numinstreams'] = 1
-                c['numoutstreams'] = 1
-            totalin += c['numinstreams']
-            totalout += c['numoutstreams']
+                c["numinstreams"] = 1
+                c["numoutstreams"] = 1
+            totalin += c["numinstreams"]
+            totalout += c["numoutstreams"]
             if hasattributes:
                 proplen = read_uint64(file)
-                c['properties'] = file.read(proplen)
+                c["properties"] = file.read(proplen)
             else:
-                c['properties'] = None
+                c["properties"] = None
             self.coders.append(c)
         num_bindpairs = totalout - 1
         for i in range(num_bindpairs):
-            self.bindpairs.append(Bond(read_uint64(file), read_uint64(file),))
+            self.bindpairs.append(
+                Bond(
+                    read_uint64(file),
+                    read_uint64(file),
+                )
+            )
         num_packedstreams = totalin - num_bindpairs
         if num_packedstreams == 1:
             for i in range(totalin):
@@ -349,37 +383,39 @@ class Folder:
         assert len(self.coders) > 0
         self.solid = True
         self.digestdefined = False
-        num_bindpairs = sum([c['numoutstreams'] for c in self.coders]) - 1
+        num_bindpairs = sum([c["numoutstreams"] for c in self.coders]) - 1
         self.bindpairs = [Bond(incoder=i + 1, outcoder=i) for i in range(num_bindpairs)]
         # Only simple codecs are suport, assert it
-        assert sum([c['numinstreams'] for c in self.coders]) == sum([c['numoutstreams'] for c in self.coders])
+        assert sum([c["numinstreams"] for c in self.coders]) == sum([c["numoutstreams"] for c in self.coders])
 
     def write(self, file: BinaryIO):
         num_coders = len(self.coders)
         write_uint64(file, num_coders)
         for i, c in enumerate(self.coders):
-            id = c['method']  # type: bytes
-            id_size = len(id) & 0x0f
+            id = c["method"]  # type: bytes
+            id_size = len(id) & 0x0F
             iscomplex = 0x10 if not self.is_simple(c) else 0x00
-            hasattributes = 0x20 if c['properties'] is not None else 0x00
-            flag = struct.pack('B', id_size | iscomplex | hasattributes)
+            hasattributes = 0x20 if c["properties"] is not None else 0x00
+            flag = struct.pack("B", id_size | iscomplex | hasattributes)
             write_byte(file, flag)
             write_bytes(file, id[:id_size])
             if not self.is_simple(c):  # pragma: no-cover  # Only support simple coders
-                write_uint64(file, c['numinstreams'])
-                write_uint64(file, c['numoutstreams'])
-            if c['properties'] is not None:
-                write_uint64(file, len(c['properties']))
-                write_bytes(file, c['properties'])
+                write_uint64(file, c["numinstreams"])
+                write_uint64(file, c["numoutstreams"])
+            if c["properties"] is not None:
+                write_uint64(file, len(c["properties"]))
+                write_bytes(file, c["properties"])
         for bond in self.bindpairs:
             write_uint64(file, bond.incoder)
             write_uint64(file, bond.outcoder)
-        if sum([c['numinstreams'] for c in self.coders]) - sum([c['numoutstreams'] for c in self.coders]) > 0:  # pragma: no-cover  # noqa
+        if (
+            sum([c["numinstreams"] for c in self.coders]) - sum([c["numoutstreams"] for c in self.coders]) > 0
+        ):  # pragma: no-cover  # noqa
             for pi in self.packed_indices:
                 write_uint64(file, pi)
 
     def is_simple(self, coder):
-        return coder['numinstreams'] == 1 and coder['numoutstreams'] == 1
+        return coder["numinstreams"] == 1 and coder["numoutstreams"] == 1
 
     def get_decompressor(self, packsize: int, reset: bool = False) -> SevenZipDecompressor:
         if self.decompressor is not None and not reset:
@@ -416,7 +452,7 @@ class Folder:
 class UnpackInfo:
     """ combines multiple folders """
 
-    __slots__ = ['numfolders', 'folders', 'datastreamidx']
+    __slots__ = ["numfolders", "folders", "datastreamidx"]
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -432,7 +468,7 @@ class UnpackInfo:
     def _read(self, file: BinaryIO):
         pid = file.read(1)
         if pid != Property.FOLDER:
-            raise Bad7zFile('folder id expected but %s found' % repr(pid))  # pragma: no-cover
+            raise Bad7zFile("folder id expected but %s found" % repr(pid))  # pragma: no-cover
         self.numfolders = read_uint64(file)
         self.folders = []
         external = read_byte(file)
@@ -449,10 +485,10 @@ class UnpackInfo:
     def _retrieve_coders_info(self, file: BinaryIO):
         pid = file.read(1)
         if pid != Property.CODERS_UNPACK_SIZE:
-            raise Bad7zFile('coders unpack size id expected but %s found' % repr(pid))  # pragma: no-cover
+            raise Bad7zFile("coders unpack size id expected but %s found" % repr(pid))  # pragma: no-cover
         for folder in self.folders:
             for c in folder.coders:
-                for _ in range(c['numoutstreams']):
+                for _ in range(c["numoutstreams"]):
                     folder.unpacksizes.append(read_uint64(file))
         pid = file.read(1)
         if pid == Property.CRC:
@@ -463,14 +499,16 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but 0x{:02x} found at 0x{:08x}'.format(ord(pid), file.tell()))  # pragma: no-cover  # noqa
+            raise Bad7zFile(
+                "end id expected but 0x{:02x} found at 0x{:08x}".format(ord(pid), file.tell())
+            )  # pragma: no-cover  # noqa
 
     def write(self, file: BinaryIO):
         assert self.numfolders == len(self.folders)
         file.write(Property.UNPACK_INFO)
         file.write(Property.FOLDER)
         write_uint64(file, self.numfolders)
-        write_byte(file, b'\x00')
+        write_byte(file, b"\x00")
         for folder in self.folders:
             folder.write(file)
         # If support external entity, we may write
@@ -490,7 +528,12 @@ class UnpackInfo:
 class SubstreamsInfo:
     """ defines the substreams of a folder """
 
-    __slots__ = ['digests', 'digestsdefined', 'unpacksizes', 'num_unpackstreams_folders']
+    __slots__ = [
+        "digests",
+        "digestsdefined",
+        "unpacksizes",
+        "num_unpackstreams_folders",
+    ]
 
     def __init__(self):
         self.digests = []  # type: List[int]
@@ -545,7 +588,7 @@ class SubstreamsInfo:
                         didx += 1
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %r found' % pid)  # pragma: no-cover
+            raise Bad7zFile("end id expected but %r found" % pid)  # pragma: no-cover
         if not self.digestsdefined:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
@@ -579,7 +622,7 @@ class SubstreamsInfo:
 class StreamsInfo:
     """ information about compressed streams """
 
-    __slots__ = ['packinfo', 'unpackinfo', 'substreamsinfo']
+    __slots__ = ["packinfo", "unpackinfo", "substreamsinfo"]
 
     def __init__(self):
         self.packinfo = None  # type: PackInfo
@@ -604,7 +647,7 @@ class StreamsInfo:
             self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % repr(pid))  # pragma: no-cover
+            raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover
 
     def write(self, file: BinaryIO):
         write_byte(file, Property.MAIN_STREAMS_INFO)
@@ -618,7 +661,6 @@ class StreamsInfo:
 
 
 class HeaderStreamsInfo(StreamsInfo):
-
     def __init__(self):
         super().__init__()
         self.packinfo = PackInfo()
@@ -635,7 +677,7 @@ class HeaderStreamsInfo(StreamsInfo):
 class FilesInfo:
     """ holds file properties """
 
-    __slots__ = ['files', 'emptyfiles', 'antifiles']
+    __slots__ = ["files", "emptyfiles", "antifiles"]
 
     def __init__(self):
         self.files = []  # type: List[Dict[str, Any]]
@@ -650,7 +692,7 @@ class FilesInfo:
 
     def _read(self, fp: BinaryIO):
         numfiles = read_uint64(fp)
-        self.files = [{'emptystream': False} for _ in range(numfiles)]
+        self.files = [{"emptystream": False} for _ in range(numfiles)]
         numemptystreams = 0
         while True:
             prop = fp.read(1)
@@ -664,13 +706,13 @@ class FilesInfo:
             buffer = io.BytesIO(fp.read(size))
             if prop == Property.EMPTY_STREAM:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
-                list(map(lambda x, y: x.update({'emptystream': y}), self.files, isempty))  # type: ignore
+                list(map(lambda x, y: x.update({"emptystream": y}), self.files, isempty))  # type: ignore
                 numemptystreams += isempty.count(True)
             elif prop == Property.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
             elif prop == Property.NAME:
                 external = buffer.read(1)
-                if external == b'\x00':
+                if external == b"\x00":
                     self._read_name(buffer)
                 else:  # pragma: no-cover
                     dataindex = read_uint64(buffer)
@@ -679,15 +721,15 @@ class FilesInfo:
                     self._read_name(fp)
                     fp.seek(current_pos, 0)
             elif prop == Property.CREATION_TIME:
-                self._read_times(buffer, 'creationtime')
+                self._read_times(buffer, "creationtime")
             elif prop == Property.LAST_ACCESS_TIME:
-                self._read_times(buffer, 'lastaccesstime')
+                self._read_times(buffer, "lastaccesstime")
             elif prop == Property.LAST_WRITE_TIME:
-                self._read_times(buffer, 'lastwritetime')
+                self._read_times(buffer, "lastwritetime")
             elif prop == Property.ATTRIBUTES:
                 defined = read_boolean(buffer, numfiles, checkall=True)
                 external = buffer.read(1)
-                if external == b'\x00':
+                if external == b"\x00":
                     self._read_attributes(buffer, defined)
                 else:  # pragma: no-cover
                     dataindex = read_uint64(buffer)
@@ -699,21 +741,21 @@ class FilesInfo:
             elif prop == Property.START_POS:
                 self._read_start_pos(buffer)
             else:
-                raise Bad7zFile('invalid type %r' % prop)  # pragma: no-cover
+                raise Bad7zFile("invalid type %r" % prop)  # pragma: no-cover
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
-            f['filename'] = read_utf16(buffer).replace('\\', '/')
+            f["filename"] = read_utf16(buffer).replace("\\", "/")
 
     def _read_attributes(self, buffer: BinaryIO, defined: List[bool]) -> None:
         for idx, f in enumerate(self.files):
-            f['attributes'] = read_uint32(buffer)[0] if defined[idx] else None
+            f["attributes"] = read_uint32(buffer)[0] if defined[idx] else None
 
     def _read_times(self, fp: BinaryIO, name: str) -> None:
         defined = read_boolean(fp, len(self.files), checkall=True)
         # NOTE: the "external" flag is currently ignored, should be 0x00
         external = fp.read(1)
-        assert external == b'\x00'
+        assert external == b"\x00"
         for i, f in enumerate(self.files):
             f[name] = ArchiveTimestamp(read_real_uint64(fp)[0]) if defined[i] else None
 
@@ -723,7 +765,7 @@ class FilesInfo:
         external = fp.read(1)
         assert external == 0x00
         for i, f in enumerate(self.files):
-            f['startpos'] = read_real_uint64(fp)[0] if defined[i] else None
+            f["startpos"] = read_real_uint64(fp)[0] if defined[i] else None
 
     def _write_times(self, fp: BinaryIO, propid, name: str) -> None:
         write_byte(fp, propid)
@@ -739,7 +781,7 @@ class FilesInfo:
             size += bits_to_bytes(num_defined)
         write_uint64(fp, size)
         write_boolean(fp, defined, all_defined=True)
-        write_byte(fp, b'\x00')
+        write_byte(fp, b"\x00")
         for i, file in enumerate(self.files):
             if defined[i]:
                 write_real_uint64(fp, file[name])
@@ -762,14 +804,14 @@ class FilesInfo:
         names = []
         name_size = 0
         for f in self.files:
-            if f.get('filename', None) is not None:
+            if f.get("filename", None) is not None:
                 name_defined += 1
-                names.append(f['filename'])
-                name_size += len(f['filename'].encode('utf-16LE')) + 2  # len(str + NULL_WORD)
+                names.append(f["filename"])
+                name_size += len(f["filename"].encode("utf-16LE")) + 2  # len(str + NULL_WORD)
         if name_defined > 0:
             write_byte(file, Property.NAME)
             write_uint64(file, name_size + 1)
-            write_byte(file, b'\x00')
+            write_byte(file, b"\x00")
             for n in names:
                 write_utf16(file, n)
 
@@ -777,7 +819,7 @@ class FilesInfo:
         defined = []  # type: List[bool]
         num_defined = 0
         for f in self.files:
-            if 'attributes' in f.keys() and f['attributes'] is not None:
+            if "attributes" in f.keys() and f["attributes"] is not None:
                 defined.append(True)
                 num_defined += 1
             else:
@@ -788,10 +830,10 @@ class FilesInfo:
         write_byte(file, Property.ATTRIBUTES)
         write_uint64(file, size)
         write_boolean(file, defined, all_defined=True)
-        write_byte(file, b'\x00')
+        write_byte(file, b"\x00")
         for i, f in enumerate(self.files):
             if defined[i]:
-                write_uint32(file, f['attributes'])
+                write_uint32(file, f["attributes"])
 
     def write(self, file: BinaryIO):
         assert self.files is not None
@@ -800,7 +842,7 @@ class FilesInfo:
         write_uint64(file, numfiles)
         emptystreams = []  # List[bool]
         for f in self.files:
-            emptystreams.append(f['emptystream'])
+            emptystreams.append(f["emptystream"])
         if self._are_there(emptystreams):
             write_byte(file, Property.EMPTY_STREAM)
             write_uint64(file, bits_to_bytes(numfiles))
@@ -814,14 +856,14 @@ class FilesInfo:
             padlen += 4
         if padlen > 2:
             write_byte(file, Property.DUMMY)
-            write_byte(file, (padlen - 2).to_bytes(1, 'little'))
+            write_byte(file, (padlen - 2).to_bytes(1, "little"))
             write_bytes(file, bytes(padlen - 2))
         # Name
         self._write_names(file)
         # timestamps
         # self._write_times(file, Property.CREATION_TIME, 'creationtime')
         # self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
-        self._write_times(file, Property.LAST_WRITE_TIME, 'lastwritetime')
+        self._write_times(file, Property.LAST_WRITE_TIME, "lastwritetime")
         # start_pos
         # FIXME: TBD
         # attribute
@@ -831,6 +873,7 @@ class FilesInfo:
 
 class WriteWithCrc:
     """Thin wrapper for file object to calculate crc32 when write called."""
+
     def __init__(self, fp: BinaryIO):
         self._fp = fp
         self.digest = 0
@@ -846,7 +889,7 @@ class WriteWithCrc:
 class Header:
     """ the archive header """
 
-    __slot__ = ['solid', 'main_streams', 'files_info', 'size', '_start_pos']
+    __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos"]
 
     def __init__(self) -> None:
         self.solid = False
@@ -878,7 +921,7 @@ class Header:
             self._extract_header_info(buffer)
             return
         if pid != Property.ENCODED_HEADER:
-            raise TypeError('Unknown field: %r' % id)  # pragma: no-cover
+            raise TypeError("Unknown field: %r" % id)  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
         buffer2 = io.BytesIO()
@@ -902,12 +945,12 @@ class Header:
             src_start += compressed_size
             if folder.digestdefined:
                 if folder.crc != calculate_crc32(folder_data):
-                    raise Bad7zFile('invalid block data')
+                    raise Bad7zFile("invalid block data")
             buffer2.write(folder_data)
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
         if pid != Property.HEADER:
-            raise TypeError('Unknown field: %r' % pid)  # pragma: no-cover
+            raise TypeError("Unknown field: %r" % pid)  # pragma: no-cover
         self._extract_header_info(buffer2)
 
     def _encode_header(self, file: BinaryIO, afterheader: int, filters):
@@ -970,7 +1013,7 @@ class Header:
             self.files_info = FilesInfo.retrieve(fp)
             pid = fp.read(1)
         if pid != Property.END:
-            raise Bad7zFile('end id expected but %s found' % (repr(pid)))  # pragma: no-cover
+            raise Bad7zFile("end id expected but %s found" % (repr(pid)))  # pragma: no-cover
 
     @staticmethod
     def build_header(folders):
@@ -992,10 +1035,19 @@ class Header:
 class SignatureHeader:
     """The SignatureHeader class hold information of a signature header of archive."""
 
-    __slots__ = ['version', 'startheadercrc', 'nextheaderofs', 'nextheadersize', 'nextheadercrc']
+    __slots__ = [
+        "version",
+        "startheadercrc",
+        "nextheaderofs",
+        "nextheadersize",
+        "nextheadercrc",
+    ]
 
     def __init__(self) -> None:
-        self.version = (P7ZIP_MAJOR_VERSION, P7ZIP_MINOR_VERSION)  # type: Tuple[bytes, ...]
+        self.version = (
+            P7ZIP_MAJOR_VERSION,
+            P7ZIP_MINOR_VERSION,
+        )  # type: Tuple[bytes, ...]
         self.startheadercrc = -1  # type: int
         self.nextheaderofs = -1  # type: int
         self.nextheadersize = -1  # type: int
@@ -1020,7 +1072,7 @@ class SignatureHeader:
         self.nextheadercrc, data = read_uint32(file)
         crc = calculate_crc32(data, crc)
         if crc != self.startheadercrc:
-            raise Bad7zFile('invalid header data')
+            raise Bad7zFile("invalid header data")
 
     def calccrc(self, length: int, header_crc: int):
         self.nextheadersize = length
