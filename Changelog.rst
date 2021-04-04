@@ -25,6 +25,29 @@ Removed
 Security
 --------
 
+Deprecated
+----------
+
+`v0.15.0`_
+==========
+
+Added
+-----
+- Add option to specify multiprocessing instead of multi-threading. (#306)
+
+Changed
+-------
+- Change Property Borg class to constant class(#319)
+- Reformat whole code with black.
+- Merge pyzstdfilter into compressor.py.
+- Lint codes by flake8/black.
+
+Fixed
+-----
+- README: description of dependencies.
+- ZStandard decompression on PyPy3
+
+
 `v0.14.1`_
 ==========
 
@@ -299,7 +322,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.14.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.15.0...HEAD
+.. _v0.15.0: https://github.com/miurahr/py7zr/compare/v0.14.1...v0.15.0
 .. _v0.14.1: https://github.com/miurahr/py7zr/compare/v0.14.0...v0.14.1
 .. _v0.14.0: https://github.com/miurahr/py7zr/compare/v0.13.0...v0.14.0
 .. _v0.13.0: https://github.com/miurahr/py7zr/compare/v0.12.0...v0.13.0
