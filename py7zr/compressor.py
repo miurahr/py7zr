@@ -435,7 +435,7 @@ class ZstdCompressor:
 
 
 class ZstdDecompressor:
-    def __init__(self, properties):
+    def __init__(self, properties, blocksize):
         if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > ZSTD_VERSION:
             raise UnsupportedCompressionMethodError
         self.decompressor = pyzstd.ZstdDecompressor()
