@@ -55,7 +55,7 @@ from py7zr.properties import (
     FILTER_ZSTD,
     MAGIC_7Z,
     CompressionMethod,
-    get_default_blocksize
+    get_default_blocksize,
 )
 
 try:
