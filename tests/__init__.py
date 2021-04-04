@@ -17,26 +17,32 @@ try:
 except ImportError:
     LAPublic = None
 
-testdata_path = os.path.join(os.path.dirname(__file__), 'data')
+testdata_path = os.path.join(os.path.dirname(__file__), "data")
 os.umask(0o022)
 
 
 def check_output(expected, tmpdir):
     for exp in expected:
         if isinstance(tmpdir, str):
-            target = pathlib.Path(tmpdir).joinpath(exp['filename'])
+            target = pathlib.Path(tmpdir).joinpath(exp["filename"])
         else:
-            target = tmpdir.joinpath(exp['filename'])
-        if os.name == 'posix':
-            if exp.get('mode', None):
-                assert target.stat().st_mode == exp['mode'],\
-                    "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mode, exp['mode'])
-        if exp.get('mtime', None):
-            assert target.stat().st_mtime == exp['mtime'],\
-                "%s, actual: %d, expected: %d" % (exp['filename'], target.stat().st_mtime, exp['mtime'])
+            target = tmpdir.joinpath(exp["filename"])
+        if os.name == "posix":
+            if exp.get("mode", None):
+                assert target.stat().st_mode == exp["mode"], "%s, actual: %d, expected: %d" % (
+                    exp["filename"],
+                    target.stat().st_mode,
+                    exp["mode"],
+                )
+        if exp.get("mtime", None):
+            assert target.stat().st_mtime == exp["mtime"], "%s, actual: %d, expected: %d" % (
+                exp["filename"],
+                target.stat().st_mtime,
+                exp["mtime"],
+            )
         m = hashlib.sha256()
-        m.update(target.open('rb').read())
-        assert m.digest() == binascii.unhexlify(exp['digest']), "Fails digest for %s" % exp['filename']
+        m.update(target.open("rb").read())
+        assert m.digest() == binascii.unhexlify(exp["digest"]), "Fails digest for %s" % exp["filename"]
 
 
 def decode_all(archive, expected, tmpdir):
@@ -65,11 +71,11 @@ def ltime2(y, m, d, h, min, s):
 
 
 def p7zip_test(archive):
-    if shutil.which('7z'):
-        result = subprocess.run(['7z', 't', archive.as_posix()], stdout=subprocess.PIPE)
+    if shutil.which("7z"):
+        result = subprocess.run(["7z", "t", archive.as_posix()], stdout=subprocess.PIPE)
         if result.returncode != 0:
             print(result.stdout)
-            pytest.fail('7z command report error')
+            pytest.fail("7z command report error")
 
 
 def libarchive_extract(archive, tmpdir):
@@ -83,6 +89,6 @@ def libarchive_extract(archive, tmpdir):
                 elif entry.filetype.IFLNK:
                     tmpdir.joinpath(entry.pathname).link_to(entry.symlink_targetpath)
                 else:
-                    with tmpdir.joinpath(entry.pathname).open(mode='wb') as f:
+                    with tmpdir.joinpath(entry.pathname).open(mode="wb") as f:
                         for block in entry.get_blocks():
                             f.write(block)

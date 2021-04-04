@@ -53,9 +53,11 @@ class Callback(ABC):
 
 class ExtractCallback(Callback):
     """Abstrat base class for extraction progress callbacks."""
+
     pass
 
 
 class ArchiveCallback(Callback):
     """Abstrat base class for progress callbacks."""
+
     pass

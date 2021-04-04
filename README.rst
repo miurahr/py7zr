@@ -28,26 +28,6 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
-=======
-WARNING
-=======
-
-**Test archive data, which affected a malware,  have been existed from Aug, 2020 - 20, Jan, 2021!**
-
-All the git history is re-writed, so please remove your local and fork copy of the git repository,
-and clone again(if necessary)!
-
-Problematic file is named `issue_218.7z` and `issue_218_2.7z`.
-
-**There is NO affected in library itself.**  and the test execution also does not extract the malware file.
-There is no problem when you install py7zr with `pip` command.
-
-Release that has a clean source:
-
-- v0.11.3 and later
-- v0.10.2
-- v0.9.10
-- v0.9.4 and before
 
 Install
 =======
@@ -270,13 +250,8 @@ Required Python versions
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
-Minimum required version is Python 3.5.
-Two additional library is required only on Python3.5; contextlib2 and pathlib2.
-
-Compression is supported on Python 3.6 and later.
-Multi-volume archive creation issupported on Python 3.7 and later.
-
-There are other runtime requrements; texttable, pycryptodome
+Minimum required version is Python 3.6.
+Multi-volume archive creation is supported on Python 3.7 and later.
 
 Version recommendations are:
 
@@ -337,13 +312,15 @@ Package           Purpose
 ================  ================================
 `Pycryptodome`_   7zAES encryption
 `ppmd-cffi`_      PPMd compression
-`zstandard`_      ZStandard compression
+`bcj-cffi`_       BCJ filter
+`pyzstd`_         ZStandard compression
 `texttable`_      CLI
 ================  ================================
 
 .. _`Pycryptodome` : https://pypi.org/project/pycryptodome/
 .. _`ppmd-cffi` : https://pypi.org/project/ppmd-cffi/
-.. _`zstandard` : https://pypi.org/project/zstandard
+.. _`bcj-cffi` : https://pypi.org/project/bcj-cffi/
+.. _`pyzstd` : https://pypi.org/project/pyzstd
 .. _`texttable` : https://pypi.org/project/texttable
 
 
@@ -393,3 +370,23 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+WARNING
+=======
+
+**Test archive data, which affected a malware,  have been existed from Aug, 2020 - 20, Jan, 2021!**
+
+All the git history is re-writed, so please remove your local and fork copy of the git repository,
+and clone again(if necessary)!
+
+Problematic file is named `issue_218.7z` and `issue_218_2.7z`.
+
+**There is NO affected in library itself.**  and the test execution also does not extract the malware file.
+There is no problem when you install py7zr with `pip` command.
+
+Release that has a clean source:
+
+- v0.11.3 and later
+- v0.10.2
+- v0.9.10
+- v0.9.4 and before

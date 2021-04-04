@@ -25,6 +25,33 @@ Removed
 Security
 --------
 
+`v0.14.1`_
+==========
+
+Fixed
+-----
+
+* Fix of empty file archive(#305,#310)
+
+
+`v0.14.0`_
+==========
+
+Added
+-----
+
+* Introduce writed() method that accept dict[name, BinaryIO](#302)
+
+Changed
+-------
+
+* READ_BLOCKSIZE configurable on constructor(#307)
+* Use pyzstd for zstandard algorithm on CPython(#304)
+* Use bcj-cffi library for lzma+bcj performance(#303)
+* CLI: Fix getting module_name on 3.6.13(#308)
+
+
+
 `v0.13.0`_
 ==========
 
@@ -272,7 +299,9 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.13.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.14.1...HEAD
+.. _v0.14.1: https://github.com/miurahr/py7zr/compare/v0.14.0...v0.14.1
+.. _v0.14.0: https://github.com/miurahr/py7zr/compare/v0.13.0...v0.14.0
 .. _v0.13.0: https://github.com/miurahr/py7zr/compare/v0.12.0...v0.13.0
 .. _v0.12.0: https://github.com/miurahr/py7zr/compare/v0.11.3...v0.12.0
 .. _v0.11.3: https://github.com/miurahr/py7zr/compare/v0.11.1...v0.11.3

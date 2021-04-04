@@ -43,13 +43,13 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, READ_BLOCKSIZE
+from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, RuntimeConstant
 
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     import _winapi
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
-FILE_ATTRIBUTE_WINDOWS_MASK = 0x07fff
+FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
 
 
 class ArchiveFile:
@@ -63,6 +63,7 @@ class ArchiveFile:
 
     The class also hold an archive parameter where file is exist in
     archive file folder(container)."""
+
     def __init__(self, id: int, file_info: Dict[str, Any]) -> None:
         self.id = id
         self._file_info = file_info
@@ -74,10 +75,10 @@ class ArchiveFile:
         """
         properties = self._file_info
         if properties is not None:
-            properties['readonly'] = self.readonly
-            properties['posix_mode'] = self.posix_mode
-            properties['archivable'] = self.archivable
-            properties['is_directory'] = self.is_directory
+            properties["readonly"] = self.readonly
+            properties["posix_mode"] = self.posix_mode
+            properties["archivable"] = self.archivable
+            properties["is_directory"] = self.is_directory
         return properties
 
     def _get_property(self, key: str) -> Any:
@@ -88,38 +89,38 @@ class ArchiveFile:
 
     @property
     def origin(self) -> pathlib.Path:
-        return self._get_property('origin')
+        return self._get_property("origin")
 
     @property
     def folder(self) -> Folder:
-        return self._get_property('folder')
+        return self._get_property("folder")
 
     @property
     def filename(self) -> str:
         """return filename of archive file."""
-        return self._get_property('filename')
+        return self._get_property("filename")
 
     @property
     def emptystream(self) -> bool:
         """True if file is empty(0-byte file), otherwise False"""
-        return self._get_property('emptystream')
+        return self._get_property("emptystream")
 
     @property
     def uncompressed(self) -> List[int]:
-        return self._get_property('uncompressed')
+        return self._get_property("uncompressed")
 
     @property
     def compressed(self) -> Optional[int]:
         """Compressed size"""
-        return self._get_property('compressed')
+        return self._get_property("compressed")
 
     @property
     def crc32(self) -> Optional[int]:
         """CRC of archived file(optional)"""
-        return self._get_property('digest')
+        return self._get_property("digest")
 
     def _test_attribute(self, target_bit: int) -> bool:
-        attributes = self._get_property('attributes')
+        attributes = self._get_property("attributes")
         if attributes is None:
             return False
         return attributes & target_bit == target_bit
@@ -140,17 +141,17 @@ class ArchiveFile:
         return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # type: ignore  # noqa
 
     def _get_unix_extension(self) -> Optional[int]:
-        attributes = self._get_property('attributes')
+        attributes = self._get_property("attributes")
         if self._test_attribute(FILE_ATTRIBUTE_UNIX_EXTENSION):
             return attributes >> 16
         return None
 
     def data(self) -> Optional[BinaryIO]:
-        return self._get_property('data')
+        return self._get_property("data")
 
     def has_strdata(self) -> bool:
         """True if file content is set by writestr() method otherwise False."""
-        return ('data' in self._file_info)
+        return "data" in self._file_info
 
     @property
     def is_symlink(self) -> bool:
@@ -163,8 +164,9 @@ class ArchiveFile:
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT |  # type: ignore  # noqa
-                                    stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
+        return self._test_attribute(
+            stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+        )  # type: ignore  # noqa
 
     @property
     def is_socket(self) -> bool:
@@ -177,7 +179,7 @@ class ArchiveFile:
     @property
     def lastwritetime(self) -> Optional[ArchiveTimestamp]:
         """Return last written timestamp of a file."""
-        return self._get_property('lastwritetime')
+        return self._get_property("lastwritetime")
 
     @property
     def posix_mode(self) -> Optional[int]:
@@ -215,7 +217,7 @@ class ArchiveFileList(collections.abc.Iterable):
     def __len__(self) -> int:
         return len(self.files_list)
 
-    def __iter__(self) -> 'ArchiveFileListIterator':
+    def __iter__(self) -> "ArchiveFileListIterator":
         return ArchiveFileListIterator(self)
 
     def __getitem__(self, index):
@@ -228,7 +230,6 @@ class ArchiveFileList(collections.abc.Iterable):
 
 
 class ArchiveFileListIterator(collections.abc.Iterator):
-
     def __init__(self, archive_file_list):
         self._archive_file_list = archive_file_list
         self._index = 0
@@ -260,7 +261,16 @@ class ArchiveInfo:
 class FileInfo:
     """Hold archived file information."""
 
-    def __init__(self, filename, compressed, uncompressed, archivable, is_directory, creationtime, crc32):
+    def __init__(
+        self,
+        filename,
+        compressed,
+        uncompressed,
+        archivable,
+        is_directory,
+        creationtime,
+        crc32,
+    ):
         self.filename = filename
         self.compressed = compressed
         self.uncompressed = uncompressed
@@ -273,47 +283,57 @@ class FileInfo:
 class SevenZipFile(contextlib.AbstractContextManager):
     """The SevenZipFile Class provides an interface to 7z archives."""
 
-    def __init__(self, file: Union[BinaryIO, str, pathlib.Path], mode: str = 'r',
-                 *, filters: Optional[List[Dict[str, int]]] = None, dereference=False,
-                 password: Optional[str] = None, header_encryption: bool = False,
-                 mp: bool = False) -> None:
-        if mode not in ('r', 'w', 'x', 'a'):
+    def __init__(
+        self,
+        file: Union[BinaryIO, str, pathlib.Path],
+        mode: str = "r",
+        *,
+        filters: Optional[List[Dict[str, int]]] = None,
+        dereference=False,
+        password: Optional[str] = None,
+        header_encryption: bool = False,
+        blocksize: Optional[int] = None,
+        mp: bool = False
+    ) -> None:
+        if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = (password is not None)
+        self.block_size = RuntimeConstant(blocksize=blocksize).READ_BLOCKSIZE
         self.mp = mp
+
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
-            self._filePassed = False  # type: bool
-            self.filename = file  # type: str
-            if mode == 'r':
-                self.fp = open(file, 'rb')  # type: BinaryIO
-            elif mode == 'w':
-                self.fp = open(file, 'w+b')
-            elif mode == 'x':
-                self.fp = open(file, 'x+b')
-            elif mode == 'a':
-                self.fp = open(file, 'r+b')
+            self._filePassed: bool = False
+            self.filename: str = file
+            if mode == "r":
+                self.fp: BinaryIO = open(file, "rb")
+            elif mode == "w":
+                self.fp = open(file, "w+b")
+            elif mode == "x":
+                self.fp = open(file, "x+b")
+            elif mode == "a":
+                self.fp = open(file, "r+b")
             else:
                 raise ValueError("File open error.")
             self.mode = mode
         elif isinstance(file, pathlib.Path):
             self._filePassed = False
             self.filename = str(file)
-            if mode == 'r':
-                self.fp = file.open(mode='rb')  # type: ignore  # noqa   # typeshed issue: 2911
-            elif mode == 'w':
-                self.fp = file.open(mode='w+b')  # type: ignore  # noqa
-            elif mode == 'x':
-                self.fp = file.open(mode='x+b')  # type: ignore  # noqa
-            elif mode == 'a':
-                self.fp = file.open(mode='r+b')  # type: ignore  # noqa
+            if mode == "r":
+                self.fp = file.open(mode="rb")  # type: ignore  # noqa   # typeshed issue: 2911
+            elif mode == "w":
+                self.fp = file.open(mode="w+b")  # type: ignore  # noqa
+            elif mode == "x":
+                self.fp = file.open(mode="x+b")  # type: ignore  # noqa
+            elif mode == "a":
+                self.fp = file.open(mode="r+b")  # type: ignore  # noqa
             else:
                 raise ValueError("File open error.")
             self.mode = mode
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
-            self.filename = getattr(file, 'name', None)
+            self.filename = getattr(file, "name", None)
             self.mode = mode  # type: ignore  #noqa
         else:
             raise TypeError("invalid file: {}".format(type(file)))
@@ -325,11 +345,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._real_get_contents(password)
                 self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
                 self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-            elif mode in 'w':
+            elif mode in "w":
                 self._prepare_write(filters, password)
-            elif mode in 'x':
+            elif mode in "x":
                 raise NotImplementedError
-            elif mode == 'a':
+            elif mode == "a":
                 self._real_get_contents(password)
                 self._prepare_append(filters, password)
             else:
@@ -356,13 +376,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _real_get_contents(self, password) -> None:
         if not self._check_7zfile(self.fp):
-            raise Bad7zFile('not a 7z file')
+            raise Bad7zFile("not a 7z file")
         self.sig_header = SignatureHeader.retrieve(self.fp)
         self.afterheader = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
-            raise Bad7zFile('invalid header data')
+            raise Bad7zFile("invalid header data")
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
         header.size += 32 + self.sig_header.nextheadersize
         if header is None:
@@ -370,10 +390,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header = header
         buffer.close()
         self.files = ArchiveFileList()
-        if getattr(self.header, 'files_info', None) is None:
+        if getattr(self.header, "files_info", None) is None:
             return
         # Initialize references for convenience
-        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
+        if hasattr(self.header, "main_streams") and self.header.main_streams is not None:
             folders = self.header.main_streams.unpackinfo.folders
             for folder in folders:
                 folder.password = password
@@ -396,23 +416,30 @@ class SevenZipFile(contextlib.AbstractContextManager):
         file_in_solid = 0
 
         for file_id, file_info in enumerate(self.header.files_info.files):
-            if not file_info['emptystream'] and folders is not None:
+            if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
-                numinstreams = max([coder.get('numinstreams', 1) for coder in folder.coders])
-                (maxsize, compressed, uncompressed,
-                 packsize, solid) = self._get_fileinfo_sizes(pstat, subinfo, packinfo, folder, packsizes,
-                                                             unpacksizes, file_in_solid, numinstreams)
+                numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
+                (maxsize, compressed, uncompressed, packsize, solid,) = self._get_fileinfo_sizes(
+                    pstat,
+                    subinfo,
+                    packinfo,
+                    folder,
+                    packsizes,
+                    unpacksizes,
+                    file_in_solid,
+                    numinstreams,
+                )
                 pstat.input += 1
                 folder.solid = solid
-                file_info['folder'] = folder
-                file_info['maxsize'] = maxsize
-                file_info['compressed'] = compressed
-                file_info['uncompressed'] = uncompressed
-                file_info['packsizes'] = packsize
+                file_info["folder"] = folder
+                file_info["maxsize"] = maxsize
+                file_info["compressed"] = compressed
+                file_info["uncompressed"] = uncompressed
+                file_info["packsizes"] = packsize
                 if subinfo.digestsdefined[pstat.outstreams]:
-                    file_info['digest'] = subinfo.digests[pstat.outstreams]
+                    file_info["digest"] = subinfo.digests[pstat.outstreams]
                 if folder is None:
-                    pstat.src_pos += file_info['compressed']
+                    pstat.src_pos += file_info["compressed"]
                 else:
                     if folder.solid:
                         file_in_solid += 1
@@ -422,40 +449,46 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     folder.files.append(file_info)
                     if pstat.input >= subinfo.num_unpackstreams_folders[pstat.folder]:
                         file_in_solid = 0
-                        pstat.src_pos += sum(packinfo.packsizes[pstat.stream:pstat.stream + numinstreams])
+                        pstat.src_pos += sum(packinfo.packsizes[pstat.stream : pstat.stream + numinstreams])
                         pstat.folder += 1
                         pstat.stream += numinstreams
                         pstat.input = 0
             else:
-                file_info['folder'] = None
-                file_info['maxsize'] = 0
-                file_info['compressed'] = 0
-                file_info['uncompressed'] = 0
-                file_info['packsizes'] = [0]
+                file_info["folder"] = None
+                file_info["maxsize"] = 0
+                file_info["compressed"] = 0
+                file_info["uncompressed"] = 0
+                file_info["packsizes"] = [0]
 
-            if 'filename' not in file_info:
+            if "filename" not in file_info:
                 # compressed file is stored without a name, generate one
                 try:
                     basefilename = self.filename
                 except AttributeError:
                     # 7z archive file doesn't have a name
-                    file_info['filename'] = 'contents'
+                    file_info["filename"] = "contents"
                 else:
                     if basefilename is not None:
                         fn, ext = os.path.splitext(os.path.basename(basefilename))
-                        file_info['filename'] = fn
+                        file_info["filename"] = fn
                     else:
-                        file_info['filename'] = 'contents'
+                        file_info["filename"] = "contents"
             self.files.append(file_info)
         if not self.password_protected and self.header.main_streams is not None:
             # Check specified coders have a crypt method or not.
-            self.password_protected = any([SupportedMethods.needs_password(folder.coders)
-                                           for folder in self.header.main_streams.unpackinfo.folders])
+            self.password_protected = any(
+                [SupportedMethods.needs_password(folder.coders) for folder in self.header.main_streams.unpackinfo.folders]
+            )
 
-    def _extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None,
-                 return_dict: bool = False, callback: Optional[ExtractCallback] = None) -> Optional[Dict[str, IO[Any]]]:
+    def _extract(
+        self,
+        path: Optional[Any] = None,
+        targets: Optional[List[str]] = None,
+        return_dict: bool = False,
+        callback: Optional[ExtractCallback] = None,
+    ) -> Optional[Dict[str, IO[Any]]]:
         if callback is not None and not isinstance(callback, ExtractCallback):
-            raise ValueError('Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class')
+            raise ValueError("Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class")
         elif callback is not None:
             self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
@@ -477,11 +510,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise e
         fnames = []  # type: List[str]  # check duplicated filename in one archive?
-        self.q.put(('pre', None, None))
+        self.q.put(("pre", None, None))
         for f in self.files:
             # TODO: sanity check
             # check whether f.filename with invalid characters: '../'
-            if f.filename.startswith('../'):
+            if f.filename.startswith("../"):
                 raise Bad7zFile
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
@@ -492,7 +525,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             else:
                 i = 0
                 while True:
-                    outname = f.filename + '_%d' % i
+                    outname = f.filename + "_%d" % i
                     if outname not in fnames:
                         break
             fnames.append(outname)
@@ -500,10 +533,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = path.joinpath(outname)
             else:
                 outfilename = pathlib.Path(outname)
-            if os.name == 'nt':
+            if os.name == "nt":
                 if outfilename.is_absolute():
                     # hack for microsoft windows path length limit < 255
-                    outfilename = pathlib.WindowsPath('\\\\?\\' + str(outfilename))
+                    outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
@@ -548,13 +581,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
         try:
             if callback is not None:
-                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed), q=self.q)
+                self.worker.extract(
+                    self.fp,
+                    parallel=(not self.password_protected and not self._filePassed),
+                    q=self.q,
+                )
             else:
-                self.worker.extract(self.fp, parallel=(not self.password_protected and not self._filePassed))
+                self.worker.extract(
+                    self.fp,
+                    parallel=(not self.password_protected and not self._filePassed),
+                )
         except CrcError as ce:
             raise Bad7zFile("CRC32 error on archived file {}.".format(str(ce)))
 
-        self.q.put(('post', None, None))
+        self.q.put(("post", None, None))
         if return_dict:
             return self._dict
         else:
@@ -562,16 +602,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
             # if path is None, work on current working directory.
             for t in target_sym:
                 sym_dst = t.resolve()
-                with sym_dst.open('rb') as b:
-                    sym_src = b.read().decode(encoding='utf-8')  # symlink target name stored in utf-8
+                with sym_dst.open("rb") as b:
+                    sym_src = b.read().decode(encoding="utf-8")  # symlink target name stored in utf-8
                 sym_dst.unlink()  # unlink after close().
                 sym_dst.symlink_to(pathlib.Path(sym_src))
             # create junction point only on windows platform
-            if sys.platform.startswith('win'):
+            if sys.platform.startswith("win"):
                 for t in target_junction:
                     junction_dst = t.resolve()
-                    with junction_dst.open('rb') as b:
-                        junction_target = pathlib.Path(b.read().decode(encoding='utf-8'))
+                    with junction_dst.open("rb") as b:
+                        junction_target = pathlib.Path(b.read().decode(encoding="utf-8"))
                         junction_dst.unlink()
                         _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
             # set file properties
@@ -579,18 +619,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 # mtime
                 lastmodified = None
                 try:
-                    lastmodified = ArchiveTimestamp(properties['lastwritetime']).totimestamp()
+                    lastmodified = ArchiveTimestamp(properties["lastwritetime"]).totimestamp()
                 except KeyError:
                     pass
                 if lastmodified is not None:
                     os.utime(str(outfilename), times=(lastmodified, lastmodified))
-                if os.name == 'posix':
-                    st_mode = properties['posix_mode']
+                if os.name == "posix":
+                    st_mode = properties["posix_mode"]
                     if st_mode is not None:
                         outfilename.chmod(st_mode)
                         continue
                 # fallback: only set readonly if specified
-                if properties['readonly'] and not properties['is_directory']:
+                if properties["readonly"] and not properties["is_directory"]:
                     ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
                     outfilename.chmod(outfilename.stat().st_mode & ro_mask)
             return None
@@ -641,9 +681,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _write_header(self):
         """Write header and update signature header."""
-        (header_pos, header_len, header_crc) = self.header.write(self.fp, self.afterheader,
-                                                                 encoded=self.encoded_header_mode,
-                                                                 encrypted=self.header_encryption)
+        (header_pos, header_len, header_crc) = self.header.write(
+            self.fp,
+            self.afterheader,
+            encoded=self.encoded_header_mode,
+            encrypted=self.header_encryption,
+        )
         self.sig_header.nextheaderofs = header_pos - self.afterheader
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
@@ -655,7 +698,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif path.is_file():
                 self.write(path, arcname)
             elif path.is_dir():
-                if not path.samefile('.'):
+                if not path.samefile("."):
                     self.write(path, arcname)
                 for nm in sorted(os.listdir(str(path))):
                     arc = os.path.join(arcname, nm) if arcname is not None else None
@@ -665,7 +708,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except OSError as ose:
             if self.dereference and ose.errno in [errno.ELOOP]:
                 return  # ignore ELOOP here, this resulted to stop looped symlink reference.
-            elif self.dereference and sys.platform == 'win32' and ose.errno in [errno.ENOENT]:
+            elif self.dereference and sys.platform == "win32" and ose.errno in [errno.ENOENT]:
                 return  # ignore ENOENT which is happened when a case of ELOOP on windows.
             else:
                 raise
@@ -678,7 +721,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.input = 0  # unpack stream count in each folder
             self.stream = 0  # target input stream position
 
-    def _get_fileinfo_sizes(self, pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams):
+    def _get_fileinfo_sizes(
+        self,
+        pstat,
+        subinfo,
+        packinfo,
+        folder,
+        packsizes,
+        unpacksizes,
+        file_in_solid,
+        numinstreams,
+    ):
         if pstat.input == 0:
             folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
         maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
@@ -689,7 +742,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             compressed = packsizes[pstat.stream]
         else:  # file is not compressed
             compressed = uncompressed
-        packsize = packsizes[pstat.stream:pstat.stream + numinstreams]
+        packsize = packsizes[pstat.stream : pstat.stream + numinstreams]
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def set_encoded_header_mode(self, mode: bool) -> None:
@@ -708,7 +761,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     @staticmethod
     def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
-        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[:len(MAGIC_7Z)]
+        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
         fp.seek(-len(MAGIC_7Z), 1)
         return result
 
@@ -723,7 +776,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         remaining_size = size
         digest = 0
         while remaining_size > 0:
-            block = min(READ_BLOCKSIZE, remaining_size)
+            block = min(self.block_size, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest
@@ -744,95 +797,101 @@ class SevenZipFile(contextlib.AbstractContextManager):
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = target
+        f["origin"] = target
         if arcname is not None:
-            f['filename'] = pathlib.Path(arcname).as_posix()
+            f["filename"] = pathlib.Path(arcname).as_posix()
         else:
-            f['filename'] = target.as_posix()
-        if os.name == 'nt':
+            f["filename"] = target.as_posix()
+        if os.name == "nt":
             fstat = target.lstat()
             if target.is_symlink():
                 if dereference:
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
-                        f['emptystream'] = True
-                        f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                        f["emptystream"] = True
+                        f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
                     else:
-                        f['emptystream'] = False
-                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                        f['uncompressed'] = fstat.st_size
+                        f["emptystream"] = False
+                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f["uncompressed"] = fstat.st_size
                 else:
-                    f['emptystream'] = False
-                    f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                    f["emptystream"] = False
+                    f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
                     # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
             elif target.is_dir():
-                f['emptystream'] = True
-                f['attributes'] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                f["emptystream"] = True
+                f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
-                f['emptystream'] = (target.stat().st_size == 0)
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                f['uncompressed'] = fstat.st_size
+                f["emptystream"] = False
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f["uncompressed"] = fstat.st_size
         else:
             fstat = target.lstat()
             if target.is_symlink():
                 if dereference:
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
-                        f['emptystream'] = True
-                        f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                        f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                        f["emptystream"] = True
+                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                        f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
                     else:
-                        f['emptystream'] = False
-                        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                        f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+                        f["emptystream"] = False
+                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
                 else:
-                    f['emptystream'] = False
-                    f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT # type: ignore  # noqa
-                    f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-                    f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                    f["emptystream"] = False
+                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                    f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                    f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_dir():
-                f['emptystream'] = True
-                f['attributes'] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                f['attributes'] |= (stat.S_IMODE(fstat.st_mode) << 16)
+                f["emptystream"] = True
+                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_file():
-                f['emptystream'] = (target.stat().st_size == 0)
-                f['uncompressed'] = fstat.st_size
-                f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-                f['attributes'] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+                f["emptystream"] = False
+                f["uncompressed"] = fstat.st_size
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
-        f['creationtime'] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
-        f['lastwritetime'] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
-        f['lastaccesstime'] = ArchiveTimestamp.from_datetime(fstat.st_atime)
+        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
+        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
+        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
     def _make_file_info_from_name(self, bio, size: int, arcname: str) -> Dict[str, Any]:
         f = {}  # type: Dict[str, Any]
-        f['origin'] = None
-        f['data'] = bio
-        f['filename'] = pathlib.Path(arcname).as_posix()
-        f['uncompressed'] = size
-        f['emptystream'] = (size == 0)
-        f['attributes'] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
-        f['creationtime'] = ArchiveTimestamp.from_now()
-        f['lastwritetime'] = ArchiveTimestamp.from_now()
+        f["origin"] = None
+        f["data"] = bio
+        f["filename"] = pathlib.Path(arcname).as_posix()
+        f["uncompressed"] = size
+        f["emptystream"] = size == 0
+        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+        f["creationtime"] = ArchiveTimestamp.from_now()
+        f["lastwritetime"] = ArchiveTimestamp.from_now()
         return f
 
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> List[str]:
         """Return the members of the archive as a list of their names. It has
-           the same order as the list returned by getmembers().
+        the same order as the list returned by getmembers().
         """
         return list(map(lambda x: x.filename, self.files))
 
     def archiveinfo(self) -> ArchiveInfo:
         fstat = os.stat(self.filename)
         total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
-        return ArchiveInfo(self.filename, fstat.st_size, self.header.size, self._get_method_names(),
-                           self._is_solid(), len(self.header.main_streams.unpackinfo.folders),
-                           total_uncompressed)
+        return ArchiveInfo(
+            self.filename,
+            fstat.st_size,
+            self.header.size,
+            self._get_method_names(),
+            self._is_solid(),
+            len(self.header.main_streams.unpackinfo.folders),
+            total_uncompressed,
+        )
 
     def needs_password(self) -> bool:
         return self.password_protected
@@ -844,8 +903,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
         for f in self.files:
             if f.lastwritetime is not None:
                 lastmodified = filetime_to_dt(f.lastwritetime)
-            alist.append(FileInfo(f.filename, f.compressed, f.uncompressed, f.archivable, f.is_directory,
-                                  lastmodified, f.crc32))
+            alist.append(
+                FileInfo(
+                    f.filename,
+                    f.compressed,
+                    f.uncompressed,
+                    f.archivable,
+                    f.is_directory,
+                    lastmodified,
+                    f.crc32,
+                )
+            )
         return alist
 
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
@@ -853,9 +921,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
-           directory and set owner, modification time and permissions on
-           directories afterwards. `path' specifies a different directory
-           to extract to.
+        directory and set owner, modification time and permissions on
+        directories afterwards. `path' specifies a different directory
+        to extract to.
         """
         self._extract(path=path, return_dict=False, callback=callback)
 
@@ -874,15 +942,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
             else:
                 if item is None:
                     break
-                elif item[0] == 's':
+                elif item[0] == "s":
                     callback.report_start(item[1], item[2])
-                elif item[0] == 'e':
+                elif item[0] == "e":
                     callback.report_end(item[1], item[2])
-                elif item[0] == 'pre':
+                elif item[0] == "pre":
                     callback.report_start_preparation()
-                elif item[0] == 'post':
+                elif item[0] == "post":
                     callback.report_postprocess()
-                elif item[0] == 'w':
+                elif item[0] == "w":
                     callback.report_warning(item[1])
                 else:
                     pass
@@ -909,7 +977,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise ValueError("Unsupported file type.")
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.header.files_info.files.append(file_info)
-        self.header.files_info.emptyfiles.append(file_info['emptystream'])
+        self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
@@ -941,7 +1009,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise ValueError("Wrong argument passed for argument bio.")
         file_info = self._make_file_info_from_name(bio, size, arcname)
         self.header.files_info.files.append(file_info)
-        self.header.files_info.emptyfiles.append(file_info['emptystream'])
+        self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
         folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=False)
@@ -950,7 +1018,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
         if isinstance(data, str):
-            self.writef(io.BytesIO(data.encode('UTF-8')), arcname)
+            self.writef(io.BytesIO(data.encode("UTF-8")), arcname)
         elif isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview):
             self.writef(io.BytesIO(data), arcname)
         else:
@@ -960,11 +1028,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
-        if 'w' in self.mode:
+        if "w" in self.mode:
             self._write_flush()
-        if 'a' in self.mode:
+        if "a" in self.mode:
             self._write_flush()
-        if 'r' in self.mode:
+        if "r" in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
                 self.reporterd.join(1)
@@ -976,7 +1044,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def reset(self) -> None:
         """When read mode, it reset file pointer, decompress worker and decompressor"""
-        if self.mode == 'r':
+        if self.mode == "r":
             self.fp.seek(self.afterheader)
             self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
             if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
@@ -1026,14 +1094,13 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
         if isinstance(file, io.IOBase) and hasattr(file, "read"):
             result = SevenZipFile._check_7zfile(file)  # type: ignore  # noqa
         elif isinstance(file, str):
-            with open(file, 'rb') as fp:
+            with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
-        elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or \
-                isinstance(file, pathlib.WindowsPath):
-            with file.open(mode='rb') as fp:  # type: ignore  # noqa
+        elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or isinstance(file, pathlib.WindowsPath):
+            with file.open(mode="rb") as fp:  # type: ignore  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise TypeError('invalid type: file should be str, pathlib.Path or BinaryIO, but {}'.format(type(file)))
+            raise TypeError("invalid type: file should be str, pathlib.Path or BinaryIO, but {}".format(type(file)))
     except OSError:
         pass
     return result
@@ -1048,8 +1115,8 @@ def unpack_7zarchive(archive, path, extra=None):
 
 def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
     """Function for registering with shutil.register_archive_format()"""
-    target_name = '{}.7z'.format(base_name)
-    archive = SevenZipFile(target_name, mode='w')
+    target_name = "{}.7z".format(base_name)
+    archive = SevenZipFile(target_name, mode="w")
     archive.writeall(path=base_dir)
     archive.close()
 
@@ -1071,11 +1138,18 @@ class Worker:
 
     def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
-        if hasattr(self.header, 'main_streams') and self.header.main_streams is not None:
+        if hasattr(self.header, "main_streams") and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
             numfolders = self.header.main_streams.unpackinfo.numfolders
             if numfolders == 1:
-                self.extract_single(fp, self.files, self.src_start, src_end, q, skip_notarget=skip_notarget)
+                self.extract_single(
+                    fp,
+                    self.files,
+                    self.src_start,
+                    src_end,
+                    q,
+                    skip_notarget=skip_notarget,
+                )
             else:
                 folders = self.header.main_streams.unpackinfo.folders
                 positions = self.header.main_streams.packinfo.packpositions
@@ -1086,21 +1160,34 @@ class Worker:
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
                                 continue
-                        self.extract_single(fp, folders[i].files, self.src_start + positions[i],
-                                            self.src_start + positions[i + 1], q, skip_notarget=skip_notarget)
+                        self.extract_single(
+                            fp,
+                            folders[i].files,
+                            self.src_start + positions[i],
+                            self.src_start + positions[i + 1],
+                            q,
+                            skip_notarget=skip_notarget,
+                        )
                 else:
-                    filename = getattr(fp, 'name', None)
-                    self.extract_single(open(filename, 'rb'), empty_files, 0, 0, q)
+                    filename = getattr(fp, "name", None)
+                    self.extract_single(open(filename, "rb"), empty_files, 0, 0, q)
                     concurrent_tasks = []
                     exc_q = queue.Queue()  # type: queue.Queue
                     for i in range(numfolders):
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
                                 continue
-                        p = self.concurrent(target=self.extract_single,
-                                            args=(filename, folders[i].files,
-                                                  self.src_start + positions[i], self.src_start + positions[i + 1],
-                                                  q, exc_q, skip_notarget))
+                        p = self.concurrent(
+                            target=self.extract_single,
+                            args=(filename,
+                                  folders[i].files,
+                                  self.src_start + positions[i],
+                                  self.src_start + positions[i + 1],
+                                  q,
+                                  exc_q,
+                                  skip_notarget
+                            ),
+                        )
                         p.start()
                         concurrent_tasks.append(p)
                     for p in concurrent_tasks:
@@ -1114,26 +1201,40 @@ class Worker:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0, q)
 
-    def extract_single(self, fp: Union[BinaryIO, str], files, src_start: int, src_end: int,
-                       q: Optional[queue.Queue], exc_q: Optional[queue.Queue] = None, skip_notarget=True) -> None:
+    def extract_single(
+        self,
+        fp: Union[BinaryIO, str],
+        files,
+        src_start: int,
+        src_end: int,
+        q: Optional[queue.Queue],
+        exc_q: Optional[queue.Queue] = None,
+        skip_notarget=True,
+    ) -> None:
         """Single thread extractor that takes file lists in single 7zip folder."""
         if files is None:
             return
         try:
             if isinstance(fp, str):
-                fp = open(fp, 'rb')
+                fp = open(fp, "rb")
             fp.seek(src_start)
             just_check = []  # type: List[ArchiveFile]
             for f in files:
                 if q is not None:
-                    q.put(('s', str(f.filename), str(f.compressed) if f.compressed is not None else '0'))
+                    q.put(
+                        (
+                            "s",
+                            str(f.filename),
+                            str(f.compressed) if f.compressed is not None else "0",
+                        )
+                    )
                 fileish = self.target_filepath.get(f.id, None)
                 if fileish is not None:
                     # delayed execution of crc check.
                     self._check(fp, just_check, src_end)
                     just_check = []
                     fileish.parent.mkdir(parents=True, exist_ok=True)
-                    with fileish.open(mode='wb') as ofp:
+                    with fileish.open(mode="wb") as ofp:
                         if not f.emptystream:
                             # extract to file
                             crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
@@ -1145,7 +1246,7 @@ class Worker:
                 elif not f.emptystream:
                     just_check.append(f)
                 if q is not None:
-                    q.put(('e', str(f.filename), str(f.uncompressed)))
+                    q.put(("e", str(f.filename), str(f.uncompressed)))
             if not skip_notarget:
                 # delayed execution of crc check.
                 self._check(fp, just_check, src_end)
@@ -1164,17 +1265,24 @@ class Worker:
             if f.crc32 is not None and crc32 != f.crc32:
                 raise CrcError("{}".format(f.filename))
 
-    def decompress(self, fp: BinaryIO, folder, fq: IO[Any],
-                   size: int, compressed_size: Optional[int], src_end: int) -> int:
+    def decompress(
+        self,
+        fp: BinaryIO,
+        folder,
+        fq: IO[Any],
+        size: int,
+        compressed_size: Optional[int],
+        src_end: int,
+    ) -> int:
         """decompressor wrapper called from extract method.
 
-           :parameter fp: archive source file pointer
-           :parameter folder: Folder object that have decompressor object.
-           :parameter fq: output file pathlib.Path
-           :parameter size: uncompressed size of target file.
-           :parameter compressed_size: compressed size of target file.
-           :parameter src_end: end position of the folder
-           :returns None
+        :parameter fp: archive source file pointer
+        :parameter folder: Folder object that have decompressor object.
+        :parameter fq: output file pathlib.Path
+        :parameter size: uncompressed size of target file.
+        :parameter compressed_size: compressed size of target file.
+        :parameter src_end: end position of the folder
+        :returns None
         """
         assert folder is not None
         out_remaining = size
@@ -1190,12 +1298,11 @@ class Worker:
                 break
         if fp.tell() >= src_end:
             if decompressor.crc is not None and not decompressor.check_crc():
-                print('\nCRC error! expected: {}, real: {}'.format(decompressor.crc, decompressor.digest))
+                print("\nCRC error! expected: {}, real: {}".format(decompressor.crc, decompressor.digest))
         return crc32
 
     def _find_link_target(self, target):
-        """Find the target member of a symlink or hardlink member in the archive.
-        """
+        """Find the target member of a symlink or hardlink member in the archive."""
         targetname = target.as_posix()  # type: str
         linkname = readlink(targetname)
         # Check windows full path symlinks
@@ -1230,12 +1337,12 @@ class Worker:
         compressor = folder.get_compressor()
         if assym:
             link_target = self._find_link_target(f.origin)  # type: str
-            tgt = link_target.encode('utf-8')  # type: bytes
+            tgt = link_target.encode("utf-8")  # type: bytes
             fd = io.BytesIO(tgt)
             insize, foutsize, crc = compressor.compress(fd, fp)
             fd.close()
         else:
-            with f.origin.open(mode='rb') as fd:
+            with f.origin.open(mode="rb") as fd:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
@@ -1256,10 +1363,10 @@ class Worker:
         compressor = folder.get_compressor()
         foutsize = compressor.flush(fp)
         if len(self.files) > 0:
-            if 'maxsize' in self.header.files_info.files[self.last_file_index]:
-                self.header.files_info.files[self.last_file_index]['maxsize'] += foutsize
+            if "maxsize" in self.header.files_info.files[self.last_file_index]:
+                self.header.files_info.files[self.last_file_index]["maxsize"] += foutsize
             else:
-                self.header.files_info.files[self.last_file_index]['maxsize'] = foutsize
+                self.header.files_info.files[self.last_file_index]["maxsize"] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.numstreams += 1
         self.header.main_streams.packinfo.crcs.append(compressor.digest)
@@ -1272,13 +1379,13 @@ class Worker:
         f = files[self.current_file_index]
         if f.has_strdata():
             foutsize, crc = self.writestr(fp, f, folder)
-            self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
-            self.header.files_info.files[self.current_file_index]['digest'] = crc
+            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+            self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
         elif (f.is_symlink and not deref) or not f.emptystream:
             foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
-            self.header.files_info.files[self.current_file_index]['maxsize'] = foutsize
-            self.header.files_info.files[self.current_file_index]['digest'] = crc
+            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+            self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
         self.current_file_index += 1
 
