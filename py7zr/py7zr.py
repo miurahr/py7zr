@@ -295,7 +295,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ) -> None:
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        self.password_protected = (password is not None)
+        self.password_protected = password is not None
         if blocksize:
             self._block_size = blocksize
         else:

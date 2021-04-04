@@ -170,6 +170,7 @@ class AESCompressor(ISevenZipCompressor):
 
 
 class AESDecompressor(ISevenZipDecompressor):
+    """Decrypt data"""
 
     def __init__(self, aes_properties: bytes, password: str, blocksize: Optional[int] = None) -> None:
         firstbyte = aes_properties[0]
@@ -269,6 +270,7 @@ class CopyDecompressor(ISevenZipDecompressor):
 
 
 class PpmdDecompressor(ISevenZipDecompressor):
+    """Decompress PPMd compressed data"""
 
     def __init__(self, properties: bytes, blocksize: Optional[int] = None):
         if not isinstance(properties, bytes):
@@ -314,6 +316,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
 
 
 class PpmdCompressor(ISevenZipCompressor):
+    """Compress with PPMd compression algorithm"""
 
     def __init__(self, level: int, mem: int, blocksize: Optional[int] = None):
         self._buf = BufferedRW(blocksize)

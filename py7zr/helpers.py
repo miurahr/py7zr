@@ -423,6 +423,7 @@ class Buffer:
 
 
 class BufferedRW(io.BufferedIOBase):
+    """Buffer helper class which allow read/write FIFO"""
 
     def __init__(self, blocksize: Optional[int] = None):
         self._buf = bytearray()
