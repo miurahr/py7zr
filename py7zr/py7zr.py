@@ -34,8 +34,9 @@ import pathlib
 import queue
 import stat
 import sys
-import threading
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from multiprocessing import Process
+from threading import Thread
+from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -292,9 +293,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         password: Optional[str] = None,
         header_encryption: bool = False,
         blocksize: Optional[int] = None,
+        mp: bool = False,
     ) -> None:
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        self.mp = mp
         self.password_protected = password is not None
         if blocksize:
             self._block_size = blocksize
@@ -343,7 +346,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if mode == "r":
                 self._real_get_contents(password)
                 self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
-                self.worker = Worker(self.files, self.afterheader, self.header)
+                self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
             elif mode in "w":
                 self._prepare_write(filters, password)
             elif mode in "x":
@@ -358,7 +361,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise e
         self._dict = {}  # type: Dict[str, IO[Any]]
         self.dereference = dereference
-        self.reporterd = None  # type: Optional[threading.Thread]
+        self.reporterd = None  # type: Optional[Thread]
         self.q = queue.Queue()  # type: queue.Queue[Any]
 
     def __enter__(self):
@@ -489,7 +492,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if callback is not None and not isinstance(callback, ExtractCallback):
             raise ValueError("Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class")
         elif callback is not None:
-            self.reporterd = threading.Thread(target=self.reporter, args=(callback,), daemon=True)
+            self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
         target_junction = []  # type: List[pathlib.Path]
         target_sym = []  # type: List[pathlib.Path]
@@ -650,7 +653,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
         self.fp.seek(pos)
         self.header.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
-        self.worker = Worker(self.files, pos, self.header)
+        self.worker = Worker(self.files, pos, self.header, self.mp)
 
     def _prepare_write(self, filters, password):
         if password is not None and filters is None:
@@ -670,7 +673,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.password = password
         self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header)
+        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
         self.worker.prepare_archive()
 
     def _write_flush(self):
@@ -1045,14 +1048,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """When read mode, it reset file pointer, decompress worker and decompressor"""
         if self.mode == "r":
             self.fp.seek(self.afterheader)
-            self.worker = Worker(self.files, self.afterheader, self.header)
+            self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
             if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
                 for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
                     folder.decompressor = None
 
     def test(self) -> Optional[bool]:
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header)
+        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
         crcs = self.header.main_streams.packinfo.crcs  # type: Optional[List[int]]
         if crcs is None or len(crcs) == 0:
             return None
@@ -1070,7 +1073,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def testzip(self) -> Optional[str]:
         self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header)
+        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
@@ -1123,13 +1126,17 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
 class Worker:
     """Extract worker class to invoke handler"""
 
-    def __init__(self, files, src_start: int, header) -> None:
+    def __init__(self, files, src_start: int, header, mp=False) -> None:
         self.target_filepath = {}  # type: Dict[int, Union[MemIO, pathlib.Path, None]]
         self.files = files
         self.src_start = src_start
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files)
+        if mp:
+            self.concurrent = Process  # type: Union[Type[Thread], Type[Process]]
+        else:
+            self.concurrent = Thread
 
     def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
@@ -1166,13 +1173,13 @@ class Worker:
                 else:
                     filename = getattr(fp, "name", None)
                     self.extract_single(open(filename, "rb"), empty_files, 0, 0, q)
-                    extract_threads = []
+                    concurrent_tasks = []
                     exc_q = queue.Queue()  # type: queue.Queue
                     for i in range(numfolders):
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
                                 continue
-                        p = threading.Thread(
+                        p = self.concurrent(
                             target=self.extract_single,
                             args=(
                                 filename,
@@ -1185,8 +1192,8 @@ class Worker:
                             ),
                         )
                         p.start()
-                        extract_threads.append(p)
-                    for p in extract_threads:
+                        concurrent_tasks.append(p)
+                    for p in concurrent_tasks:
                         p.join()
                     if exc_q.empty():
                         pass
