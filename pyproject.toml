@@ -13,3 +13,7 @@ source = ["py7zr"]
 [tool.coverage.report]
 show_missing = true
 exclude_lines = ["if __name__ == .__main__.:", "pragma: no-cover", "@abstract", "def __repr__"]
+
+[tool.black]
+line-length = 125
+target-version = ['py38']
