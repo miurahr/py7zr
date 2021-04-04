@@ -77,16 +77,18 @@ FILTER_PPMD = 0x36
 
 class Constant:
     """Constant base class."""
+
     def __setattr__(self, *_):
         pass
 
 
 class DefaultFilters(Constant):
     """Default filter values."""
-    ARCHIVE_FILTER = [{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}]
+
+    ARCHIVE_FILTER = [{"id": FILTER_X86}, {"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}]
     ENCODED_HEADER_FILTER = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}]
-    ENCRYPTED_ARCHIVE_FILTER = [{'id': FILTER_LZMA2, 'preset': 7 | PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]
-    ENCRYPTED_HEADER_FILTER = [{'id': FILTER_CRYPTO_AES256_SHA256}]
+    ENCRYPTED_ARCHIVE_FILTER = [{"id": FILTER_LZMA2, "preset": 7 | PRESET_DEFAULT}, {"id": FILTER_CRYPTO_AES256_SHA256}]
+    ENCRYPTED_HEADER_FILTER = [{"id": FILTER_CRYPTO_AES256_SHA256}]
 
 
 DEFAULT_FILTERS = DefaultFilters()
