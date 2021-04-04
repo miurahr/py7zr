@@ -293,11 +293,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         password: Optional[str] = None,
         header_encryption: bool = False,
         blocksize: Optional[int] = None,
-        mp: bool = False
+        mp: bool = False,
     ) -> None:
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        self.password_protected = (password is not None)
+        self.password_protected = password is not None
         self.block_size = RuntimeConstant(blocksize=blocksize).READ_BLOCKSIZE
         self.mp = mp
 
@@ -1179,13 +1179,14 @@ class Worker:
                                 continue
                         p = self.concurrent(
                             target=self.extract_single,
-                            args=(filename,
-                                  folders[i].files,
-                                  self.src_start + positions[i],
-                                  self.src_start + positions[i + 1],
-                                  q,
-                                  exc_q,
-                                  skip_notarget
+                            args=(
+                                filename,
+                                folders[i].files,
+                                self.src_start + positions[i],
+                                self.src_start + positions[i + 1],
+                                q,
+                                exc_q,
+                                skip_notarget,
                             ),
                         )
                         p.start()
