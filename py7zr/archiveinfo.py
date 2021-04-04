@@ -35,7 +35,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile
 from py7zr.helpers import ArchiveTimestamp, calculate_crc32
-from py7zr.properties import ENCODED_HEADER_DEFAULT, ENCRYPTED_HEADER_DEFAULT, MAGIC_7Z, Property
+from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, PROPERTY
 
 MAX_LENGTH = 65536
 P7ZIP_MAJOR_VERSION = b"\x00"
@@ -239,17 +239,17 @@ class PackInfo:
         self.packpos = read_uint64(file)
         self.numstreams = read_uint64(file)
         pid = file.read(1)
-        if pid == Property.SIZE:
+        if pid == PROPERTY.SIZE:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
             pid = file.read(1)
-            if pid == Property.CRC:
+            if pid == PROPERTY.CRC:
                 self.enable_digests = True
                 self.digestdefined = read_boolean(file, self.numstreams, True)
                 for crcexist in self.digestdefined:
                     if crcexist:
                         self.crcs.append(read_uint32(file)[0])
                 pid = file.read(1)
-        if pid != Property.END:
+        if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover  # noqa
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
         return self
@@ -257,20 +257,20 @@ class PackInfo:
     def write(self, file: BinaryIO):
         assert self.packpos is not None
         assert self.numstreams == len(self.packsizes)
-        write_byte(file, Property.PACK_INFO)
+        write_byte(file, PROPERTY.PACK_INFO)
         write_uint64(file, self.packpos)
         write_uint64(file, self.numstreams)
-        write_byte(file, Property.SIZE)
+        write_byte(file, PROPERTY.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
         if self.enable_digests:
             assert len(self.crcs) == self.numstreams
-            write_byte(file, Property.CRC)
+            write_byte(file, PROPERTY.CRC)
             write_boolean(file, self.digestdefined, True)
             for i in range(self.numstreams):
                 if self.digestdefined[i]:
                     write_uint32(file, self.crcs[i])
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class Bond:
@@ -467,7 +467,7 @@ class UnpackInfo:
 
     def _read(self, file: BinaryIO):
         pid = file.read(1)
-        if pid != Property.FOLDER:
+        if pid != PROPERTY.FOLDER:
             raise Bad7zFile("folder id expected but %s found" % repr(pid))  # pragma: no-cover
         self.numfolders = read_uint64(file)
         self.folders = []
@@ -484,29 +484,29 @@ class UnpackInfo:
 
     def _retrieve_coders_info(self, file: BinaryIO):
         pid = file.read(1)
-        if pid != Property.CODERS_UNPACK_SIZE:
+        if pid != PROPERTY.CODERS_UNPACK_SIZE:
             raise Bad7zFile("coders unpack size id expected but %s found" % repr(pid))  # pragma: no-cover
         for folder in self.folders:
             for c in folder.coders:
                 for _ in range(c["numoutstreams"]):
                     folder.unpacksizes.append(read_uint64(file))
         pid = file.read(1)
-        if pid == Property.CRC:
+        if pid == PROPERTY.CRC:
             defined = read_boolean(file, self.numfolders, checkall=True)
             crcs = read_crcs(file, self.numfolders)
             for idx, folder in enumerate(self.folders):
                 folder.digestdefined = defined[idx]
                 folder.crc = crcs[idx]
             pid = file.read(1)
-        if pid != Property.END:
+        if pid != PROPERTY.END:
             raise Bad7zFile(
                 "end id expected but 0x{:02x} found at 0x{:08x}".format(ord(pid), file.tell())
             )  # pragma: no-cover  # noqa
 
     def write(self, file: BinaryIO):
         assert self.numfolders == len(self.folders)
-        file.write(Property.UNPACK_INFO)
-        file.write(Property.FOLDER)
+        file.write(PROPERTY.UNPACK_INFO)
+        file.write(PROPERTY.FOLDER)
         write_uint64(file, self.numfolders)
         write_byte(file, b"\x00")
         for folder in self.folders:
@@ -517,12 +517,12 @@ class UnpackInfo:
         #   write_byte(file, b'\x01')
         #   assert self.datastreamidx is not None
         #   write_uint64(file, self.datastreamidx)
-        write_byte(file, Property.CODERS_UNPACK_SIZE)
+        write_byte(file, PROPERTY.CODERS_UNPACK_SIZE)
         for folder in self.folders:
             for s in folder.unpacksizes:
                 write_uint64(file, s)
         # FIXME: write CRCs here.
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class SubstreamsInfo:
@@ -549,12 +549,12 @@ class SubstreamsInfo:
 
     def _read(self, file: BinaryIO, numfolders: int, folders: List[Folder]):
         pid = file.read(1)
-        if pid == Property.NUM_UNPACK_STREAM:
+        if pid == PROPERTY.NUM_UNPACK_STREAM:
             self.num_unpackstreams_folders = [read_uint64(file) for _ in range(numfolders)]
             pid = file.read(1)
         else:
             self.num_unpackstreams_folders = [1] * numfolders
-        if pid == Property.SIZE:
+        if pid == PROPERTY.SIZE:
             self.unpacksizes = []
             for i in range(len(self.num_unpackstreams_folders)):
                 totalsize = 0  # type: int
@@ -571,7 +571,7 @@ class SubstreamsInfo:
             if numsubstreams != 1 or not folders[i].digestdefined:
                 num_digests += numsubstreams
             num_digests_total += numsubstreams
-        if pid == Property.CRC:
+        if pid == PROPERTY.CRC:
             defined = read_boolean(file, num_digests, checkall=True)
             crcs = read_crcs(file, num_digests)
             didx = 0
@@ -587,7 +587,7 @@ class SubstreamsInfo:
                         self.digests.append(crcs[didx])
                         didx += 1
             pid = file.read(1)
-        if pid != Property.END:
+        if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %r found" % pid)  # pragma: no-cover
         if not self.digestsdefined:
             self.digestsdefined = [False] * num_digests_total
@@ -596,16 +596,16 @@ class SubstreamsInfo:
     def write(self, file: BinaryIO):
         if len(self.num_unpackstreams_folders) == 0:  # pragma: no-cover  # nothing to write
             return
-        write_byte(file, Property.SUBSTREAMS_INFO)
+        write_byte(file, PROPERTY.SUBSTREAMS_INFO)
         solid = functools.reduce(lambda x, y: x or (y != 1), self.num_unpackstreams_folders, False)
         if solid:
-            write_byte(file, Property.NUM_UNPACK_STREAM)
+            write_byte(file, PROPERTY.NUM_UNPACK_STREAM)
             for n in self.num_unpackstreams_folders:
                 write_uint64(file, n)
         has_multi = functools.reduce(lambda x, y: x or (y > 1), self.num_unpackstreams_folders, False)
         if has_multi:
             assert self.unpacksizes
-            write_byte(file, Property.SIZE)
+            write_byte(file, PROPERTY.SIZE)
             idx = 0
             for i, num in enumerate(self.num_unpackstreams_folders):
                 for j in range(num):
@@ -613,10 +613,10 @@ class SubstreamsInfo:
                         write_uint64(file, self.unpacksizes[idx])
                     idx += 1
         if functools.reduce(lambda x, y: x or y, self.digestsdefined, False):
-            write_byte(file, Property.CRC)
+            write_byte(file, PROPERTY.CRC)
             write_boolean(file, self.digestsdefined, all_defined=True)
             write_crcs(file, self.digests)
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class StreamsInfo:
@@ -637,27 +637,27 @@ class StreamsInfo:
 
     def read(self, file: BinaryIO) -> None:
         pid = file.read(1)
-        if pid == Property.PACK_INFO:
+        if pid == PROPERTY.PACK_INFO:
             self.packinfo = PackInfo.retrieve(file)
             pid = file.read(1)
-        if pid == Property.UNPACK_INFO:
+        if pid == PROPERTY.UNPACK_INFO:
             self.unpackinfo = UnpackInfo.retrieve(file)
             pid = file.read(1)
-        if pid == Property.SUBSTREAMS_INFO:
+        if pid == PROPERTY.SUBSTREAMS_INFO:
             self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
-        if pid != Property.END:
+        if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover
 
     def write(self, file: BinaryIO):
-        write_byte(file, Property.MAIN_STREAMS_INFO)
+        write_byte(file, PROPERTY.MAIN_STREAMS_INFO)
         if self.packinfo is not None:
             self.packinfo.write(file)
         if self.unpackinfo is not None:
             self.unpackinfo.write(file)
         if self.substreamsinfo is not None:
             self.substreamsinfo.write(file)
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class HeaderStreamsInfo(StreamsInfo):
@@ -668,10 +668,10 @@ class HeaderStreamsInfo(StreamsInfo):
         self.unpackinfo.numfolders = 1
 
     def write(self, file: BinaryIO):
-        write_byte(file, Property.ENCODED_HEADER)
+        write_byte(file, PROPERTY.ENCODED_HEADER)
         self.packinfo.write(file)
         self.unpackinfo.write(file)
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class FilesInfo:
@@ -696,21 +696,21 @@ class FilesInfo:
         numemptystreams = 0
         while True:
             prop = fp.read(1)
-            if prop == Property.END:
+            if prop == PROPERTY.END:
                 break
             size = read_uint64(fp)
-            if prop == Property.DUMMY:
+            if prop == PROPERTY.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
                 continue
             buffer = io.BytesIO(fp.read(size))
-            if prop == Property.EMPTY_STREAM:
+            if prop == PROPERTY.EMPTY_STREAM:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
                 list(map(lambda x, y: x.update({"emptystream": y}), self.files, isempty))  # type: ignore
                 numemptystreams += isempty.count(True)
-            elif prop == Property.EMPTY_FILE:
+            elif prop == PROPERTY.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)
-            elif prop == Property.NAME:
+            elif prop == PROPERTY.NAME:
                 external = buffer.read(1)
                 if external == b"\x00":
                     self._read_name(buffer)
@@ -720,13 +720,13 @@ class FilesInfo:
                     fp.seek(dataindex, 0)
                     self._read_name(fp)
                     fp.seek(current_pos, 0)
-            elif prop == Property.CREATION_TIME:
+            elif prop == PROPERTY.CREATION_TIME:
                 self._read_times(buffer, "creationtime")
-            elif prop == Property.LAST_ACCESS_TIME:
+            elif prop == PROPERTY.LAST_ACCESS_TIME:
                 self._read_times(buffer, "lastaccesstime")
-            elif prop == Property.LAST_WRITE_TIME:
+            elif prop == PROPERTY.LAST_WRITE_TIME:
                 self._read_times(buffer, "lastwritetime")
-            elif prop == Property.ATTRIBUTES:
+            elif prop == PROPERTY.ATTRIBUTES:
                 defined = read_boolean(buffer, numfiles, checkall=True)
                 external = buffer.read(1)
                 if external == b"\x00":
@@ -738,7 +738,7 @@ class FilesInfo:
                     fp.seek(dataindex, 0)
                     self._read_attributes(fp, defined)
                     fp.seek(current_pos, 0)
-            elif prop == Property.START_POS:
+            elif prop == PROPERTY.START_POS:
                 self._read_start_pos(buffer)
             else:
                 raise Bad7zFile("invalid type %r" % prop)  # pragma: no-cover
@@ -809,7 +809,7 @@ class FilesInfo:
                 names.append(f["filename"])
                 name_size += len(f["filename"].encode("utf-16LE")) + 2  # len(str + NULL_WORD)
         if name_defined > 0:
-            write_byte(file, Property.NAME)
+            write_byte(file, PROPERTY.NAME)
             write_uint64(file, name_size + 1)
             write_byte(file, b"\x00")
             for n in names:
@@ -827,7 +827,7 @@ class FilesInfo:
         size = num_defined * 4 + 2
         if num_defined != len(defined):
             size += bits_to_bytes(num_defined)
-        write_byte(file, Property.ATTRIBUTES)
+        write_byte(file, PROPERTY.ATTRIBUTES)
         write_uint64(file, size)
         write_boolean(file, defined, all_defined=True)
         write_byte(file, b"\x00")
@@ -837,38 +837,38 @@ class FilesInfo:
 
     def write(self, file: BinaryIO):
         assert self.files is not None
-        write_byte(file, Property.FILES_INFO)
+        write_byte(file, PROPERTY.FILES_INFO)
         numfiles = len(self.files)
         write_uint64(file, numfiles)
         emptystreams = []  # List[bool]
         for f in self.files:
             emptystreams.append(f["emptystream"])
         if self._are_there(emptystreams):
-            write_byte(file, Property.EMPTY_STREAM)
+            write_byte(file, PROPERTY.EMPTY_STREAM)
             write_uint64(file, bits_to_bytes(numfiles))
             write_boolean(file, emptystreams, all_defined=False)
         elif self._are_there(self.emptyfiles):
-            self._write_prop_bool_vector(file, Property.EMPTY_FILE, self.emptyfiles)
+            self._write_prop_bool_vector(file, PROPERTY.EMPTY_FILE, self.emptyfiles)
         # padding
         pos = file.tell()
         padlen = -pos & 3  # padlen = 4 - pos % 4 if pos % 4 > 0 else 0
         if 2 >= padlen > 0:
             padlen += 4
         if padlen > 2:
-            write_byte(file, Property.DUMMY)
+            write_byte(file, PROPERTY.DUMMY)
             write_byte(file, (padlen - 2).to_bytes(1, "little"))
             write_bytes(file, bytes(padlen - 2))
         # Name
         self._write_names(file)
         # timestamps
-        # self._write_times(file, Property.CREATION_TIME, 'creationtime')
-        # self._write_times(file, Property.LAST_ACCESS_TIME, 'lastaccesstime')
-        self._write_times(file, Property.LAST_WRITE_TIME, "lastwritetime")
+        # self._write_times(file, PROPERTY.CREATION_TIME, 'creationtime')
+        # self._write_times(file, PROPERTY.LAST_ACCESS_TIME, 'lastaccesstime')
+        self._write_times(file, PROPERTY.LAST_WRITE_TIME, "lastwritetime")
         # start_pos
         # FIXME: TBD
         # attribute
         self._write_attributes(file)
-        write_byte(file, Property.END)
+        write_byte(file, PROPERTY.END)
 
 
 class WriteWithCrc:
@@ -917,10 +917,10 @@ class Header:
         if not pid:
             # empty archive
             return
-        if pid == Property.HEADER:
+        if pid == PROPERTY.HEADER:
             self._extract_header_info(buffer)
             return
-        if pid != Property.ENCODED_HEADER:
+        if pid != PROPERTY.ENCODED_HEADER:
             raise TypeError("Unknown field: %r" % id)  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
@@ -949,7 +949,7 @@ class Header:
             buffer2.write(folder_data)
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
-        if pid != Property.HEADER:
+        if pid != PROPERTY.HEADER:
             raise TypeError("Unknown field: %r" % pid)  # pragma: no-cover
         self._extract_header_info(buffer2)
 
@@ -986,19 +986,19 @@ class Header:
     def write(self, file: BinaryIO, afterheader: int, encoded=True, encrypted=False):
         startpos = file.tell()
         if encrypted:
-            filters = ENCRYPTED_HEADER_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_HEADER_FILTER
             startpos, headercrc = self._encode_header(file, afterheader, filters)
         elif encoded:
-            filters = ENCODED_HEADER_DEFAULT
+            filters = DEFAULT_FILTERS.ENCODED_HEADER_FILTER
             startpos, headercrc = self._encode_header(file, afterheader, filters)
         else:
             crcfile = WriteWithCrc(file)
-            write_byte(crcfile, Property.HEADER)  # type: ignore  # noqa
+            write_byte(crcfile, PROPERTY.HEADER)  # type: ignore  # noqa
             if self.main_streams is not None:
                 self.main_streams.write(crcfile)
             if self.files_info is not None:
                 self.files_info.write(crcfile)
-            write_byte(crcfile, Property.END)  # type: ignore
+            write_byte(crcfile, PROPERTY.END)  # type: ignore
             headercrc = crcfile.digest
         endpos = file.tell()
         header_len = endpos - startpos
@@ -1006,13 +1006,13 @@ class Header:
 
     def _extract_header_info(self, fp: BinaryIO) -> None:
         pid = fp.read(1)
-        if pid == Property.MAIN_STREAMS_INFO:
+        if pid == PROPERTY.MAIN_STREAMS_INFO:
             self.main_streams = StreamsInfo.retrieve(fp)
             pid = fp.read(1)
-        if pid == Property.FILES_INFO:
+        if pid == PROPERTY.FILES_INFO:
             self.files_info = FilesInfo.retrieve(fp)
             pid = fp.read(1)
-        if pid != Property.END:
+        if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %s found" % (repr(pid)))  # pragma: no-cover
 
     @staticmethod

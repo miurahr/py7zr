@@ -106,7 +106,7 @@ def test_pyzstd_decompressor_1():
         b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     )
     property = b"\x01\x04\x04\x00\x00"
-    decompressor = py7zr.compressor.ZstdDecompressor(property)
+    decompressor = py7zr.compressor.ZstdDecompressor(property, None)
     outdata = decompressor.decompress(compressed)
     assert outdata == plain_data
 
@@ -119,7 +119,7 @@ def test_pyzstd_decompressor_2():
     compressed_1 = b" @E\x01\x00\x04\x02\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4"
     compressed_2 = b"\xe4\x97BB\xd2\x01\x00\x18\xb8z\x02"
     property = b"\x01\x04\x04\x00\x00"
-    decompressor = py7zr.compressor.ZstdDecompressor(property)
+    decompressor = py7zr.compressor.ZstdDecompressor(property, None)
     outdata = decompressor.decompress(compressed_0)
     outdata += decompressor.decompress(compressed_1)
     outdata += decompressor.decompress(compressed_2)
