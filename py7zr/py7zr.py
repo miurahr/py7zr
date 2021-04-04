@@ -42,7 +42,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names_string
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import ARCHIVE_DEFAULT, ENCRYPTED_ARCHIVE_DEFAULT, MAGIC_7Z, RuntimeConstant
+from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
 
 if sys.platform.startswith("win"):
     import _winapi
@@ -296,7 +296,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.password_protected = password is not None
-        self.block_size = RuntimeConstant(blocksize=blocksize).READ_BLOCKSIZE
+        if blocksize:
+            self._block_size = blocksize
+        else:
+            self._block_size = get_default_blocksize()
         # Check if we were passed a file-like object or not
         if isinstance(file, str):
             self._filePassed: bool = False
@@ -633,9 +636,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _prepare_append(self, filters, password):
         if password is not None and filters is None:
-            filters = ENCRYPTED_ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_ARCHIVE_FILTER
         elif filters is None:
-            filters = ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
         folder = Folder()
@@ -651,9 +654,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _prepare_write(self, filters, password):
         if password is not None and filters is None:
-            filters = ENCRYPTED_ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ENCRYPTED_ARCHIVE_FILTER
         elif filters is None:
-            filters = ARCHIVE_DEFAULT
+            filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
         folder = Folder()
@@ -772,7 +775,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         remaining_size = size
         digest = 0
         while remaining_size > 0:
-            block = min(self.block_size, remaining_size)
+            block = min(self._block_size, remaining_size)
             digest = calculate_crc32(self.fp.read(block), digest)
             remaining_size -= block
         return digest
