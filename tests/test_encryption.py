@@ -13,7 +13,7 @@ import py7zr.compressor
 import py7zr.helpers
 import py7zr.properties
 from py7zr import PasswordRequired
-from py7zr.properties import CompressionMethod
+from py7zr.properties import COMPRESSION_METHOD
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
 os.umask(0o022)
@@ -91,11 +91,11 @@ The archive is encrypted but password is not given. FAILED.
 )
 def test_extract_encrypted_2(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath("encrypted_2.7z").open(mode="rb"), password="secret")
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]["method"] == CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[1]["method"] == CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[2]["method"] == CompressionMethod.P7Z_BCJ
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]["method"] == COMPRESSION_METHOD.CRYPT_AES256_SHA256
+    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]["method"] == COMPRESSION_METHOD.LZMA2
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[0]["method"] == COMPRESSION_METHOD.CRYPT_AES256_SHA256
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[1]["method"] == COMPRESSION_METHOD.LZMA2
+    assert archive.header.main_streams.unpackinfo.folders[1].coders[2]["method"] == COMPRESSION_METHOD.P7Z_BCJ
     archive.extractall(path=tmp_path)
     archive.close()
 

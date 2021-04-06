@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import ppmd as Ppmd  # type: ignore
+import ppmd
 import pyzstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -54,7 +54,6 @@ from py7zr.properties import (
     FILTER_X86,
     FILTER_ZSTD,
     MAGIC_7Z,
-    CompressionMethod,
     get_default_blocksize,
 )
 
@@ -107,7 +106,7 @@ class AESCompressor(ISevenZipCompressor):
         self.cycles = 19  # as same as p7zip
         self.iv = get_random_bytes(16)
         self.salt = b""
-        self.method = CompressionMethod.CRYPT_AES256_SHA256
+        self.method = COMPRESSION_METHOD.CRYPT_AES256_SHA256
         key = calculate_key(password.encode("utf-16LE"), self.cycles, self.salt, "sha256")
         self.iv += bytes(self.AES_CBC_BLOCKSIZE - len(self.iv))  # zero padding if iv < AES_CBC_BLOCKSIZE
         self.cipher = AES.new(key, AES.MODE_CBC, self.iv)
@@ -293,7 +292,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
         self.initialized = False
 
     def _init2(self):
-        self.decoder = Ppmd.Ppmd7Decoder(self._buf, self.level, self.mem)  # type: ignore
+        self.decoder = ppmd.Ppmd7Decoder(self._buf, self.level, self.mem)  # type: ignore
         self.initialized = True
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
@@ -320,7 +319,7 @@ class PpmdCompressor(ISevenZipCompressor):
 
     def __init__(self, level: int, mem: int, blocksize: Optional[int] = None):
         self._buf = BufferedRW(blocksize)
-        self.encoder = Ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
+        self.encoder = ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         self.encoder.encode(data)

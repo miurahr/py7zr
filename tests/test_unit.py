@@ -40,7 +40,7 @@ def test_py7zr_mainstreams():
         b"\x08\r\x02\t!\n\x01>jb\x08\xce\x9a\xb7\x88\x00\x00"
     )
     pid = header_data.read(1)
-    assert pid == py7zr.properties.Property.MAIN_STREAMS_INFO
+    assert pid == py7zr.properties.PROPERTY.MAIN_STREAMS_INFO
     streams = py7zr.archiveinfo.StreamsInfo.retrieve(header_data)
     assert streams is not None
 
@@ -49,7 +49,7 @@ def test_py7zr_mainstreams():
 def test_py7zr_folder_retrive():
     header_data = io.BytesIO(b"\x0b" b"\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00")
     pid = header_data.read(1)
-    assert pid == py7zr.properties.Property.FOLDER
+    assert pid == py7zr.properties.PROPERTY.FOLDER
     num_folders = py7zr.archiveinfo.read_byte(header_data)
     assert num_folders == 1
     external = py7zr.archiveinfo.read_byte(header_data)
@@ -86,7 +86,7 @@ def test_py7zr_folder_write():
     #
     buffer = io.BytesIO()
     # following should be run in StreamsInfo class.
-    py7zr.archiveinfo.write_byte(buffer, py7zr.properties.Property.FOLDER)
+    py7zr.archiveinfo.write_byte(buffer, py7zr.properties.PROPERTY.FOLDER)
     py7zr.archiveinfo.write_uint64(buffer, len(folders))
     external = b"\x00"
     py7zr.archiveinfo.write_byte(buffer, external)
@@ -130,7 +130,7 @@ def test_py7zr_unpack_info():
 def test_py7zr_substreamsinfo():
     header_data = io.BytesIO(b"\x08\x0d\x03\x09\x6f\x3a\n\x01\xdb\xaej\xb3\x07\x8d\xbf\xdc\xber\xfc\x80\x00")
     pid = header_data.read(1)
-    assert pid == py7zr.properties.Property.SUBSTREAMS_INFO
+    assert pid == py7zr.properties.PROPERTY.SUBSTREAMS_INFO
     folders = [py7zr.archiveinfo.Folder()]
     folders[0].unpacksizes = [728]
     numfolders = 1
@@ -206,7 +206,7 @@ def test_py7zr_files_info_1():
         b"\x83yH\xc6\x01\x15\x0e\x01\x00\x10\x00\x00\x00 \x00\x00\x00 \x00\x00\x00\x00\x00"
     )
     pid = header_data.read(1)
-    assert pid == py7zr.properties.Property.FILES_INFO
+    assert pid == py7zr.properties.PROPERTY.FILES_INFO
     files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert files_info.files[0].get("filename") == "test"
@@ -225,7 +225,7 @@ def test_py7zr_files_info_2():
         b"\x00  \x00\x00  \x00\x00\x00\x00"
     )
     pid = header_data.read(1)
-    assert pid == py7zr.properties.Property.FILES_INFO
+    assert pid == py7zr.properties.PROPERTY.FILES_INFO
     files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
     assert files_info is not None
     assert len(files_info.files) == 4
@@ -758,7 +758,7 @@ def test_supported_method_is_crypto_id():
 @pytest.mark.unit
 def test_supported_method_get_method_id():
     id = py7zr.compressor.SupportedMethods.get_method_id(py7zr.properties.FILTER_CRYPTO_AES256_SHA256)
-    assert id == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
+    assert id == py7zr.properties.COMPRESSION_METHOD.CRYPT_AES256_SHA256
 
 
 @pytest.mark.unit
