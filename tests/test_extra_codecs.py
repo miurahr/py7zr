@@ -156,7 +156,7 @@ def test_sevenzipcompressor_aes_lzma2():
 @pytest.mark.unit
 def test_aes_compressor():
     compressor = py7zr.compressor.AESCompressor("secret")
-    assert compressor.method == py7zr.properties.COMPRESSION_METHOD.CRYPT_AES256_SHA256
+    assert compressor.method == py7zr.properties.CompressionMethod.CRYPT_AES256_SHA256
     assert len(compressor.encode_filter_properties()) == 2 + 16
 
 
