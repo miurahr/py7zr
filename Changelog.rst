@@ -28,6 +28,15 @@ Security
 Deprecated
 ----------
 
+`v0.15.1`_
+==========
+
+Changed
+-------
+- Update release automation script.
+- Bump ppmd-cffi and bcj-cffi versions(#320)
+
+
 `v0.15.0`_
 ==========
 
@@ -322,7 +331,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.15.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.15.1...HEAD
+.. _v0.15.1: https://github.com/miurahr/py7zr/compare/v0.15.0...v0.15.1
 .. _v0.15.0: https://github.com/miurahr/py7zr/compare/v0.14.1...v0.15.0
 .. _v0.14.1: https://github.com/miurahr/py7zr/compare/v0.14.0...v0.14.1
 .. _v0.14.0: https://github.com/miurahr/py7zr/compare/v0.13.0...v0.14.0
