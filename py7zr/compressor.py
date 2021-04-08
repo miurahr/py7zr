@@ -63,8 +63,6 @@ try:
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
 
-ZSTD_VERSION = (1, 4, 8)
-
 
 class ISevenZipCompressor(ABC):
     @abstractmethod
@@ -439,7 +437,7 @@ class ZstdCompressor:
 
 class ZstdDecompressor:
     def __init__(self, properties, blocksize):
-        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > ZSTD_VERSION:
+        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > pyzstd.zstd_version_info:
             raise UnsupportedCompressionMethodError
         self.decompressor = pyzstd.ZstdDecompressor()
 
@@ -732,7 +730,7 @@ class SevenZipCompressor:
         elif SupportedMethods.need_property(filter_id):
             if filter_id == FILTER_ZSTD:
                 level = alt_filter.get("level", 3)
-                properties = struct.pack("BBBBB", ZSTD_VERSION[0], ZSTD_VERSION[1], level, 0, 0)
+                properties = struct.pack("BBBBB", pyzstd.zstd_version_info[0], pyzstd.zstd_version_info[1], level, 0, 0)
                 compressor = algorithm_class_map[filter_id][0](level=level)
             elif filter_id == FILTER_PPMD:
                 order = alt_filter.get("level", 6)
