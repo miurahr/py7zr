@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pyppmd
+import pyppmd  # type: ignore
 import pyzstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
