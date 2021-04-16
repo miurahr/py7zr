@@ -20,10 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #
-import array
 import ctypes
-import io
-import mmap
 import os
 import pathlib
 import platform
@@ -36,7 +33,6 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
-from py7zr.properties import get_default_blocksize
 
 
 def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
