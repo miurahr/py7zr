@@ -79,6 +79,54 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
     benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
 
 
+textfilters = [("ppmd", [{"id": py7zr.FILTER_PPMD}])]
+
+
+@pytest.mark.benchmark(group="compress")
+@pytest.mark.parametrize("name, filters", textfilters)
+def test_benchmark_text_compress(tmp_path, benchmark, name, filters):
+    def compressor(filters):
+        with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", filters=filters) as szf:
+            szf.writeall(tmp_path.joinpath("src"), "src")
+
+    def setup():
+        if tmp_path.joinpath("target.7z").exists():
+            tmp_path.joinpath("target.7z").unlink()
+
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "bzip2_2.7z"), "r") as szf:
+        szf.extractall(path=tmp_path.joinpath("src"))
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "bzip2_2.7z"), "r") as szf:
+        archive_info = szf.archiveinfo()
+        source_size = archive_info.uncompressed
+    FILTER = [{"id": py7zr.FILTER_PPMD}]
+    benchmark.extra_info["data_size"] = source_size
+    benchmark.pedantic(compressor, setup=setup, args=[FILTER], iterations=1, rounds=3)
+    benchmark.extra_info["ratio"] = str(tmp_path.joinpath("target.7z").stat().st_size / source_size)
+
+
+@pytest.mark.benchmark(group="decompress")
+@pytest.mark.parametrize("name, filters", textfilters)
+def test_benchmark_text_decompress(tmp_path, benchmark, name, filters):
+    def decompressor():
+        with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "r") as szf:
+            szf.extractall(tmp_path.joinpath("tgt"))
+
+    def setup():
+        shutil.rmtree(tmp_path.joinpath("tgt"), ignore_errors=True)
+
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "bzip2_2.7z"), "r") as szf:
+        szf.extractall(path=tmp_path.joinpath("src"))
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "bzip2_2.7z"), "r") as szf:
+        archive_info = szf.archiveinfo()
+        source_size = archive_info.uncompressed
+    password = None
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", filters=filters, password=password) as szf:
+        szf.writeall(tmp_path.joinpath("src"), "src")
+    benchmark.extra_info["data_size"] = source_size
+    benchmark.extra_info["ratio"] = str(tmp_path.joinpath("target.7z").stat().st_size / source_size)
+    benchmark.pedantic(decompressor, setup=setup, args=[], iterations=1, rounds=3)
+
+
 @pytest.mark.benchmark(group="calculate_key")
 def test_benchmark_calculate_key1(benchmark):
     password = "secret".encode("utf-16LE")
