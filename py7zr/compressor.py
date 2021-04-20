@@ -29,13 +29,13 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import ppmd as Ppmd  # type: ignore
+import pyppmd
 import pyzstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, BufferedRW, calculate_crc32, calculate_key
+from py7zr.helpers import Buffer, calculate_crc32, calculate_key
 from py7zr.properties import (
     COMPRESSION_METHOD,
     FILTER_ARM,
@@ -279,54 +279,27 @@ class PpmdDecompressor(ISevenZipDecompressor):
             level, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
             raise UnsupportedCompressionMethodError
-        if blocksize:
-            self.block_size = blocksize
-        else:
-            self.block_size = get_default_blocksize()
-        self._buf = BufferedRW(self.block_size)
-        self._buf = BufferedRW()
-        self.decoder = None
-        self.level = level
-        self.mem = mem
-        self.initialized = False
-
-    def _init2(self):
-        self.decoder = Ppmd.Ppmd7Decoder(self._buf, self.level, self.mem)  # type: ignore
-        self.initialized = True
+        self.decoder = pyppmd.Ppmd7Decoder(level, mem)  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
-        self._buf.write(data)
-        if not self.initialized:
-            if len(self._buf) <= 4:
-                return b""
-            self._init2()
-        assert self.decoder is not None
         if max_length <= 0:
-            return self.decoder.decode(1)
+            return self.decoder.decode(data, 1)
         if len(data) == 0:
-            return self.decoder.decode(max_length)
-        #
-        size = min(self.block_size, max_length)
-        res = bytearray()
-        while len(self._buf) > 0 and len(res) < size:
-            res += self.decoder.decode(1)
-        return bytes(res)
+            return self.decoder.flush(max_length)
+        return self.decoder.decode(data, max_length)
 
 
 class PpmdCompressor(ISevenZipCompressor):
     """Compress with PPMd compression algorithm"""
 
-    def __init__(self, level: int, mem: int, blocksize: Optional[int] = None):
-        self._buf = BufferedRW(blocksize)
-        self.encoder = Ppmd.Ppmd7Encoder(self._buf, level, mem)  # type: ignore
+    def __init__(self, level: int, mem: int):
+        self.encoder = pyppmd.Ppmd7Encoder(level, mem)  # type: ignore
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
-        self.encoder.encode(data)
-        return self._buf.read()
+        return self.encoder.encode(data)
 
     def flush(self):
-        self.encoder.flush()
-        return self._buf.read()
+        return self.encoder.flush()
 
 
 class BcjSparcDecoder(ISevenZipDecompressor):
@@ -559,7 +532,7 @@ class SevenZipDecompressor:
     def _decompress(self, data, max_length: int):
         for i, decompressor in enumerate(self.chain):
             if self._unpacked[i] < self._unpacksizes[i]:
-                if isinstance(decompressor, LZMA1Decompressor):
+                if isinstance(decompressor, LZMA1Decompressor) or isinstance(decompressor, PpmdDecompressor):
                     data = decompressor.decompress(data, max_length)  # always give max_length for lzma1
                 else:
                     data = decompressor.decompress(data)
