@@ -12,6 +12,7 @@ Added
 
 Changed
 -------
+- Use PyPPMd v0.12.1 or later for ppmd compression instead of ppmd-cffi(#322)
 
 Fixed
 -----
