@@ -311,14 +311,14 @@ There are several dependencies to support algorithms and CLI expressions.
 Package           Purpose
 ================  ================================
 `Pycryptodome`_   7zAES encryption
-`ppmd-cffi`_      PPMd compression
+`pyppmd`_         PPMd compression
 `bcj-cffi`_       BCJ filter
 `pyzstd`_         ZStandard compression
 `texttable`_      CLI
 ================  ================================
 
 .. _`Pycryptodome` : https://pypi.org/project/pycryptodome/
-.. _`ppmd-cffi` : https://pypi.org/project/ppmd-cffi/
+.. _`pyppmd` : https://pypi.org/project/pyppmd/
 .. _`bcj-cffi` : https://pypi.org/project/bcj-cffi/
 .. _`pyzstd` : https://pypi.org/project/pyzstd
 .. _`texttable` : https://pypi.org/project/texttable
