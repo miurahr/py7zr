@@ -79,7 +79,7 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
     benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
 
 
-textfilters = [ ("ppmd", [{"id": py7zr.FILTER_PPMD}])]
+textfilters = [("ppmd", [{"id": py7zr.FILTER_PPMD}])]
 
 
 @pytest.mark.benchmark(group="compress")
