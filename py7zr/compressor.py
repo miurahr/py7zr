@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pyppmd  # type: ignore
+import pyppmd
 import pyzstd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -284,6 +284,8 @@ class PpmdDecompressor(ISevenZipDecompressor):
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
         if max_length <= 0:
             return self.decoder.decode(data, 1)
+        if len(data) == 0:
+            return self.decoder.flush(max_length)
         return self.decoder.decode(data, max_length)
 
 
