@@ -101,7 +101,6 @@ def test_extract_encrypted_2(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
 def test_extract_encrypted_5(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath("encrypted_5.7z").open(mode="rb"), password="secret")
     archive.extractall(path=tmp_path)
@@ -109,7 +108,6 @@ def test_extract_encrypted_5(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
 def test_extract_encrypted_6(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath("encrypted_6.7z").open(mode="rb"), password="secret")
     archive.extractall(path=tmp_path)
@@ -279,7 +277,6 @@ def test_encrypt_file_6(tmp_path):
 
 
 @pytest.mark.files
-@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Known bug for zstd/pypy")
 def test_encrypt_file_7(tmp_path):
     filters = [{"id": py7zr.FILTER_ZSTD}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath("src").mkdir()
