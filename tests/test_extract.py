@@ -323,7 +323,7 @@ def test_skip():
 
 @pytest.mark.files
 def test_github_14_multi(tmp_path):
-    """ multiple unnamed objects."""
+    """multiple unnamed objects."""
     archive = py7zr.SevenZipFile(str(testdata_path.joinpath("github_14_multi.7z")), "r")
     assert archive.getnames() == ["github_14_multi", "github_14_multi"]
     archive.extractall(path=tmp_path)
@@ -336,7 +336,7 @@ def test_github_14_multi(tmp_path):
 
 @pytest.mark.files
 def test_github_14_multi_mem():
-    """ multiple unnamed objects."""
+    """multiple unnamed objects."""
     archive = py7zr.SevenZipFile(str(testdata_path.joinpath("github_14_multi.7z")), "r")
     assert archive.getnames() == ["github_14_multi", "github_14_multi"]
     _dict = archive.readall()
@@ -381,7 +381,7 @@ def test_multiblock_unlink(tmp_path):
 
 @pytest.mark.files
 def test_copy(tmp_path):
-    """ test loading of copy compressed files.(help wanted)"""
+    """test loading of copy compressed files.(help wanted)"""
     check_archive(
         py7zr.SevenZipFile(testdata_path.joinpath("copy.7z").open(mode="rb")),
         tmp_path,
@@ -391,7 +391,7 @@ def test_copy(tmp_path):
 
 @pytest.mark.files
 def test_copy_2(tmp_path):
-    """ test loading of copy compressed files part2."""
+    """test loading of copy compressed files part2."""
     with py7zr.SevenZipFile(testdata_path.joinpath("copy_2.7z").open(mode="rb")) as ar:
         ar.extractall(path=tmp_path)
 
