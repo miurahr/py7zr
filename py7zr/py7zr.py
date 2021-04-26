@@ -542,7 +542,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
-            if f.is_directory:
+            if return_dict:
+                if f.is_directory or f.is_socket:
+                    # ignore special files and directories
+                    pass
+                else:
+                    fname = outfilename.as_posix()
+                    _buf = io.BytesIO()
+                    self._dict[fname] = _buf
+                    self.worker.register_filelike(f.id, MemIO(_buf))
+            elif f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)
                     target_files.append((outfilename, f.file_properties()))
@@ -550,11 +559,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
             elif f.is_socket:
                 pass
-            elif return_dict:
-                fname = outfilename.as_posix()
-                _buf = io.BytesIO()
-                self._dict[fname] = _buf
-                self.worker.register_filelike(f.id, MemIO(_buf))
             elif f.is_symlink:
                 target_sym.append(outfilename)
                 try:
