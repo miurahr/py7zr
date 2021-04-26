@@ -187,7 +187,7 @@ class Cli:
         print(table.draw())
 
     def run_list(self, args):
-        """Print a table of contents to file. """
+        """Print a table of contents to file."""
         target = args.arcfile
         verbose = args.verbose
         if not py7zr.is_7zfile(target):

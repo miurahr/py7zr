@@ -903,7 +903,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return self.password_protected
 
     def list(self) -> List[FileInfo]:
-        """Returns contents information """
+        """Returns contents information"""
         alist = []  # type: List[FileInfo]
         lastmodified = None  # type: Optional[datetime.datetime]
         for f in self.files:
