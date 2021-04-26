@@ -12,7 +12,6 @@ Added
 
 Changed
 -------
-- Use PyPPMd v0.12.1 or later for ppmd compression instead of ppmd-cffi(#322)
 
 Fixed
 -----
@@ -28,6 +27,24 @@ Security
 
 Deprecated
 ----------
+
+`v0.15.2`_
+==========
+
+Added
+-----
+- CLI: create sub-command(c) has -P or --password option.(#332)
+
+Fixed
+-----
+- Fix not to produce directory when memory extraction mode.(#323)
+
+Changed
+-------
+- Use PyPPMd v0.12.1 or later for ppmd compression instead of ppmd-cffi(#322)
+- Add minimum version requirement for PyCryptodome (#329)
+- Bump setuptools_scm @6.0.1
+
 
 `v0.15.1`_
 ==========
@@ -332,7 +349,8 @@ Removed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.15.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.15.2...HEAD
+.. _v0.15.2: https://github.com/miurahr/py7zr/compare/v0.15.1...v0.15.2
 .. _v0.15.1: https://github.com/miurahr/py7zr/compare/v0.15.0...v0.15.1
 .. _v0.15.0: https://github.com/miurahr/py7zr/compare/v0.14.1...v0.15.0
 .. _v0.14.1: https://github.com/miurahr/py7zr/compare/v0.14.0...v0.14.1
