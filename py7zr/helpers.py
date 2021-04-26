@@ -50,7 +50,7 @@ def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -
 
 
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-    """Calculate 7zip AES encryption key. Base implementation. """
+    """Calculate 7zip AES encryption key. Base implementation."""
     if digest not in ("sha256"):
         raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F

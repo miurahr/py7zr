@@ -211,7 +211,7 @@ def bits_to_bytes(bit_length: int) -> int:
 
 
 class PackInfo:
-    """ information about packed streams """
+    """information about packed streams"""
 
     __slots__ = [
         "packpos",
@@ -450,7 +450,7 @@ class Folder:
 
 
 class UnpackInfo:
-    """ combines multiple folders """
+    """combines multiple folders"""
 
     __slots__ = ["numfolders", "folders", "datastreamidx"]
 
@@ -526,7 +526,7 @@ class UnpackInfo:
 
 
 class SubstreamsInfo:
-    """ defines the substreams of a folder """
+    """defines the substreams of a folder"""
 
     __slots__ = [
         "digests",
@@ -620,7 +620,7 @@ class SubstreamsInfo:
 
 
 class StreamsInfo:
-    """ information about compressed streams """
+    """information about compressed streams"""
 
     __slots__ = ["packinfo", "unpackinfo", "substreamsinfo"]
 
@@ -675,7 +675,7 @@ class HeaderStreamsInfo(StreamsInfo):
 
 
 class FilesInfo:
-    """ holds file properties """
+    """holds file properties"""
 
     __slots__ = ["files", "emptyfiles", "antifiles"]
 
@@ -887,7 +887,7 @@ class WriteWithCrc:
 
 
 class Header:
-    """ the archive header """
+    """the archive header"""
 
     __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos"]
 
