@@ -123,6 +123,12 @@ class Cli:
         create_parser.add_argument("arcfile", help="7z archive file")
         create_parser.add_argument("filenames", nargs="+", help="filenames to archive")
         create_parser.add_argument("-v", "--volume", nargs=1, help="Create volumes.")
+        create_parser.add_argument(
+            "-P",
+            "--password",
+            action="store_true",
+            help="Password protected archive(you will be asked a password).",
+        )
         append_parser = subparsers.add_parser("a")
         append_parser.set_defaults(func=self.run_append)
         append_parser.add_argument("arcfile", help="7z archive file")
@@ -378,7 +384,15 @@ class Cli:
             sys.stderr.write("Archive file exists!\n")
             self.show_help(args)
             exit(1)
-        with py7zr.SevenZipFile(target, "w") as szf:
+        if not args.password:
+            password = None  # type: Optional[str]
+        else:
+            try:
+                password = getpass.getpass()
+            except getpass.GetPassWarning:
+                sys.stderr.write("Warning: your password may be shown.\n")
+                return 1
+        with py7zr.SevenZipFile(target, "w", password=password) as szf:
             for path in filenames:
                 src = pathlib.Path(path)
                 if src.is_dir():
