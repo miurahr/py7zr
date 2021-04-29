@@ -722,7 +722,7 @@ def test_py7zr_list_values():
 def test_list_multivolume(capsys):
     arcfile = os.path.join(testdata_path, "archive.7z.001")
     basefile = os.path.join(testdata_path, "archive.7z")
-    expected = '''Listing archive: {}
+    expected = """Listing archive: {}
 --
 Path = {}
 Type = 7z
@@ -735,7 +735,9 @@ Blocks = 2
 total 19 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-'''.format(basefile, basefile)
+""".format(
+        basefile, basefile
+    )
     expected += "{} D....            0            0  mingw64\n".format(ltime2(2017, 1, 23, 6, 2, 46))
     expected += "{} D....            0            0  mingw64/bin\n".format(ltime2(2020, 6, 7, 2, 45, 18))
     expected += "{} D....            0            0  mingw64/include\n".format(ltime2(2020, 6, 7, 2, 45, 18))
@@ -749,16 +751,17 @@ total 19 files and directories in solid archive
     expected += "{} ....A         5282               mingw64/include/szlib.h\n".format(ltime2(2008, 11, 11, 16, 12, 56))
     expected += "{} ....A        60008               mingw64/lib/libszip.a\n".format(ltime2(2017, 1, 23, 6, 2, 47))
     expected += "{} ....A        10900               mingw64/lib/libszip.dll.a\n".format(ltime2(2017, 1, 23, 6, 2, 39))
-    expected += "{} ....A         1986               mingw64/share/doc/szip/COPYING\n".format(ltime2(2008, 1, 24,
-                                                                                                     23, 8, 43))
-    expected += "{} ....A         1544               mingw64/share/doc/szip/HISTORY.txt\n".format(ltime2(2010, 7, 14,
-                                                                                                         13, 43, 15))
-    expected += "{} ....A         3544               mingw64/share/doc/szip/INSTALL\n".format(ltime2(2008, 11, 11,
-                                                                                                     16, 12, 56))
-    expected += "{} ....A          564               mingw64/share/doc/szip/README\n".format(ltime2(2007, 8, 20,
-                                                                                                    18, 47, 21))
-    expected += "{} ....A          513               mingw64/share/doc/szip/RELEASE.txt\n".format(ltime2(2010, 7, 14,
-                                                                                                         13, 43, 15))
+    expected += "{} ....A         1986               mingw64/share/doc/szip/COPYING\n".format(ltime2(2008, 1, 24, 23, 8, 43))
+    expected += "{} ....A         1544               mingw64/share/doc/szip/HISTORY.txt\n".format(
+        ltime2(2010, 7, 14, 13, 43, 15)
+    )
+    expected += "{} ....A         3544               mingw64/share/doc/szip/INSTALL\n".format(
+        ltime2(2008, 11, 11, 16, 12, 56)
+    )
+    expected += "{} ....A          564               mingw64/share/doc/szip/README\n".format(ltime2(2007, 8, 20, 18, 47, 21))
+    expected += "{} ....A          513               mingw64/share/doc/szip/RELEASE.txt\n".format(
+        ltime2(2010, 7, 14, 13, 43, 15)
+    )
     expected += "{} ....A        66352        24924  mingw64/bin/libszip-0.dll\n".format(ltime2(2017, 1, 23, 6, 2, 47))
     expected += "------------------- ----- ------------ ------------  ------------------------\n"
     cli = py7zr.cli.Cli()
