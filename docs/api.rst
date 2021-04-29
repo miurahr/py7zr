@@ -96,10 +96,10 @@ SevenZipFile Object
    existing file, or ``'x'`` to exclusively create and write a new file.
    If *mode* is ``'x'`` and *file* refers to an existing file,
    a :exc:`FileExistsError` will be raised.
-   If *mode* is ``'r'`` or ``'a'``, the file should be seekable. [#f1]_
+   If *mode* is ``'r'`` or ``'a'``, the file should be seekable.
 
    The *filters* parameter controls the compression algorithms to use when
-   writing files to the archive. [#f2]_
+   writing files to the archive.
 
    SevenZipFile class has a capability as context manager. It can handle
    'with' statement.
@@ -195,7 +195,7 @@ SevenZipFile Object
    filter_pattern = re.compile(r'scripts.*')
    with SevenZipFile('archive.7z', 'r') as zip:
         allfiles = zip.getnames()
-        targets = [f if filter_pattern.match(f) for f in allfiles]
+        targets = [f for f in allfiles if filter_pattern.match(f)]
    with SevenZipFile('archive.7z', 'r') as zip:
         for fname, bio in zip.read(targets).items():
             print('{:s}: {:X}...'.format(name, bio.read(10))
@@ -283,9 +283,9 @@ Here is a table of algorithms.
 +---+                      +------------------------------------------+
 |  5|                      | COPY       |                             |
 +---+                      +------------------------------------------+
-|  6|                      | PPMd       | require extra [ppmd]        |
+|  6|                      | PPMd       | depend on ppmd-cffi         |
 +---+                      +------------------------------------------+
-|  7|                      | ZStandard  | require extra [zstd]        |
+|  7|                      | ZStandard  | depend on pyzstd            |
 +---+----------------------+------------------------------------------+
 |  8| - Filter             | BCJ(X86, ARM, PPC, ARMT, SPARC, IA64)    |
 +---+                      +------------------------------------------+
@@ -301,9 +301,6 @@ Here is a table of algorithms.
   but not work with original 7-zip because the original does not implement the feature.
 
 - Decryption of filename encrypted archive is supported.
-
-- ZStandard is supported when install with pip [zstd] option.
-
 
 
 Possible filters value
@@ -367,8 +364,3 @@ ZStandard
 
 
 .. rubric:: Footnotes
-
-.. [#f1] Modes other than ```'r'``` and ```'w'``` have not implemented yet. If given other than 'r'
-        or 'w', it will generate :exc:`NotImplementedError`
-
-.. [#f2] *filter* is always ignored in current version.

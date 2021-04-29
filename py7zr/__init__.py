@@ -23,13 +23,32 @@ except ImportError:
     from importlib_metadata import PackageNotFoundError, version  # type: ignore
 
 from py7zr.exceptions import Bad7zFile, DecompressionError, PasswordRequired, UnsupportedCompressionMethodError
-from py7zr.properties import (CHECK_CRC32, CHECK_CRC64, CHECK_NONE, CHECK_SHA256, FILTER_ARM, FILTER_ARMTHUMB, FILTER_BZIP2,
-                              FILTER_COPY, FILTER_CRYPTO_AES256_SHA256, FILTER_DEFLATE, FILTER_DELTA, FILTER_IA64,
-                              FILTER_LZMA, FILTER_LZMA2, FILTER_POWERPC, FILTER_PPMD, FILTER_SPARC, FILTER_X86, FILTER_ZSTD,
-                              PRESET_DEFAULT, PRESET_EXTREME)
+from py7zr.properties import (
+    CHECK_CRC32,
+    CHECK_CRC64,
+    CHECK_NONE,
+    CHECK_SHA256,
+    FILTER_ARM,
+    FILTER_ARMTHUMB,
+    FILTER_BZIP2,
+    FILTER_COPY,
+    FILTER_CRYPTO_AES256_SHA256,
+    FILTER_DEFLATE,
+    FILTER_DELTA,
+    FILTER_IA64,
+    FILTER_LZMA,
+    FILTER_LZMA2,
+    FILTER_POWERPC,
+    FILTER_PPMD,
+    FILTER_SPARC,
+    FILTER_X86,
+    FILTER_ZSTD,
+    PRESET_DEFAULT,
+    PRESET_EXTREME,
+)
 from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7zarchive, unpack_7zarchive
 
-__copyright__ = 'Copyright (C) 2019-2021 Hiroshi Miura'
+__copyright__ = "Copyright (C) 2019-2021 Hiroshi Miura"
 
 try:
     __version__ = version(__name__)
@@ -37,9 +56,37 @@ except PackageNotFoundError:  # pragma: no-cover
     # package is not installed
     __version__ = "unknown"
 
-__all__ = ['__version__', 'ArchiveInfo', 'FileInfo', 'SevenZipFile', 'is_7zfile', 'pack_7zarchive', 'unpack_7zarchive',
-           'PasswordRequired', 'UnsupportedCompressionMethodError', 'Bad7zFile', 'DecompressionError',
-           'FILTER_LZMA', 'FILTER_LZMA2', 'FILTER_DELTA', 'FILTER_COPY', 'FILTER_CRYPTO_AES256_SHA256',
-           'FILTER_X86', 'FILTER_ARM', 'FILTER_SPARC', 'FILTER_POWERPC', 'FILTER_IA64', 'FILTER_ARMTHUMB',
-           'FILTER_BZIP2', 'FILTER_DEFLATE', 'FILTER_ZSTD', 'FILTER_PPMD',
-           'CHECK_SHA256', 'CHECK_CRC64', 'CHECK_CRC32', 'CHECK_NONE', 'PRESET_DEFAULT', 'PRESET_EXTREME']
+__all__ = [
+    "__version__",
+    "ArchiveInfo",
+    "FileInfo",
+    "SevenZipFile",
+    "is_7zfile",
+    "pack_7zarchive",
+    "unpack_7zarchive",
+    "PasswordRequired",
+    "UnsupportedCompressionMethodError",
+    "Bad7zFile",
+    "DecompressionError",
+    "FILTER_LZMA",
+    "FILTER_LZMA2",
+    "FILTER_DELTA",
+    "FILTER_COPY",
+    "FILTER_CRYPTO_AES256_SHA256",
+    "FILTER_X86",
+    "FILTER_ARM",
+    "FILTER_SPARC",
+    "FILTER_POWERPC",
+    "FILTER_IA64",
+    "FILTER_ARMTHUMB",
+    "FILTER_BZIP2",
+    "FILTER_DEFLATE",
+    "FILTER_ZSTD",
+    "FILTER_PPMD",
+    "CHECK_SHA256",
+    "CHECK_CRC64",
+    "CHECK_CRC32",
+    "CHECK_NONE",
+    "PRESET_DEFAULT",
+    "PRESET_EXTREME",
+]

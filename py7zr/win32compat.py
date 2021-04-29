@@ -9,11 +9,11 @@ if sys.platform == "win32":
     from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPDWORD, LPVOID, LPWSTR
 
     _stdcall_libraries = {}
-    _stdcall_libraries['kernel32'] = ctypes.WinDLL('kernel32')
-    CloseHandle = _stdcall_libraries['kernel32'].CloseHandle
-    CreateFileW = _stdcall_libraries['kernel32'].CreateFileW
-    DeviceIoControl = _stdcall_libraries['kernel32'].DeviceIoControl
-    GetFileAttributesW = _stdcall_libraries['kernel32'].GetFileAttributesW
+    _stdcall_libraries["kernel32"] = ctypes.WinDLL("kernel32")
+    CloseHandle = _stdcall_libraries["kernel32"].CloseHandle
+    CreateFileW = _stdcall_libraries["kernel32"].CreateFileW
+    DeviceIoControl = _stdcall_libraries["kernel32"].DeviceIoControl
+    GetFileAttributesW = _stdcall_libraries["kernel32"].GetFileAttributesW
     OPEN_EXISTING = 3
     GENERIC_READ = 2147483648
     FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
@@ -27,7 +27,7 @@ if sys.platform == "win32":
         return bool(val & flag == flag)
 
     class SymbolicLinkReparseBuffer(ctypes.Structure):
-        """ Implementing the below in Python:
+        """Implementing the below in Python:
 
         typedef struct _REPARSE_DATA_BUFFER {
             ULONG  ReparseTag;
@@ -55,34 +55,35 @@ if sys.platform == "win32":
             } DUMMYUNIONNAME;
         } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
         """
+
         # See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ntifs/ns-ntifs-_reparse_data_buffer
         _fields_ = [
-            ('flags', ctypes.c_ulong),
-            ('path_buffer', ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 20))
+            ("flags", ctypes.c_ulong),
+            ("path_buffer", ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 20)),
         ]
 
     class MountReparseBuffer(ctypes.Structure):
         _fields_ = [
-            ('path_buffer', ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 16)),
+            ("path_buffer", ctypes.c_byte * (MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 16)),
         ]
 
     class ReparseBufferField(ctypes.Union):
         _fields_ = [
-            ('symlink', SymbolicLinkReparseBuffer),
-            ('mount', MountReparseBuffer)
+            ("symlink", SymbolicLinkReparseBuffer),
+            ("mount", MountReparseBuffer),
         ]
 
     class ReparseBuffer(ctypes.Structure):
         _anonymous_ = ("u",)
         _fields_ = [
-            ('reparse_tag', ctypes.c_ulong),
-            ('reparse_data_length', ctypes.c_ushort),
-            ('reserved', ctypes.c_ushort),
-            ('substitute_name_offset', ctypes.c_ushort),
-            ('substitute_name_length', ctypes.c_ushort),
-            ('print_name_offset', ctypes.c_ushort),
-            ('print_name_length', ctypes.c_ushort),
-            ('u', ReparseBufferField)
+            ("reparse_tag", ctypes.c_ulong),
+            ("reparse_data_length", ctypes.c_ushort),
+            ("reserved", ctypes.c_ushort),
+            ("substitute_name_offset", ctypes.c_ushort),
+            ("substitute_name_length", ctypes.c_ushort),
+            ("print_name_offset", ctypes.c_ushort),
+            ("print_name_length", ctypes.c_ushort),
+            ("u", ReparseBufferField),
         ]
 
     def is_reparse_point(path: Union[str, pathlib.Path]) -> bool:
@@ -121,14 +122,40 @@ if sys.platform == "win32":
         target = str(path)
         CreateFileW.argtypes = [LPWSTR, DWORD, DWORD, LPVOID, DWORD, DWORD, HANDLE]
         CreateFileW.restype = HANDLE
-        DeviceIoControl.argtypes = [HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPVOID]
+        DeviceIoControl.argtypes = [
+            HANDLE,
+            DWORD,
+            LPVOID,
+            DWORD,
+            LPVOID,
+            DWORD,
+            LPDWORD,
+            LPVOID,
+        ]
         DeviceIoControl.restype = BOOL
-        handle = HANDLE(CreateFileW(target, GENERIC_READ, 0, None, OPEN_EXISTING,
-                                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, 0))
+        handle = HANDLE(
+            CreateFileW(
+                target,
+                GENERIC_READ,
+                0,
+                None,
+                OPEN_EXISTING,
+                FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                0,
+            )
+        )
         buf = ReparseBuffer()
         ret = DWORD(0)
-        status = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, None, 0, ctypes.byref(buf),
-                                 MAXIMUM_REPARSE_DATA_BUFFER_SIZE, ctypes.byref(ret), None)
+        status = DeviceIoControl(
+            handle,
+            FSCTL_GET_REPARSE_POINT,
+            None,
+            0,
+            ctypes.byref(buf),
+            MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+            ctypes.byref(ret),
+            None,
+        )
         CloseHandle(handle)
         if not status:
             logger = getLogger(__file__)
@@ -138,11 +165,11 @@ if sys.platform == "win32":
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
-            rpath = bytearray(buf.symlink.path_buffer)[offset:ending].decode('UTF-16-LE')
+            rpath = bytearray(buf.symlink.path_buffer)[offset:ending].decode("UTF-16-LE")
         elif buf.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT:
             offset = buf.substitute_name_offset
             ending = offset + buf.substitute_name_length
-            rpath = bytearray(buf.mount.path_buffer)[offset:ending].decode('UTF-16-LE')
+            rpath = bytearray(buf.mount.path_buffer)[offset:ending].decode("UTF-16-LE")
         else:
             raise ValueError("not a symbolic link")
         # on posixmodule.c:7859 in py38, we do that
@@ -163,8 +190,8 @@ if sys.platform == "win32":
         #         }
         # ```
         # so substitute prefix here.
-        if rpath.startswith('\\??\\'):
-            rpath = '\\\\' + rpath[2:]
+        if rpath.startswith("\\??\\"):
+            rpath = "\\\\" + rpath[2:]
         if target_is_path:
             return pathlib.WindowsPath(rpath)
         else:

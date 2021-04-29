@@ -20,10 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #
-import array
 import ctypes
-import io
-import mmap
 import os
 import pathlib
 import platform
@@ -36,7 +33,6 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
-from py7zr.properties import RuntimeConstant
 
 
 def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
@@ -48,24 +44,24 @@ def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -
         pos = blocksize
         value = zlib.crc32(data[:pos], value)
         while pos < length:
-            value = zlib.crc32(data[pos:pos + blocksize], value)
+            value = zlib.crc32(data[pos : pos + blocksize], value)
             pos += blocksize
-    return value & 0xffffffff
+    return value & 0xFFFFFFFF
 
 
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
-    """Calculate 7zip AES encryption key. Base implementation. """
-    if digest not in ('sha256'):
-        raise ValueError('Unknown digest method for password protection.')
-    assert cycles <= 0x3f
-    if cycles == 0x3f:
+    """Calculate 7zip AES encryption key. Base implementation."""
+    if digest not in ("sha256"):
+        raise ValueError("Unknown digest method for password protection.")
+    assert cycles <= 0x3F
+    if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
         key = bytes(ba[:32])  # type: bytes
     else:
         rounds = 1 << cycles
         m = _hashlib.new(digest)
         for round in range(rounds):
-            m.update(salt + password + round.to_bytes(8, byteorder='little', signed=False))
+            m.update(salt + password + round.to_bytes(8, byteorder="little", signed=False))
         key = m.digest()[:32]
     return key
 
@@ -73,10 +69,10 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     """Calculate 7zip AES encryption key.
     It utilize ctypes and memoryview buffer and zero-copy technology on Python."""
-    if digest not in ('sha256'):
-        raise ValueError('Unknown digest method for password protection.')
-    assert cycles <= 0x3f
-    if cycles == 0x3f:
+    if digest not in ("sha256"):
+        raise ValueError("Unknown digest method for password protection.")
+    assert cycles <= 0x3F
+    if cycles == 0x3F:
         key = bytes(bytearray(salt + password + bytes(32))[:32])  # type: bytes
     else:
         rounds = 1 << cycles
@@ -86,8 +82,8 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
         class RoundBuf(ctypes.LittleEndianStructure):
             _pack_ = 1
             _fields_ = [
-                ('saltpassword', ctypes.c_ubyte * length),
-                ('round', ctypes.c_uint64)
+                ("saltpassword", ctypes.c_ubyte * length),
+                ("round", ctypes.c_uint64),
             ]
 
         buf = RoundBuf()
@@ -105,10 +101,10 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
 def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     """Calculate 7zip AES encryption key.
     Concat values in order to reduce number of calls of Hash.update()."""
-    if digest not in ('sha256'):
-        raise ValueError('Unknown digest method for password protection.')
-    assert cycles <= 0x3f
-    if cycles == 0x3f:
+    if digest not in ("sha256"):
+        raise ValueError("Unknown digest method for password protection.")
+    assert cycles <= 0x3F
+    if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
         key = bytes(ba[:32])  # type: bytes
     else:
@@ -124,13 +120,19 @@ def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> b
         s = 0  # type: int  # (0..stages) * rounds
         if platform.python_implementation() == "PyPy":
             for _ in range(stages):
-                m.update(memoryview(b''.join([saltpassword + (s + i).to_bytes(8, byteorder='little', signed=False)
-                                              for i in range(rounds)])))
+                m.update(
+                    memoryview(
+                        b"".join(
+                            [saltpassword + (s + i).to_bytes(8, byteorder="little", signed=False) for i in range(rounds)]
+                        )
+                    )
+                )
                 s += rounds
         else:
             for _ in range(stages):
-                m.update(b''.join([saltpassword + (s + i).to_bytes(8, byteorder='little', signed=False)
-                                   for i in range(rounds)]))
+                m.update(
+                    b"".join([saltpassword + (s + i).to_bytes(8, byteorder="little", signed=False) for i in range(rounds)])
+                )
                 s += rounds
         key = m.digest()[:32]
 
@@ -169,14 +171,13 @@ DSTDIFF = DSTOFFSET - STDOFFSET
 
 
 class LocalTimezone(tzinfo):
-
     def fromutc(self, dt):
         assert dt.tzinfo is self
         stamp = (dt - datetime(1970, 1, 1, tzinfo=self)) // SECOND
         args = _time.localtime(stamp)[:6]
-        dst_diff = DSTDIFF // SECOND
+        # dst_diff = DSTDIFF // SECOND
         # Detect fold
-        fold = (args == _time.localtime(stamp - dst_diff))
+        # fold = args == _time.localtime(stamp - dst_diff)
         return datetime(*args, microsecond=dt.microsecond, tzinfo=self)
 
     def utcoffset(self, dt):
@@ -195,9 +196,17 @@ class LocalTimezone(tzinfo):
         return _time.tzname[self._isdst(dt)]
 
     def _isdst(self, dt):
-        tt = (dt.year, dt.month, dt.day,
-              dt.hour, dt.minute, dt.second,
-              dt.weekday(), 0, 0)
+        tt = (
+            dt.year,
+            dt.month,
+            dt.day,
+            dt.hour,
+            dt.minute,
+            dt.second,
+            dt.weekday(),
+            0,
+            0,
+        )
         stamp = _time.mktime(tt)
         tt = _time.localtime(stamp)
         return tt.tm_isdst > 0
@@ -227,7 +236,7 @@ class ArchiveTimestamp(int):
     """Windows FILETIME timestamp."""
 
     def __repr__(self):
-        return '%s(%d)' % (type(self).__name__, self)
+        return "%s(%d)" % (type(self).__name__, self)
 
     def __index__(self):
         return self.__int__()
@@ -273,9 +282,8 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
     When called with Path object, return also Path object.
     When called with path argument as bytes, return result as a bytes.
     """
-    is_path_pathlib = isinstance(path, pathlib.Path)
     if sys.version_info >= (3, 9):
-        if is_path_pathlib and dir_fd is None:
+        if isinstance(path, pathlib.Path) and dir_fd is None:
             return path.readlink()
         else:
             return os.readlink(path, dir_fd=dir_fd)
@@ -284,17 +292,18 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
         # Hack to handle a wrong type of results
         if isinstance(res, bytes):
             res = os.fsdecode(res)
-        if is_path_pathlib:
+        if isinstance(path, pathlib.Path):
             return pathlib.Path(res)
         else:
             return res
     elif not os.path.exists(str(path)):
-        raise OSError(22, 'Invalid argument', path)
+        raise OSError(22, "Invalid argument", path)
     return py7zr.win32compat.readlink(path)
 
 
 class MemIO:
     """pathlib.Path-like IO class to write memory(io.Bytes)"""
+
     def __init__(self, buf: BinaryIO):
         self._buf = buf
 
@@ -346,7 +355,7 @@ class NullIO:
         if length is not None:
             return bytes(length)
         else:
-            return b''
+            return b""
 
     def close(self):
         pass
@@ -376,7 +385,6 @@ class BufferOverflow(Exception):
 
 
 class Buffer:
-
     def __init__(self, size: int = 16):
         self._buf = bytearray(size)
         self._buflen = 0
@@ -384,9 +392,9 @@ class Buffer:
 
     def add(self, data: Union[bytes, bytearray, memoryview]):
         length = len(data)
-        self._buf[self._buflen:] = data
+        self._buf[self._buflen :] = data
         self._buflen += length
-        self.view = memoryview(self._buf[0:self._buflen])
+        self.view = memoryview(self._buf[0 : self._buflen])
 
     def reset(self) -> None:
         self._buflen = 0
@@ -399,7 +407,7 @@ class Buffer:
         self.view = memoryview(self._buf[0:length])
 
     def get(self) -> bytearray:
-        val = self._buf[:self._buflen]
+        val = self._buf[: self._buflen]
         self.reset()
         return val
 
@@ -407,48 +415,4 @@ class Buffer:
         return self._buflen
 
     def __bytes__(self):
-        return bytes(self._buf[0:self._buflen])
-
-
-class BufferedRW(io.BufferedIOBase):
-
-    def __init__(self):
-        self._buf = bytearray()
-        self.block_size = RuntimeConstant().READ_BLOCKSIZE
-
-    def writable(self):
-        return True
-
-    def write(self, b: Union[bytes, bytearray, memoryview, array.array, mmap.mmap]):
-        if isinstance(b, mmap.mmap):
-            size = b.size()
-            current = b.tell()
-            if size - current > self.block_size:
-                self._buf += b.read(self.block_size)
-            elif size - current > 0:
-                self._buf += b.read(size - current)
-        elif isinstance(b, array.array):
-            self._buf += b.tobytes()
-        else:
-            self._buf += b
-
-    def readable(self):
-        return True
-
-    def read(self, size: Optional[int] = -1):
-        if size is None or size < 0:
-            length: int = len(self._buf)
-        else:
-            length = size
-        result = bytes(self._buf[:length])
-        self._buf[:] = self._buf[length:]
-        return result
-
-    def readinto(self, b) -> int:
-        length = min(len(self._buf), len(b))
-        b[:] = self._buf[:length]
-        self._buf[:] = self._buf[length:]
-        return length
-
-    def __len__(self):
-        return len(self._buf)
+        return bytes(self._buf[0 : self._buflen])

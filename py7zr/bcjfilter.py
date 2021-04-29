@@ -44,15 +44,18 @@ class BCJFilter:
         limit = len(self.buffer) - 4
         i = 0
         while i <= limit:
-            if (self.buffer[i], self.buffer[i + 1] & 0xC0) in [(0x40, 0x00), (0x7F, 0xC0)]:
-                src = struct.unpack('>L', self.buffer[i:i + 4])[0] << 2
+            if (self.buffer[i], self.buffer[i + 1] & 0xC0) in [
+                (0x40, 0x00),
+                (0x7F, 0xC0),
+            ]:
+                src = struct.unpack(">L", self.buffer[i : i + 4])[0] << 2
                 distance = self.current_position + i
                 if self.is_encoder:
                     dest = (src + distance) >> 2
                 else:
                     dest = (src - distance) >> 2
                 dest = (((0 - ((dest >> 22) & 1)) << 22) & 0x3FFFFFFF) | (dest & 0x3FFFFF) | 0x40000000
-                self.buffer[i:i + 4] = struct.pack('>L', dest)
+                self.buffer[i : i + 4] = struct.pack(">L", dest)
             i += 4
         self.current_position = i
         return i
@@ -64,14 +67,14 @@ class BCJFilter:
             # PowerPC branch 6(48) 24(Offset) 1(Abs) 1(Link)
             distance = self.current_position + i
             if self.buffer[i] & 0xFC == 0x48 and self.buffer[i + 3] & 0x03 == 1:
-                src = struct.unpack('>L', self.buffer[i:i + 4])[0] & 0x3FFFFFC
+                src = struct.unpack(">L", self.buffer[i : i + 4])[0] & 0x3FFFFFC
                 if self.is_encoder:
                     dest = src + distance
                 else:
                     dest = src - distance
                 # lsb = int(self.buffer[i + 3]) & 0x03 == 1
                 dest = (0x48 << 24) | (dest & 0x03FFFFFF) | 1
-                self.buffer[i:i + 4] = struct.pack('>L', dest)
+                self.buffer[i : i + 4] = struct.pack(">L", dest)
             i += 4
         self.current_position = i
         return i
@@ -80,7 +83,14 @@ class BCJFilter:
         return ((b[1] & 0x07) << 19) | (b[0] << 11) | ((b[3] & 0x07) << 8) | b[2]
 
     def _pack_thumb(self, val: int):
-        b = bytes([(val >> 11) & 0xFF, 0xF0 | ((val >> 19) & 0x07), val & 0xFF, 0xF8 | ((val >> 8) & 0x07)])
+        b = bytes(
+            [
+                (val >> 11) & 0xFF,
+                0xF0 | ((val >> 19) & 0x07),
+                val & 0xFF,
+                0xF8 | ((val >> 8) & 0x07),
+            ]
+        )
         return b
 
     def armt_code(self) -> int:
@@ -88,14 +98,14 @@ class BCJFilter:
         i = 0
         while i <= limit:
             if self.buffer[i + 1] & 0xF8 == 0xF0 and self.buffer[i + 3] & 0xF8 == 0xF8:
-                src = self._unpack_thumb(self.buffer[i:i + 4]) << 1
+                src = self._unpack_thumb(self.buffer[i : i + 4]) << 1
                 distance = self.current_position + i + 4
                 if self.is_encoder:
                     dest = src + distance
                 else:
                     dest = src - distance
                 dest >>= 1
-                self.buffer[i:i + 4] = self._pack_thumb(dest)
+                self.buffer[i : i + 4] = self._pack_thumb(dest)
                 i += 2
             i += 2
         self.current_position += i
@@ -106,13 +116,13 @@ class BCJFilter:
         i = 0
         while i <= limit:
             if self.buffer[i + 3] == 0xEB:
-                src = struct.unpack('<L', self.buffer[i:i + 3] + b'\x00')[0] << 2
+                src = struct.unpack("<L", self.buffer[i : i + 3] + b"\x00")[0] << 2
                 distance = self.current_position + i + 8
                 if self.is_encoder:
                     dest = (src + distance) >> 2
                 else:
                     dest = (src - distance) >> 2
-                self.buffer[i:i + 3] = struct.pack('<L', dest & 0xFFFFFF)[:3]
+                self.buffer[i : i + 3] = struct.pack("<L", dest & 0xFFFFFF)[:3]
             i += 4
         self.current_position += i
         return i
@@ -141,9 +151,9 @@ class BCJFilter:
             #     continue
             # --
             if pos1 >= 0:
-                pos1 = self.buffer.find(0xe9, buffer_pos, limit)
+                pos1 = self.buffer.find(0xE9, buffer_pos, limit)
             if pos2 >= 0:
-                pos2 = self.buffer.find(0xe8, buffer_pos, limit)
+                pos2 = self.buffer.find(0xE8, buffer_pos, limit)
             if pos1 < 0 and pos2 < 0:
                 buffer_pos = limit + 1
                 break
@@ -168,31 +178,31 @@ class BCJFilter:
             # condition _mask_to_allowed_status[(self.prev_mask >> 1) & 0x7] and (self.prev_mask >> 1) < 0x10:
             # when _mask_to_allowed_status = [True, True, True, False, True, False, False, False]
             #
-            if view[buffer_pos + 4] in [0, 0xff] and (self.prev_mask >> 1) in self._mask_to_allowed_number:
-                jump_target = self.buffer[buffer_pos + 1:buffer_pos + 5]
-                src = struct.unpack('<L', jump_target)[0]
+            if view[buffer_pos + 4] in [0, 0xFF] and (self.prev_mask >> 1) in self._mask_to_allowed_number:
+                jump_target = self.buffer[buffer_pos + 1 : buffer_pos + 5]
+                src = struct.unpack("<L", jump_target)[0]
                 distance = self.current_position + buffer_pos + 5
                 idx = self._mask_to_bit_number[self.prev_mask >> 1]
                 while True:
                     if self.is_encoder:
-                        dest = (src + distance) & 0xffffffff  # uint32 behavior
+                        dest = (src + distance) & 0xFFFFFFFF  # uint32 behavior
                     else:
-                        dest = (src - distance) & 0xffffffff
+                        dest = (src - distance) & 0xFFFFFFFF
                     if self.prev_mask == 0:
                         break
                     b = 0xFF & (dest >> (24 - idx * 8))
                     if not (b == 0 or b == 0xFF):
                         break
-                    src = dest ^ ((1 << (32 - idx * 8)) - 1) & 0xffffffff
-                write_view = view[buffer_pos + 1:buffer_pos + 5]
-                write_view[0:3] = (dest & 0xFFFFFF).to_bytes(3, 'little')
-                write_view[3:4] = [b'\x00', b'\xff'][(dest >> 24) & 1]  # (~(((dest >> 24) & 1) - 1)) & 0xFF
+                    src = dest ^ ((1 << (32 - idx * 8)) - 1) & 0xFFFFFFFF
+                write_view = view[buffer_pos + 1 : buffer_pos + 5]
+                write_view[0:3] = (dest & 0xFFFFFF).to_bytes(3, "little")
+                write_view[3:4] = [b"\x00", b"\xff"][(dest >> 24) & 1]  # (~(((dest >> 24) & 1) - 1)) & 0xFF
                 buffer_pos += 5
                 self.prev_mask = 0
             else:
                 buffer_pos += 1
                 self.prev_mask |= 1
-                if self.buffer[buffer_pos + 3] in [0, 0xff]:
+                if self.buffer[buffer_pos + 3] in [0, 0xFF]:
                     self.prev_mask |= 0x10
         self.current_position += buffer_pos
         return buffer_pos
@@ -202,7 +212,7 @@ class BCJFilter:
         pos = self._method()
         if self.current_position > self.stream_size - self._readahead:
             offset = self.stream_size - self.current_position
-            tmp = bytes(self.buffer[:pos + offset])
+            tmp = bytes(self.buffer[: pos + offset])
             self.current_position = self.stream_size
             self.buffer = bytearray()
         else:
@@ -222,60 +232,50 @@ class BCJFilter:
 
 
 class BCJDecoder(BCJFilter):
-
     def __init__(self, size: int):
         super().__init__(self.x86_code, 5, False, size)
 
 
 class BCJEncoder(BCJFilter):
-
     def __init__(self):
         super().__init__(self.x86_code, 5, True)
 
 
 class SparcDecoder(BCJFilter):
-
     def __init__(self, size: int):
         super().__init__(self.sparc_code, 4, False, size)
 
 
 class SparcEncoder(BCJFilter):
-
     def __init__(self):
         super().__init__(self.sparc_code, 4, True)
 
 
 class PpcDecoder(BCJFilter):
-
     def __init__(self, size: int):
         super().__init__(self.ppc_code, 4, False, size)
 
 
 class PpcEncoder(BCJFilter):
-
     def __init__(self):
         super().__init__(self.ppc_code, 4, True)
 
 
 class ArmtDecoder(BCJFilter):
-
     def __init__(self, size: int):
         super().__init__(self.armt_code, 4, False, size)
 
 
 class ArmtEncoder(BCJFilter):
-
     def __init__(self):
         super().__init__(self.armt_code, 4, True)
 
 
 class ArmDecoder(BCJFilter):
-
     def __init__(self, size: int):
         super().__init__(self.arm_code, 4, False, size)
 
 
 class ArmEncoder(BCJFilter):
-
     def __init__(self):
         super().__init__(self.arm_code, 4, True)
