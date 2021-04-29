@@ -34,9 +34,12 @@ def test_compress_to_multi_volume(tmp_path):
     with multivolumefile.open(tmp_path.joinpath("target.7z"), mode="wb", volume=10240) as tgt:
         with py7zr.SevenZipFile(tgt, "w") as arc:
             arc.writeall(tmp_path.joinpath("src"), "src")
-    target = tmp_path.joinpath("target.7z.0001")
-    assert target.exists()
-    assert target.stat().st_size == 10240
+    assert tmp_path.joinpath("target.7z.0001").stat().st_size == 10240
+    assert tmp_path.joinpath("target.7z.0002").stat().st_size == 10240
+    assert tmp_path.joinpath("target.7z.0003").stat().st_size == 10240
+    assert 6000 < tmp_path.joinpath("target.7z.0004").stat().st_size < 6100
+    #
+    p7zip_test(tmp_path.joinpath("target.7z.0001"))
 
 
 @pytest.mark.misc
