@@ -37,7 +37,7 @@ import sys
 import threading
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
-import multivolumefile  # type: ignore
+import multivolumefile
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -841,6 +841,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             fstat = self.fp.stat()
         else:
             fname = self.filename
+            assert fname is not None
             fstat = os.stat(fname)
         return ArchiveInfo(fname, fstat, self.header.size, self._get_method_names(),
                            self._is_solid(), len(self.header.main_streams.unpackinfo.folders),

@@ -32,7 +32,7 @@ from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, List, Optional
 
 import _lzma  # type: ignore
-import multivolumefile  # type: ignore
+import multivolumefile
 import texttable  # type: ignore
 
 import py7zr
