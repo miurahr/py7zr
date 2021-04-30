@@ -29,7 +29,6 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import packaging
 import pyppmd
 import pyzstd
 from Cryptodome.Cipher import AES
@@ -68,6 +67,8 @@ try:
     import brotli  # type: ignore  # noqa
 except ImportError:
     import brotlicffi as brotli  # type: ignore  # noqa
+brotli_major = 1
+brotli_minor = 0
 
 
 class ISevenZipCompressor(ABC):
@@ -416,8 +417,7 @@ class BrotliCompressor:
 
 class BrotliDecompressor:
     def __init__(self, properties, block_size):
-        ver = packaging.version.parse(brotli.__version__)
-        if len(properties) != 3 or (properties[0], properties[1]) > (ver.major, ver.minor):
+        if len(properties) != 3 or (properties[0], properties[1]) > (brotli_major, brotli_minor):
             raise UnsupportedCompressionMethodError
         self._decompressor = brotli.Decompressor()
         self.decompress = self._decompress1
@@ -749,8 +749,7 @@ class SevenZipCompressor:
                 compressor = algorithm_class_map[filter_id][0](order, mem_size)
             elif filter_id == FILTER_BROTLI:
                 level = alt_filter.get("level", 3)
-                brver = packaging.version.parse(brotli.__version__)
-                properties = struct.pack("BBB", brver.major, brver.minor, level)
+                properties = struct.pack("BBB", brotli_major, brotli_minor, level)
                 compressor = algorithm_class_map[filter_id][0](level)
         else:
             compressor = algorithm_class_map[filter_id][0]()
