@@ -8,6 +8,7 @@ from Cryptodome.Cipher import AES
 
 import py7zr
 import py7zr.compressor
+from py7zr import UnsupportedCompressionMethodError
 from tests import p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -226,3 +227,24 @@ def test_compress_ppmd_2(tmp_path):
         archive.writeall(tmp_path.joinpath("10000SalesRecords.csv"))
     #
     p7zip_test(tmp_path / "target.7z")
+
+
+@pytest.mark.basic
+def test_compress_decompress_brotli(tmp_path):
+    my_filters = [{"id": py7zr.FILTER_BROTLI, "level": 3}]
+    #
+    with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
+        arc.extractall(path=tmp_path)
+    target = tmp_path.joinpath("target.7z")
+    with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
+        archive.write(tmp_path.joinpath("10000SalesRecords.csv"), "10000SalesRecords.csv")
+    tmp_path.joinpath("tgt").mkdir(exist_ok=True)
+    with py7zr.SevenZipFile(target, "r") as archive:
+        archive.extractall(path=tmp_path.joinpath("tgt"))
+
+
+@pytest.mark.basic
+def test_decompress_brotli(tmp_path):
+    with pytest.raises(UnsupportedCompressionMethodError):
+        with py7zr.SevenZipFile(testdata_path.joinpath("zstdmt-brotli.7z").open(mode="rb")) as archive:
+            archive.extractall(path=tmp_path.joinpath("tgt"))

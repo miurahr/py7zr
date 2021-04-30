@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import packaging
 import pyppmd
 import pyzstd
 from Cryptodome.Cipher import AES
@@ -53,6 +54,7 @@ from py7zr.properties import (
     FILTER_SPARC,
     FILTER_X86,
     FILTER_ZSTD,
+    FILTER_BROTLI,
     MAGIC_7Z,
     CompressionMethod,
     get_default_blocksize,
@@ -62,6 +64,10 @@ try:
     import bcj as BCJFilter  # type: ignore  # noqa
 except ImportError:
     import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
+try:
+    import brotli  # type: ignore  # noqa
+except ImportError:
+    import brotlicffi as brotli  # type: ignore  # noqa
 
 
 class ISevenZipCompressor(ABC):
@@ -397,6 +403,36 @@ class BCJEncoder(ISevenZipCompressor):
         return self.encoder.flush()
 
 
+class BrotliCompressor:
+    def __init__(self, level):
+        self._compressor = brotli.Compressor(quality=level)
+
+    def compress(self, data):
+        return self._compressor.process(data)
+
+    def flush(self):
+        return self._compressor.flush()
+
+
+class BrotliDecompressor:
+    def __init__(self, properties, block_size):
+        ver = packaging.version.parse(brotli.__version__)
+        if len(properties) != 3 or (properties[0], properties[1]) > (ver.major, ver.minor):
+            raise UnsupportedCompressionMethodError
+        self._decompressor = brotli.Decompressor()
+        self.decompress = self._decompress1
+
+    def _decompress(self, data):
+        return self._decompressor.process(data)
+
+    def _decompress1(self, data):
+        # check first 4bytes
+        if data[:4] == b"\x50\x2a\x4d\x18":
+            raise UnsupportedCompressionMethodError("Unauthorized and modified Brotli data (skipable frame) found.")
+        self.decompress = self._decompress
+        return self._decompressor.process(data)
+
+
 class ZstdCompressor:
     def __init__(self, level):
         self.compressor = pyzstd.ZstdCompressor(level)
@@ -420,6 +456,7 @@ class ZstdDecompressor:
 
 algorithm_class_map = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
+    FILTER_BROTLI: (BrotliCompressor, BrotliDecompressor),
     FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
@@ -710,6 +747,11 @@ class SevenZipCompressor:
                 mem_size = alt_filter.get("mem", 16) << 20
                 properties = struct.pack("<BLBB", order, mem_size, 0, 0)
                 compressor = algorithm_class_map[filter_id][0](order, mem_size)
+            elif filter_id == FILTER_BROTLI:
+                level = alt_filter.get("level", 3)
+                brver = packaging.version.parse(brotli.__version__)
+                properties = struct.pack("BBB", brver.major, brver.minor, level)
+                compressor = algorithm_class_map[filter_id][0](level)
         else:
             compressor = algorithm_class_map[filter_id][0]()
         if SupportedMethods.is_crypto_id(filter_id):
@@ -890,6 +932,14 @@ class SupportedMethods:
             "native": False,
             "need_prop": True,
             "filter_id": FILTER_PPMD,
+            "type": MethodsType.compressor,
+        },
+        {
+            "id": COMPRESSION_METHOD.MISC_BROTLI,
+            "name": "Brotli",
+            "native": False,
+            "need_prop": True,
+            "filter_id": FILTER_BROTLI,
             "type": MethodsType.compressor,
         },
         {

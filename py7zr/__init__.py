@@ -43,6 +43,7 @@ from py7zr.properties import (
     FILTER_SPARC,
     FILTER_X86,
     FILTER_ZSTD,
+    FILTER_BROTLI,
     PRESET_DEFAULT,
     PRESET_EXTREME,
 )
@@ -83,6 +84,7 @@ __all__ = [
     "FILTER_DEFLATE",
     "FILTER_ZSTD",
     "FILTER_PPMD",
+    "FILTER_BROTLI",
     "CHECK_SHA256",
     "CHECK_CRC64",
     "CHECK_CRC32",
