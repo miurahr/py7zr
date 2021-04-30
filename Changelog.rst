@@ -14,6 +14,8 @@ Changed
 -------
 * CLI: support multi-volume archive without making temporary file(#311)
 * Dependency: PyPPMd v0.14.0+
+* Dependency PyCryptodome to PyCryptodomex
+  that changes package name from PyCrypto to PyCryptodome(#334)
 
 Fixed
 -----
