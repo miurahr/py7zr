@@ -30,6 +30,7 @@ from py7zr.properties import (
     CHECK_SHA256,
     FILTER_ARM,
     FILTER_ARMTHUMB,
+    FILTER_BROTLI,
     FILTER_BZIP2,
     FILTER_COPY,
     FILTER_CRYPTO_AES256_SHA256,
@@ -43,7 +44,6 @@ from py7zr.properties import (
     FILTER_SPARC,
     FILTER_X86,
     FILTER_ZSTD,
-    FILTER_BROTLI,
     PRESET_DEFAULT,
     PRESET_EXTREME,
 )
