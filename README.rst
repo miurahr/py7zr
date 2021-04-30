@@ -307,20 +307,23 @@ Dependencies
 
 There are several dependencies to support algorithms and CLI expressions.
 
-================  ================================
-Package           Purpose
-================  ================================
-`Pycryptodome`_   7zAES encryption
-`pyppmd`_         PPMd compression
-`bcj-cffi`_       BCJ filter
-`pyzstd`_         ZStandard compression
-`texttable`_      CLI
-================  ================================
+================== ================================
+Package            Purpose
+================== ================================
+`Pycryptodomex`_   7zAES encryption
+`PyZstd`_          ZStandard compression
+`PyPPMd`_          PPMd compression
+`bcj-cffi`_        BCJ filter
+`multivolumefile`_ Multi-volume archive read/write
+`texttable`_       CLI formatter
+================== ================================
 
-.. _`Pycryptodome` : https://pypi.org/project/pycryptodome/
-.. _`pyppmd` : https://pypi.org/project/pyppmd/
-.. _`bcj-cffi` : https://pypi.org/project/bcj-cffi/
-.. _`pyzstd` : https://pypi.org/project/pyzstd
+
+.. _`Pycryptodomex` : https://www.pycryptodome.org/en/latest/index.html
+.. _`PyZstd` : https://pypi.org/project/pyzstd
+.. _`PyPPMd` : https://pypi.org/project/pyppmd
+.. _`bcj-cffi` : https://pypi.org/project/bcj-cffi
+.. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
 
 
