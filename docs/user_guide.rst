@@ -23,6 +23,34 @@ using standard 'pip' command as like follows;
 
     $ pip install py7zr
 
+The py7zr depends on several external libraries. You should install these libraries with py7zr.
+There are ``PyCryptodome``, ``PyZstd``, ``PyPPMd``, ``bcj-cffi``, ``texttable``, and ``multivolumefile``.
+These pakcages are automatically installed when installing with ``pip`` command.
+
+Dependencies
+------------
+
+There are several dependencies to support algorithms and CLI expressions.
+
+================== ===============================
+Package            Purpose
+================== ===============================
+`PyCryptodomex`_   7zAES encryption
+`PyZstd`_          ZStandard compression
+`PyPPMd`_          PPMd compression
+`bcj-cffi`_        BCJ filters
+`multivolumefile`_ Multi-volume archive read/write
+`texttable`_       CLI formatter
+================== ===============================
+
+.. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
+.. _`PyZstd` : https://pypi.org/project/pyzstd
+.. _`PyPPMd` : https://pypi.org/project/pyppmd
+.. _`bcj-cffi` : https://pypi.org/project/bcj-cffi
+.. _`multivolumefile` : https://pypi.org/project/multivolumefile
+.. _`texttable` : https://pypi.org/project/texttable
+
+
 
 Run Command
 -----------
