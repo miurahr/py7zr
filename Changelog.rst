@@ -12,6 +12,8 @@ Added
 
 Changed
 -------
+* CLI: support multi-volume archive without making temporary file(#311)
+* Dependency: PyPPMd v0.14.0+
 
 Fixed
 -----
