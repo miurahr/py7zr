@@ -79,7 +79,10 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
     benchmark.pedantic(decompressor, setup=setup, args=[password], iterations=1, rounds=3)
 
 
-textfilters = [("ppmd", [{"id": py7zr.FILTER_PPMD}])]
+textfilters = [("ppmd", [{"id": py7zr.FILTER_PPMD}]),
+               ("deflate", [{"id": py7zr.FILTER_DEFLATE}]),
+               ("zstd", [{"id": py7zr.FILTER_ZSTD, "level": 3}]),
+               ]
 
 
 @pytest.mark.benchmark(group="compress")
@@ -128,6 +131,7 @@ def test_benchmark_text_decompress(tmp_path, benchmark, name, filters):
 
 
 @pytest.mark.benchmark(group="calculate_key")
+@pytest.mark.skip(reason="Don't test in ordinary development")
 def test_benchmark_calculate_key1(benchmark):
     password = "secret".encode("utf-16LE")
     cycles = 19
@@ -138,7 +142,8 @@ def test_benchmark_calculate_key1(benchmark):
 
 
 @pytest.mark.benchmark(group="calculate_key")
-@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Pypy has a bug around ctypes")
+@pytest.mark.skip(reason="Don't test in ordinary development")
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="Will crash on PyPy")
 def test_benchmark_calculate_key2(benchmark):
     password = "secret".encode("utf-16LE")
     cycles = 19
@@ -149,6 +154,7 @@ def test_benchmark_calculate_key2(benchmark):
 
 
 @pytest.mark.benchmark(group="calculate_key")
+@pytest.mark.skip(reason="Don't test in ordinary development")
 def test_benchmark_calculate_key3(benchmark):
     password = "secret".encode("utf-16LE")
     cycles = 19
