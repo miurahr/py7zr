@@ -715,3 +715,56 @@ def test_py7zr_list_values():
     assert file_list[1].crc32 == 0xB36AAEDB
     assert file_list[2].crc32 == 0xDCBF8D07
     assert file_list[3].crc32 == 0x80FC72BE
+
+
+@pytest.mark.cli
+@pytest.mark.files
+def test_list_multivolume(capsys):
+    arcfile = os.path.join(testdata_path, "archive.7z.001")
+    basefile = os.path.join(testdata_path, "archive.7z")
+    expected = """Listing archive: {}
+--
+Path = {}
+Type = 7z
+Phisical Size = 52337
+Headers Size = 518
+Method = LZMA2, BCJ
+Solid = +
+Blocks = 2
+
+total 19 files and directories in solid archive
+   Date      Time    Attr         Size   Compressed  Name
+------------------- ----- ------------ ------------  ------------------------
+""".format(
+        basefile, basefile
+    )
+    expected += "{} D....            0            0  mingw64\n".format(ltime2(2017, 1, 23, 6, 2, 46))
+    expected += "{} D....            0            0  mingw64/bin\n".format(ltime2(2020, 6, 7, 2, 45, 18))
+    expected += "{} D....            0            0  mingw64/include\n".format(ltime2(2020, 6, 7, 2, 45, 18))
+    expected += "{} D....            0            0  mingw64/lib\n".format(ltime2(2020, 6, 7, 2, 45, 18))
+    expected += "{} D....            0            0  mingw64/share\n".format(ltime2(2020, 6, 7, 2, 45, 26))
+    expected += "{} D....            0            0  mingw64/share/doc\n".format(ltime2(2017, 1, 23, 6, 2, 43))
+    expected += "{} D....            0            0  mingw64/share/doc/szip\n".format(ltime2(2017, 1, 23, 6, 2, 43))
+    expected += "{} ....A         2289        26895  mingw64/include/SZconfig.h\n".format(ltime2(2017, 1, 23, 6, 2, 34))
+    expected += "{} ....A         3470               mingw64/include/ricehdf.h\n".format(ltime2(2004, 3, 16, 16, 14, 27))
+    expected += "{} ....A         1774               mingw64/include/szip_adpt.h\n".format(ltime2(2010, 7, 2, 21, 31, 38))
+    expected += "{} ....A         5282               mingw64/include/szlib.h\n".format(ltime2(2008, 11, 11, 16, 12, 56))
+    expected += "{} ....A        60008               mingw64/lib/libszip.a\n".format(ltime2(2017, 1, 23, 6, 2, 47))
+    expected += "{} ....A        10900               mingw64/lib/libszip.dll.a\n".format(ltime2(2017, 1, 23, 6, 2, 39))
+    expected += "{} ....A         1986               mingw64/share/doc/szip/COPYING\n".format(ltime2(2008, 1, 24, 23, 8, 43))
+    expected += "{} ....A         1544               mingw64/share/doc/szip/HISTORY.txt\n".format(
+        ltime2(2010, 7, 14, 13, 43, 15)
+    )
+    expected += "{} ....A         3544               mingw64/share/doc/szip/INSTALL\n".format(
+        ltime2(2008, 11, 11, 16, 12, 56)
+    )
+    expected += "{} ....A          564               mingw64/share/doc/szip/README\n".format(ltime2(2007, 8, 20, 18, 47, 21))
+    expected += "{} ....A          513               mingw64/share/doc/szip/RELEASE.txt\n".format(
+        ltime2(2010, 7, 14, 13, 43, 15)
+    )
+    expected += "{} ....A        66352        24924  mingw64/bin/libszip-0.dll\n".format(ltime2(2017, 1, 23, 6, 2, 47))
+    expected += "------------------- ----- ------------ ------------  ------------------------\n"
+    cli = py7zr.cli.Cli()
+    cli.run(["l", "--verbose", arcfile])
+    out, err = capsys.readouterr()
+    assert out == expected

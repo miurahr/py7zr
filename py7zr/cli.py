@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #    Pure python p7zr implementation
-#    Copyright (C) 2019, 2020 Hiroshi Miura
+#    Copyright (C) 2019-2021 Hiroshi Miura
 #
 #    This library is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,11 @@
 #    You should have received a copy of the GNU Lesser General Public
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 import argparse
 import getpass
 import inspect
+import io
 import lzma
 import os
 import pathlib
@@ -30,13 +32,14 @@ from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, List, Optional
 
 import _lzma  # type: ignore
+import multivolumefile
 import texttable  # type: ignore
 
 import py7zr
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods
 from py7zr.helpers import Local
-from py7zr.properties import COMMAND_HELP_STRING, get_default_blocksize
+from py7zr.properties import COMMAND_HELP_STRING
 
 
 class CliExtractCallback(ExtractCallback):
@@ -105,11 +108,11 @@ class Cli:
         subparsers = parser.add_subparsers(title="subcommands", help=COMMAND_HELP_STRING)
         list_parser = subparsers.add_parser("l")
         list_parser.set_defaults(func=self.run_list)
-        list_parser.add_argument("arcfile", help="7z archive file")
+        list_parser.add_argument("arcfile", type=pathlib.Path, help="7z archive file")
         list_parser.add_argument("--verbose", action="store_true", help="verbose output")
         extract_parser = subparsers.add_parser("x")
         extract_parser.set_defaults(func=self.run_extract)
-        extract_parser.add_argument("arcfile", help="7z archive file")
+        extract_parser.add_argument("arcfile", type=pathlib.Path, help="7z archive file")
         extract_parser.add_argument("odir", nargs="?", help="output directory")
         extract_parser.add_argument(
             "-P",
@@ -196,20 +199,34 @@ class Cli:
         """Print a table of contents to file."""
         target = args.arcfile
         verbose = args.verbose
+        if re.fullmatch(r"[.]0+1?", target.suffix):
+            mv_target = pathlib.Path(target.parent, target.stem)
+            ext_start = int(target.suffix[-1])
+            with multivolumefile.MultiVolume(
+                mv_target, mode="rb", ext_digits=len(target.suffix) - 1, ext_start=ext_start
+            ) as mvf:
+                setattr(mvf, "name", str(mv_target))
+                return self._run_list(mvf, verbose)
+        else:
+            return self._run_list(target, verbose)
+
+    def _run_list(self, target, verbose):
         if not py7zr.is_7zfile(target):
             print("not a 7z file")
             return 1
-        with open(target, "rb") as f:
-            a = py7zr.SevenZipFile(f)
+        with py7zr.SevenZipFile(target, "r") as a:
             file = sys.stdout
             archive_info = a.archiveinfo()
             archive_list = a.list()
             if verbose:
-                file.write("Listing archive: {}\n".format(target))
+                if isinstance(target, io.IOBase):
+                    file.write("Listing archive: {}\n".format(target.name))
+                else:
+                    file.write("Listing archive: {}\n".format(str(target)))
                 file.write("--\n")
                 file.write("Path = {}\n".format(archive_info.filename))
                 file.write("Type = 7z\n")
-                fstat = os.stat(archive_info.filename)
+                fstat = archive_info.stat
                 file.write("Phisical Size = {}\n".format(fstat.st_size))
                 file.write("Headers Size = {}\n".format(archive_info.header_size))
                 file.write("Method = {}\n".format(archive_info.method_names))
@@ -400,11 +417,25 @@ class Cli:
                 else:
                     szf.write(src)
         if volume_size is None:
+            with py7zr.SevenZipFile(target, "w") as szf:
+                for path in filenames:
+                    src = pathlib.Path(path)
+                    if src.is_dir():
+                        szf.writeall(src)
+                    else:
+                        szf.write(src)
             return 0
-        size = self._volumesize_unitconv(volume_size)
-        self._split_file(target, size)
-        target.unlink()
-        return 0
+        else:
+            size = self._volumesize_unitconv(volume_size)
+            with multivolumefile.MultiVolume(target, mode="wb", volume=size, ext_digits=4) as mvf:
+                with py7zr.SevenZipFile(mvf, "w") as szf:
+                    for path in filenames:
+                        src = pathlib.Path(path)
+                        if src.is_dir():
+                            szf.writeall(src)
+                        else:
+                            szf.write(src)
+            return 0
 
     def run_append(self, args):
         sztarget = args.arcfile  # type: str
@@ -426,19 +457,3 @@ class Cli:
                 else:
                     szf.write(src)
         return 0
-
-    def _split_file(self, filepath, size):
-        chapters = 0
-        written = [0, 0]
-        total_size = filepath.stat().st_size
-        block_size = get_default_blocksize()
-        with filepath.open("rb") as src:
-            while written[0] <= total_size:
-                with open(str(filepath) + ".%03d" % chapters, "wb") as tgt:
-                    written[1] = 0
-                    while written[1] < size:
-                        read_size = min(block_size, size - written[1])
-                        tgt.write(src.read(read_size))
-                        written[1] += read_size
-                        written[0] += read_size
-                chapters += 1
