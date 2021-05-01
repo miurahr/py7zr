@@ -340,6 +340,7 @@ Codecs and hashes:
 040202         BZip2
 04f71101   ZStandard
 030401          PPMd
+04f71102      Brotli
 06f10701       7zAES
 {}
 """.format(

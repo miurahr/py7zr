@@ -256,7 +256,7 @@ Minimum required version is Python 3.6.
 
 It hopefully works on M1 Mac too.
 
-Version recommendations are:
+Recommended versions are:
 
 - CPython 3.7.5, CPython 3.8.0 and later.
 - PyPy3.6-7.2.0 and later.
@@ -289,7 +289,8 @@ Supported algorithms are:
     * Deflate
     * Copy
     * PPMd
-    * Zstandard
+    * ZStandard
+    * Brotli
 
 * crypt
     * 7zAES
@@ -298,12 +299,18 @@ Supported algorithms are:
     * Delta
     * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
 
-* No supported
+* No support
     * BCJ2
     * Deflate64
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
+
+- ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
+  not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+- liblzma, which Python's standard lzma module depends, does not provide BCJ2 filter.
+- Deflate64 is proprietary algorithm.
+
 
 Dependencies
 ============
@@ -316,6 +323,8 @@ Package            Purpose
 `Pycryptodomex`_   7zAES encryption
 `PyZstd`_          ZStandard compression
 `PyPPMd`_          PPMd compression
+`Brotli`_          Brotli compression (CPython)
+`BrotliCFFI`_      Brotli compression (PyPy)
 `bcj-cffi`_        BCJ filter
 `multivolumefile`_ Multi-volume archive read/write
 `texttable`_       CLI formatter
@@ -325,6 +334,8 @@ Package            Purpose
 .. _`Pycryptodomex` : https://www.pycryptodome.org/en/latest/index.html
 .. _`PyZstd` : https://pypi.org/project/pyzstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
+.. _`Brotli` : https://pypi.org/project/brotli
+.. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
 .. _`bcj-cffi` : https://pypi.org/project/bcj-cffi
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
