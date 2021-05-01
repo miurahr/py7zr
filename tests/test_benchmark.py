@@ -83,6 +83,7 @@ textfilters = [
     ("ppmd(text)", [{"id": py7zr.FILTER_PPMD}]),
     ("deflate(text)", [{"id": py7zr.FILTER_DEFLATE}]),
     ("zstd(text)", [{"id": py7zr.FILTER_ZSTD, "level": 3}]),
+    ("brotli(text)", [{"id": py7zr.FILTER_BROTLI, "level": 11}]),
 ]
 
 
