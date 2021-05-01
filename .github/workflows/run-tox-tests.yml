@@ -86,7 +86,9 @@ jobs:
           run: |
             python3 -c "import platform;print('Machine type:', platform.machine())"
             python3 -m pip install -U pip tox
-            python3 -m tox -e py38
+          env: | # YAML, but pipe character is necessary
+            PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
+     python3 -m tox -e py38
 
   finish:
     runs-on: ubuntu-latest
