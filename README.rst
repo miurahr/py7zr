@@ -244,14 +244,19 @@ py7zr also support `shutil`  interface.
     shutil.make_archive('target', '7zip', 'src')
 
 
-Required Python versions
-========================
+Requirements
+============
 
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
 Minimum required version is Python 3.6.
-Recommended version is:
+
+``py7zr`` tested on Linux, macOS, Windows and Ubuntu aarch64.
+
+It hopefully works on M1 Mac too.
+
+Recommended versions are:
 
 - CPython 3.7.5, CPython 3.8.0 and later.
 - PyPy3.6-7.2.0 and later.
