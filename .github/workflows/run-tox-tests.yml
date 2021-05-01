@@ -80,15 +80,16 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
           install: |
             apt-get update -q -y
             apt-get install -q -y p7zip-full python3 python3-pip python3-cffi build-essential gcc git libffi-dev python3-dev libarchive-dev
+            python3 -m pip install -U pip tox
           run: |
             python3 -c "import platform;print('Machine type:', platform.machine())"
-            python3 -m pip install -U pip tox
-          env: | # YAML, but pipe character is necessary
+            python3 -m tox -e py38
+          env: |
             PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
-     python3 -m tox -e py38
 
   finish:
     runs-on: ubuntu-latest
