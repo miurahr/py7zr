@@ -80,9 +80,9 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
 
 
 textfilters = [
-    ("ppmd", [{"id": py7zr.FILTER_PPMD}]),
-    ("deflate", [{"id": py7zr.FILTER_DEFLATE}]),
-    ("zstd", [{"id": py7zr.FILTER_ZSTD, "level": 3}]),
+    ("ppmd(text)", [{"id": py7zr.FILTER_PPMD}]),
+    ("deflate(text)", [{"id": py7zr.FILTER_DEFLATE}]),
+    ("zstd(text)", [{"id": py7zr.FILTER_ZSTD, "level": 3}]),
 ]
 
 
