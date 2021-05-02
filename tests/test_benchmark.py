@@ -80,7 +80,7 @@ def test_benchmark_filters_decompress(tmp_path, benchmark, name, filters):
 
 
 textfilters = [
-    ("ppmd(text)", [{"id": py7zr.FILTER_PPMD}]),
+    ("ppmd(text)", [{"id": py7zr.FILTER_PPMD, "order": 8, "mem": "4m"}]),
     ("deflate(text)", [{"id": py7zr.FILTER_DEFLATE}]),
     ("zstd(text)", [{"id": py7zr.FILTER_ZSTD, "level": 3}]),
     ("brotli(text)", [{"id": py7zr.FILTER_BROTLI, "level": 11}]),
@@ -103,9 +103,8 @@ def test_benchmark_text_compress(tmp_path, benchmark, name, filters):
     with py7zr.SevenZipFile(os.path.join(testdata_path, "bzip2_2.7z"), "r") as szf:
         archive_info = szf.archiveinfo()
         source_size = archive_info.uncompressed
-    FILTER = [{"id": py7zr.FILTER_PPMD}]
     benchmark.extra_info["data_size"] = source_size
-    benchmark.pedantic(compressor, setup=setup, args=[FILTER], iterations=1, rounds=3)
+    benchmark.pedantic(compressor, setup=setup, args=[filters], iterations=1, rounds=3)
     benchmark.extra_info["ratio"] = str(tmp_path.joinpath("target.7z").stat().st_size / source_size)
 
 
