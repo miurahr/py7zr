@@ -276,6 +276,7 @@ class CopyDecompressor(ISevenZipDecompressor):
 
 class PpmdDecompressor(ISevenZipDecompressor):
     """Decompress PPMd compressed data"""
+
     def __init__(self, properties: bytes, blocksize: Optional[int] = None):
         if not isinstance(properties, bytes):
             raise UnsupportedCompressionMethodError
@@ -297,6 +298,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
 
 class PpmdCompressor(ISevenZipCompressor):
     """Compress with PPMd compression algorithm"""
+
     def __init__(self, properties: bytes):
         order, mem = self._decode_property(properties)
         self.encoder = pyppmd.Ppmd7Encoder(order, mem)
