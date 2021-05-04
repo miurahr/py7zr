@@ -2,7 +2,104 @@
 Py7zr ChangeLog(old)
 ====================
 
-All notable changes to this project before v0.8.0 was documented in this file.
+All notable changes to this project before v0.10.1 was documented in this file.
+
+`v0.10.1`_
+==========
+
+Fixed
+-----
+
+*  Fix exception when reading header which size is larger than buffer size (#252)
+
+`v0.10.0`_
+==========
+
+Added
+-----
+
+* Compatibility test with python-libarchive-c/libarchive for compression(#247)
+* Document: express how to handle multi-volume archive (#243)
+* SevenZipFile.needs_password() method.(#208, #235)
+* CLI: Support append mode command line.(#228)
+* Support "APPEND" mode. User can open SevenZipFile() class with mode='a' (#227)
+
+Changed
+-------
+
+* Calculate CRC32 of header without re-reading header from disk again.(#245)
+* read(), extract(): improve performance when specifying parts of archived file,
+  by skipping rest of arcvhive when target file has extracted.(#239,#242)
+* read(), extract(): improve performance when specifying parts of archived file,
+  by not running threads for unused compression blocks(folders).(#239,#242)
+* docs: improve API documentation.(#244)
+* setup: set minimum required python version as >=3.5
+* Compression will be happened when call write() not close() (#222, #226)
+* Handle file read/write in SevenZipCompressor/Decompressor class (#213)
+
+Fixed
+-----
+
+* Fix BCJ(x86) filter code with a missing logic which cause extraction error
+  for certain data. (#249, #250)
+* Raise PasswordRequired when encrypted header without passing password (#234, #237)
+* CLI: don't raise exception when password is wrong or not given.(#229)
+* Fix specification typo.
+* Catch exception in threading extraction(#218,#219)
+
+
+`v0.9.2`_
+=========
+
+Changed
+-------
+
+* Utilize max_length argument for each decompressor.(#210, #211)
+* Change READ_BUFFER_SIZE 32768 for python 3.7.5 and before.
+* Extend Buffer size when necessary.(#209)
+
+
+`v0.9.1`_
+=========
+
+Changed
+-------
+
+* Improve DecompressionChain.decompress() logics.(#207)
+
+Fixed
+-----
+
+* Fix BCJ filter for decompression that can cause infinite loop or wrong output.(#204,#205,#206)
+
+`v0.9.0`_
+=========
+
+Added
+-----
+
+* BCJ Decoder/Encoder written by python.(#198, #199)
+* Support Bzip2, Defalte + BCJ(X86, PPC, ARM, ARMT, SPARC) (#199)
+* Add Copy method as an extraction only support.(#184)
+
+Changed
+-------
+
+* Use large(1MB) read blocksize for Python 3.7.5 and later and PyPy 7.2.0 and later.
+* Set ZStandard compression as unsupported because of a bug with unknown reason.(#198)
+* Manage compression methods to handle whether decompressor requires coder['property'] or not.
+
+Fixed
+-----
+
+* Significantly improve decompress performance which is as same speed as v0.7.*.
+  by updating buffer handling.
+* Fix decompression max_size to pass lzma module. Now it is as same as out_remaining.
+* Support LZMA+BCJ(X86, PPC, ARM, ARMT, SPARC) with alternative BCJ filter.(#198, #199)
+* Fix packinfo crc  read and write (#187, #189)
+* Accept archive which Method ID is NULL(size=0)(#181, #182)
+* CLI: Does not crash when trying extract archive which use unsupported method(#183)
+
 
 `v0.8.0`_
 =========
@@ -643,6 +740,11 @@ Changed
 
 
 .. History links
+.. _v0.10.1: https://github.com/miurahr/py7zr/compare/v0.10.0...v0.10.1
+.. _v0.10.0: https://github.com/miurahr/py7zr/compare/v0.9.2...v0.10.0
+.. _v0.9.2: https://github.com/miurahr/py7zr/compare/v0.9.1...v0.9.2
+.. _v0.9.1: https://github.com/miurahr/py7zr/compare/v0.9.0...v0.9.1
+.. _v0.9.0: https://github.com/miurahr/py7zr/compare/v0.8.0...v0.9.0
 .. _v0.8.0: https://github.com/miurahr/py7zr/compare/v0.7.3...v0.8.0
 .. _v0.7.3: https://github.com/miurahr/py7zr/compare/v0.7.2...v0.7.3
 .. _v0.7.2: https://github.com/miurahr/py7zr/compare/v0.7.1...v0.7.2
