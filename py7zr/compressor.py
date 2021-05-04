@@ -281,12 +281,12 @@ class PpmdDecompressor(ISevenZipDecompressor):
         if not isinstance(properties, bytes):
             raise UnsupportedCompressionMethodError
         if len(properties) == 5:
-            level, mem = struct.unpack("<BL", properties)
+            order, mem = struct.unpack("<BL", properties)
         elif len(properties) == 7:
-            level, mem, _, _ = struct.unpack("<BLBB", properties)
+            order, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
             raise UnsupportedCompressionMethodError
-        self.decoder = pyppmd.Ppmd7Decoder(level, mem)  # type: ignore
+        self.decoder = pyppmd.Ppmd7Decoder(order, mem)  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
         if max_length <= 0:
@@ -299,14 +299,41 @@ class PpmdDecompressor(ISevenZipDecompressor):
 class PpmdCompressor(ISevenZipCompressor):
     """Compress with PPMd compression algorithm"""
 
-    def __init__(self, level: int, mem: int):
-        self.encoder = pyppmd.Ppmd7Encoder(level, mem)  # type: ignore
+    def __init__(self, properties: bytes):
+        order, mem = self._decode_property(properties)
+        self.encoder = pyppmd.Ppmd7Encoder(order, mem)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
         return self.encoder.flush()
+
+    def _decode_property(self, properties):
+        order, mem, _, _ = struct.unpack("<BLBB", properties)
+        return order, mem
+
+    @classmethod
+    def encode_filter_properties(cls, filter: Dict[str, Union[str, int]]):
+        order = filter.get("order", 8)
+        mem = filter.get("mem", 24)
+        if isinstance(mem, str):
+            if mem.isdecimal():
+                size = 1 << int(mem)
+            elif mem.lower().endswith("m") and mem[:-1].isdecimal():
+                size = int(mem[:-1]) << 20
+            elif mem.lower().endswith("k") and mem[:-1].isdecimal():
+                size = int(mem[:-1]) << 10
+            elif mem.lower().endswith("b") and mem[:-1].isdecimal():
+                size = int(mem[:-1])
+            else:
+                raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+        elif isinstance(mem, int):
+            size = 1 << mem
+        else:
+            raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+        properties = struct.pack("<BLBB", order, size, 0, 0)
+        return properties
 
 
 class BcjSparcDecoder(ISevenZipDecompressor):
@@ -743,12 +770,10 @@ class SevenZipCompressor:
                 properties = struct.pack("BBBBB", pyzstd.zstd_version_info[0], pyzstd.zstd_version_info[1], level, 0, 0)
                 compressor = algorithm_class_map[filter_id][0](level=level)
             elif filter_id == FILTER_PPMD:
-                order = alt_filter.get("level", 6)
-                mem_size = alt_filter.get("mem", 16) << 20
-                properties = struct.pack("<BLBB", order, mem_size, 0, 0)
-                compressor = algorithm_class_map[filter_id][0](order, mem_size)
+                properties = PpmdCompressor.encode_filter_properties(alt_filter)
+                compressor = algorithm_class_map[filter_id][0](properties)
             elif filter_id == FILTER_BROTLI:
-                level = alt_filter.get("level", 3)
+                level = alt_filter.get("level", 11)
                 properties = struct.pack("BBB", brotli_major, brotli_minor, level)
                 compressor = algorithm_class_map[filter_id][0](level)
         else:

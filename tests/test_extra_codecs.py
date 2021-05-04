@@ -207,7 +207,7 @@ def test_extract_deflate(tmp_path):
 
 @pytest.mark.basic
 def test_compress_ppmd(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_PPMD, "level": 6, "mem": 16}]
+    my_filters = [{"id": py7zr.FILTER_PPMD, "order": 6, "mem": 24}]  # mem in 2^size
     target = tmp_path.joinpath("target.7z")
     archive = py7zr.SevenZipFile(target, "w", filters=my_filters)
     archive.writeall(os.path.join(testdata_path, "src"), "src")
@@ -220,7 +220,7 @@ def test_compress_ppmd(tmp_path):
 def test_compress_ppmd_2(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
         arc.extractall(path=tmp_path)
-    my_filters = [{"id": py7zr.FILTER_PPMD, "level": 6, "mem": 16}]
+    my_filters = [{"id": py7zr.FILTER_PPMD, "order": 6, "mem": "4m"}]
     target = tmp_path.joinpath("target.7z")
     with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
         archive.encoded_header_mode = False
@@ -231,7 +231,7 @@ def test_compress_ppmd_2(tmp_path):
 
 @pytest.mark.basic
 def test_compress_decompress_brotli(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_BROTLI, "level": 3}]
+    my_filters = [{"id": py7zr.FILTER_BROTLI, "level": 11}]
     #
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
         arc.extractall(path=tmp_path)
