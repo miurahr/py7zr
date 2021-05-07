@@ -9,7 +9,6 @@ All notable changes to this project will be documented in this file.
 
 Added
 -----
-* type hint for mypy
 
 Changed
 -------
@@ -28,6 +27,13 @@ Security
 
 Deprecated
 ----------
+
+`v0.16.1`_
+==========
+
+Added
+-----
+* type hint for mypy
 
 `v0.16.0`_
 ==========
@@ -209,7 +215,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.1...HEAD
+.. _v0.16.1: https://github.com/miurahr/py7zr/compare/v0.16.0...v0.16.1
 .. _v0.16.0: https://github.com/miurahr/py7zr/compare/v0.15.2...v0.16.0
 .. _v0.15.2: https://github.com/miurahr/py7zr/compare/v0.15.1...v0.15.2
 .. _v0.15.1: https://github.com/miurahr/py7zr/compare/v0.15.0...v0.15.1
