@@ -431,19 +431,19 @@ class BCJEncoder(ISevenZipCompressor):
         return self.encoder.flush()
 
 
-class BrotliCompressor:
+class BrotliCompressor(ISevenZipCompressor):
     def __init__(self, level):
         self._compressor = brotli.Compressor(quality=level)
 
-    def compress(self, data):
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self._compressor.process(data)
 
-    def flush(self):
+    def flush(self) -> bytes:
         return self._compressor.flush()
 
 
 class BrotliDecompressor:
-    def __init__(self, properties, block_size):
+    def __init__(self, properties: bytes, block_size: int):
         if len(properties) != 3 or (properties[0], properties[1]) > (brotli_major, brotli_minor):
             raise UnsupportedCompressionMethodError
         self._decompressor = brotli.Decompressor()
@@ -461,23 +461,23 @@ class BrotliDecompressor:
 
 
 class ZstdCompressor:
-    def __init__(self, level):
+    def __init__(self, level: int):
         self.compressor = pyzstd.ZstdCompressor(level)
 
-    def compress(self, data):
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.compressor.compress(data)
 
-    def flush(self):
+    def flush(self) -> bytes:
         return self.compressor.flush()
 
 
 class ZstdDecompressor:
-    def __init__(self, properties, blocksize):
+    def __init__(self, properties: bytes, blocksize: int):
         if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > pyzstd.zstd_version_info:
             raise UnsupportedCompressionMethodError
         self.decompressor = pyzstd.ZstdDecompressor()
 
-    def decompress(self, data):
+    def decompress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.decompressor.decompress(data)
 
 
@@ -502,7 +502,7 @@ class LZMA1Decompressor(ISevenZipDecompressor):
         self._decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
         self.unpacksize = unpacksize
 
-    def decompress(self, data, max_length):
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int) -> bytes:
         return self._decompressor.decompress(data, max_length)
 
 

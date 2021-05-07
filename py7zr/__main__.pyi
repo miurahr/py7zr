@@ -1,0 +1,3 @@
+from . import cli as cli
+
+def main(): ...

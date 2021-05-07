@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 Added
 -----
+* type hint for mypy
 
 Changed
 -------
