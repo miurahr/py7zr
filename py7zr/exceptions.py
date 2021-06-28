@@ -23,7 +23,9 @@
 
 
 class ArchiveError(Exception):
-    pass
+    def __init__(self, *args, **kwargs):
+        if not args and not kwargs:
+            super().__init__(type(self))
 
 
 class Bad7zFile(ArchiveError):
