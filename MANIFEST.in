@@ -26,3 +26,8 @@ recursive-include docs *.odp
 recursive-include docs *.pdf
 recursive-include docs *.txt
 recursive-include docs Makefile
+prune .github
+exclude .gitignore
+exclude .readthedocs.yml
+exclude codecov.yml
+exclude azure-pipelines.yml
