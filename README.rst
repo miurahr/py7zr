@@ -13,6 +13,9 @@
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
+.. image:: https://img.shields.io/conda/vn/conda-forge/py7zr
+  :target: https://anaconda.org/conda-forge/py7zr
+
 .. image:: https://github.com/miurahr/py7zr/workflows/Run%20Tox%20tests/badge.svg
   :target: https://github.com/miurahr/py7zr/actions
 
@@ -38,6 +41,11 @@ You can install py7zr as usual other libraries using pip.
 
     $ pip install py7zr
 
+OR, alternatively using conda:
+
+.. code-block:: shell
+
+    $ conda install -c conda-forge py7zr
 
 Documents
 =========
