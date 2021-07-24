@@ -12,8 +12,8 @@ from datetime import datetime
 import pytest
 
 import py7zr
-from py7zr import Bad7zFile, unpack_7zarchive
-from py7zr.exceptions import UnsupportedCompressionMethodError
+from py7zr import unpack_7zarchive
+from py7zr.exceptions import CrcError, UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
 from . import aio7zr, decode_all
@@ -479,7 +479,7 @@ def test_extract_symlink_overwrite(tmp_path):
 
 @pytest.mark.files
 def test_py7zr_extract_corrupted(tmp_path):
-    with pytest.raises(Bad7zFile):
+    with pytest.raises(CrcError):
         archive = py7zr.SevenZipFile(str(testdata_path.joinpath("crc_corrupted.7z")), "r")
         archive.extract(path=tmp_path)
         archive.close()

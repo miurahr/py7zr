@@ -23,9 +23,10 @@
 
 
 class ArchiveError(Exception):
+    """Base class for exceptions."""
+
     def __init__(self, *args, **kwargs):
-        if not args and not kwargs:
-            super().__init__(type(self))
+        super().__init__(*args, **kwargs)
 
 
 class Bad7zFile(ArchiveError):
@@ -33,11 +34,33 @@ class Bad7zFile(ArchiveError):
 
 
 class CrcError(ArchiveError):
-    pass
+    """Exception raised for CRC error when decompression.
+
+    Attributes:
+      expected -- expected CRC bytes
+      actual -- actual CRC data
+      filename -- filename that has CRC error
+    """
+
+    def __init__(self, expected, actual, filename):
+        super().__init__(expected, actual, filename)
+        self.expected = expected
+        self.actual = actual
+        self.filename = filename
 
 
 class UnsupportedCompressionMethodError(ArchiveError):
-    pass
+    """Exception raised for unsupported compression parameter given.
+
+    Attributes:
+      data -- unknown property data
+      message -- explanation of error
+    """
+
+    def __init__(self, data, message):
+        super().__init__(data, message)
+        self.data = data
+        self.message = message
 
 
 class DecompressionError(ArchiveError):

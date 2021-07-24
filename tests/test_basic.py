@@ -454,7 +454,7 @@ def test_digests_corrupted():
     with py7zr.SevenZipFile(arcfile) as archive:
         assert archive.test() is None
         archive.reset()
-        assert archive.testzip().endswith("src/scripts/py7zr")
+        assert archive.testzip() == "src/scripts/py7zr"
 
 
 @pytest.mark.cli

@@ -593,20 +593,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
 
-        try:
-            if callback is not None:
-                self.worker.extract(
-                    self.fp,
-                    parallel=(not self.password_protected and not self._filePassed),
-                    q=self.q,
-                )
-            else:
-                self.worker.extract(
-                    self.fp,
-                    parallel=(not self.password_protected and not self._filePassed),
-                )
-        except CrcError as ce:
-            raise Bad7zFile("CRC32 error on archived file {}.".format(str(ce)))
+        if callback is not None:
+            self.worker.extract(
+                self.fp,
+                parallel=(not self.password_protected and not self._filePassed),
+                q=self.q,
+            )
+        else:
+            self.worker.extract(
+                self.fp,
+                parallel=(not self.password_protected and not self._filePassed),
+            )
 
         self.q.put(("post", None, None))
         if return_dict:
@@ -1097,7 +1094,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         try:
             self.worker.extract(self.fp, parallel=(not self.password_protected), skip_notarget=False)  # TODO: print progress
         except CrcError as crce:
-            return str(crce)
+            return crce.args[2]
         else:
             return None
 
@@ -1261,7 +1258,7 @@ class Worker:
                             crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                             ofp.seek(0)
                             if f.crc32 is not None and crc32 != f.crc32:
-                                raise CrcError("{}".format(f.filename))
+                                raise CrcError(crc32, f.crc32, f.filename)
                         else:
                             pass  # just create empty file
                 elif not f.emptystream:
@@ -1284,7 +1281,7 @@ class Worker:
             with NullIO() as ofp:
                 crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
             if f.crc32 is not None and crc32 != f.crc32:
-                raise CrcError("{}".format(f.filename))
+                raise CrcError(crc32, f.crc32, f.filename)
 
     def decompress(
         self,
@@ -1319,7 +1316,7 @@ class Worker:
                 break
         if fp.tell() >= src_end:
             if decompressor.crc is not None and not decompressor.check_crc():
-                print("\nCRC error! expected: {}, real: {}".format(decompressor.crc, decompressor.digest))
+                raise CrcError(decompressor.crc, decompressor.digest, None)
         return crc32
 
     def _find_link_target(self, target):

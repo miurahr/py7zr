@@ -201,7 +201,7 @@ class AESDecompressor(ISevenZipDecompressor):
             else:
                 self.buf = Buffer(size=get_default_blocksize() + 16)
         else:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(firstbyte, "Wrong 7zAES properties")
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         currentlen = len(self.buf) + len(data)
@@ -279,13 +279,13 @@ class PpmdDecompressor(ISevenZipDecompressor):
 
     def __init__(self, properties: bytes, blocksize: Optional[int] = None):
         if not isinstance(properties, bytes):
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(properties, "Unknown type of properties is passed")
         if len(properties) == 5:
             order, mem = struct.unpack("<BL", properties)
         elif len(properties) == 7:
             order, mem, _, _ = struct.unpack("<BLBB", properties)
         else:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(properties, "Unknown size of properties is passed")
         self.decoder = pyppmd.Ppmd7Decoder(order, mem)  # type: ignore
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
@@ -444,8 +444,15 @@ class BrotliCompressor(ISevenZipCompressor):
 
 class BrotliDecompressor:
     def __init__(self, properties: bytes, block_size: int):
-        if len(properties) != 3 or (properties[0], properties[1]) > (brotli_major, brotli_minor):
-            raise UnsupportedCompressionMethodError
+        if len(properties) != 3:
+            raise UnsupportedCompressionMethodError(properties, "Unknown size of properties are passed")
+        if (properties[0], properties[1]) > (brotli_major, brotli_minor):
+            raise UnsupportedCompressionMethodError(
+                properties,
+                "Unsupported brotli version: {}.{} our {}.{}".format(
+                    properties[0], properties[1], brotli_major, brotli_minor
+                ),
+            )
         self._decompressor = brotli.Decompressor()
         self.decompress = self._decompress1
 
@@ -455,7 +462,9 @@ class BrotliDecompressor:
     def _decompress1(self, data):
         # check first 4bytes
         if data[:4] == b"\x50\x2a\x4d\x18":
-            raise UnsupportedCompressionMethodError("Unauthorized and modified Brotli data (skipable frame) found.")
+            raise UnsupportedCompressionMethodError(
+                data[:4], "Unauthorized and modified Brotli data (skipable frame) found."
+            )
         self.decompress = self._decompress
         return self._decompressor.process(data)
 
@@ -1013,28 +1022,28 @@ class SupportedMethods:
     def is_native_coder(cls, coder) -> bool:
         method = cls._find_method("id", coder["method"])
         if method is None:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(coder["method"], "Found an unknown id of method.")
         return method["native"]
 
     @classmethod
     def need_property(cls, filter_id):
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
         return method["need_prop"]
 
     @classmethod
     def is_crypto_id(cls, filter_id) -> bool:
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
         return method["type"] == MethodsType.crypto
 
     @classmethod
     def get_method_id(cls, filter_id) -> bytes:
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
         return method["id"]
 
     @classmethod
