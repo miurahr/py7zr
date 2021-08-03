@@ -79,6 +79,53 @@ The module defines the following items:
 Class description
 =================
 
+.. _archiveinfo-object:
+
+ArchiveInfo Object
+------------------
+
+.. py:class:: ArchiveInfo(filename, stat, header_size, method_names, solid, blocks, uncompressed)
+
+   Data only python object to hold information of archive.
+   The object can be retrieved by `archiveinfo()` method of `SevenZipFile` object.
+
+.. py:attribute:: filename
+   :type: str
+
+   filename of 7zip archive. If SevenZipFile object is created from BinaryIO object,
+   it becomes None.
+
+.. py:attribute:: stat
+   :type: stat_result
+
+   fstat object of 7zip archive. If SevenZipFile object is created from BinaryIO object,
+   it becomes None.
+
+.. py:attribute:: header_size
+   :type: int
+
+   header size of 7zip archive.
+
+.. py:attribute:: method_names
+   :type: str
+
+   method names used in 7zip archive.
+
+.. py:attribute:: solid
+   :type: boolean
+
+   Whether is 7zip archive a solid compression or not.
+
+.. py:attribute:: blocks
+   :type: int
+
+   number of compression block(s)
+
+.. py:attribute:: uncompressed
+   :type: int
+
+   total uncompressed size of files in 7zip archive
+
 
 .. _sevenzipfile-object:
 
@@ -86,7 +133,7 @@ SevenZipFile Object
 -------------------
 
 
-.. class:: SevenZipFile(file, mode='r', filters=None, dereference=False, password=None)
+.. py:class:: SevenZipFile(file, mode='r', filters=None, dereference=False, password=None)
 
    Open a 7z file, where *file* can be a path to a file (a string), a
    file-like object or a :term:`path-like object`.
@@ -110,31 +157,31 @@ SevenZipFile Object
 
    When password given, py7zr handles an archive as an encrypted one.
 
-.. method:: SevenZipFile.close()
+.. py:method:: SevenZipFile.close()
 
    Close the archive file and release internal buffers.  You must
    call :meth:`close` before exiting your program or most records will
    not be written.
 
 
-.. method:: SevenZipFile.getnames()
+.. py:method:: SevenZipFile.getnames()
 
    Return a list of archive files by name.
 
 
-.. method:: SevenZipFile.needs_password()
+.. py:method:: SevenZipFile.needs_password()
 
    Return `True` if the archive is encrypted, or is going to create
    encrypted archive. Otherwise return `False`
 
 
-.. method:: SevenZipFile.extractall(path=None)
+.. py:method:: SevenZipFile.extractall(path=None)
 
    Extract all members from the archive to current working directory.  *path*
    specifies a different directory to extract to.
 
 
-.. method:: SevenZipFile.extract(path=None, targets=None)
+.. py:method:: SevenZipFile.extract(path=None, targets=None)
 
    Extract specified pathspec archived files to current working directory.
    'path' specifies a differenct directory to extract to.
@@ -164,7 +211,7 @@ SevenZipFile Object
         zip.extract(targets=targets)
 
 
-.. method:: SevenZipFile.readall()
+.. py:method:: SevenZipFile.readall()
 
    Extract all members from the archive to memory and returns dictionary object.
    Returned dictionary has a form of Dict[filename: str, BinaryIO: io.ByteIO object].
@@ -180,7 +227,7 @@ SevenZipFile Object
            print('{:s}: {:X}...'.format(name, bio.read(10))
 
 
-.. method:: SevenZipFile.read(targets=None)
+.. py:method:: SevenZipFile.read(targets=None)
 
    Extract specified list of target archived files to dictionary object.
    'targets' is a list of archived files to be extracted. py7zr looks for files
@@ -201,31 +248,31 @@ SevenZipFile Object
             print('{:s}: {:X}...'.format(name, bio.read(10))
 
 
-.. method:: SevenZipFile.list()
+.. py:method:: SevenZipFile.list()
 
     Return a List[FileInfo].
 
 
-.. method:: SevenZipFile.archiveinfo()
+.. py:method:: SevenZipFile.archiveinfo()
 
     Return a ArchiveInfo object.
 
 
-.. method:: SevenZipFile.test()
+.. py:method:: SevenZipFile.test()
 
    Read all the archive file and check a packed CRC.
    Return ``True`` if CRC check passed, and return ``False`` when detect defeat,
    or return ``None`` when the archive don't have a CRC record.
 
 
-.. method:: SevenZipFile.testzip()
+.. py:method:: SevenZipFile.testzip()
 
     Read all the files in the archive and check their CRCs.
     Return the name of the first bad file, or else return ``None``.
     When the archive don't have a CRC record, it return ``None``.
 
 
-.. method:: SevenZipFile.write(filename, arcname=None)
+.. py:method:: SevenZipFile.write(filename, arcname=None)
 
    Write the file named *filename* to the archive, giving it the archive name
    *arcname* (by default, this will be the same as *filename*, but without a drive
@@ -233,7 +280,7 @@ SevenZipFile Object
    The archive must be open with mode ``'w'``
 
 
-.. method:: SevenZipFile.writeall(filename, arcname=None)
+.. py:method:: SevenZipFile.writeall(filename, arcname=None)
 
    Write the directory and its sub items recursively into the archive, giving
    the archive name *arcname* (by default, this will be the same as *filename*,
@@ -244,13 +291,13 @@ SevenZipFile Object
    then archive listed as ['c', 'c/d.txt'], the former as directory.
 
 
-.. method:: SevenZipFile.set_encrypted_header(mode)
+.. py:method:: SevenZipFile.set_encrypted_header(mode)
 
    Set header encryption mode. When encrypt header, set mode to `True`, otherwise `False`.
    Default is `False`.
 
 
-.. method:: SevenZipFile.set_encoded_header_mode(mode)
+.. py:method:: SevenZipFile.set_encoded_header_mode(mode)
 
    Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
    Default is `True`.
