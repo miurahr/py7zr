@@ -26,12 +26,12 @@ The module defines the following items:
 .. class:: SevenZipFile
    :noindex:
 
-   The class for reading 7z files.  See section
+   The class for reading 7z files.  See section sevenzipfile-object_
 
 
 .. class:: ArchiveInfo
 
-   The class used to represent information about an information of an archive file. See section
+   The class used to represent information about an information of an archive file. See section archiveinfo-object_
 
 
 .. class:: FileInfo
@@ -107,12 +107,13 @@ ArchiveInfo Object
    header size of 7zip archive.
 
 .. py:attribute:: method_names
-   :type: str
+   :type: List[str]
 
-   method names used in 7zip archive.
+   list of method names used in 7zip archive. If method is not supported by py7zr,
+   name has a postfix asterisk(`*`) mark.
 
 .. py:attribute:: solid
-   :type: boolean
+   :type: bool
 
    Whether is 7zip archive a solid compression or not.
 

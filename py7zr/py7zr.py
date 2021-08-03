@@ -42,7 +42,7 @@ import multivolumefile
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
-from py7zr.compressor import SupportedMethods, get_methods_names_string
+from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
@@ -250,7 +250,16 @@ class ArchiveFileListIterator(collections.abc.Iterator):
 class ArchiveInfo:
     """Hold archive information"""
 
-    def __init__(self, filename, stat, header_size, method_names, solid, blocks, uncompressed):
+    def __init__(
+        self,
+        filename: str,
+        stat: os.stat_result,
+        header_size: int,
+        method_names: List[str],
+        solid: bool,
+        blocks: int,
+        uncompressed: int,
+    ):
         self.stat = stat
         self.filename = filename
         self.size = stat.st_size
@@ -778,7 +787,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _get_method_names(self) -> str:
         try:
-            return get_methods_names_string([folder.coders for folder in self.header.main_streams.unpackinfo.folders])
+            return get_methods_names([folder.coders for folder in self.header.main_streams.unpackinfo.folders])
         except KeyError:
             raise UnsupportedCompressionMethodError("Unknown method")
 

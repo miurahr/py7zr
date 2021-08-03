@@ -229,7 +229,7 @@ class Cli:
                 fstat = archive_info.stat
                 file.write("Phisical Size = {}\n".format(fstat.st_size))
                 file.write("Headers Size = {}\n".format(archive_info.header_size))
-                file.write("Method = {}\n".format(archive_info.method_names))
+                file.write("Method = {}\n".format(", ".join(archive_info.method_names)))
                 if archive_info.solid:
                     file.write("Solid = {}\n".format("+"))
                 else:
@@ -286,7 +286,7 @@ class Cli:
         fstat = os.stat(archive.filename)
         file.write("Phisical Size = {}\n".format(fstat.st_size))
         file.write("Headers Size = {}\n".format(archive.header.size))
-        file.write("Method = {}\n".format(archive._get_method_names()))
+        file.write("Method = {}\n".format(", ".join(archive._get_method_names())))
         if archive._is_solid():
             file.write("Solid = {}\n".format("+"))
         else:
