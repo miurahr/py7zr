@@ -538,6 +538,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     outname = f.filename + "_%d" % i
                     if outname not in fnames:
                         break
+                    i += 1
             fnames.append(outname)
             if path is not None:
                 outfilename = path.joinpath(outname)
