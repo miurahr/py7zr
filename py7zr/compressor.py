@@ -1071,7 +1071,7 @@ class SupportedMethods:
         return False
 
 
-def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
+def get_methods_names(coders_lists: List[List[dict]]) -> List[str]:
     # list of known method names with a display priority order
 
     methods_namelist = [
@@ -1107,4 +1107,4 @@ def get_methods_names_string(coders_lists: List[List[dict]]) -> str:
                     methods_names.append(m["name"])
             if coder["method"] in unsupported_methods:
                 methods_names.append(unsupported_methods[coder["method"]])
-    return ", ".join(filter(lambda x: x in methods_names, methods_namelist))
+    return list(filter(lambda x: x in methods_names, methods_namelist))
