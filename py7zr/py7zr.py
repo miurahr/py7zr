@@ -1143,9 +1143,9 @@ def unpack_7zarchive(archive, path, extra=None):
 def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
     """Function for registering with shutil.register_archive_format()"""
     target_name = "{}.7z".format(base_name)
-    archive = SevenZipFile(target_name, mode="w")
-    archive.writeall(path=base_dir)
-    archive.close()
+    with SevenZipFile(target_name, mode="w") as archive:
+        archive.writeall(path=base_dir)
+    return target_name
 
 
 class Worker:
