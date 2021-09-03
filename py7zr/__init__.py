@@ -17,11 +17,6 @@
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-try:
-    from importlib.metadata import PackageNotFoundError, version  # type: ignore
-except ImportError:
-    from importlib_metadata import PackageNotFoundError, version  # type: ignore
-
 from py7zr.exceptions import Bad7zFile, DecompressionError, PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.properties import (
     CHECK_CRC32,
@@ -48,14 +43,10 @@ from py7zr.properties import (
     PRESET_EXTREME,
 )
 from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7zarchive, unpack_7zarchive
+from py7zr.version import __version__
 
 __copyright__ = "Copyright (C) 2019-2021 Hiroshi Miura"
 
-try:
-    __version__ = version(__name__)
-except PackageNotFoundError:  # pragma: no-cover
-    # package is not installed
-    __version__ = "unknown"
 
 __all__ = [
     "__version__",
