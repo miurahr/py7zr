@@ -17,3 +17,4 @@ type_info.json
 .coverage
 .coverage.*
 coverage.xml
+py7zr/version.py

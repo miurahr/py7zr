@@ -1,7 +1,6 @@
 include *.rst
 include *.svg
 include *.toml
-include *.yml
 include LICENSE
 include .coveragerc
 include tox.ini
