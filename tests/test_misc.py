@@ -87,3 +87,43 @@ def test_read_writed(tmp_path):
         with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
             target.writed(source.readall())
     p7zip_test(tmp_path / "target.7z")
+
+
+@pytest.mark.files
+def test_nested_readall():
+    top_archive = testdata_path.joinpath("lzma2_nested.7z")
+    password = "avproof"
+    expected = {'Config.xml': 28360,
+                '0001000000000CFA_SAM_DATA': 65536,
+                'GetThis.csv': 885,
+                'SAM.log': 1832
+                }
+    def list_archive(archive):
+        for filename, content in archive.readall().items():
+            if (py7zr.is_7zfile(content)):
+                nested = py7zr.SevenZipFile(content, "r", password=password)
+                list_archive(nested)
+            else:
+                assert(expected[filename], len(content.read()))
+        archive.reset()
+
+    with py7zr.SevenZipFile(top_archive, "r", password=password) as arc:
+        list_archive(arc)
+
+
+@pytest.mark.files
+def test_readall_ng():
+    top_archive = testdata_path.joinpath("lzma2_ng.7z")
+    password = "avproof"
+    expected = {
+        'Config.xml': 28360,
+        'EventConsumer.log': 0,
+        'EventConsumer.txt': 1068,
+        'processes1.csv': 136588,
+        'processes1.log': 0,
+        'processes2.csv': 124443,
+        'processes2.log': 0,
+    }
+    with py7zr.SevenZipFile(top_archive, "r", password=password) as arc:
+        for info in arc.list():
+            assert (info.filename, expected[info.filename]) == (info.filename, info.uncompressed)
