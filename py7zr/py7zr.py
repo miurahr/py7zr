@@ -714,18 +714,29 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _writeall(self, path, arcname):
         try:
-            if path.is_symlink() and not self.dereference:
-                self.write(path, arcname)
-            elif path.is_file():
-                self.write(path, arcname)
-            elif path.is_dir():
-                if not path.samefile("."):
-                    self.write(path, arcname)
-                for nm in sorted(os.listdir(str(path))):
-                    arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self._writeall(path.joinpath(nm), arc)
+            if isinstance(path,(list,tuple)):
+                ldat = path
             else:
-                return  # pathlib ignores ELOOP and return False for is_*().
+                ldat = [path]
+            for vdat in ldat:
+                vpt = pathlib.Path(vdat)
+                # Existence check here?
+                if vpt.is_symlink() and not self.dereference:
+                    # Should behave like file?
+                    self.write(vpt, arcname)
+                elif vpt.is_file():
+                    nm = os.path.split(vpt)[-1]
+                    arc = os.path.join(arcname, nm) if arcname is not None else None
+                    self.write(vpt, arc)
+                elif vpt.is_dir():
+                    if (not vpt.samefile(".")
+                    and not arcname == ""):
+                        self.write(vpt, arcname)
+                    for nm in sorted(os.listdir(str(vpt))):
+                        #arc = os.path.join(arcname, nm) if arcname is not None else None
+                        self._writeall(vpt.joinpath(nm), arcname)
+                else:
+                    return  # pathlib ignores ELOOP and return False for is_*().
         except OSError as ose:
             if self.dereference and ose.errno in [errno.ELOOP]:
                 return  # ignore ELOOP here, this resulted to stop looped symlink reference.
@@ -983,16 +994,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
+    def writeall(self, path: Union[pathlib.Path, str, list, tuple], arcname: Optional[str] = None):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
-        if not path.exists():
-            raise ValueError("specified path does not exist.")
-        if path.is_dir() or path.is_file():
+        if isinstance(path,(list,tuple)):
+            # Convert to path and check existence for each item?
             self._writeall(path, arcname)
         else:
-            raise ValueError("specified path is not a directory or a file")
+            if not path.exists():
+                raise ValueError("specified path does not exist.")
+            if path.is_dir() or path.is_file():
+                self._writeall(path, arcname)
+            else:
+                raise ValueError("specified path is not a directory or a file")
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive(Not implemented yet)."""
