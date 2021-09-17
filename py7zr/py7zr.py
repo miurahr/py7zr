@@ -1051,8 +1051,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        folder = self.header.main_streams.unpackinfo.folders[-1]
-        self.worker.archive(self.fp, self.files, folder, deref=False)
+        if size > 0:
+            folder = self.header.main_streams.unpackinfo.folders[-1]
+            self.worker.archive(self.fp, self.files, folder, deref=False)
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
