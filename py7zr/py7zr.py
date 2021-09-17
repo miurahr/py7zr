@@ -434,70 +434,83 @@ class SevenZipFile(contextlib.AbstractContextManager):
         pstat.src_pos = self.afterheader
         file_in_solid = 0
 
-        for file_id, file_info in enumerate(self.header.files_info.files):
-            if not file_info["emptystream"] and folders is not None:
-                folder = folders[pstat.folder]
-                numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (maxsize, compressed, uncompressed, packsize, solid,) = self._get_fileinfo_sizes(
-                    pstat,
-                    subinfo,
-                    packinfo,
-                    folder,
-                    packsizes,
-                    unpacksizes,
-                    file_in_solid,
-                    numinstreams,
-                )
-                pstat.input += 1
-                folder.solid = solid
-                file_info["folder"] = folder
-                file_info["maxsize"] = maxsize
-                file_info["compressed"] = compressed
-                file_info["uncompressed"] = uncompressed
-                file_info["packsizes"] = packsize
-                if subinfo.digestsdefined[pstat.outstreams]:
-                    file_info["digest"] = subinfo.digests[pstat.outstreams]
-                if folder is None:
-                    pstat.src_pos += file_info["compressed"]
-                else:
-                    if folder.solid:
-                        file_in_solid += 1
-                    pstat.outstreams += 1
-                    if folder.files is None:
-                        folder.files = ArchiveFileList(offset=file_id)
-                    folder.files.append(file_info)
-                    if pstat.input >= subinfo.num_unpackstreams_folders[pstat.folder]:
-                        file_in_solid = 0
-                        pstat.src_pos += sum(packinfo.packsizes[pstat.stream : pstat.stream + numinstreams])
-                        pstat.folder += 1
-                        pstat.stream += numinstreams
-                        pstat.input = 0
-            else:
+        if folders is None:
+            for file_id, file_info in enumerate(self.header.files_info.files):
                 file_info["folder"] = None
                 file_info["maxsize"] = 0
                 file_info["compressed"] = 0
                 file_info["uncompressed"] = 0
                 file_info["packsizes"] = [0]
-
-            if "filename" not in file_info:
-                # compressed file is stored without a name, generate one
-                try:
-                    basefilename = self.filename
-                except AttributeError:
-                    # 7z archive file doesn't have a name
-                    file_info["filename"] = "contents"
-                else:
-                    if basefilename is not None:
-                        fn, ext = os.path.splitext(os.path.basename(basefilename))
-                        file_info["filename"] = fn
+                if "filename" not in file_info:
+                    self._set_filename(file_info)
+                self.files.append(file_info)
+        else:
+            for file_id, file_info in enumerate(self.header.files_info.files):
+                if not file_info["emptystream"]:
+                    folder = folders[pstat.folder]
+                    numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
+                    (maxsize, compressed, uncompressed, packsize, solid,) = self._get_fileinfo_sizes(
+                        pstat,
+                        subinfo,
+                        packinfo,
+                        folder,
+                        packsizes,
+                        unpacksizes,
+                        file_in_solid,
+                        numinstreams,
+                    )
+                    pstat.input += 1
+                    folder.solid = solid
+                    file_info["folder"] = folder
+                    file_info["maxsize"] = maxsize
+                    file_info["compressed"] = compressed
+                    file_info["uncompressed"] = uncompressed
+                    file_info["packsizes"] = packsize
+                    if subinfo.digestsdefined[pstat.outstreams]:
+                        file_info["digest"] = subinfo.digests[pstat.outstreams]
+                    if folder is None:
+                        pstat.src_pos += file_info["compressed"]
                     else:
-                        file_info["filename"] = "contents"
-            self.files.append(file_info)
+                        if folder.solid:
+                            file_in_solid += 1
+                        pstat.outstreams += 1
+                        if folder.files is None:
+                            folder.files = ArchiveFileList(offset=file_id)
+                        folder.files.append(file_info)
+                        if pstat.input >= subinfo.num_unpackstreams_folders[pstat.folder]:
+                            file_in_solid = 0
+                            pstat.src_pos += sum(packinfo.packsizes[pstat.stream : pstat.stream + numinstreams])
+                            pstat.folder += 1
+                            pstat.stream += numinstreams
+                            pstat.input = 0
+                else:
+                    file_info["folder"] = None
+                    file_info["maxsize"] = 0
+                    file_info["compressed"] = 0
+                    file_info["uncompressed"] = 0
+                    file_info["packsizes"] = [0]
+                if "filename" not in file_info:
+                    self._set_filename(file_info)
+                self.files.append(file_info)
         if not self.password_protected and self.header.main_streams is not None:
             # Check specified coders have a crypt method or not.
             self.password_protected = any(
                 [SupportedMethods.needs_password(folder.coders) for folder in self.header.main_streams.unpackinfo.folders]
             )
+
+    def _set_filename(self, file_info):
+        """compressed file is stored without a name, generate one"""
+        try:
+            basefilename = self.filename
+        except AttributeError:
+            # 7z archive file doesn't have a name
+            file_info["filename"] = "contents"
+        else:
+            if basefilename is not None:
+                fn, ext = os.path.splitext(os.path.basename(basefilename))
+                file_info["filename"] = fn
+            else:
+                file_info["filename"] = "contents"
 
     def _extract(
         self,
