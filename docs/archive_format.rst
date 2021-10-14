@@ -278,8 +278,8 @@ with archive version. Start Header SHALL follow after archive version.
       - Minor Version, BYTE, '0x04'
    - Start Header CRC, UINT32
    -
-      - Next Header Offset, NUMBER
-      - Next Header Size, NUMBER
+      - Next Header Offset, UINT64
+      - Next Header Size, UINT64
       - Next Header CRC, UINT32
 
 It can be observed as follows when taken hex dump.
@@ -321,7 +321,7 @@ Next Header offset
 Next header offset SHALL be an offset from end of signature header to header database.
 Because signature header always consist with 32 bytes, the offset SHOULD be a value that
 absolute position of header database in archive file - 32 bytes.
-Next header offset SHALL be stored as UINT64.
+Next header offset SHALL be stored as ``UINT64``.
 
 .. _`NextHeaderSize`:
 
@@ -330,7 +330,7 @@ Next Header size
 
 Next header size SHALL be an size of a header database. Because a header database MAY be
 encoded, Next header size SHALL consist of encoded(packed) size, not a raw size.
-Next header size SHALL be stored as UINT64.
+Next header size SHALL be stored as ``UINT64``.
 
 .. _`NextHeaderCRC`:
 
@@ -437,7 +437,7 @@ Pack Information
 Pack Information SHALL start with one byte of id value; 0x06.
 Pack Information SHALL be const with Pack Position, Number of Pack Streams,
 a list of sizes of Pack Streams and a list of CRCs of pack streams.
-Pack positon and Number of Pakc streams SHALL be stored as
+Pack position and Number of Pack streams SHALL be stored as
 variable length NUMBER form.
 Sizes of packed Streams SHALL stored as a list of NUMBER.
 
@@ -559,7 +559,7 @@ empty stream.
 UnpackDigests
 ^^^^^^^^^^^^^
 
-UnpackDigests is a list of CRC32 of decompress deta digests for each folders.
+UnpackDigests is a list of CRC32 of decompress data digests for each folders.
 When extract data from the archive, it CAN check an integrity of data.
 
 It SHALL be a list of NUMBER and its length SHALL be as same as number of folders.
@@ -577,7 +577,7 @@ Each Folder has coder information. CoderInfo is consist of flag,
 number of streams and properties.
 
 Flag indicate the coder is simple i.e. single input and single output,
-or comprex i.e. multiple input, multiple output.
+or complex i.e. multiple input, multiple output.
 
 When simple coder, number of streams is always one for input,
 and one for output, so it SHALL be skipped.
