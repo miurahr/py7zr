@@ -23,7 +23,7 @@ to archive an interoperability among implementations.
 Copyright Notice
 ================
 
-Copyright (C) 2020 Hiroshi Miura
+Copyright (C) 2020,2021 Hiroshi Miura
 
 
 Introduction
@@ -152,17 +152,18 @@ noted.
 +==============+=========+==============================+
 | UINT32       | 4 bytes | | integer at little endian   |
 |              |         | | represent 0 to             |
-|              |         | | 4,294,967,295 (0xffffffff) |
+|              |         | | 4,294,967,295              |
+|              |         | | (``0xffffffff``)           |
 +--------------+---------+------------------------------+
 | UINT64       | 8 bytes | | integer at little endian   |
 |              |         | | represent 0 to             |
 |              |         | | 18,446,744,073,709,551,615 |
-|              |         | | (0xffffffffffffffff)       |
+|              |         | | (``0xffffffffffffffff``)   |
 +--------------+---------+------------------------------+
 | NUMBER       | | 1-9   | | variable length integer    |
 |              | | bytes | | value represent 0 to       |
 |              |         | | 18,446,744,073,709,551,615 |
-|              |         | | (0xffffffffffffffff)       |
+|              |         | | (``0xffffffffffffffff``)   |
 +--------------+---------+------------------------------+
 
 NUMBER SHALL be a integer value encoded with the following scheme.
@@ -296,20 +297,20 @@ It can be observed as follows when taken hex dump.
 Signature
 ^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain b'7z\\xbc\\xaf\\x27\\x1c'.
+The first six bytes of a 7-zip file SHALL always contain ``b'7z\\xbc\\xaf\\x27\\x1c'``.
 
 Version Number
 ^^^^^^^^^^^^^^
 
 Version number SHALL consist with two bytes.
-Major version is 0x00, and minor version is 0x04 for now.
+Major version is ``0x00``, and minor version is ``0x04`` for now.
 
 .. _`StartHeaderCRC`:
 
 Start Header CRC
 ^^^^^^^^^^^^^^^^
 
-It SHALL be stored in form of UINT32.
+It SHALL be stored in form of ``UINT32``.
 This CRC value SHALL be calculated from Next Header Offset, Next Header size and
 Next Header CRC.
 
@@ -541,7 +542,7 @@ It SHALL NOT be more than five coders. (Maximum four)
    - END, Property ID
 
 
-In default Folders information is placed inline, then External flag is 0x00.
+In default Folders information is placed inline, then External flag is ``0x00``.
 
 
 UnpackSizes
@@ -643,26 +644,26 @@ Following pseudo code indicate how each parameter located for informative purpos
 
     if (Is Complex Coder)
      {
-       NUMBER `NumInStreams`;
-       NUMBER `NumOutStreams`;
+       NUMBER ``NumInStreams``;
+       NUMBER ``NumOutStreams``;
      }
      if (There Are Attributes)
      {
-       NUMBER `PropertiesSize`
-       BYTE `Properties[PropertiesSize]`
+       NUMBER ``PropertiesSize``
+       BYTE ``Properties[PropertiesSize]``
      }
     }
-    NumBindPairs :  = `NumOutStreamsTotal` – 1;
-    for (`NumBindPairs`)
+    NumBindPairs :  = ``NumOutStreamsTotal`` – 1;
+    for (``NumBindPairs``)
      {
-       NUMBER `InIndex`;
-       NUMBER `OutIndex`;
+       NUMBER ``InIndex``;
+       NUMBER ``OutIndex``;
      }
-    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
-     if (`NumPackedStreams` > 1)
-       for(`NumPackedStreams`)
+    NumPackedStreams : ``NumInStreamsTotal`` – ``NumBindPairs``;
+     if (``NumPackedStreams`` > 1)
+       for(``NumPackedStreams``)
        {
-         NUMBER `Index`;
+         NUMBER ``Index``;
        };
 
 
@@ -682,12 +683,12 @@ coder property become as simple as follows;
 
 Here is an example of bytes of coder property when specifying LZMA.
 
-* b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'
+* ``b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'``
 
 In this example, first byte 0x23 indicate that coder id size is three bytes, and
 it is not complex codec and there is a codec property.
-A coder ID is b'\x03\x01\x01' and property length is five and property is
-b'\x5D\x00\x10\x00\x00'.
+A coder ID is ``b'\x03\x01\x01'`` and property length is five and property is
+``b'\x5D\x00\x10\x00\x00'``.
 
 
 Codec IDs
@@ -867,7 +868,7 @@ FileName
 ^^^^^^^^
 
 FileNam SHALL be a wide character string encoded with UTF-16-LE and
-follows wchar_t NULL character, i.e. 0x0000.
+follows ``wchar_t NULL`` character, i.e. ``0x0000.``
 
 Path separator SHALL be normalized as '/', which is as POSIX standard.
 FileName SHOULD be relative path notation.
@@ -920,14 +921,14 @@ Normal files
 Normal files are stored with packed streams and ordinal file information.
 Its contents are stored into packed stream.
 It SHOULD have an attribute of Windows such as FILE_ATTRIBUTE_ARCHIVE.
-It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
 
 Directories
 -----------
 
 Directories are stored without packed streams. It have entries in file information.
 It SHALL have an attribute which is FILE_ATTRIBUTE_DIRECTORY.
-It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
 
 Special Files
 -------------
@@ -1013,26 +1014,26 @@ A Coder flag affect a following CoderData existence as following algorithm;
 
     if (Is Complex Coder)
      {
-       NUMBER `NumInStreams`;
-       NUMBER `NumOutStreams`;
+       NUMBER ``NumInStreams``;
+       NUMBER ``NumOutStreams``;
      }
      if (There Are Attributes)
      {
-       NUMBER `PropertiesSize`
-       BYTE `Properties[PropertiesSize]`
+       NUMBER ``PropertiesSize``
+       BYTE ``Properties[PropertiesSize]``
      }
     }
-    NumBindPairs :  = `NumOutStreamsTotal` – 1;
-    for (`NumBindPairs`)
+    NumBindPairs :  = ``NumOutStreamsTotal`` – 1;
+    for (``NumBindPairs``)
      {
-       NUMBER `InIndex`;
-       NUMBER `OutIndex`;
+       NUMBER ``InIndex``;
+       NUMBER ``OutIndex``;
      }
-    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
-     if (`NumPackedStreams` > 1)
-       for(`NumPackedStreams`)
+    NumPackedStreams : ``NumInStreamsTotal`` – ``NumBindPairs``;
+     if (``NumPackedStreams`` > 1)
+       for(``NumPackedStreams``)
        {
-         NUMBER `Index`;
+         NUMBER ``Index``;
        };
 
 
