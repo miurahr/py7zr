@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.16.2`_
+==========
+
 Added
 -----
 * Bundle type hint data
@@ -28,15 +31,6 @@ Fixed
 -----
 * Docs: specification error of signature header data types.
 * Fix infinite loop in extract(#354)
-
-Removed
--------
-
-Security
---------
-
-Deprecated
-----------
 
 `v0.16.1`_
 ==========
@@ -225,7 +219,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.2...HEAD
+.. _v0.16.2: https://github.com/miurahr/py7zr/compare/v0.16.1...v0.16.2
 .. _v0.16.1: https://github.com/miurahr/py7zr/compare/v0.16.0...v0.16.1
 .. _v0.16.0: https://github.com/miurahr/py7zr/compare/v0.15.2...v0.16.0
 .. _v0.15.2: https://github.com/miurahr/py7zr/compare/v0.15.1...v0.15.2
