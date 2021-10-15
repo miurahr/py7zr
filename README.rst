@@ -333,7 +333,7 @@ Package            Purpose
 `PyPPMd`_          PPMd compression
 `Brotli`_          Brotli compression (CPython)
 `BrotliCFFI`_      Brotli compression (PyPy)
-`bcj-cffi`_        BCJ filter
+`pybcj`_           BCJ filter
 `multivolumefile`_ Multi-volume archive read/write
 `texttable`_       CLI formatter
 ================== ================================
@@ -344,7 +344,7 @@ Package            Purpose
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
-.. _`bcj-cffi` : https://pypi.org/project/bcj-cffi
+.. _`pybcj` : https://pypi.org/project/pybcj
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
 

@@ -251,31 +251,31 @@ class SparcEncoder(BCJFilter):
         super().__init__(self.sparc_code, 4, True)
 
 
-class PpcDecoder(BCJFilter):
+class PPCDecoder(BCJFilter):
     def __init__(self, size: int):
         super().__init__(self.ppc_code, 4, False, size)
 
 
-class PpcEncoder(BCJFilter):
+class PPCEncoder(BCJFilter):
     def __init__(self):
         super().__init__(self.ppc_code, 4, True)
 
 
-class ArmtDecoder(BCJFilter):
+class ARMTDecoder(BCJFilter):
     def __init__(self, size: int):
         super().__init__(self.armt_code, 4, False, size)
 
 
-class ArmtEncoder(BCJFilter):
+class ARMTEncoder(BCJFilter):
     def __init__(self):
         super().__init__(self.armt_code, 4, True)
 
 
-class ArmDecoder(BCJFilter):
+class ARMDecoder(BCJFilter):
     def __init__(self, size: int):
         super().__init__(self.arm_code, 4, False, size)
 
 
-class ArmEncoder(BCJFilter):
+class ARMEncoder(BCJFilter):
     def __init__(self):
         super().__init__(self.arm_code, 4, True)
