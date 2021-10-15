@@ -14,6 +14,8 @@ Changed
 -------
 * Use PyBCJ instead of bcj-cffi.(#368)
 * Docs: change recommended python versions
+* CI: benchmark on python 3.10
+* Test expectation for python 3.10 change
 
 Fixed
 -----
