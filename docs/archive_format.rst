@@ -23,7 +23,7 @@ to archive an interoperability among implementations.
 Copyright Notice
 ================
 
-Copyright (C) 2020 Hiroshi Miura
+Copyright (C) 2020,2021 Hiroshi Miura
 
 
 Introduction
@@ -152,17 +152,18 @@ noted.
 +==============+=========+==============================+
 | UINT32       | 4 bytes | | integer at little endian   |
 |              |         | | represent 0 to             |
-|              |         | | 4,294,967,295 (0xffffffff) |
+|              |         | | 4,294,967,295              |
+|              |         | | (``0xffffffff``)           |
 +--------------+---------+------------------------------+
 | UINT64       | 8 bytes | | integer at little endian   |
 |              |         | | represent 0 to             |
 |              |         | | 18,446,744,073,709,551,615 |
-|              |         | | (0xffffffffffffffff)       |
+|              |         | | (``0xffffffffffffffff``)   |
 +--------------+---------+------------------------------+
 | NUMBER       | | 1-9   | | variable length integer    |
 |              | | bytes | | value represent 0 to       |
 |              |         | | 18,446,744,073,709,551,615 |
-|              |         | | (0xffffffffffffffff)       |
+|              |         | | (``0xffffffffffffffff``)   |
 +--------------+---------+------------------------------+
 
 NUMBER SHALL be a integer value encoded with the following scheme.
@@ -278,8 +279,8 @@ with archive version. Start Header SHALL follow after archive version.
       - Minor Version, BYTE, '0x04'
    - Start Header CRC, UINT32
    -
-      - Next Header Offset, NUMBER
-      - Next Header Size, NUMBER
+      - Next Header Offset, UINT64
+      - Next Header Size, UINT64
       - Next Header CRC, UINT32
 
 It can be observed as follows when taken hex dump.
@@ -296,20 +297,20 @@ It can be observed as follows when taken hex dump.
 Signature
 ^^^^^^^^^
 
-The first six bytes of a 7-zip file SHALL always contain b'7z\\xbc\\xaf\\x27\\x1c'.
+The first six bytes of a 7-zip file SHALL always contain ``b'7z\\xbc\\xaf\\x27\\x1c'``.
 
 Version Number
 ^^^^^^^^^^^^^^
 
 Version number SHALL consist with two bytes.
-Major version is 0x00, and minor version is 0x04 for now.
+Major version is ``0x00``, and minor version is ``0x04`` for now.
 
 .. _`StartHeaderCRC`:
 
 Start Header CRC
 ^^^^^^^^^^^^^^^^
 
-It SHALL be stored in form of UINT32.
+It SHALL be stored in form of ``UINT32``.
 This CRC value SHALL be calculated from Next Header Offset, Next Header size and
 Next Header CRC.
 
@@ -321,7 +322,7 @@ Next Header offset
 Next header offset SHALL be an offset from end of signature header to header database.
 Because signature header always consist with 32 bytes, the offset SHOULD be a value that
 absolute position of header database in archive file - 32 bytes.
-Next header offset SHALL be stored as UINT64.
+Next header offset SHALL be stored as ``UINT64``.
 
 .. _`NextHeaderSize`:
 
@@ -330,14 +331,14 @@ Next Header size
 
 Next header size SHALL be an size of a header database. Because a header database MAY be
 encoded, Next header size SHALL consist of encoded(packed) size, not a raw size.
-Next header size SHALL be stored as UINT64.
+Next header size SHALL be stored as ``UINT64``.
 
 .. _`NextHeaderCRC`:
 
 Next Header CRC
 ^^^^^^^^^^^^^^^
 
-Next header CRC SHALL a CRC32 of Header that SHALL be stored in UINT32.
+Next header CRC SHALL a ``CRC32`` of Header that SHALL be stored in ``UINT32``.
 
 
 .. _`PorpertyIDs`:
@@ -347,7 +348,7 @@ Property IDs
 
 Information stored in Header SHALL be placed after Property ID.
 For example, Header Info block start with 0x01, which means Header, then
-continues data blocks, and 0x00, which is END, is placed at last.
+continues data blocks, and ``0x00``, which is ``END``, is placed at last.
 This structure can be recursive but there is a rules where particular
 ID can exist.
 
@@ -391,7 +392,7 @@ Header encode Information
 -------------------------
 
 Header encode Information is a Streams Information data for Header data as
-encoded data followed after ID 0x17, EncodedHeader Property.
+encoded data followed after ID ``0x17``, EncodedHeader Property.
 
 
 .. railroad-diagram::
@@ -412,7 +413,7 @@ It SHALL placed at a position where Start header offset pointed in archive file.
 Header database MAY be encoded.
 
 When raw header is located, it SHOULD become the following structure.
-Raw header SHALL start with one byte ID 0x01.
+Raw header SHALL start with one byte ID ``0x01``.
 
 .. railroad-diagram::
 
@@ -437,9 +438,9 @@ Pack Information
 Pack Information SHALL start with one byte of id value; 0x06.
 Pack Information SHALL be const with Pack Position, Number of Pack Streams,
 a list of sizes of Pack Streams and a list of CRCs of pack streams.
-Pack positon and Number of Pakc streams SHALL be stored as
-variable length NUMBER form.
-Sizes of packed Streams SHALL stored as a list of NUMBER.
+Pack position and Number of Pack streams SHALL be stored as
+variable length ``NUMBER`` form.
+Sizes of packed Streams SHALL stored as a list of ``NUMBER``.
 
 .. railroad-diagram::
 
@@ -476,8 +477,8 @@ Sizes of Pack Streams
 ^^^^^^^^^^^^^^^^^^^^^
 
 Sizes of Pack Streams SHOULD be omitted when Number of Pack Streams is zero.
-This is an array of NUMBER values which length is as same as Count of Pack Streams.
-Size SHALL be positive integer and SHALL stored in NUMBER.
+This is an array of ``NUMBER`` values which length is as same as Count of Pack Streams.
+Size SHALL be positive integer and SHALL stored in ``NUMBER``.
 
 .. railroad-diagram::
 
@@ -493,7 +494,7 @@ CRCs of Pack Streams
 
 When Count of Pack Streams is zero, then CRCs of Pack Streams SHALL not exist.
 CRC CAN be exist and indicated as DigestDefined BooleanList.
-CRC SHALL be CRC32 and stored in UINT32.
+CRC SHALL be ``CRC32`` and stored in ``UINT32``.
 
 
 .. railroad-diagram::
@@ -541,7 +542,7 @@ It SHALL NOT be more than five coders. (Maximum four)
    - END, Property ID
 
 
-In default Folders information is placed inline, then External flag is 0x00.
+In default Folders information is placed inline, then External flag is ``0x00``.
 
 
 UnpackSizes
@@ -559,10 +560,10 @@ empty stream.
 UnpackDigests
 ^^^^^^^^^^^^^
 
-UnpackDigests is a list of CRC32 of decompress deta digests for each folders.
+UnpackDigests is a list of ``CRC32`` of decompress data digests for each folders.
 When extract data from the archive, it CAN check an integrity of data.
 
-It SHALL be a list of NUMBER and its length SHALL be as same as number of folders.
+It SHALL be a list of ``NUMBER`` and its length SHALL be as same as number of folders.
 It MAY be skipped when Substreams Information defined.
 
 
@@ -577,7 +578,7 @@ Each Folder has coder information. CoderInfo is consist of flag,
 number of streams and properties.
 
 Flag indicate the coder is simple i.e. single input and single output,
-or comprex i.e. multiple input, multiple output.
+or complex i.e. multiple input, multiple output.
 
 When simple coder, number of streams is always one for input,
 and one for output, so it SHALL be skipped.
@@ -643,26 +644,26 @@ Following pseudo code indicate how each parameter located for informative purpos
 
     if (Is Complex Coder)
      {
-       NUMBER `NumInStreams`;
-       NUMBER `NumOutStreams`;
+       NUMBER ``NumInStreams``;
+       NUMBER ``NumOutStreams``;
      }
      if (There Are Attributes)
      {
-       NUMBER `PropertiesSize`
-       BYTE `Properties[PropertiesSize]`
+       NUMBER ``PropertiesSize``
+       BYTE ``Properties[PropertiesSize]``
      }
     }
-    NumBindPairs :  = `NumOutStreamsTotal` – 1;
-    for (`NumBindPairs`)
+    NumBindPairs :  = ``NumOutStreamsTotal`` – 1;
+    for (``NumBindPairs``)
      {
-       NUMBER `InIndex`;
-       NUMBER `OutIndex`;
+       NUMBER ``InIndex``;
+       NUMBER ``OutIndex``;
      }
-    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
-     if (`NumPackedStreams` > 1)
-       for(`NumPackedStreams`)
+    NumPackedStreams : ``NumInStreamsTotal`` – ``NumBindPairs``;
+     if (``NumPackedStreams`` > 1)
+       for(``NumPackedStreams``)
        {
-         NUMBER `Index`;
+         NUMBER ``Index``;
        };
 
 
@@ -682,12 +683,12 @@ coder property become as simple as follows;
 
 Here is an example of bytes of coder property when specifying LZMA.
 
-* b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'
+* ``b'\x23\x03\x01\x01\x05\x5D\x00\x10\x00\x00'``
 
 In this example, first byte 0x23 indicate that coder id size is three bytes, and
 it is not complex codec and there is a codec property.
-A coder ID is b'\x03\x01\x01' and property length is five and property is
-b'\x5D\x00\x10\x00\x00'.
+A coder ID is ``b'\x03\x01\x01'`` and property length is five and property is
+``b'\x5D\x00\x10\x00\x00'``.
 
 
 Codec IDs
@@ -867,7 +868,7 @@ FileName
 ^^^^^^^^
 
 FileNam SHALL be a wide character string encoded with UTF-16-LE and
-follows wchar_t NULL character, i.e. 0x0000.
+follows ``wchar_t NULL`` character, i.e. ``0x0000.``
 
 Path separator SHALL be normalized as '/', which is as POSIX standard.
 FileName SHOULD be relative path notation.
@@ -876,10 +877,10 @@ FileName SHOULD be relative path notation.
 Attribute
 ^^^^^^^^^
 
-Attribute is a UINT32 integer value. From bit 0 to 15 are as same as
+Attribute is a ``UINT32`` integer value. From bit 0 to 15 are as same as
 Windows attributes. Bit 16 to 31 is used for storing unix attributes.
 When file is a symbolic link, it SHOULD has an attribute that
-UNIX_EXTENSION flag enabled, and link bit of unix attributes.
+``UNIX_EXTENSION`` flag enabled, and link bit of unix attributes.
 
 
 .. list-table:: Attribute values
@@ -908,7 +909,7 @@ UNIX_EXTENSION flag enabled, and link bit of unix attributes.
 FileTime
 ^^^^^^^^^
 
-FileTime are NUMBER values in 100-nanosecond intervals since 1601/01/01 (UTC)
+FileTime are ``NUMBER`` values in 100-nanosecond intervals since 1601/01/01 (UTC)
 
 
 File type and a way
@@ -919,15 +920,15 @@ Normal files
 
 Normal files are stored with packed streams and ordinal file information.
 Its contents are stored into packed stream.
-It SHOULD have an attribute of Windows such as FILE_ATTRIBUTE_ARCHIVE.
-It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+It SHOULD have an attribute of Windows such as ``FILE_ATTRIBUTE_ARCHIVE``.
+It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
 
 Directories
 -----------
 
 Directories are stored without packed streams. It have entries in file information.
-It SHALL have an attribute which is FILE_ATTRIBUTE_DIRECTORY.
-It MAY also have an attribute of UNIX such as rwxrwxrwx permissions.
+It SHALL have an attribute which is ``FILE_ATTRIBUTE_DIRECTORY``.
+It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
 
 Special Files
 -------------
@@ -936,7 +937,7 @@ There is an extension to handle special files such as sockets, device files, and
 A type of special files is indicated as file attribute.
 Further attribute of special file is stored as a content.
 
-Compliant client CAN skip record of special files on extraction.
+Compliant client MAY skip record of special files on extraction.
 
 
 Symbolic links
@@ -945,7 +946,7 @@ Symbolic links
 Symbolic links are stored as packed streams and file information.
 Its target file path, in relative, are recorded into packed streams
 in UTF-8 character encoding.
-It SHALL have a UNIX attribute which is S_IFLNK.
+It SHALL have a UNIX attribute which is ``S_IFLNK``.
 
 
 REPARSE_POINT on Windows
@@ -954,7 +955,7 @@ REPARSE_POINT on Windows
 Reparse point on windows SHOULD be stored with packed stream and file information.
 Its target link path, in absolute, are recorded into packed stream
 in UTF-8 character encoding.
-It SHALL have an attribute which is FILE_ATTRIBUTE_REPARSE_POINT.
+It SHALL have an attribute which is ``FILE_ATTRIBUTE_REPARSE_POINT``.
 
 
 Appendix: BNF expression (Informative)
@@ -967,24 +968,27 @@ This clause shows extended BNF expression of 7-zip file format.
    7-zip archive: SignatureHeader, [PackedStreams],
                 : [PackedStreamsForHeaders], Header | HeaderInfo
    SignatureHeader: Signature, ArchiveVersion, StartHeader
-   Signature: b'7z\xBC\xAF\x27\x1C'
-   ArchiveVersion : b'\x00\x04'
+   Signature: ``b'7z\xBC\xAF\x27\x1C'``
+   ArchiveVersion : ``b'\x00\x04'``
    StartHeader: StartHeaderCRC, NextHeaderOffset,
               : NextHeaderSize, NextHeaderCRC
+   NextHeaderOffset: ``UINT64``
+   NextHeaderSize: ``UINT64``
+   NextHeaderCRC: ``UINT32``
    StreamsInfo: PackInfo, CodersInfo, SubStreamsInfo
-   PackInfo: 0x06, PackPos, NumPackStreams,
+   PackInfo: ``0x06``, PackPos, NumPackStreams,
            : SizesOfPackStream, CRCsOfPackStreams
-   CodersInfo: 0x07, FoldersInfo
+   CodersInfo: ``0x07``, FoldersInfo
    Folders Information: 0x0B, NumFolders, FolderInfo,
                       : CoderUnpackSizes, UnpackDigests, 0x00
-   FoldersInfo: 0x0B, NumFolders, (0x00, Folders) | (0x01, DataStreamIndex)
-              : [0x0C, UnPackSizes, [0x0A, UnpackDigests]], 0x00
+   FoldersInfo: ``0x0B``, NumFolders, (``0x00``, Folders) | (``0x01``, DataStreamIndex)
+              : [``0x0C``, UnPackSizes, [``0x0A``, UnpackDigests]], ``0x00``
    Folders: Folder{ Number of Folders }
    UnpackSizes: UnPackSize { Sum of NumOutStreams for each Folders }
-   UnpackSize: NUMBER
+   UnpackSize: ``NUMBER``
    UnpackDigests: CRC32 { Number of folders }
-   SubStreamsInfo: 0x08, 0x0D, NumUnPackStreamsInFolders{Num of Folders],
-                 : 0x09, UnPackSize, 0x0A,
+   SubStreamsInfo: ``0x08``, ``0x0D``, NumUnPackStreamsInFolders{Num of Folders],
+                 : ``0x09``, UnPackSize, ``0x0A``,
                  : Digests{Number of streams with unknown CRC}, 0x00
    Folder: NumCoders, CoderData { NumCoders }
    CoderData: CoderFlag, CoderID, NumCoderStreamInOut, Properties,
@@ -992,19 +996,19 @@ This clause shows extended BNF expression of 7-zip file format.
    CoderFlag: BYTE(bit 0:3 CodecIdSize, 4: Is Complex Coder,
             : 5: There Are Attributes, 6: Reserved, 7: 0)
    CoderId: BYTE{CodecIdSize}
-   FilesInfo: 0x05, NumFiles, FileInfo, [FileInfo]
+   FilesInfo: ``0x05``, NumFiles, FileInfo, [FileInfo]
    FileInfo: NumFiles, [0x0E, bit array of IsEmptyStream],
-           : [0x0F, bit array of IsEmptyFile],
-           : [0x11, FileNames],
-           : [0x12, FileTime], [0x13, FileTime], [0x14, FileTime],
-           : [0x15, Attributes]
-   FileTime: (0x00, bit array of TimeDefined |  0x01),
-           : (0x00, list of Time | 0x01, DataIndex)
-   FileNames: (0x00, list of each filename | 0x01, DataIndex)
-   filename: Name, 0x0000
+           : [``0x0F``, bit array of IsEmptyFile],
+           : [``0x11``, FileNames],
+           : [``0x12``, FileTime], [``0x13``, FileTime], [``0x14``, FileTime],
+           : [``0x15``, Attributes]
+   FileTime: (``0x00``, bit array of TimeDefined |  0x01),
+           : (``0x00``, list of Time | 0x01, DataIndex)
+   FileNames: (``0x00``, list of each filename | 0x01, DataIndex)
+   filename: Name, ``0x0000``
    Name: UTF16-LE Char, [Name]
-   Attributes: (0x00, bit array of AttributesAreDefined |  0x01),
-             : (0x00, list of Attribute | 0x01, DataIndex)
+   Attributes: (``0x00``, bit array of AttributesAreDefined |  ``0x01``),
+             : (``0x00``, list of Attribute | ``0x01``, DataIndex)
 
 
 A Coder flag affect a following CoderData existence as following algorithm;
@@ -1013,26 +1017,26 @@ A Coder flag affect a following CoderData existence as following algorithm;
 
     if (Is Complex Coder)
      {
-       NUMBER `NumInStreams`;
-       NUMBER `NumOutStreams`;
+       NUMBER ``NumInStreams``;
+       NUMBER ``NumOutStreams``;
      }
      if (There Are Attributes)
      {
-       NUMBER `PropertiesSize`
-       BYTE `Properties[PropertiesSize]`
+       NUMBER ``PropertiesSize``
+       BYTE ``Properties[PropertiesSize]``
      }
     }
-    NumBindPairs :  = `NumOutStreamsTotal` – 1;
-    for (`NumBindPairs`)
+    NumBindPairs :  = ``NumOutStreamsTotal`` – 1;
+    for (``NumBindPairs``)
      {
-       NUMBER `InIndex`;
-       NUMBER `OutIndex`;
+       NUMBER ``InIndex``;
+       NUMBER ``OutIndex``;
      }
-    NumPackedStreams : `NumInStreamsTotal` – `NumBindPairs`;
-     if (`NumPackedStreams` > 1)
-       for(`NumPackedStreams`)
+    NumPackedStreams : ``NumInStreamsTotal`` – ``NumBindPairs``;
+     if (``NumPackedStreams`` > 1)
+       for(``NumPackedStreams``)
        {
-         NUMBER `Index`;
+         NUMBER ``Index``;
        };
 
 
