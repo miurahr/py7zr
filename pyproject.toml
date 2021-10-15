@@ -36,3 +36,83 @@ show_column_numbers = true
 
 [tool.check-manifest]
 ignore = ["py7zr/version.py", "azure-pipelines.yml", ".readthedocs.yml", "codecov.yml"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+python_files = "test*.py"
+norecursedirs = [".git", "_build", "tmp", ".eggs"]
+timeout = 480
+markers = [
+    "asyncio: mark a atest as an asyncio test.",
+    "basic: mark a test as a basic feature test.",
+    "files: mark a test as a test with actual files.",
+    "api: mark a test as an interface test.",
+    "unit: mark a test as an unit test.",
+    "cli: mark a test as a cli test.",
+    "benchmark: mark a test as a benchmarking.",
+    "misc: misc tests",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = mypy, check, pypy3, py{36,37,38,39,310}, docs
+
+[testenv]
+passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
+extras = test
+commands =
+    python -m pytest -vv
+depends =
+    pypy3,py{36,37,38,39}: clean, check
+
+[testenv:py38]
+extras = test, test_compat
+
+[testenv:pypy3]
+extras = test, test_compat
+
+[testenv:mypy]
+extras = check
+commands = mypy py7zr
+deps =
+    pyzstd
+
+[testenv:check]
+extras = check
+ignore_errors=true
+commands =
+    flake8 py7zr tests setup.py
+    isort --quiet --check-only --diff py7zr/*.py tests setup.py
+    python setup.py sdist
+    twine check dist/*
+    check-manifest {toxinidir}
+
+[testenv:clean]
+deps = coverage[toml]>=5.2
+skip_install = true
+commands = coverage erase
+
+[testenv:coveralls]
+deps =
+    coveralls
+skip_install = true
+commands =
+    coveralls []
+
+[testenv:docs]
+extras = docs
+commands =
+    sphinx-build {posargs:-E} -b html docs build/docs
+    sphinx-build -b linkcheck docs build/docs
+
+[gh-actions]
+python =
+    3.6: py36
+    3.7: py37
+    3.8: py38, check, mypy, docs
+    3.9: py39
+    3.10: py310
+    pypy-3: pypy3
+"""
