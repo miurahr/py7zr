@@ -267,19 +267,26 @@ It hopefully works on M1 Mac too.
 Recommended versions are:
 
 - CPython 3.7.5, CPython 3.8.0 and later.
-- PyPy3.6-7.2.0 and later.
+- PyPy3.6-7.3.2 and later.
+
+- CPython 3.10.0 is supported from ``py7zr`` v0.17.0
 
 Following fixes are included in these versions, and it is not fixed on python3.6.
 
 - `BPO-21872`_: LZMA library sometimes fails to decompress a file
 - `PyPy3-3090`_: lzma.LZMADecomporessor.decompress does not respect max_length
+- `PyPy3-3242`_: '_lzma_cffi' has no function named 'lzma_stream_encoder'
 
+Following improvements are included in CPython 3.10
+
+- `BPO-41486`_: Faster bz2/lzma/zlib via new output buffering
 
 .. _`lzma module`: https://docs.python.org/3/library/lzma.html
 .. _`liblzma`: https://tukaani.org/xz/
 .. _`BPO-21872`: https://bugs.python.org/issue21872
+.. _`BPO-41486`: https://bugs.python.org/issue41486
 .. _`PyPy3-3090`: https://foss.heptapod.net/pypy/pypy/-/issues/3090
-
+.. _`PyPy3-3242`: https://foss.heptapod.net/pypy/pypy/-/issues/3242
 
 Compression Methods supported
 =============================
@@ -355,11 +362,8 @@ Performance
 You can find a compression and decompression benchmark results at
 [Github issue](https://github.com/miurahr/py7zr/issues/297) and [wiki page](https://github.com/miurahr/py7zr/wiki/Benchmarks)
 
-Benchmarks are run with Github Actions manually triggered at
-[Github actions workflow](https://github.com/miurahr/py7zr/actions/workflows/run-benchmark.yml)
-
-py7zr works well, but slower than `7-zip` and `p7zip` C implementation by several reasons.
-When compression/decompression **speed** is quite important, it is recommended to use these
+py7zr works well, but slower than `7-zip` and `p7zip` C/C++ implementation by several reasons.
+When compression/decompression **speed** is important, it is recommended to use these
 alternatives through `subprocess.run` python interface.
 
 Use Cases
