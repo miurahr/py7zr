@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 
 Added
 -----
+* Bundle type hint data
+* README: Add conda recipe(#342)
 
 Changed
 -------
@@ -16,13 +18,16 @@ Changed
 * Docs: change recommended python versions
 * CI: benchmark on python 3.10
 * Test expectation for python 3.10 change
+* Improve exceptions and error messages
+* Docs: add descriptionof ArchiveInfo class
+* Docs: fix typo on shutil integration(#353)
+* Bump pyzstd@0.15.0
+* Bump pyppmd@0.17.0
 
 Fixed
 -----
 * Docs: specification error of signature header data types.
-
-Deprecated
-----------
+* Fix infinite loop in extract(#354)
 
 Removed
 -------
