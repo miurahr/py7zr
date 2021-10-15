@@ -241,8 +241,7 @@ def test_cli_help(capsys):
     if sys.version_info >= (3, 10):
         expected = "usage: py7zr [-h] [--version] {l,x,c,a,t,i} ...\n\npy7zr\n\noptions:"
     else:
-        expected = "usage: py7zr [-h] [--version] {l,x,c,a,t," \
-                    "i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help"
+        expected = "usage: py7zr [-h] [--version] {l,x,c,a,t," "i} ...\n\npy7zr\n\noptional arguments:\n  -h, --help"
     cli = py7zr.cli.Cli()
     with pytest.raises(SystemExit):
         cli.run(["-h"])
