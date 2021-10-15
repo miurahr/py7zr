@@ -12,9 +12,12 @@ Added
 
 Changed
 -------
+* Use PyBCJ instead of bcj-cffi.(#368)
+* Docs: change recommended python versions
 
 Fixed
 -----
+* Docs: specification error of signature header data types.
 
 Deprecated
 ----------
