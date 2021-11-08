@@ -619,9 +619,12 @@ class SevenZipDecompressor:
     def decompress(self, fp, max_length: int = -1) -> bytes:
         # read data from disk
         rest_size = self.input_size - self.consumed
-        read_size = min(rest_size, self.block_size)
-        data = fp.read(read_size)
-        self.consumed += len(data)
+        read_size = min(rest_size, self.block_size, self.block_size - len(self._unused))
+        if read_size > 0:
+            data = fp.read(read_size)
+            self.consumed += len(data)
+        else:
+            data = b""
         #
         if max_length < 0:
             res = self._buf[self._pos :] + self._decompress(self._unused + data, max_length)
