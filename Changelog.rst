@@ -22,7 +22,7 @@ Changed
 * CI: benchmark on python 3.10
 * Test expectation for python 3.10 change
 * Improve exceptions and error messages
-* Docs: add descriptionof ArchiveInfo class
+* Docs: add description of ArchiveInfo class
 * Docs: fix typo on shutil integration(#353)
 * Bump pyzstd@0.15.0
 * Bump pyppmd@0.17.0
