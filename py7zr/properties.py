@@ -37,10 +37,16 @@ COMMAND_HELP_STRING = """<Commands>
 """
 
 
-def get_default_blocksize():
-    if platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9):
-        return 1048576
-    elif sys.version_info >= (3, 7, 5):
+def is_64bit() -> bool:
+    return sys.maxsize > 2 ** 32
+
+
+def is_pypy369later() -> bool:
+    return platform.python_implementation() == "PyPy" and sys.version_info >= (3, 6, 9)
+
+
+def get_default_blocksize() -> int:
+    if is_64bit() and (is_pypy369later() or sys.version_info >= (3, 7, 5)):
         return 1048576
     else:
         return 32768
