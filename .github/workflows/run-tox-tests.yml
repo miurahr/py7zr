@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install tox tox-gh-actions coveralls
+          pip install tox tox-gh-actions coveralls coverage[toml]
       - name: Test project with tox
         if: runner.os != 'Windows'
         run: |
@@ -91,7 +91,7 @@ jobs:
           install: |
             apt-get update -q -y
             apt-get install -q -y p7zip-full python3 python3-pip python3-cffi build-essential gcc git libffi-dev python3-dev libarchive-dev
-            python3 -m pip install -U pip tox
+            python3 -m pip install -U pip tox coverage[toml]
           run: |
             python3 -c "import platform;print('Machine type:', platform.machine())"
             python3 -m tox -e py38
