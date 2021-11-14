@@ -83,7 +83,7 @@ The archive is encrypted but password is not given. FAILED.
 
 
 @pytest.mark.files
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(45)
 @pytest.mark.skipif(
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
