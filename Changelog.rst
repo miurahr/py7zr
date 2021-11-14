@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.16.3`_
+==========
+
+Fixed
+-----
+* Reduce memory consumptions and fix memory_error on 32bit python (#370,#373,#374,#375)
+
+Added
+-----
+* Add CI test for python 3.10 (#371)
+
 `v0.16.2`_
 ==========
 
@@ -219,7 +230,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.3...HEAD
+.. _v0.16.3: https://github.com/miurahr/py7zr/compare/v0.16.2...v0.16.3
 .. _v0.16.2: https://github.com/miurahr/py7zr/compare/v0.16.1...v0.16.2
 .. _v0.16.1: https://github.com/miurahr/py7zr/compare/v0.16.0...v0.16.1
 .. _v0.16.0: https://github.com/miurahr/py7zr/compare/v0.15.2...v0.16.0
