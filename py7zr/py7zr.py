@@ -563,8 +563,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             # the maximum length for a path is MAX_PATH, which is defined as
             # 260 characters. In later versions of Windows, changing a registry key
             # or select option when python installation is required to remove the limit.
-            if is_windows_native_python() and outfilename.is_absolute() \
-                    and not is_windows_unc_path(outfilename):
+            if is_windows_native_python() and outfilename.is_absolute() and not is_windows_unc_path(outfilename):
                 outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)

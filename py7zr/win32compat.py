@@ -201,10 +201,13 @@ if sys.platform == "win32":
 
 
 def is_windows_native_python() -> bool:
-    return sys.platform == "win32" and \
-        os.name == "nt" and \
-        "cygwin" not in platform.system().lower() and \
-        "cygwin" not in sys.platform
+    return (
+        sys.platform == "win32"
+        and os.name == "nt"
+        and "cygwin" not in platform.system().lower()
+        and "cygwin" not in sys.platform
+    )
+
 
 def is_windows_unc_path(path) -> bool:
     return sys.platform == "win32" and path.drive.startswith("\\\\")
