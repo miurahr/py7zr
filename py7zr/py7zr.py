@@ -553,9 +553,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = path.joinpath(outname)
             else:
                 outfilename = pathlib.Path(outname)
-            if os.name == "nt":
+            # When python on Windows and not python on Cygwin,
+            # Add win32 file namespace to exceed microsoft windows
+            # path length limitation to 260 bytes
+            # ref.
+            # https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+            # In editions of Windows before Windows 10 version 1607,
+            # the maximum length for a path is MAX_PATH, which is defined as
+            # 260 characters. In later versions of Windows, changing a registry key
+            # or select option when python installation is required to remove the limit.
+            if os.name == "nt" and "cygwin" not in sys.platform.lower():
                 if outfilename.is_absolute():
-                    # hack for microsoft windows path length limit < 255
                     outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
