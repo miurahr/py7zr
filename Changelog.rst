@@ -7,6 +7,13 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.16.4`_
+==========
+
+Fixed
+-----
+* Win32 File namespace convention doesn't work on Cygwin(#380,#381)
+
 `v0.16.3`_
 ==========
 
@@ -230,7 +237,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.4...HEAD
+.. _v0.16.4: https://github.com/miurahr/py7zr/compare/v0.16.3...v0.16.4
 .. _v0.16.3: https://github.com/miurahr/py7zr/compare/v0.16.2...v0.16.3
 .. _v0.16.2: https://github.com/miurahr/py7zr/compare/v0.16.1...v0.16.2
 .. _v0.16.1: https://github.com/miurahr/py7zr/compare/v0.16.0...v0.16.1
