@@ -12,7 +12,8 @@ All notable changes to this project will be documented in this file.
 
 Fixed
 -----
-* Win32 File namespace convention doesn't work on Cygwin(#380,#381)
+* Win32 file namespace convention doesn't work on Cygwin(#380,#381)
+* Win32 file namespace convention doesn't work for network path(#380)
 
 `v0.16.3`_
 ==========
