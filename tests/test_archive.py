@@ -336,8 +336,8 @@ def test_compress_with_custom_filter(tmp_path):
     target = tmp_path.joinpath("target.7z")
     archive = py7zr.SevenZipFile(target, "w", filters=my_filters)
     archive.set_encoded_header_mode(True)
-    archive.header.main_streams.packinfo.enable_digests = True
     archive.writeall(os.path.join(testdata_path, "src"), "src")
+    archive.header.main_streams.packinfo.enable_digests = True
     archive.close()
     #
     with py7zr.SevenZipFile(target, "r") as arc:

@@ -405,6 +405,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
         if header is None:
             return
+        header._initilized = True
         self.header = header
         header.size += 32 + self.sig_header.nextheadersize
         buffer.close()
@@ -688,16 +689,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        self.header = Header.build_header([folder])
-        self.header.password = password
-        self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
+        self.header = Header.build_header(folder, password)
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-        self.worker.prepare_archive()
 
     def _write_flush(self):
-        folder = self.header.main_streams.unpackinfo.folders[-1]
-        self.worker.flush_archive(self.fp, folder)
+        if self.header._initialized:
+            folder = self.header.main_streams.unpackinfo.folders[-1]
+            self.worker.flush_archive(self.fp, folder)
         self._write_header()
 
     def _write_header(self):
@@ -1002,6 +1001,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             path = file
         else:
             raise ValueError("Unsupported file type.")
+        self.header.initialize()
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
@@ -1034,12 +1034,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             size = last - current
         else:
             raise ValueError("Wrong argument passed for argument bio.")
-        file_info = self._make_file_info_from_name(bio, size, arcname)
-        self.header.files_info.files.append(file_info)
-        self.header.files_info.emptyfiles.append(file_info["emptystream"])
-        self.files.append(file_info)
-        folder = self.header.main_streams.unpackinfo.folders[-1]
-        self.worker.archive(self.fp, self.files, folder, deref=False)
+        if size > 0:
+            self.header.initialize()
+            file_info = self._make_file_info_from_name(bio, size, arcname)
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(file_info["emptystream"])
+            self.files.append(file_info)
+            folder = self.header.main_streams.unpackinfo.folders[-1]
+            self.worker.archive(self.fp, self.files, folder, deref=False)
+        else:
+            # FIXME: put empty file properly
+            raise ValueError("Py7zr don't support empty string write")
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
@@ -1089,7 +1094,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         digestdefined = self.header.main_streams.packinfo.digestdefined
         j = 0
         for i, d in enumerate(digestdefined):
-            if d:
+            if d    archive.header.main_streams.packinfo.enable_digests = True:
                 if self._read_digest(packpos, packsizes[i]) != crcs[j]:
                     return False
                 j += 1
@@ -1378,14 +1383,6 @@ class Worker:
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
-
-    def prepare_archive(self):
-        self.header.main_streams.packinfo.numstreams = 0
-        self.header.main_streams.substreamsinfo.digests = []
-        self.header.main_streams.substreamsinfo.digestsdefined = []
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
-        self.header.main_streams.packinfo.packsizes = []
-        self.header.main_streams.packinfo.crcs = []
 
     def flush_archive(self, fp, folder):
         compressor = folder.get_compressor()
