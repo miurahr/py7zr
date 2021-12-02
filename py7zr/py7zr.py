@@ -1094,7 +1094,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         digestdefined = self.header.main_streams.packinfo.digestdefined
         j = 0
         for i, d in enumerate(digestdefined):
-            if d    archive.header.main_streams.packinfo.enable_digests = True:
+            if d:
                 if self._read_digest(packpos, packsizes[i]) != crcs[j]:
                     return False
                 j += 1
