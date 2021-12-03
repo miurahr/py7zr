@@ -1038,8 +1038,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
             folder = self.header.main_streams.unpackinfo.folders[-1]
             self.worker.archive(self.fp, self.files, folder, deref=False)
         else:
-            # FIXME: put empty file properly
-            raise ValueError("Py7zr don't support empty data write")
+            file_info = self._make_file_info_from_name(bio, size, arcname)
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(file_info["emptystream"])
+            self.files.append(file_info)
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
