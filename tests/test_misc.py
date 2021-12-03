@@ -96,7 +96,7 @@ def test_read_writed(tmp_path):
     reason="Administrator rights is required to make symlink on windows",
 )
 def test_double_extract_symlink(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink_2.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path)
-    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink_2.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path)
