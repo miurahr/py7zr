@@ -210,7 +210,7 @@ class ArchiveFileList(collections.abc.Iterable):
     """Iteratable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
-        self.files_list = []  # type: List[dict]
+        self.files_list: List[dict] = []
         self.index = 0
         self.offset = offset
 

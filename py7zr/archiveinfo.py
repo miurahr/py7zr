@@ -224,12 +224,12 @@ class PackInfo:
     ]
 
     def __init__(self) -> None:
-        self.packpos = 0  # type: int
-        self.numstreams = 0  # type: int
-        self.packsizes = []  # type: List[int]
-        self.digestdefined = []  # type: List[bool]
-        self.crcs = []  # type: List[int]
-        self.enable_digests = True
+        self.packpos: int = 0
+        self.numstreams: int = 0
+        self.packsizes: List[int] = []
+        self.digestdefined: List[bool] = []
+        self.crcs: List[int] = []
+        self.enable_digests: bool = True
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -311,21 +311,21 @@ class Folder:
     ]
 
     def __init__(self) -> None:
-        self.unpacksizes = []  # type: List[int]
-        self.coders = []  # type: List[Dict[str, Any]]
-        self.bindpairs = []  # type: List[Bond]
-        self.packed_indices = []  # type: List[int]
+        self.unpacksizes: List[int] = []
+        self.coders: List[Dict[str, Any]] = []
+        self.bindpairs: List[Bond] = []
+        self.packed_indices: List[int] = []
         # calculated values
         # internal values
-        self.solid = False  # type: bool
-        self.digestdefined = False  # type: bool
-        self.crc = None  # type: Optional[int]
+        self.solid: bool = False
+        self.digestdefined: bool = False
+        self.crc: Optional[int] = None
         # compress/decompress objects
-        self.decompressor = None  # type: Optional[SevenZipDecompressor]
-        self.compressor = None  # type: Optional[SevenZipCompressor]
+        self.decompressor: Optional[SevenZipDecompressor] = None
+        self.compressor: Optional[SevenZipCompressor] = None
         self.files = None
         # encryption
-        self.password = None  # type: Optional[str]
+        self.password: Optional[str] = None
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -343,7 +343,7 @@ class Folder:
             iscomplex = b & 0x10 == 0x10
             hasattributes = b & 0x20 == 0x20
             if methodsize > 0:
-                c = {"method": file.read(methodsize)}  # type: Dict[str, Any]
+                c: Dict[str, Any] = {"method": file.read(methodsize)}
             else:
                 c = {"method": b"\x00"}
             if iscomplex:
@@ -461,7 +461,7 @@ class UnpackInfo:
         return obj
 
     def __init__(self):
-        self.numfolders = None
+        self.numfolders: Optional[int] = None
         self.folders = []
         self.datastreamidx = None
 
@@ -536,10 +536,10 @@ class SubstreamsInfo:
     ]
 
     def __init__(self):
-        self.digests = []  # type: List[int]
-        self.digestsdefined = []  # type: List[bool]
-        self.unpacksizes = None  # type: Optional[List[int]]
-        self.num_unpackstreams_folders = []  # type: List[int]
+        self.digests: List[int] = []
+        self.digestsdefined: List[bool] = []
+        self.unpacksizes: Optional[List[int]] = None
+        self.num_unpackstreams_folders: List[int] = []
 
     @classmethod
     def retrieve(cls, file: BinaryIO, numfolders: int, folders: List[Folder]):
@@ -625,9 +625,9 @@ class StreamsInfo:
     __slots__ = ["packinfo", "unpackinfo", "substreamsinfo"]
 
     def __init__(self):
-        self.packinfo = None  # type: PackInfo
-        self.unpackinfo = None  # type: UnpackInfo
-        self.substreamsinfo = None  # type: Optional[SubstreamsInfo]
+        self.packinfo: Optional[PackInfo] = None
+        self.unpackinfo: Optional[UnpackInfo] = None
+        self.substreamsinfo: Optional[SubstreamsInfo] = None
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
@@ -892,13 +892,13 @@ class Header:
     __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos", "_initialized", "filters"]
 
     def __init__(self) -> None:
-        self.solid = False
+        self.solid: bool = False
         self.main_streams = None
         self.files_info = None
-        self.size = 0
-        self._start_pos = 0
-        self.password = None  # type: Optional[str]
-        self._initialized = False
+        self.size: int = 0
+        self._start_pos: int = 0
+        self.password: Optional[str] = None
+        self._initialized: bool = False
 
     @classmethod
     def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int, password=None):
@@ -1077,10 +1077,10 @@ class SignatureHeader:
             P7ZIP_MAJOR_VERSION,
             P7ZIP_MINOR_VERSION,
         )  # type: Tuple[bytes, ...]
-        self.startheadercrc = -1  # type: int
-        self.nextheaderofs = -1  # type: int
-        self.nextheadersize = -1  # type: int
-        self.nextheadercrc = -1  # type: int
+        self.startheadercrc: int = -1
+        self.nextheaderofs: int = -1
+        self.nextheadersize: int = -1
+        self.nextheadercrc: int = -1
 
     @classmethod
     def retrieve(cls, file: BinaryIO):
