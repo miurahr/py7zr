@@ -461,8 +461,7 @@ class BrotliDecompressor(ISevenZipDecompressor):
             # check first 4bytes
             if data[:4] == b"\x50\x2a\x4d\x18":
                 raise UnsupportedCompressionMethodError(
-                    data[:4],
-                    "Unauthorized and modified Brotli data (skipable frame) found."
+                    data[:4], "Unauthorized and modified Brotli data (skipable frame) found."
                 )
             self._prefix_checked = True
         return self._decompressor.process(data)
@@ -537,7 +536,9 @@ class SevenZipDecompressor:
         else:
             self.block_size = get_default_blocksize()
         if len(coders) > 4:
-            raise UnsupportedCompressionMethodError(coders, "Maximum cascade of filters is 4 but got {}.".format(len(coders)))
+            raise UnsupportedCompressionMethodError(
+                coders, "Maximum cascade of filters is 4 but got {}.".format(len(coders))
+            )
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
         # Check if password given for encrypted archive
         if SupportedMethods.needs_password(coders) and password is None:
@@ -710,8 +711,8 @@ class SevenZipDecompressor:
         if filter_id not in algorithm_class_map:
             raise UnsupportedCompressionMethodError(coder, "Unknown method filter_id:{}".format(filter_id))
         if algorithm_class_map[filter_id][1] is None:
-            raise UnsupportedCompressionMethodError(coder,
-                "Decompression is not supported by {}.".format(SupportedMethods.get_method_name_id(filter_id))
+            raise UnsupportedCompressionMethodError(
+                coder, "Decompression is not supported by {}.".format(SupportedMethods.get_method_name_id(filter_id))
             )
         #
         if SupportedMethods.is_crypto_id(filter_id):
@@ -752,7 +753,9 @@ class SevenZipCompressor:
         else:
             self.filters = filters
         if len(self.filters) > 4:
-            raise UnsupportedCompressionMethodError(filters, "Maximum cascade of filters is 4 but got {}.".format(len(self.filters)))
+            raise UnsupportedCompressionMethodError(
+                filters, "Maximum cascade of filters is 4 but got {}.".format(len(self.filters))
+            )
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
         self.coders: List[Dict[str, Any]] = []
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native

@@ -666,6 +666,7 @@ class HeaderStreamsInfo(StreamsInfo):
     """
     Header version of StreamsInfo
     """
+
     def __init__(self):
         super().__init__()
         self.packinfo: PackInfo = PackInfo()

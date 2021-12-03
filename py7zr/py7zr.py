@@ -167,9 +167,7 @@ class ArchiveFile:
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
-        return self._test_attribute(
-            stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
-        )  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)  # noqa  # noqa
 
     @property
     def is_socket(self) -> bool:
@@ -349,7 +347,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._filePassed = True
             self.fp = file
             self.filename = None
-            self.mode = mode  #noqa
+            self.mode = mode  # noqa
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
