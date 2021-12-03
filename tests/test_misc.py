@@ -1,3 +1,4 @@
+import ctypes
 import os
 import pathlib
 import shutil
@@ -87,3 +88,15 @@ def test_read_writed(tmp_path):
         with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
             target.writed(source.readall())
     p7zip_test(tmp_path / "target.7z")
+
+
+@pytest.mark.files
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+def test_double_extract_symlink(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+        archive.extractall(path=tmp_path)
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+        archive.extractall(path=tmp_path)
