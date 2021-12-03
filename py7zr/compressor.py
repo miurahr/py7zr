@@ -1063,7 +1063,7 @@ class SupportedMethods:
     def get_coder(cls, filter) -> Dict[str, Any]:
         method = cls.get_method_id(filter["id"])
         if filter["id"] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2, lzma.FILTER_DELTA]:
-            properties = lzma._encode_filter_properties(filter)  # type: Optional[bytes] # type: ignore  # noqa
+            properties: Optional[bytes] = lzma._encode_filter_properties(filter)  # type: ignore  # noqa
         else:
             properties = None
         return {

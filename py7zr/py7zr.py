@@ -377,10 +377,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self._dict = {}  # type: Dict[str, IO[Any]]
+        self._dict: Dict[str, IO[Any]] = {}
         self.dereference = dereference
-        self.reporterd = None  # type: Optional[Thread]
-        self.q = queue.Queue()  # type: queue.Queue[Any]
+        self.reporterd: Optional[Thread] = None
+        self.q: queue.Queue[Any] = queue.Queue()
 
     def __enter__(self):
         return self
@@ -513,10 +513,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif callback is not None:
             self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
-        target_junction = []  # type: List[pathlib.Path]
-        target_sym = []  # type: List[pathlib.Path]
-        target_files = []  # type: List[Tuple[pathlib.Path, Dict[str, Any]]]
-        target_dirs = []  # type: List[pathlib.Path]
+        target_junction: List[pathlib.Path] = []
+        target_sym: List[pathlib.Path] = []
+        target_files: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
+        target_dirs: List[pathlib.Path] = []
         if path is not None:
             if isinstance(path, str):
                 path = pathlib.Path(path)
@@ -530,7 +530,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 else:
                     raise e
-        fnames = []  # type: List[str]  # check duplicated filename in one archive?
+        fnames: List[str] = []  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
             # TODO: sanity check
@@ -927,8 +927,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def list(self) -> List[FileInfo]:
         """Returns contents information"""
-        alist = []  # type: List[FileInfo]
-        lastmodified = None  # type: Optional[datetime.datetime]
+        alist: List[FileInfo] = []
+        lastmodified: Optional[datetime.datetime] = None
         for f in self.files:
             if f.lastwritetime is not None:
                 lastmodified = filetime_to_dt(f.lastwritetime)
@@ -965,7 +965,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def reporter(self, callback: ExtractCallback):
         while True:
             try:
-                item = self.q.get(timeout=1)  # type: Optional[Tuple[str, str, str]]
+                item: Optional[Tuple[str, str, str]] = self.q.get(timeout=1)
             except queue.Empty:
                 pass
             else:
@@ -1091,7 +1091,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def test(self) -> Optional[bool]:
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-        crcs = self.header.main_streams.packinfo.crcs  # type: Optional[List[int]]
+        crcs: Optional[List[int]] = self.header.main_streams.packinfo.crcs
         if crcs is None or len(crcs) == 0:
             return None
         packpos = self.afterheader + self.header.main_streams.packinfo.packpos
@@ -1162,7 +1162,7 @@ class Worker:
     """Extract worker class to invoke handler"""
 
     def __init__(self, files, src_start: int, header, mp=False) -> None:
-        self.target_filepath = {}  # type: Dict[int, Union[MemIO, pathlib.Path, None]]
+        self.target_filepath: Dict[int, Union[MemIO, pathlib.Path, None]] = {}
         self.files = files
         self.src_start = src_start
         self.header = header
@@ -1209,7 +1209,7 @@ class Worker:
                     filename = getattr(fp, "name", None)
                     self.extract_single(open(filename, "rb"), empty_files, 0, 0, q)
                     concurrent_tasks = []
-                    exc_q = queue.Queue()  # type: queue.Queue
+                    exc_q: queue.Queue = queue.Queue()
                     for i in range(numfolders):
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
@@ -1256,7 +1256,7 @@ class Worker:
             if isinstance(fp, str):
                 fp = open(fp, "rb")
             fp.seek(src_start)
-            just_check = []  # type: List[ArchiveFile]
+            just_check: List[ArchiveFile] = []
             for f in files:
                 if q is not None:
                     q.put(
@@ -1341,13 +1341,13 @@ class Worker:
 
     def _find_link_target(self, target):
         """Find the target member of a symlink or hardlink member in the archive."""
-        targetname = target.as_posix()  # type: str
+        targetname: str = target.as_posix()
         linkname = readlink(targetname)
         # Check windows full path symlinks
         if linkname.startswith("\\\\?\\"):
             linkname = linkname[4:]
         # normalize as posix style
-        linkname = pathlib.Path(linkname).as_posix()  # type: str
+        linkname: str = pathlib.Path(linkname).as_posix()
         member = None
         for j in range(len(self.files)):
             if linkname == self.files[j].origin.as_posix():
@@ -1374,8 +1374,8 @@ class Worker:
     def write(self, fp: BinaryIO, f, assym, folder):
         compressor = folder.get_compressor()
         if assym:
-            link_target = self._find_link_target(f.origin)  # type: str
-            tgt = link_target.encode("utf-8")  # type: bytes
+            link_target: str = self._find_link_target(f.origin)
+            tgt: bytes = link_target.encode("utf-8")
             fd = io.BytesIO(tgt)
             insize, foutsize, crc = compressor.compress(fd, fp)
             fd.close()

@@ -29,12 +29,12 @@ class BCJFilter:
     _mask_to_bit_number = [0, 1, 2, 2, 3, 3, 3, 3]
 
     def __init__(self, func, readahead: int, is_encoder: bool, stream_size: int = 0):
-        self.is_encoder = is_encoder  # type: bool
+        self.is_encoder: bool = is_encoder
         #
-        self.prev_mask = 0  # type: int
-        self.prev_pos = -5  # type: int
-        self.current_position = 0  # type: int
-        self.stream_size = stream_size  # type: int  # should initialize in child class
+        self.prev_mask: int = 0
+        self.prev_pos: int = -5
+        self.current_position: int = 0
+        self.stream_size: int = stream_size  # should initialize in child class
         self.buffer = bytearray()
         #
         self._method = func
