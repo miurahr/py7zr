@@ -889,8 +889,7 @@ class WriteWithCrc:
 class Header:
     """the archive header"""
 
-    __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos",
-                "_initialized", "filters"]
+    __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos", "_initialized", "filters"]
 
     def __init__(self) -> None:
         self.solid = False
@@ -1060,7 +1059,6 @@ class Header:
                 self.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
                 self.main_streams.packinfo.packsizes = []
                 self.main_streams.packinfo.crcs = []
-
 
 
 class SignatureHeader:
