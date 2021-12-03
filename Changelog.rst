@@ -7,26 +7,49 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
-Added
------
-
-Changed
--------
+`v0.16.4`_
+==========
 
 Fixed
 -----
+* Win32 file namespace convention doesn't work on Cygwin(#380,#381)
+* Win32 file namespace convention doesn't work for network path(#380)
 
-Deprecated
-----------
+`v0.16.3`_
+==========
 
-Removed
+Fixed
+-----
+* Reduce memory consumptions and fix memory_error on 32bit python (#370,#373,#374,#375)
+
+Added
+-----
+* Add CI test for python 3.10 (#371)
+
+`v0.16.2`_
+==========
+
+Added
+-----
+* Bundle type hint data
+* README: Add conda recipe(#342)
+
+Changed
 -------
+* Use PyBCJ instead of bcj-cffi.(#368)
+* Docs: change recommended python versions
+* CI: benchmark on python 3.10
+* Test expectation for python 3.10 change
+* Improve exceptions and error messages
+* Docs: add description of ArchiveInfo class
+* Docs: fix typo on shutil integration(#353)
+* Bump pyzstd@0.15.0
+* Bump pyppmd@0.17.0
 
-Security
---------
-
-Deprecated
-----------
+Fixed
+-----
+* Docs: specification error of signature header data types.
+* Fix infinite loop in extract(#354)
 
 `v0.16.1`_
 ==========
@@ -215,7 +238,10 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.4...HEAD
+.. _v0.16.4: https://github.com/miurahr/py7zr/compare/v0.16.3...v0.16.4
+.. _v0.16.3: https://github.com/miurahr/py7zr/compare/v0.16.2...v0.16.3
+.. _v0.16.2: https://github.com/miurahr/py7zr/compare/v0.16.1...v0.16.2
 .. _v0.16.1: https://github.com/miurahr/py7zr/compare/v0.16.0...v0.16.1
 .. _v0.16.0: https://github.com/miurahr/py7zr/compare/v0.15.2...v0.16.0
 .. _v0.15.2: https://github.com/miurahr/py7zr/compare/v0.15.1...v0.15.2

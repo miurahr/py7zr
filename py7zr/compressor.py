@@ -357,7 +357,7 @@ class BcjSparcEncoder(ISevenZipCompressor):
 
 class BcjPpcDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.PpcDecoder(size)
+        self.decoder = BCJFilter.PPCDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -365,7 +365,7 @@ class BcjPpcDecoder(ISevenZipDecompressor):
 
 class BcjPpcEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.PpcEncoder()
+        self.encoder = BCJFilter.PPCEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -376,7 +376,7 @@ class BcjPpcEncoder(ISevenZipCompressor):
 
 class BcjArmtDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.ArmtDecoder(size)
+        self.decoder = BCJFilter.ARMTDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -384,7 +384,7 @@ class BcjArmtDecoder(ISevenZipDecompressor):
 
 class BcjArmtEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.ArmtEncoder()
+        self.encoder = BCJFilter.ARMTEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -395,7 +395,7 @@ class BcjArmtEncoder(ISevenZipCompressor):
 
 class BcjArmDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.ArmDecoder(size)
+        self.decoder = BCJFilter.ARMDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -403,7 +403,7 @@ class BcjArmDecoder(ISevenZipDecompressor):
 
 class BcjArmEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.ArmEncoder()
+        self.encoder = BCJFilter.ARMEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -616,25 +616,38 @@ class SevenZipDecompressor:
                 raise EOFError
         return data
 
-    def decompress(self, fp, max_length: int = -1) -> bytes:
+    def _read_data(self, fp):
         # read data from disk
+        # determine read siize
+        #    rest_size: rest size of packed data
+        #    unused_s: unused packed data size
+        #  size to consume for target file is smaller one from
+        #    rest_size - unused_s
+        #    block_size - unused_s
         rest_size = self.input_size - self.consumed
-        read_size = min(rest_size, self.block_size)
-        data = fp.read(read_size)
-        self.consumed += len(data)
-        #
+        unused_s = len(self._unused)
+        read_size = min(rest_size - unused_s, self.block_size - unused_s)
+        if read_size > 0:
+            data = fp.read(read_size)
+            self.consumed += len(data)
+        else:
+            data = b""
+        return data
+
+    def decompress(self, fp, max_length: int = -1) -> bytes:
         if max_length < 0:
+            data = self._read_data(fp)
             res = self._buf[self._pos :] + self._decompress(self._unused + data, max_length)
             self._buf = bytearray()
             self._unused = bytearray()
             self._pos = 0
         else:
             current_buf_len = len(self._buf) - self._pos
-            if current_buf_len >= max_length:
-                self._unused.extend(data)
+            if current_buf_len >= max_length:  # we already have enough data
                 res = self._buf[self._pos : self._pos + max_length]
                 self._pos += max_length
             else:
+                data = self._read_data(fp)
                 if len(self._unused) > 0:
                     tmp = self._decompress(self._unused + data, max_length)
                     self._unused = bytearray()

@@ -46,6 +46,7 @@ from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
+from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 if sys.platform.startswith("win"):
     import _winapi
@@ -403,10 +404,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile("invalid header data")
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
-        header.size += 32 + self.sig_header.nextheadersize
         if header is None:
             return
+        header._initilized = True
         self.header = header
+        header.size += 32 + self.sig_header.nextheadersize
         buffer.close()
         self.files = ArchiveFileList()
         if getattr(self.header, "files_info", None) is None:
@@ -566,10 +568,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = path.joinpath(outname)
             else:
                 outfilename = pathlib.Path(outname)
-            if os.name == "nt":
-                if outfilename.is_absolute():
-                    # hack for microsoft windows path length limit < 255
-                    outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
+            # When python on Windows and not python on Cygwin,
+            # Add win32 file namespace to exceed microsoft windows
+            # path length limitation to 260 bytes
+            # ref.
+            # https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+            # In editions of Windows before Windows 10 version 1607,
+            # the maximum length for a path is MAX_PATH, which is defined as
+            # 260 characters. In later versions of Windows, changing a registry key
+            # or select option when python installation is required to remove the limit.
+            if is_windows_native_python() and outfilename.is_absolute() and not is_windows_unc_path(outfilename):
+                outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
@@ -676,15 +685,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
-        folder = Folder()
-        folder.password = password
-        folder.prepare_coderinfo(filters)  # create compressor
-        self.header.main_streams.packinfo.enable_digests = False  # FIXME
-        self.header.main_streams.unpackinfo.folders.append(folder)
-        self.header.main_streams.unpackinfo.numfolders += 1
-        pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+        self.header.filters = filters
+        self.header.password = password
+        if self.header.main_streams is not None:
+            pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+        else:
+            pos = self.afterheader
         self.fp.seek(pos)
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
         self.worker = Worker(self.files, pos, self.header, self.mp)
 
     def _prepare_write(self, filters, password):
@@ -694,23 +701,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
-        folder = Folder()
-        folder.password = password
-        folder.prepare_coderinfo(filters)
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        self.header = Header.build_header([folder])
-        self.header.password = password
-        self.header.main_streams.packinfo.enable_digests = not self.password_protected  # FIXME
+        self.header = Header.build_header(filters, password)
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-        self.worker.prepare_archive()
 
     def _write_flush(self):
-        folder = self.header.main_streams.unpackinfo.folders[-1]
-        self.worker.flush_archive(self.fp, folder)
+        if self.header._initialized:
+            folder = self.header.main_streams.unpackinfo.folders[-1]
+            self.worker.flush_archive(self.fp, folder)
         self._write_header()
 
     def _write_header(self):
@@ -1015,6 +1017,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             path = file
         else:
             raise ValueError("Unsupported file type.")
+        self.header.initialize()
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
@@ -1047,13 +1050,19 @@ class SevenZipFile(contextlib.AbstractContextManager):
             size = last - current
         else:
             raise ValueError("Wrong argument passed for argument bio.")
-        file_info = self._make_file_info_from_name(bio, size, arcname)
-        self.header.files_info.files.append(file_info)
-        self.header.files_info.emptyfiles.append(file_info["emptystream"])
-        self.files.append(file_info)
         if size > 0:
+            self.header.initialize()
+            file_info = self._make_file_info_from_name(bio, size, arcname)
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(file_info["emptystream"])
+            self.files.append(file_info)
             folder = self.header.main_streams.unpackinfo.folders[-1]
             self.worker.archive(self.fp, self.files, folder, deref=False)
+        else:
+            file_info = self._make_file_info_from_name(bio, size, arcname)
+            self.header.files_info.files.append(file_info)
+            self.header.files_info.emptyfiles.append(file_info["emptystream"])
+            self.files.append(file_info)
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
@@ -1392,14 +1401,6 @@ class Worker:
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
-
-    def prepare_archive(self):
-        self.header.main_streams.packinfo.numstreams = 0
-        self.header.main_streams.substreamsinfo.digests = []
-        self.header.main_streams.substreamsinfo.digestsdefined = []
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
-        self.header.main_streams.packinfo.packsizes = []
-        self.header.main_streams.packinfo.crcs = []
 
     def flush_archive(self, fp, folder):
         compressor = folder.get_compressor()
