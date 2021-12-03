@@ -22,7 +22,7 @@ jobs:
         exclude:
           - os: windows-latest
             python-version: pypy3
-    name: Test on Python ${{ matrix.python-version }}
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup python
