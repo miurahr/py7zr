@@ -57,7 +57,7 @@ markers = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = mypy, check, pypy3, py{36,37,38,39,310}, docs
+envlist = mypy, check, pypy3, py{36,37,38,39,310}, docs, mprof
 
 [testenv]
 passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
@@ -72,6 +72,13 @@ extras = test, test_compat
 
 [testenv:pypy3]
 extras = test, test_compat
+
+[testenv:mprof]
+extras = test, test_compat
+commands = mprof run pytest
+deps =
+    memory_profiler
+    matplotlib
 
 [testenv:mypy]
 extras = check

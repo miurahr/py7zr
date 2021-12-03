@@ -46,6 +46,7 @@ from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
 from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
+from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 if sys.platform.startswith("win"):
     import _winapi
@@ -554,10 +555,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = path.joinpath(outname)
             else:
                 outfilename = pathlib.Path(outname)
-            if os.name == "nt":
-                if outfilename.is_absolute():
-                    # hack for microsoft windows path length limit < 255
-                    outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
+            # When python on Windows and not python on Cygwin,
+            # Add win32 file namespace to exceed microsoft windows
+            # path length limitation to 260 bytes
+            # ref.
+            # https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+            # In editions of Windows before Windows 10 version 1607,
+            # the maximum length for a path is MAX_PATH, which is defined as
+            # 260 characters. In later versions of Windows, changing a registry key
+            # or select option when python installation is required to remove the limit.
+            if is_windows_native_python() and outfilename.is_absolute() and not is_windows_unc_path(outfilename):
+                outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
