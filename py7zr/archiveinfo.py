@@ -890,7 +890,7 @@ class Header:
     """the archive header"""
 
     __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos",
-                "_initialized", "_shadow_folder"]
+                "_initialized", "filters"]
 
     def __init__(self) -> None:
         self.solid = False
@@ -900,7 +900,6 @@ class Header:
         self._start_pos = 0
         self.password = None  # type: Optional[str]
         self._initialized = False
-        self._shadow_folder = None
 
     @classmethod
     def retrieve(cls, fp: BinaryIO, buffer: BytesIO, start_pos: int, password=None):
@@ -1019,35 +1018,49 @@ class Header:
             raise Bad7zFile("end id expected but %s found" % (repr(pid)))  # pragma: no-cover
 
     @staticmethod
-    def build_header(folder, password):
+    def build_header(filters, password):
         header = Header()
-        header._shadow_folder = folder
         header.password = password
+        header.filters = filters
         return header
 
     def initialize(self):
         if not self._initialized:
             self._initialized = True
-            folders = [self._shadow_folder]
-            self.files_info = FilesInfo()
-            self.files_info = FilesInfo()
-            self.main_streams = StreamsInfo()
-            self.main_streams.packinfo = PackInfo()
-            self.main_streams.packinfo.numstreams = 0
-            self.main_streams.packinfo.packpos = 0
-            self.main_streams.unpackinfo = UnpackInfo()
-            self.main_streams.unpackinfo.numfolders = len(folders)
-            self.main_streams.unpackinfo.folders = folders
-            self.main_streams.substreamsinfo = SubstreamsInfo()
-            self.main_streams.substreamsinfo.num_unpackstreams_folders = [len(folders)]
-            self.main_streams.substreamsinfo.unpacksizes = []
-            self.main_streams.packinfo.enable_digests = self.password is not None
-            self.main_streams.packinfo.numstreams = 0
-            self.main_streams.substreamsinfo.digests = []
-            self.main_streams.substreamsinfo.digestsdefined = []
-            self.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
-            self.main_streams.packinfo.packsizes = []
-            self.main_streams.packinfo.crcs = []
+            if self.main_streams is not None:
+                # append mode
+                folder = Folder()
+                folder.password = self.password
+                folder.prepare_coderinfo(self.filters)
+                self.main_streams.packinfo.enable_digests = False  # FIXME
+                self.main_streams.unpackinfo.folders.append(folder)
+                self.main_streams.unpackinfo.numfolders += 1
+                self.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
+            else:
+                # create new header
+                folder = Folder()
+                folder.password = self.password
+                folder.prepare_coderinfo(self.filters)
+                folders = [folder]
+                self.files_info = FilesInfo()
+                self.main_streams = StreamsInfo()
+                self.main_streams.packinfo = PackInfo()
+                self.main_streams.packinfo.numstreams = 0
+                self.main_streams.packinfo.packpos = 0
+                self.main_streams.unpackinfo = UnpackInfo()
+                self.main_streams.unpackinfo.numfolders = len(folders)
+                self.main_streams.unpackinfo.folders = folders
+                self.main_streams.substreamsinfo = SubstreamsInfo()
+                self.main_streams.substreamsinfo.num_unpackstreams_folders = [len(folders)]
+                self.main_streams.substreamsinfo.unpacksizes = []
+                self.main_streams.packinfo.enable_digests = self.password is not None
+                self.main_streams.packinfo.numstreams = 0
+                self.main_streams.substreamsinfo.digests = []
+                self.main_streams.substreamsinfo.digestsdefined = []
+                self.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
+                self.main_streams.packinfo.packsizes = []
+                self.main_streams.packinfo.crcs = []
+
 
 
 class SignatureHeader:

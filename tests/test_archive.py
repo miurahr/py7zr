@@ -286,7 +286,7 @@ def test_compress_files_1(tmp_path):
     assert dc.diff_files == []
     #
     with py7zr.SevenZipFile(target, "r") as archive:
-        assert archive.test()
+        assert archive.test() is None
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))

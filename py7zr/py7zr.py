@@ -664,15 +664,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
-        folder = Folder()
-        folder.password = password
-        folder.prepare_coderinfo(filters)  # create compressor
-        self.header.main_streams.packinfo.enable_digests = False  # FIXME
-        self.header.main_streams.unpackinfo.folders.append(folder)
-        self.header.main_streams.unpackinfo.numfolders += 1
-        pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+        self.header.filters = filters
+        self.header.password = password
+        if self.header.main_streams is not None:
+            pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+        else:
+            pos = self.afterheader
         self.fp.seek(pos)
-        self.header.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
         self.worker = Worker(self.files, pos, self.header, self.mp)
 
     def _prepare_write(self, filters, password):
@@ -682,14 +680,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
             pass
-        folder = Folder()
-        folder.password = password
-        folder.prepare_coderinfo(filters)
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
         self.afterheader = self.fp.tell()
-        self.header = Header.build_header(folder, password)
+        self.header = Header.build_header(filters, password)
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
 
@@ -1044,7 +1039,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.worker.archive(self.fp, self.files, folder, deref=False)
         else:
             # FIXME: put empty file properly
-            raise ValueError("Py7zr don't support empty string write")
+            raise ValueError("Py7zr don't support empty data write")
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
