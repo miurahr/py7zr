@@ -461,7 +461,7 @@ class UnpackInfo:
         return obj
 
     def __init__(self):
-        self.numfolders: Optional[int] = None
+        self.numfolders: int = 0
         self.folders = []
         self.datastreamidx = None
 
@@ -644,6 +644,8 @@ class StreamsInfo:
             self.unpackinfo = UnpackInfo.retrieve(file)
             pid = file.read(1)
         if pid == PROPERTY.SUBSTREAMS_INFO:
+            if self.unpackinfo is None:
+                raise Bad7zFile("Header is broken")
             self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
         if pid != PROPERTY.END:
@@ -661,10 +663,13 @@ class StreamsInfo:
 
 
 class HeaderStreamsInfo(StreamsInfo):
+    """
+    Header version of StreamsInfo
+    """
     def __init__(self):
         super().__init__()
-        self.packinfo = PackInfo()
-        self.unpackinfo = UnpackInfo()
+        self.packinfo: PackInfo = PackInfo()
+        self.unpackinfo: UnpackInfo = UnpackInfo()
         self.unpackinfo.numfolders = 1
 
     def write(self, file: BinaryIO):
@@ -680,8 +685,8 @@ class FilesInfo:
     __slots__ = ["files", "emptyfiles", "antifiles"]
 
     def __init__(self):
-        self.files = []  # type: List[Dict[str, Any]]
-        self.emptyfiles = []  # type: List[bool]
+        self.files: List[Dict[str, Any]] = []
+        self.emptyfiles: List[bool] = []
         self.antifiles = None
 
     @classmethod
@@ -706,7 +711,7 @@ class FilesInfo:
             buffer = io.BytesIO(fp.read(size))
             if prop == PROPERTY.EMPTY_STREAM:
                 isempty = read_boolean(buffer, numfiles, checkall=False)
-                list(map(lambda x, y: x.update({"emptystream": y}), self.files, isempty))  # type: ignore
+                list(map(lambda x, y: x.update({"emptystream": y}), self.files, isempty))
                 numemptystreams += isempty.count(True)
             elif prop == PROPERTY.EMPTY_FILE:
                 self.emptyfiles = read_boolean(buffer, numemptystreams, checkall=False)

@@ -131,17 +131,17 @@ class ArchiveFile:
     @property
     def archivable(self) -> bool:
         """File has a Windows `archive` flag."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # type: ignore  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # noqa
 
     @property
     def is_directory(self) -> bool:
         """True if file is a directory, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # noqa
 
     @property
     def readonly(self) -> bool:
         """True if file is readonly, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # type: ignore  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # noqa
 
     def _get_unix_extension(self) -> Optional[int]:
         attributes = self._get_property("attributes")
@@ -162,14 +162,14 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # noqa
 
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
         return self._test_attribute(
-            stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
-        )  # type: ignore  # noqa
+            stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
+        )  # noqa
 
     @property
     def is_socket(self) -> bool:
@@ -259,7 +259,7 @@ class ArchiveInfo:
         method_names: List[str],
         solid: bool,
         blocks: int,
-        uncompressed: int,
+        uncompressed: List[int],
     ):
         self.stat = stat
         self.filename = filename
@@ -335,13 +335,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._filePassed = False
             self.filename = str(file)
             if mode == "r":
-                self.fp = file.open(mode="rb")  # type: ignore  # noqa   # typeshed issue: 2911
+                self.fp = file.open(mode="rb")  # noqa   # typeshed issue: 2911
             elif mode == "w":
-                self.fp = file.open(mode="w+b")  # type: ignore  # noqa
+                self.fp = file.open(mode="w+b")  # noqa
             elif mode == "x":
-                self.fp = file.open(mode="x+b")  # type: ignore  # noqa
+                self.fp = file.open(mode="x+b")  # noqa
             elif mode == "a":
-                self.fp = file.open(mode="r+b")  # type: ignore  # noqa
+                self.fp = file.open(mode="r+b")  # noqa
             else:
                 raise ValueError("File open error.")
             self.mode = mode
@@ -349,12 +349,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._filePassed = True
             self.fp = file
             self.filename = None
-            self.mode = mode  # type: ignore  #noqa
+            self.mode = mode  #noqa
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
             self.filename = getattr(file, "name", None)
-            self.mode = mode  # type: ignore  #noqa
+            self.mode = mode  # noqa
         else:
             raise TypeError("invalid file: {}".format(type(file)))
         self.encoded_header_mode = True
@@ -398,7 +398,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if not self._check_7zfile(self.fp):
             raise Bad7zFile("not a 7z file")
         self.sig_header = SignatureHeader.retrieve(self.fp)
-        self.afterheader = self.fp.tell()
+        self.afterheader: int = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
@@ -643,7 +643,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     with junction_dst.open("rb") as b:
                         junction_target = pathlib.Path(b.read().decode(encoding="utf-8"))
                         junction_dst.unlink()
-                        _winapi.CreateJunction(junction_target, str(junction_dst))  # type: ignore  # noqa
+                        _winapi.CreateJunction(junction_target, str(junction_dst))  # noqa
             # set file properties
             for outfilename, properties in target_files:
                 # mtime
@@ -788,11 +788,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         fp.seek(-len(MAGIC_7Z), 1)
         return result
 
-    def _get_method_names(self) -> str:
+    def _get_method_names(self) -> List[str]:
         try:
             return get_methods_names([folder.coders for folder in self.header.main_streams.unpackinfo.folders])
         except KeyError:
-            raise UnsupportedCompressionMethodError("Unknown method")
+            raise UnsupportedCompressionMethodError(self.header.main_streams.unpackinfo.folders, "Unknown method")
 
     def _read_digest(self, pos: int, size: int) -> int:
         self.fp.seek(pos)
@@ -835,7 +835,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
                     else:
                         f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                         f["uncompressed"] = fstat.st_size
                 else:
                     f["emptystream"] = False
@@ -846,7 +846,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
             elif target.is_file():
                 f["emptystream"] = False
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                 f["uncompressed"] = fstat.st_size
         else:
             fstat = target.lstat()
@@ -855,27 +855,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f["emptystream"] = True
-                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                         f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
                     else:
                         f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
                 else:
                     f["emptystream"] = False
-                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
                     f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
                     f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_dir():
                 f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_file():
                 f["emptystream"] = False
                 f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
 
         f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
@@ -890,7 +890,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["filename"] = pathlib.Path(arcname).as_posix()
         f["uncompressed"] = size
         f["emptystream"] = size == 0
-        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore  # noqa
+        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
         f["creationtime"] = ArchiveTimestamp.from_now()
         f["lastwritetime"] = ArchiveTimestamp.from_now()
         return f
@@ -1129,12 +1129,12 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
     result = False
     try:
         if isinstance(file, io.IOBase) and hasattr(file, "read"):
-            result = SevenZipFile._check_7zfile(file)  # type: ignore  # noqa
+            result = SevenZipFile._check_7zfile(file)  # noqa
         elif isinstance(file, str):
             with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
         elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or isinstance(file, pathlib.WindowsPath):
-            with file.open(mode="rb") as fp:  # type: ignore  # noqa
+            with file.open(mode="rb") as fp:  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
             raise TypeError("invalid type: file should be str, pathlib.Path or BinaryIO, but {}".format(type(file)))
