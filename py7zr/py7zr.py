@@ -847,9 +847,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f["emptystream"] = False
                 f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                 f["uncompressed"] = fstat.st_size
-        elif sys.platform == "darwin" or sys.platform.startswith("linux") \
-                or sys.platform.startswith("freebsd") or sys.platform.startswith("netbsd") \
-                or sys.platform.startswith("sunos") or sys.platform == "aix":
+        elif (
+            sys.platform == "darwin"
+            or sys.platform.startswith("linux")
+            or sys.platform.startswith("freebsd")
+            or sys.platform.startswith("netbsd")
+            or sys.platform.startswith("sunos")
+            or sys.platform == "aix"
+        ):
             fstat = target.lstat()
             if target.is_symlink():
                 if dereference:
