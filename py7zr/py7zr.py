@@ -308,6 +308,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ) -> None:
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
         if blocksize:
@@ -319,7 +320,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._filePassed: bool = False
             self.filename: str = file
             if mode == "r":
-                self.fp: BinaryIO = open(file, "rb")
+                self.fp = open(file, "rb")
             elif mode == "w":
                 self.fp = open(file, "w+b")
             elif mode == "x":
@@ -511,8 +512,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif callback is not None:
             self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
-        target_junction: List[pathlib.Path] = []
-        target_sym: List[pathlib.Path] = []
         target_files: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
         target_dirs: List[pathlib.Path] = []
         if path is not None:
@@ -583,18 +582,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     pass
             elif f.is_socket:
-                pass
-            elif f.is_symlink:
-                target_sym.append(outfilename)
-                try:
-                    if outfilename.exists():
-                        outfilename.unlink()
-                except OSError as ose:
-                    if ose.errno not in [errno.ENOENT]:
-                        raise
-                self.worker.register_filelike(f.id, outfilename)
-            elif f.is_junction:
-                target_junction.append(outfilename)
+                pass  # TODO: implement me.
+            elif f.is_symlink or f.is_junction:
                 self.worker.register_filelike(f.id, outfilename)
             else:
                 self.worker.register_filelike(f.id, outfilename)
@@ -623,45 +612,29 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
 
         self.q.put(("post", None, None))
+        # early return when dict specified
         if return_dict:
             return self._dict
-        else:
-            # create symbolic links on target path as a working directory.
-            # if path is None, work on current working directory.
-            for t in target_sym:
-                sym_dst = t.resolve()
-                with sym_dst.open("rb") as b:
-                    sym_src = b.read().decode(encoding="utf-8")  # symlink target name stored in utf-8
-                sym_dst.unlink()  # unlink after close().
-                sym_dst.symlink_to(pathlib.Path(sym_src))
-            # create junction point only on windows platform
-            if sys.platform.startswith("win"):
-                for t in target_junction:
-                    junction_dst = t.resolve()
-                    with junction_dst.open("rb") as b:
-                        junction_target = pathlib.Path(b.read().decode(encoding="utf-8"))
-                        junction_dst.unlink()
-                        _winapi.CreateJunction(str(junction_target), str(junction_dst))  # noqa
-            # set file properties
-            for outfilename, properties in target_files:
-                # mtime
-                lastmodified = None
-                try:
-                    lastmodified = ArchiveTimestamp(properties["lastwritetime"]).totimestamp()
-                except KeyError:
-                    pass
-                if lastmodified is not None:
-                    os.utime(str(outfilename), times=(lastmodified, lastmodified))
-                if os.name == "posix":
-                    st_mode = properties["posix_mode"]
-                    if st_mode is not None:
-                        outfilename.chmod(st_mode)
-                        continue
-                # fallback: only set readonly if specified
-                if properties["readonly"] and not properties["is_directory"]:
-                    ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
-                    outfilename.chmod(outfilename.stat().st_mode & ro_mask)
-            return None
+        # set file properties
+        for outfilename, properties in target_files:
+            # mtime
+            lastmodified = None
+            try:
+                lastmodified = ArchiveTimestamp(properties["lastwritetime"]).totimestamp()
+            except KeyError:
+                pass
+            if lastmodified is not None:
+                os.utime(str(outfilename), times=(lastmodified, lastmodified))
+            if os.name == "posix":
+                st_mode = properties["posix_mode"]
+                if st_mode is not None:
+                    outfilename.chmod(st_mode)
+                    continue
+            # fallback: only set readonly if specified
+            if properties["readonly"] and not properties["is_directory"]:
+                ro_mask = 0o777 ^ (stat.S_IWRITE | stat.S_IWGRP | stat.S_IWOTH)
+                outfilename.chmod(outfilename.stat().st_mode & ro_mask)
+        return None
 
     def _prepare_append(self, filters, password):
         if password is not None and filters is None:
@@ -1271,44 +1244,82 @@ class Worker:
             if isinstance(fp, str):
                 fp = open(fp, "rb")
             fp.seek(src_start)
-            just_check: List[ArchiveFile] = []
-            for f in files:
-                if q is not None:
-                    q.put(
-                        (
-                            "s",
-                            str(f.filename),
-                            str(f.compressed) if f.compressed is not None else "0",
-                        )
-                    )
-                fileish = self.target_filepath.get(f.id, None)
-                if fileish is not None:
-                    # delayed execution of crc check.
-                    self._check(fp, just_check, src_end)
-                    just_check = []
-                    fileish.parent.mkdir(parents=True, exist_ok=True)
-                    with fileish.open(mode="wb") as ofp:
-                        if not f.emptystream:
-                            # extract to file
-                            crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
-                            ofp.seek(0)
-                            if f.crc32 is not None and crc32 != f.crc32:
-                                raise CrcError(crc32, f.crc32, f.filename)
-                        else:
-                            pass  # just create empty file
-                elif not f.emptystream:
-                    just_check.append(f)
-                if q is not None:
-                    q.put(("e", str(f.filename), str(f.uncompressed)))
-            if not skip_notarget:
-                # delayed execution of crc check.
-                self._check(fp, just_check, src_end)
+            self._extract_single(fp, files, src_end, q, skip_notarget)
         except Exception as e:
             if exc_q is None:
                 raise e
             else:
                 exc_tuple = sys.exc_info()
                 exc_q.put(exc_tuple)
+
+    def _extract_single(
+        self,
+        fp: BinaryIO,
+        files,
+        src_end: int,
+        q: Optional[queue.Queue],
+        skip_notarget=True,
+    ) -> None:
+        """
+        Single thread extractor that takes file lists in single 7zip folder.
+        this may raise exception.
+        """
+        just_check: List[ArchiveFile] = []
+        for f in files:
+            if q is not None:
+                q.put(
+                    (
+                        "s",
+                        str(f.filename),
+                        str(f.compressed) if f.compressed is not None else "0",
+                    )
+                )
+            fileish = self.target_filepath.get(f.id, None)
+            if fileish is None:
+                if not f.emptystream:
+                    just_check.append(f)
+            else:
+                # delayed execution of crc check.
+                self._check(fp, just_check, src_end)
+                just_check = []
+                fileish.parent.mkdir(parents=True, exist_ok=True)
+                if not f.emptystream:
+                    if f.is_junction and not isinstance(fileish, MemIO) and sys.platform == "win32":
+                        with io.BytesIO() as ofp:
+                            self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
+                            dst: str = ofp.read().decode("utf-8")
+                            # fileish.unlink(missing_ok=True) > py3.7
+                            if fileish.exists():
+                                fileish.unlink()
+                            if sys.platform == "win32":  # hint for mypy
+                                _winapi.CreateJunction(str(fileish), dst)  # noqa
+                    elif f.is_symlink and not isinstance(fileish, MemIO):
+                        with io.BytesIO() as omfp:
+                            self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end)
+                            omfp.seek(0)
+                            sym_target = pathlib.Path(omfp.read().decode("utf-8"))
+                            # fileish.unlink(missing_ok=True) > py3.7
+                            if fileish.exists():
+                                fileish.unlink()
+                            fileish.symlink_to(sym_target)
+                    else:
+                        with fileish.open(mode="wb") as obfp:
+                            crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end)
+                            obfp.seek(0)
+                            if f.crc32 is not None and crc32 != f.crc32:
+                                raise CrcError(crc32, f.crc32, f.filename)
+                else:
+                    # just create empty file
+                    if not isinstance(fileish, MemIO):
+                        fileish.touch()
+                    else:
+                        with fileish.open() as ofp:
+                            pass
+            if q is not None:
+                q.put(("e", str(f.filename), str(f.uncompressed)))
+        if not skip_notarget:
+            # delayed execution of crc check.
+            self._check(fp, just_check, src_end)
 
     def _check(self, fp, check_target, src_end):
         # delayed execution of crc check.
