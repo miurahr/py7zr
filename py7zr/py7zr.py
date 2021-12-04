@@ -1253,12 +1253,12 @@ class Worker:
                 exc_q.put(exc_tuple)
 
     def _extract_single(
-            self,
-            fp: BinaryIO,
-            files,
-            src_end: int,
-            q: Optional[queue.Queue],
-            skip_notarget=True,
+        self,
+        fp: BinaryIO,
+        files,
+        src_end: int,
+        q: Optional[queue.Queue],
+        skip_notarget=True,
     ) -> None:
         """
         Single thread extractor that takes file lists in single 7zip folder.
@@ -1284,14 +1284,9 @@ class Worker:
                 just_check = []
                 fileish.parent.mkdir(parents=True, exist_ok=True)
                 if not f.emptystream:
-                    if f.is_junction and not isinstance(
-                            fileish, MemIO
-                    ) and sys.platform == "win32":
+                    if f.is_junction and not isinstance(fileish, MemIO) and sys.platform == "win32":
                         with io.BytesIO() as ofp:
-                            self.decompress(
-                                fp, f.folder, ofp, f.uncompressed, f.compressed,
-                                src_end
-                            )
+                            self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                             dst: str = ofp.read().decode("utf-8")
                             # fileish.unlink(missing_ok=True) > py3.7
                             if fileish.exists():
@@ -1300,10 +1295,7 @@ class Worker:
                                 _winapi.CreateJunction(str(fileish), dst)  # noqa
                     elif f.is_symlink and not isinstance(fileish, MemIO):
                         with io.BytesIO() as omfp:
-                            self.decompress(
-                                fp, f.folder, omfp, f.uncompressed, f.compressed,
-                                src_end
-                            )
+                            self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end)
                             omfp.seek(0)
                             sym_target = pathlib.Path(omfp.read().decode("utf-8"))
                             # fileish.unlink(missing_ok=True) > py3.7
@@ -1312,10 +1304,7 @@ class Worker:
                             fileish.symlink_to(sym_target)
                     else:
                         with fileish.open(mode="wb") as obfp:
-                            crc32 = self.decompress(
-                                fp, f.folder, obfp, f.uncompressed, f.compressed,
-                                src_end
-                            )
+                            crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end)
                             obfp.seek(0)
                             if f.crc32 is not None and crc32 != f.crc32:
                                 raise CrcError(crc32, f.crc32, f.filename)
