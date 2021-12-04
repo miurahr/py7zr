@@ -817,7 +817,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
-        f = {}  # type: Dict[str, Any]
+        f: Dict[str, Any] = {}
         f["origin"] = target
         if arcname is not None:
             f["filename"] = pathlib.Path(arcname).as_posix()
@@ -894,7 +894,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return f
 
     def _make_file_info_from_name(self, bio, size: int, arcname: str) -> Dict[str, Any]:
-        f = {}  # type: Dict[str, Any]
+        f: Dict[str, Any] = {}
         f["origin"] = None
         f["data"] = bio
         f["filename"] = pathlib.Path(arcname).as_posix()
@@ -1179,7 +1179,7 @@ class Worker:
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files)
         if mp:
-            self.concurrent = Process  # type: Union[Type[Thread], Type[Process]]
+            self.concurrent: Union[Type[Thread], Type[Process]] = Process
         else:
             self.concurrent = Thread
 
