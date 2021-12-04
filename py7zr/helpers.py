@@ -56,7 +56,7 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
     assert cycles <= 0x3F
     if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
-        key = bytes(ba[:32])  # type: bytes
+        key: bytes = bytes(ba[:32])
     else:
         rounds = 1 << cycles
         m = _hashlib.new(digest)
@@ -73,7 +73,7 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
         raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F
     if cycles == 0x3F:
-        key = bytes(bytearray(salt + password + bytes(32))[:32])  # type: bytes
+        key: bytes = bytes(bytearray(salt + password + bytes(32))[:32])
     else:
         rounds = 1 << cycles
         m = _hashlib.new(digest)
@@ -106,7 +106,7 @@ def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> b
     assert cycles <= 0x3F
     if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
-        key = bytes(ba[:32])  # type: bytes
+        key: bytes = bytes(ba[:32])
     else:
         cat_cycle = 6
         if cycles > cat_cycle:
