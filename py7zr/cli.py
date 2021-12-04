@@ -438,8 +438,8 @@ class Cli:
             return 0
 
     def run_append(self, args):
-        sztarget = args.arcfile  # type: str
-        filenames = args.filenames  # type: List[str]
+        sztarget: str = args.arcfile
+        filenames: List[str] = args.filenames
         if not sztarget.endswith(".7z"):
             sys.stderr.write("Error: specified archive file is invalid.")
             self.show_help(args)
