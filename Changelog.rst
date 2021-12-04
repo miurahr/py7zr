@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.17.0`_
+==========
+
+Fixed
+-----
+* Extraction: overwrite a symbolic link sometimes failed(#383)
+* Allow creation of archive without any write call(#369,#372)
+* Type check configuration update (#384)
+* Adjust for type check errors (#384)
+
 `v0.16.4`_
 ==========
 
@@ -238,7 +248,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.16.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.0...HEAD
+.. _v0.17.0: https://github.com/miurahr/py7zr/compare/v0.16.4...v0.17.0
 .. _v0.16.4: https://github.com/miurahr/py7zr/compare/v0.16.3...v0.16.4
 .. _v0.16.3: https://github.com/miurahr/py7zr/compare/v0.16.2...v0.16.3
 .. _v0.16.2: https://github.com/miurahr/py7zr/compare/v0.16.1...v0.16.2
