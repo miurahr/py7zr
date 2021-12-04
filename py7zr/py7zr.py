@@ -823,7 +823,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             f["filename"] = pathlib.Path(arcname).as_posix()
         else:
             f["filename"] = target.as_posix()
-        if os.name == "nt":
+        if sys.platform == "win32":
             fstat = target.lstat()
             if target.is_symlink():
                 if dereference:
@@ -838,6 +838,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     f["emptystream"] = False
                     f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
+                    # TODO: handle junctions
                     # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
             elif target.is_dir():
                 f["emptystream"] = True
@@ -846,7 +847,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f["emptystream"] = False
                 f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                 f["uncompressed"] = fstat.st_size
-        else:
+        elif sys.platform == "darwin" or sys.platform.startswith("linux") \
+                or sys.platform.startswith("freebsd") or sys.platform.startswith("netbsd") \
+                or sys.platform.startswith("sunos") or sys.platform == "aix":
             fstat = target.lstat()
             if target.is_symlink():
                 if dereference:
@@ -875,6 +878,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 f["uncompressed"] = fstat.st_size
                 f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+        else:
+            fstat = target.stat()
+            if target.is_dir():
+                f["emptystream"] = True
+                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
+            elif target.is_file():
+                f["emptystream"] = False
+                f["uncompressed"] = fstat.st_size
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
 
         f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
         f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
