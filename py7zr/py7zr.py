@@ -641,7 +641,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     with junction_dst.open("rb") as b:
                         junction_target = pathlib.Path(b.read().decode(encoding="utf-8"))
                         junction_dst.unlink()
-                        _winapi.CreateJunction(junction_target, str(junction_dst))  # noqa
+                        _winapi.CreateJunction(str(junction_target), str(junction_dst))  # noqa
             # set file properties
             for outfilename, properties in target_files:
                 # mtime
@@ -830,18 +830,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f["emptystream"] = True
-                        f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                        f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
                     else:
                         f["emptystream"] = False
                         f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
                         f["uncompressed"] = fstat.st_size
                 else:
                     f["emptystream"] = False
-                    f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
-                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore  # noqa
+                    f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
+                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
             elif target.is_dir():
                 f["emptystream"] = True
-                f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # type: ignore  # noqa
+                f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
             elif target.is_file():
                 f["emptystream"] = False
                 f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
