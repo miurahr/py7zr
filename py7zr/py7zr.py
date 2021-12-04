@@ -1293,7 +1293,9 @@ class Worker:
                                 src_end
                             )
                             dst: str = ofp.read().decode("utf-8")
-                            fileish.unlink(missing_ok=True)
+                            # fileish.unlink(missing_ok=True) > py3.7
+                            if fileish.exists():
+                                fileish.unlink()
                             if sys.platform == "win32":  # hint for mypy
                                 _winapi.CreateJunction(str(fileish), dst)  # noqa
                     elif f.is_symlink and not isinstance(fileish, MemIO):
@@ -1304,7 +1306,9 @@ class Worker:
                             )
                             omfp.seek(0)
                             sym_target = pathlib.Path(omfp.read().decode("utf-8"))
-                            fileish.unlink(missing_ok=True)
+                            # fileish.unlink(missing_ok=True) > py3.7
+                            if fileish.exists():
+                                fileish.unlink()
                             fileish.symlink_to(sym_target)
                     else:
                         with fileish.open(mode="wb") as obfp:
