@@ -308,6 +308,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ) -> None:
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
         if blocksize:
@@ -319,7 +320,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._filePassed: bool = False
             self.filename: str = file
             if mode == "r":
-                self.fp: BinaryIO = open(file, "rb")
+                self.fp = open(file, "rb")
             elif mode == "w":
                 self.fp = open(file, "w+b")
             elif mode == "x":
@@ -1253,7 +1254,7 @@ class Worker:
 
     def _extract_single(
             self,
-            fp: Union[BinaryIO, str],
+            fp: BinaryIO,
             files,
             src_end: int,
             q: Optional[queue.Queue],
@@ -1293,26 +1294,25 @@ class Worker:
                             )
                             dst: str = ofp.read().decode("utf-8")
                             fileish.unlink(missing_ok=True)
-                            _winapi.CreateJunction(str(fileish), dst)  # noqa
+                            if sys.platform == "win32":  # hint for mypy
+                                _winapi.CreateJunction(str(fileish), dst)  # noqa
                     elif f.is_symlink and not isinstance(fileish, MemIO):
-                        with io.BytesIO() as ofp:
+                        with io.BytesIO() as omfp:
                             self.decompress(
-                                fp, f.folder, ofp, f.uncompressed, f.compressed,
+                                fp, f.folder, omfp, f.uncompressed, f.compressed,
                                 src_end
                             )
-                            ofp.seek(0)
-                            sym_target: pathlib.Path = pathlib.Path(
-                                ofp.read().decode("utf-8")
-                                )
+                            omfp.seek(0)
+                            sym_target = pathlib.Path(omfp.read().decode("utf-8"))
                             fileish.unlink(missing_ok=True)
                             fileish.symlink_to(sym_target)
                     else:
-                        with fileish.open(mode="wb") as ofp:
+                        with fileish.open(mode="wb") as obfp:
                             crc32 = self.decompress(
-                                fp, f.folder, ofp, f.uncompressed, f.compressed,
+                                fp, f.folder, obfp, f.uncompressed, f.compressed,
                                 src_end
                             )
-                            ofp.seek(0)
+                            obfp.seek(0)
                             if f.crc32 is not None and crc32 != f.crc32:
                                 raise CrcError(crc32, f.crc32, f.filename)
                 else:
