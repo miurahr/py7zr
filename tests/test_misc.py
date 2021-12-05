@@ -100,3 +100,12 @@ def test_double_extract_symlink(tmp_path):
         archive.extractall(path=tmp_path)
     with py7zr.SevenZipFile(testdata_path.joinpath("symlink_2.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path)
+
+
+class callback( py7zr.callbacks.ExtractCallback):
+    def __init__(self):
+        pass
+
+def test_callback_issue_386():
+    with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
+        z.extractall(None,  callback)
