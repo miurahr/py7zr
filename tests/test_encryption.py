@@ -89,14 +89,15 @@ The archive is encrypted but password is not given. FAILED.
     reason="Administrator rights is required to make symlink on windows",
 )
 def test_extract_encrypted_2(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath("encrypted_2.7z").open(mode="rb"), password="secret")
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[0].coders[1]["method"] == CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[1]["method"] == CompressionMethod.LZMA2
-    assert archive.header.main_streams.unpackinfo.folders[1].coders[2]["method"] == CompressionMethod.P7Z_BCJ
-    archive.extractall(path=tmp_path)
-    archive.close()
+    with testdata_path.joinpath("encrypted_2.7z").open(mode="rb") as target:
+        archive = py7zr.SevenZipFile(target, password="secret")
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
+        assert archive.header.main_streams.unpackinfo.folders[0].coders[1]["method"] == CompressionMethod.LZMA2
+        assert archive.header.main_streams.unpackinfo.folders[1].coders[0]["method"] == CompressionMethod.CRYPT_AES256_SHA256
+        assert archive.header.main_streams.unpackinfo.folders[1].coders[1]["method"] == CompressionMethod.LZMA2
+        assert archive.header.main_streams.unpackinfo.folders[1].coders[2]["method"] == CompressionMethod.P7Z_BCJ
+        archive.extractall(path=tmp_path)
+        archive.close()
 
 
 @pytest.mark.files

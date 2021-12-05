@@ -94,7 +94,7 @@ deps =
 [testenv:py39d]
 extras = test, debug
 commands =
-    python3.9d -m pytest -v --no-cov -R : -k "extract_lzma2_1 or extract_encrypted_1 or compress_file_0 or encrypt_file_0"
+    python3.9d -m pytest -v --no-cov -R : -k "extract_lzma_1 or extract_encrypted_2 or compress_file_0 or encrypt_file_0"
 deps =
     pytest-leaks
 
