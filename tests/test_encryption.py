@@ -307,3 +307,10 @@ def test_encrypt_emptyfile_1(tmp_path):
         arc.extractall(path=tmp_path / "tgt")
     #
     assert tmp_path.joinpath("tgt", "y").is_file()
+
+
+@pytest.mark.basic
+def test_encrypt_simple_file_0(tmp_path):
+    with tmp_path.joinpath("target.7z").open(mode="wb") as target:
+        with py7zr.SevenZipFile(target, mode="w", password="secret") as archive:
+            archive.writeall(os.path.join(testdata_path, "src"), "src")
