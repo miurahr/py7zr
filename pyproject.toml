@@ -87,7 +87,9 @@ extras = test, test_compat
 
 [testenv:mprof]
 extras = test, debug
-commands = mprof run pytest
+commands =
+    mprof run --multiprocess pytest
+    mprof plot --output memory-profile.png
 deps =
     memory_profiler
     matplotlib
