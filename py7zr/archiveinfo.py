@@ -190,13 +190,13 @@ def write_boolean(file: BinaryIO, booleans: List[bool], all_defined: bool = Fals
 
 def read_utf16(file: BinaryIO) -> str:
     """read a utf-16 string from file"""
-    val = ""
+    val = b""
     for _ in range(MAX_LENGTH):
         ch = file.read(2)
         if ch == unhexlify("0000"):
             break
-        val += ch.decode("utf-16LE")
-    return val
+        val += ch
+    return val.decode("utf-16LE")
 
 
 def write_utf16(file: BinaryIO, val: str):
