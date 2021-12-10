@@ -28,6 +28,7 @@ import contextlib
 import datetime
 import errno
 import functools
+import gc
 import io
 import os
 import pathlib
@@ -783,10 +784,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _var_release(self):
         self._dict = None
-        self.files = None
-        self.header = None
-        self.worker = None
-        self.sig_header = None
+        self.worker.close()
+        del self.worker
+        del self.files
+        del self.header
+        del self.sig_header
+        gc.collect()
 
     @staticmethod
     def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
@@ -1448,3 +1451,8 @@ class Worker:
     def register_filelike(self, id: int, fileish: Union[MemIO, pathlib.Path, None]) -> None:
         """register file-ish to worker."""
         self.target_filepath[id] = fileish
+
+    def close(self):
+        del self.header
+        del self.files
+        del self.concurrent

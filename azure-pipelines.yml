@@ -23,7 +23,7 @@ steps:
   displayName: 'Install Tox'
 
 - script: |
-    tox -e py
+    tox
   env:
     PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
   displayName: 'Run Tox'

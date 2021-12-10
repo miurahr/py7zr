@@ -57,15 +57,27 @@ markers = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = mypy, check, pypy3, py{36,37,38,39,310}, docs, mprof
+envlist = mypy, check, pypy3, py{36,37,38,39,310}, py39d, docs, mprof
 
 [testenv]
+basepython =
+    py36:   python3.6
+    py37:   python3.7
+    py38:   python3.8
+    py39:   python3.9
+    py39d:  python3.9-dbg
+    py310:  python3.10
+    pypy3:  pypy3
+    docs:   python3.8
+    check:  python3.8
+    mprof:  python3.8
+    mypy:   python3.8
 passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
 extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy3,py{36,37,38,39}: clean, check
+    pypy3,py{36,37,38,39,310}: clean, check
 
 [testenv:py38]
 extras = test, test_compat
@@ -74,11 +86,20 @@ extras = test, test_compat
 extras = test, test_compat
 
 [testenv:mprof]
-extras = test, test_compat
-commands = mprof run pytest
+extras = test, debug
+commands =
+    mprof run --multiprocess pytest
+    mprof plot --output memory-profile.png
 deps =
     memory_profiler
     matplotlib
+
+[testenv:py39d]
+extras = test, debug
+commands =
+    python3.9d -m pytest -v --no-cov -R : -k "extract_lzma_1 or extract_encrypted_2 or compress_simple_file_0 or encrypt_simple_file_0"
+deps =
+    pytest-leaks
 
 [testenv:mypy]
 extras = check
