@@ -480,8 +480,10 @@ class ZstdCompressor(ISevenZipCompressor):
 
 class ZstdDecompressor(ISevenZipDecompressor):
     def __init__(self, properties: bytes, blocksize: int):
-        if len(properties) not in [3, 5] or (properties[0], properties[1], 0) > pyzstd.zstd_version_info:
-            raise UnsupportedCompressionMethodError
+        if len(properties) not in [3, 5]:
+            raise UnsupportedCompressionMethodError(properties, "Zstd takes 3 or 5 bytes properties.")
+        if (properties[0], properties[1], 0) > pyzstd.zstd_version_info:
+            raise UnsupportedCompressionMethodError(properties, "Zstd version of archive is higher than us.")
         self.decompressor = pyzstd.ZstdDecompressor()
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
@@ -600,7 +602,7 @@ class SevenZipDecompressor:
                     else:
                         self.chain.append(self._get_alternative_decompressor(coders[i], unpacksizes[i], password))
         else:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(coders, "Combination order of methods is not supported.")
 
     def _decompress(self, data, max_length: int):
         for i, decompressor in enumerate(self.chain):
@@ -678,7 +680,7 @@ class SevenZipDecompressor:
             if coder["numinstreams"] != 1 or coder["numoutstreams"] != 1:
                 raise UnsupportedCompressionMethodError(coders, "Only a simple compression method is currently supported.")
             if not SupportedMethods.is_native_coder(coder):
-                raise UnsupportedCompressionMethodError
+                raise UnsupportedCompressionMethodError(coders, "Non python native method is requested.")
             properties = coder.get("properties", None)
             filter_id = SupportedMethods.get_filter_id(coder)
             if filter_id == FILTER_LZMA:
@@ -773,7 +775,7 @@ class SevenZipCompressor:
             self._set_native_compressors_coders(self.filters[:-1])
             self._set_alternate_compressors_coders(self.filters[-1], password)
         else:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filters, "Unknown combination of methods.")
 
     def _set_native_compressors_coders(self, filters):
         self.chain.append(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
@@ -785,7 +787,7 @@ class SevenZipCompressor:
         filter_id = alt_filter["id"]
         properties = None
         if filter_id not in algorithm_class_map:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filter_id, "Unknown filter_id is given.")
         elif SupportedMethods.is_crypto_id(filter_id):
             compressor = algorithm_class_map[filter_id][0](password)
         elif SupportedMethods.need_property(filter_id):
@@ -1020,7 +1022,7 @@ class SupportedMethods:
     def is_native_filter(cls, filter) -> bool:
         method = cls._find_method("filter_id", filter["id"])
         if method is None:
-            raise UnsupportedCompressionMethodError
+            raise UnsupportedCompressionMethodError(filter["id"], "Unknown method id is given.")
         return method["native"]
 
     @classmethod
