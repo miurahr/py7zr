@@ -187,6 +187,7 @@ def test_compress_file_0(capsys, tmp_path):
     cli = py7zr.cli.Cli()
     cli.run(["l", str(target)])
     out, err = capsys.readouterr()
+    archive.close()
     assert expected == out
 
 
@@ -213,6 +214,7 @@ def test_compress_directory(tmp_path):
         assert val.startswith(py7zr.properties.MAGIC_7Z)
     archive = py7zr.SevenZipFile(target, "r")
     assert archive.testzip() is None
+    archive.close()
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
@@ -1095,3 +1097,10 @@ def test_compress_append_writestr_archive(tmp_path):
     #
     with py7zr.SevenZipFile(target, "r") as arc:
         arc.extractall(path=tmp_path / "tgt")
+
+
+@pytest.mark.basic
+def test_compress_simple_file_0(tmp_path):
+    with tmp_path.joinpath("target.7z").open(mode="wb") as target:
+        with py7zr.SevenZipFile(target, "w") as archive:
+            archive.writeall(os.path.join(testdata_path, "src"), "src")

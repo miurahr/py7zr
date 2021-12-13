@@ -259,35 +259,40 @@ def test_lzma2bcj_mem():
 def test_lzma2bcj2(tmp_path):
     """Test extract archive compressed with LZMA2 and BCJ2 methods."""
     with pytest.raises(UnsupportedCompressionMethodError):
-        archive = py7zr.SevenZipFile(testdata_path.joinpath("lzma2bcj2.7z").open(mode="rb"))
+        with testdata_path.joinpath("lzma2bcj2.7z").open(mode="rb") as target:
+            archive = py7zr.SevenZipFile(target)
+            archive.extractall(path=tmp_path)
+            archive.close()
+
+
+@pytest.mark.files
+def test_extract_lzma_1(tmp_path):
+    with testdata_path.joinpath("lzma_1.7z").open(mode="rb") as target:
+        with py7zr.SevenZipFile(target) as ar:
+            ar.extractall(tmp_path)
+
+
+@pytest.mark.files
+def test_extract_lzma2_1(tmp_path):
+    with testdata_path.joinpath("lzma2_1.7z").open(mode="rb") as target:
+        with py7zr.SevenZipFile(target) as ar:
+            _dict = ar.readall()
+
+
+@pytest.mark.files
+def test_zerosize(tmp_path):
+    with testdata_path.joinpath("zerosize.7z").open(mode="rb") as target:
+        archive = py7zr.SevenZipFile(target)
         archive.extractall(path=tmp_path)
         archive.close()
 
 
 @pytest.mark.files
-def test_extract_lzma_1(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath("lzma_1.7z").open(mode="rb")) as ar:
-        ar.extractall(tmp_path)
-
-
-@pytest.mark.files
-def test_extract_lzma2_1(tmp_path):
-    with py7zr.SevenZipFile(testdata_path.joinpath("lzma2_1.7z").open(mode="rb")) as ar:
-        _dict = ar.readall()
-
-
-@pytest.mark.files
-def test_zerosize(tmp_path):
-    archive = py7zr.SevenZipFile(testdata_path.joinpath("zerosize.7z").open(mode="rb"))
-    archive.extractall(path=tmp_path)
-    archive.close()
-
-
-@pytest.mark.files
 def test_zerosize_mem():
-    archive = py7zr.SevenZipFile(testdata_path.joinpath("zerosize.7z").open(mode="rb"))
-    _dict = archive.readall()
-    archive.close()
+    with testdata_path.joinpath("zerosize.7z").open(mode="rb") as target:
+        archive = py7zr.SevenZipFile(target)
+        _dict = archive.readall()
+        archive.close()
 
 
 @pytest.mark.api
