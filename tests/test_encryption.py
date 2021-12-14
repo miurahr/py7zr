@@ -314,3 +314,33 @@ def test_encrypt_simple_file_0(tmp_path):
     with tmp_path.joinpath("target.7z").open(mode="wb") as target:
         with py7zr.SevenZipFile(target, mode="w", password="secret") as archive:
             archive.writeall(os.path.join(testdata_path, "src"), "src")
+
+
+@pytest.mark.files
+def test_encrypt_file_8(tmp_path):
+    filters = [
+        {"id": py7zr.FILTER_X86},
+        {"id": py7zr.FILTER_LZMA2},
+        {"id": py7zr.FILTER_CRYPTO_AES256_SHA256},
+    ]
+    tmp_path.joinpath("src").mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_1.7z"), path=tmp_path.joinpath("src"))
+    target = tmp_path.joinpath("target.7z")
+    os.chdir(str(tmp_path.joinpath("src")))
+    archive = py7zr.SevenZipFile(target, "w", password="secret", filters=filters)
+    archive.writeall(".")
+    archive.close()
+    #
+    tmp_path.joinpath("tgt").mkdir()
+    reader = py7zr.SevenZipFile(target, "r", password="secret")
+    reader.extractall(path=tmp_path.joinpath("tgt"))
+    reader.close()
+    #
+    if shutil.which("7z"):
+        result = subprocess.run(
+            ["7z", "t", "-psecret", (tmp_path / "target.7z").as_posix()],
+            stdout=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            print(result.stdout)
+            pytest.fail("7z command report error")
