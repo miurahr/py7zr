@@ -1013,11 +1013,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif isinstance(bio, io.TextIOBase):
             # First check whether is it Text?
             raise ValueError("Unsupported file object type: please open file with Binary mode.")
-        elif hasattr(bio, "read") and hasattr(bio, "__sizeof__"):
-            # CPython's io.BufferedIOBase or io.BufferedReader has __sizeof__, but
-            # pypy3 don't have. So first check __sizeof__ and then goes to alternative.
-            # Also allowing objet type which has read() and length methods for duck typing
-            size = bio.__sizeof__()
         elif isinstance(bio, io.BufferedIOBase):
             # come here when subtype of io.BufferedIOBase that don't have __sizeof__ (eg. pypy)
             # alternative for `size = bio.__sizeof__()`
