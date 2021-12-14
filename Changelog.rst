@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.17.1`_
+==========
+Fixed
+-----
+* Allow 7zAES+LZMA2+BCJ combination for compression(#392)
+* Argument error when raising UnsupportedCompressionMethodError(#394)
+* Detect memory leak in test and fix some leaks(#388)
+* Fix filename and property decode in UTF-16(#391)
+
+Changed
+-------
+* Azure: use macos@10.15 for test(#389)
+
 `v0.17.0`_
 ==========
 
@@ -248,7 +261,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.1...HEAD
+.. _v0.17.1: https://github.com/miurahr/py7zr/compare/v0.17.0...v0.17.1
 .. _v0.17.0: https://github.com/miurahr/py7zr/compare/v0.16.4...v0.17.0
 .. _v0.16.4: https://github.com/miurahr/py7zr/compare/v0.16.3...v0.16.4
 .. _v0.16.3: https://github.com/miurahr/py7zr/compare/v0.16.2...v0.16.3
