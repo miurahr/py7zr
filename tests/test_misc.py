@@ -109,7 +109,7 @@ class callback(py7zr.callbacks.ExtractCallback):
 
 def test_callback_raw_class():
     # test the case when passed argument is class name.
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
             z.extractall(None, callback)
 
