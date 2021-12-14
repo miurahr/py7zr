@@ -102,15 +102,16 @@ def test_double_extract_symlink(tmp_path):
         archive.extractall(path=tmp_path)
 
 
-class callback( py7zr.callbacks.ExtractCallback):
+class callback(py7zr.callbacks.ExtractCallback):
     def __init__(self):
         pass
+
 
 def test_callback_raw_class():
     # test the case when passed argument is class name.
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
-            z.extractall(None,  callback)
+            z.extractall(None, callback)
 
 
 def test_callback_not_concrete_class():
@@ -118,7 +119,7 @@ def test_callback_not_concrete_class():
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
             cb = callback()
-            z.extractall(None,  cb)
+            z.extractall(None, cb)
 
 
 @pytest.mark.api

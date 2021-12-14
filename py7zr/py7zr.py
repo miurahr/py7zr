@@ -517,7 +517,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             else:
                 raise ValueError(
                     "Callback specified is not an instance of subclass of py7zr.callbacks.ExtractCallback class"
-                    )
+                )
         except:
             raise TypeError("Callback is not an instance but class, or unknown object")
         target_files: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
