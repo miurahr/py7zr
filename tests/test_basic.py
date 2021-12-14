@@ -673,32 +673,6 @@ def test_context_manager_2(tmp_path):
 
 
 @pytest.mark.api
-def test_extract_callback(tmp_path):
-    class ECB(py7zr.callbacks.ExtractCallback):
-        def __init__(self, ofd):
-            self.ofd = ofd
-
-        def report_start_preparation(self):
-            self.ofd.write("preparation.\n")
-
-        def report_start(self, processing_file_path, processing_bytes):
-            self.ofd.write('start "{}" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
-
-        def report_end(self, processing_file_path, wrote_bytes):
-            self.ofd.write('end "{}" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
-
-        def report_postprocess(self):
-            self.ofd.write("post processing.\n")
-
-        def report_warning(self, message):
-            self.ofd.write("warning: {:s}\n".format(message))
-
-    cb = ECB(sys.stdout)
-    with py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb")) as archive:
-        archive.extractall(path=tmp_path, callback=cb)
-
-
-@pytest.mark.api
 def test_py7zr_list_values():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "test_1.7z"), "r") as z:
         file_list = z.list()
