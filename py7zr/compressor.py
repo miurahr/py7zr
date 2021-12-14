@@ -764,9 +764,16 @@ class SevenZipCompressor:
             self._set_native_compressors_coders(self.filters)
             return
         #
-        for i, f in enumerate(self.filters):
-            if f["id"] == FILTER_X86:
-                self.methods_map[i] = False
+        has_lzma2 = False
+        for f in self.filters:
+            if f["id"] == FILTER_LZMA2:
+                has_lzma2 = True
+                break
+        if not has_lzma2:
+            # when specified other than lzma2, BCJ filters should be alternative
+            for i, f in enumerate(self.filters):
+                if f["id"] == FILTER_X86 or f["id"] == FILTER_ARM or f["id"] == FILTER_ARMTHUMB or f["id"] == FILTER_SPARC or f["id"] == FILTER_POWERPC:
+                    self.methods_map[i] = False
         #
         if not any(self.methods_map):  # all alternative
             for f in filters:
