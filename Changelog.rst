@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+
+`v0.17.2`_
+==========
+Fixed
+-----
+* writef method detect wrong size of data(#397)
+
+Changed
+-------
+* Improve callback object check and error message(#387)
+
 `v0.17.1`_
 ==========
 Fixed
@@ -254,14 +265,15 @@ Fixed
 * Append mode cause error when target archive use LZMA2+BCJ.(#266)
 * Fix zstandard compression/decompression.(#258)
 
-Deprecated
+Deprecate [bringsd
 ----------
 
 * Drop support for python 3.5 which become end-of-line in Sept. 2020.
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.2...HEAD
+.. _v0.17.2: https://github.com/miurahr/py7zr/compare/v0.17.1...v0.17.2
 .. _v0.17.1: https://github.com/miurahr/py7zr/compare/v0.17.0...v0.17.1
 .. _v0.17.0: https://github.com/miurahr/py7zr/compare/v0.16.4...v0.17.0
 .. _v0.16.4: https://github.com/miurahr/py7zr/compare/v0.16.3...v0.16.4
