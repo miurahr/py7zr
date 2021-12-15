@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2020 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2020,2021 Hiroshi Miura <miurahr@linux.com>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 
 
 class Callback(ABC):
-    """Abstrat base class for progress callbacks."""
+    """Abstract base class for progress callbacks."""
 
     @abstractmethod
     def report_start_preparation(self):
@@ -52,12 +52,12 @@ class Callback(ABC):
 
 
 class ExtractCallback(Callback):
-    """Abstrat base class for extraction progress callbacks."""
+    """Abstract base class for extraction progress callbacks."""
 
     pass
 
 
 class ArchiveCallback(Callback):
-    """Abstrat base class for progress callbacks."""
+    """Abstract base class for progress callbacks."""
 
     pass

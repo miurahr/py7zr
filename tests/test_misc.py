@@ -100,3 +100,50 @@ def test_double_extract_symlink(tmp_path):
         archive.extractall(path=tmp_path)
     with py7zr.SevenZipFile(testdata_path.joinpath("symlink_2.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path)
+
+
+class callback(py7zr.callbacks.ExtractCallback):
+    def __init__(self):
+        pass
+
+
+def test_callback_raw_class():
+    # test the case when passed argument is class name.
+    with pytest.raises(ValueError):
+        with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
+            z.extractall(None, callback)
+
+
+def test_callback_not_concrete_class():
+    # test the case when passed arugment is abstract class
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
+            cb = callback()
+            z.extractall(None, cb)
+
+
+@pytest.mark.api
+def test_extract_callback(tmp_path):
+    # test the case when good callback passed.
+    class ECB(py7zr.callbacks.ExtractCallback):
+        def __init__(self, ofd):
+            self.ofd = ofd
+
+        def report_start_preparation(self):
+            self.ofd.write("preparation.\n")
+
+        def report_start(self, processing_file_path, processing_bytes):
+            self.ofd.write('start "{}" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
+
+        def report_end(self, processing_file_path, wrote_bytes):
+            self.ofd.write('end "{}" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
+
+        def report_postprocess(self):
+            self.ofd.write("post processing.\n")
+
+        def report_warning(self, message):
+            self.ofd.write("warning: {:s}\n".format(message))
+
+    cb = ECB(sys.stdout)
+    with py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb")) as archive:
+        archive.extractall(path=tmp_path, callback=cb)

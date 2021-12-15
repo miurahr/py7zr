@@ -508,11 +508,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
     ) -> Optional[Dict[str, IO[Any]]]:
-        if callback is not None and not isinstance(callback, ExtractCallback):
-            raise ValueError("Callback specified is not a subclass of py7zr.callbacks.ExtractCallback class")
-        elif callback is not None:
+        if callback is None:
+            pass
+        elif isinstance(callback, ExtractCallback):
             self.reporterd = Thread(target=self.reporter, args=(callback,), daemon=True)
             self.reporterd.start()
+        else:
+            raise ValueError("Callback specified is not an instance of subclass of py7zr.callbacks.ExtractCallback class")
         target_files: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
         target_dirs: List[pathlib.Path] = []
         if path is not None:
