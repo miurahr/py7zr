@@ -265,7 +265,7 @@ Fixed
 * Append mode cause error when target archive use LZMA2+BCJ.(#266)
 * Fix zstandard compression/decompression.(#258)
 
-Deprecate [bringsd
+Deprecated
 ----------
 
 * Drop support for python 3.5 which become end-of-line in Sept. 2020.
