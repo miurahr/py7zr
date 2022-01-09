@@ -13,6 +13,9 @@
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
+.. image:: https://img.shields.io/pypi/dd/py7zr
+  :target: https://pypi.org/project/py7zr
+
 .. image:: https://img.shields.io/conda/vn/conda-forge/py7zr
   :target: https://anaconda.org/conda-forge/py7zr
 
