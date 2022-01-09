@@ -13,6 +13,9 @@
 .. image:: https://badge.fury.io/py/py7zr.svg
   :target: https://badge.fury.io/py/py7zr
 
+.. image:: https://img.shields.io/pypi/dd/py7zr
+  :target: https://pypi.org/project/py7zr
+
 .. image:: https://img.shields.io/conda/vn/conda-forge/py7zr
   :target: https://anaconda.org/conda-forge/py7zr
 
@@ -25,8 +28,9 @@
 .. image:: https://coveralls.io/repos/github/miurahr/py7zr/badge.svg?branch=master
   :target: https://coveralls.io/github/miurahr/py7zr?branch=master
 
-
-
+.. image:: https://img.shields.io/pypi/l/py7zr
+  :target: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html
+  
 
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
