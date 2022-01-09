@@ -757,7 +757,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header_encryption = False
 
     @staticmethod
-    def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader]) -> bool:
+    def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader, io.IOBase]) -> bool:
         result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
         fp.seek(-len(MAGIC_7Z), 1)
         return result
@@ -1116,8 +1116,10 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
     """
     result = False
     try:
-        if isinstance(file, io.IOBase) and hasattr(file, "read"):
-            result = SevenZipFile._check_7zfile(file)  # noqa
+        if (isinstance(file, BinaryIO) or isinstance(file, io.BufferedReader) or isinstance(file, io.IOBase)) and hasattr(
+            file, "read"
+        ):
+            result = SevenZipFile._check_7zfile(file)
         elif isinstance(file, str):
             with open(file, "rb") as fp:
                 result = SevenZipFile._check_7zfile(fp)
@@ -1194,7 +1196,9 @@ class Worker:
                             skip_notarget=skip_notarget,
                         )
                 else:
-                    filename = getattr(fp, "name", None)
+                    if getattr(fp, "name", None) is None:
+                        raise InternalError("Caught unknown variable status error")
+                    filename: str = getattr(fp, "name", "")  # do not become "" but it is for type check.
                     self.extract_single(open(filename, "rb"), empty_files, 0, 0, q)
                     concurrent_tasks = []
                     exc_q: queue.Queue = queue.Queue()

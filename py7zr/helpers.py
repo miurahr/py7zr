@@ -90,7 +90,7 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
         for i, c in enumerate(salt + password):
             buf.saltpassword[i] = c
         buf.round = 0
-        mv = memoryview(buf)  # type: ignore # noqa
+        mv = memoryview(buf)
         while buf.round < rounds:
             m.update(mv)
             buf.round += 1
