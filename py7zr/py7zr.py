@@ -204,10 +204,6 @@ class ArchiveFile:
             return stat.S_IFMT(e)
         return None
 
-    @filename.setter
-    def filename(self, value):
-        self._filename = value
-
 
 class ArchiveFileList(collections.abc.Iterable):
     """Iteratable container of ArchiveFile."""
@@ -505,14 +501,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 [SupportedMethods.needs_password(folder.coders) for folder in self.header.main_streams.unpackinfo.folders]
             )
 
-    def _compress_file_name_check(self, dir_path: str, file_name: str) -> Optional[str]:
-        file_name = file_name.lstrip("./")
-        full_path = os.path.join(dir_path, file_name)
-        if os.path.commonprefix((os.path.realpath(full_path), dir_path)) != dir_path:
-            return None
-        else:
-            return file_name
-
     def _extract(
         self,
         path: Optional[Any] = None,
@@ -545,13 +533,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         fnames: List[str] = []  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
-            # check whether f.filename with invalid characters '../' and may cause traversal attack
-            if path is not None:
-                f.filename = self._compress_file_name_check(path, f.filename)
-            else:
-                f.filename = self._compress_file_name_check(os.curdir, f.filename)
-            if f.filename is None:
-                raise Bad7zFile
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
@@ -566,10 +547,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         break
                     i += 1
             fnames.append(outname)
-            if path is not None:
-                outfilename = path.joinpath(outname)
+            # check f.filename has invalid directory traversals
+            if path is None:
+                if not pathlib.Path(os.getcwd()).joinpath(outname.lstrip("./")).is_relative_to(os.getcwd()):
+                    raise Bad7zFile
+                outfilename = pathlib.Path(outname.lstrip("./"))
             else:
-                outfilename = pathlib.Path(outname)
+                outfilename = path.joinpath(outname.lstrip("./"))
+                if not outfilename.is_relative_to(path):
+                    raise Bad7zFile
             # When python on Windows and not python on Cygwin,
             # Add win32 file namespace to exceed microsoft windows
             # path length limitation to 260 bytes
