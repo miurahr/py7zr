@@ -549,12 +549,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
             fnames.append(outname)
             # check f.filename has invalid directory traversals
             if path is None:
-                if not pathlib.Path(os.getcwd()).joinpath(outname.lstrip("./")).is_relative_to(os.getcwd()):
+                # do following but is_relative_to introduced in py 3.9
+                # so I replaced it with relative_to. when condition is not satisfied, raise ValueError
+                # if not pathlib.Path(...).joinpath(outname.lstrip("./")).is_relative_to(...):
+                #    raise Bad7zFile
+                try:
+                    pathlib.Path(os.getcwd()).joinpath(outname.lstrip("./")).relative_to(os.getcwd())
+                except ValueError:
                     raise Bad7zFile
                 outfilename = pathlib.Path(outname.lstrip("./"))
             else:
                 outfilename = path.joinpath(outname.lstrip("./"))
-                if not outfilename.is_relative_to(path):
+                try:
+                    outfilename.relative_to(path)
+                except ValueError:
                     raise Bad7zFile
             # When python on Windows and not python on Cygwin,
             # Add win32 file namespace to exceed microsoft windows
