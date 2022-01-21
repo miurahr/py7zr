@@ -533,10 +533,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         fnames: List[str] = []  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
-            # TODO: sanity check
-            # check whether f.filename with invalid characters: '../'
-            if f.filename.startswith("../"):
-                raise Bad7zFile
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
@@ -551,10 +547,23 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         break
                     i += 1
             fnames.append(outname)
-            if path is not None:
-                outfilename = path.joinpath(outname)
+            # check f.filename has invalid directory traversals
+            if path is None:
+                # do following but is_relative_to introduced in py 3.9
+                # so I replaced it with relative_to. when condition is not satisfied, raise ValueError
+                # if not pathlib.Path(...).joinpath(outname.lstrip("./")).is_relative_to(...):
+                #    raise Bad7zFile
+                try:
+                    pathlib.Path(os.getcwd()).joinpath(outname.lstrip("./")).relative_to(os.getcwd())
+                except ValueError:
+                    raise Bad7zFile
+                outfilename = pathlib.Path(outname.lstrip("./"))
             else:
-                outfilename = pathlib.Path(outname)
+                outfilename = path.joinpath(outname.lstrip("./"))
+                try:
+                    outfilename.relative_to(path)
+                except ValueError:
+                    raise Bad7zFile
             # When python on Windows and not python on Cygwin,
             # Add win32 file namespace to exceed microsoft windows
             # path length limitation to 260 bytes
