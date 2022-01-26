@@ -1052,28 +1052,28 @@ class SupportedMethods:
     def is_native_coder(cls, coder) -> bool:
         method = cls._find_method("id", coder["method"])
         if method is None:
-            raise UnsupportedCompressionMethodError(coder["method"], "Found an unknown id of method.")
+            cls.raise_unsupported_method_id(coder)
         return method["native"]
 
     @classmethod
     def need_property(cls, filter_id):
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
+            raise UnsupportedCompressionMethodError(filter_id, "Found an sunpported filter id.")
         return method["need_prop"]
 
     @classmethod
     def is_crypto_id(cls, filter_id) -> bool:
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
+            cls.raise_unsupported_filter_id(filter_id)
         return method["type"] == MethodsType.crypto
 
     @classmethod
     def get_method_id(cls, filter_id) -> bytes:
         method = cls._find_method("filter_id", filter_id)
         if method is None:
-            raise UnsupportedCompressionMethodError(filter_id, "Found an unknown filter id.")
+            cls.raise_unsupported_filter_id(filter_id)
         return method["id"]
 
     @classmethod
@@ -1099,6 +1099,36 @@ class SupportedMethods:
             if SupportedMethods.is_crypto_id(filter_id):
                 return True
         return False
+
+    @classmethod
+    def raise_unsupported_method_id(cls, coder):
+        if coder["method"] == COMPRESSION_METHOD.P7Z_BCJ2:
+            raise UnsupportedCompressionMethodError(
+                coder["method"],
+                "BCJ2 filter is not supported by py7zr."
+                " Please consider to contribute to XZ/liblzma project"
+                " and help Python core team implementing it."
+                " Or please use another tool to extract it.",
+            )
+        if coder["method"] == COMPRESSION_METHOD.MISC_DEFLATE64:
+            raise UnsupportedCompressionMethodError(
+                coder["method"],
+                "DEFLATE64 compression is not supported by py7zr yet."
+                " Please check the progress in py7zr project home page.",
+            )
+        if coder["method"] == COMPRESSION_METHOD.MISC_LZ4:
+            raise UnsupportedCompressionMethodError(
+                coder["method"], "Archive is compressed by an unsupported algorythm LZ4."
+            )
+        raise UnsupportedCompressionMethodError(
+            coder["method"], "Archive is compressed by an unsupported compression algorythm."
+        )
+
+    @classmethod
+    def raise_unsupported_filter_id(cls, filter_id):
+        raise UnsupportedCompressionMethodError(
+            filter_id, "Found an unsupported filter id is specified." "Please use another compression method."
+        )
 
 
 def get_methods_names(coders_lists: List[List[dict]]) -> List[str]:
