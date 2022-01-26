@@ -347,6 +347,7 @@ Codecs and hashes:
 04f71101   ZStandard
 030401          PPMd
 04f71102      Brotli
+040109     DEFLATE64
 06f10701       7zAES
 {}
 """.format(
