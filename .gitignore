@@ -18,3 +18,4 @@ type_info.json
 .coverage.*
 coverage.xml
 py7zr/version.py
+prof

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1280"
+   height="630"
+   viewBox="0 0 338.66666 166.6875"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.1 (1:1.1+202109281949+c3084ef5ed)"
+   sodipodi:docname="social_preview.svg"
+   inkscape:export-filename="/home/miurahr/Projects/Python/py7zr/docs/social_preview.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:i="http://ns.adobe.com/AdobeIllustrator/10.0/">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="px"
+     showgrid="false"
+     units="px"
+     width="1280px"
+     inkscape:zoom="0.73762626"
+     inkscape:cx="595.15235"
+     inkscape:cy="283.34132"
+     inkscape:window-width="1920"
+     inkscape:window-height="1014"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2" />
+  <defs
+     id="defs2">
+    <rect
+       x="698.98223"
+       y="61.961883"
+       width="203.30421"
+       height="228.32368"
+       id="rect7784" />
+    <rect
+       x="534.22089"
+       y="129.24293"
+       width="427.40514"
+       height="126.56016"
+       id="rect476" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4689"
+       id="linearGradient8697"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.23189531,0,0,0.24870607,34.415688,49.283754)"
+       x1="222.20599"
+       y1="74.308121"
+       x2="26.670298"
+       y2="76.313133" />
+    <linearGradient
+       id="linearGradient4689"
+       inkscape:collect="always">
+      <stop
+         id="stop4691"
+         offset="0"
+         style="stop-color:#366a96;stop-opacity:1;" />
+      <stop
+         id="stop4693"
+         offset="1"
+         style="stop-color:#3679b0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient4671">
+      <stop
+         id="stop4673"
+         offset="0"
+         style="stop-color:#ffc836;stop-opacity:1;" />
+      <stop
+         id="stop4675"
+         offset="1"
+         style="stop-color:#ffe873;stop-opacity:1;" />
+    </linearGradient>
+    <rect
+       x="534.22089"
+       y="129.24294"
+       width="427.40515"
+       height="126.56016"
+       id="rect476-5" />
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Production"
+     sodipodi:insensitive="true"
+     style="display:inline">
+    <g
+       id="layer5"
+       inkscape:label="7z"
+       transform="matrix(1.0516513,0,0,0.89222508,37.45309,-28.767934)">
+      <path
+         id="path7992"
+         d="M 83.43425,104.07897 C 77.36172,103.64274 49.522588,107.68458 47.711594,102.9076 40.154025,94.926168 75.537033,76.974315 74.064907,76.90299 50.949885,77.137172 42.267706,81.528267 46.580917,69.2124 l 33.857456,-1.462535 c 3.213739,-0.138823 4.730426,2.563009 5.524285,5.959871 -1.344545,16.427047 -8.681273,13.404254 -17.73318,20.060168 l 6.684601,-0.684006 c 17.426902,0.904876 18.350147,10.223862 8.520171,10.993072 z"
+         i:knockout="Off"
+         style="fill:#222b00;fill-opacity:1;stroke-width:0.240154"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccscccc" />
+      <path
+         id="path7990"
+         d="m 42.979653,57.445878 c 2.133124,-2.499054 10.294486,-1.687334 14.971716,-2.565075 3.175446,-0.596865 7.247052,-0.671474 11.044488,0 2.999484,0.531032 6.840895,3.364273 7.362645,6.50302 l 1.050489,6.319537 C 64.222864,79.166824 43.46774,103.30904 43.73271,97.619525 38.244175,89.84645 40.257762,90.229147 46.74464,82.926723 51.554752,76.913056 56.584836,70.425409 63.475659,66.95415 v 0 L 43.954694,67.760133 C 40.760468,64.95488 40.887622,59.896789 42.979653,57.445878 Z"
+         i:knockout="Off"
+         style="fill:url(#linearGradient8697);fill-opacity:1;stroke-width:0.240154"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="sccsccccccs" />
+      <path
+         id="path7994"
+         d="m 47.47376,61.841654 c 0,-1.237616 0.924808,-2.238242 2.070586,-2.238242 1.141686,0 2.070584,1.000626 2.070584,2.238242 0,1.23323 -0.928898,2.233856 -2.070584,2.233856 -1.145778,0 -2.070586,-1.000626 -2.070586,-2.233856 z"
+         i:knockout="Off"
+         style="fill:#ffffff;stroke-width:0.240154"
+         inkscape:connector-curvature="0" />
+      <path
+         id="path7996"
+         d="m 77.30857,98.033771 c 0,-1.233229 0.928897,-2.233855 2.070589,-2.233855 1.145777,0 2.070581,1.000626 2.070581,2.233855 0,1.237612 -0.924804,2.238239 -2.070581,2.238239 -1.141692,0 -2.070589,-1.000627 -2.070589,-2.238239 z"
+         i:knockout="Off"
+         style="fill:#ffffff;stroke-width:0.240154"
+         inkscape:connector-curvature="0" />
+    </g>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.78690968,0,0,0.87286288,-280.24459,-85.53838)"
+       id="text474"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect476);fill:#000000;fill-opacity:1;stroke:none"><tspan
+         x="534.2207"
+         y="164.74802"
+         id="tspan80583">py</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.78690968,0,0,0.87286288,-182.1903,-85.68497)"
+       id="text474-2"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect476-5);fill:#ff0000;fill-opacity:1;stroke:none"><tspan
+         x="534.2207"
+         y="164.74802"
+         id="tspan80585">r</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.45539385,0,0,0.46895466,-135.74331,-7.133386)"
+       id="text7782"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:85.3333px;line-height:1.25;font-family:'Comic Sans MS';-inkscape-font-specification:'Comic Sans MS, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect7784);fill:#000000;fill-opacity:1;stroke:none"><tspan
+         x="698.98242"
+         y="136.10441"
+         id="tspan80589"><tspan
+           style="fill:#000080"
+           id="tspan80587">7Z</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.5833px;line-height:1.25;font-family:'Comic Sans MS';-inkscape-font-specification:'Comic Sans MS, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="31.240086"
+       y="115.60234"
+       id="text23246"><tspan
+         sodipodi:role="line"
+         id="tspan55956"
+         x="31.240086"
+         y="115.60234">Python library for 7-Zip compression/decompression</tspan><tspan
+         sodipodi:role="line"
+         id="tspan55958"
+         x="31.240086"
+         y="128.83147">with python standard zipfile/bzip API, supports ... </tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.14375px;line-height:1.25;font-family:'Comic Sans MS';-inkscape-font-specification:'Comic Sans MS, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.228594"
+       x="62.586521"
+       y="143.67673"
+       id="text50124"
+       transform="scale(0.98559201,1.0146186)"><tspan
+         sodipodi:role="line"
+         id="tspan55936"
+         x="62.586521"
+         y="143.67673"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.14375px;font-family:'Comic Sans MS';-inkscape-font-specification:'Comic Sans MS, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.228594">LZMA/LZMA2/BZip/Deflate/ZStandard/PPMd/BCJ/7zAES</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.244px;line-height:1.25;font-family:'Arial Black';-inkscape-font-specification:'Arial Black, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;fill:#008000;fill-opacity:1;stroke:none;stroke-width:0.3811"
+       x="82.142975"
+       y="82.124863"
+       id="text61684"
+       transform="scale(0.83161694,1.2024767)"><tspan
+         sodipodi:role="line"
+         id="tspan80319"
+         x="82.142975"
+         y="82.124863">7-Zip revolution in python</tspan></text>
+  </g>
+</svg>
