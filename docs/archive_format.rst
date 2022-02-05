@@ -931,14 +931,22 @@ Normal files
 Normal files are stored with packed streams and ordinal file information.
 Its contents are stored into packed stream.
 It SHOULD have an attribute of Windows such as ``FILE_ATTRIBUTE_ARCHIVE``.
-It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
+It MAY also have an attribute of UNIX such as ``rw_r__r__`` permissions.
+
+Empty files
+-----------
+
+Empty files, which size is zero, SHALL be stored without packed stream,
+and with flle information.
+It SHOULD have an attribute of Windows such as ``FILE_ATTRIBUTE_ARCHIVE``.
+It MAY also have an attribute of UNIX such as ``rw_r__r__`` permissions.
 
 Directories
 -----------
 
 Directories are stored without packed streams. It have entries in file information.
 It SHALL have an attribute which is ``FILE_ATTRIBUTE_DIRECTORY``.
-It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
+It MAY also have an attribute of UNIX such as ``rwxr_xr_x`` permissions.
 
 Special Files
 -------------
