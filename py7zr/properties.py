@@ -39,7 +39,7 @@ COMMAND_HELP_STRING = """<Commands>
 
 def is_64bit() -> bool:
     """check if running platform is 64bit python."""
-    return sys.maxsize > 2 ** 32
+    return sys.maxsize > 1 << 32
 
 
 def is_pypy369later() -> bool:
