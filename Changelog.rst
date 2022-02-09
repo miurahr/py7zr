@@ -7,8 +7,20 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.17.4`_
+==========
+
+Fixed
+-----
+* When extracting and target archive compressed with unsupported LZMA2+BCJ2, py7zr raise unexpected exception. Fix to raise better exception message
+
+Changed
+-------
+* docs: Add explanation of empty file specification
+
 `v0.17.3`_
 ==========
+
 Security
 --------
 * Check against directory traversal attack by file pathes in archive (#406,#407)
@@ -277,7 +289,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.4...HEAD
+.. _v0.17.4: https://github.com/miurahr/py7zr/compare/v0.17.3...v0.17.4
 .. _v0.17.3: https://github.com/miurahr/py7zr/compare/v0.17.2...v0.17.3
 .. _v0.17.2: https://github.com/miurahr/py7zr/compare/v0.17.1...v0.17.2
 .. _v0.17.1: https://github.com/miurahr/py7zr/compare/v0.17.0...v0.17.1
