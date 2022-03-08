@@ -307,8 +307,8 @@ Supported algorithms are:
     * Bzip2
     * Deflate
     * Copy
-    * PPMd
     * ZStandard
+    * PPMd (Experimental)
     * Brotli
 
 * crypt
