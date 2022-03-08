@@ -9,6 +9,7 @@ from Cryptodome.Cipher import AES
 import py7zr
 import py7zr.compressor
 from py7zr import UnsupportedCompressionMethodError
+from py7zr.properties import FILTER_DEFLATE64
 from tests import p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -258,7 +259,7 @@ def test_compress_decompress_deflate64(tmp_path):
         arc.extractall(path=tmp_path)
     # compress with deflate64
     target = tmp_path.joinpath("target.7z")
-    my_filters = [{"id": py7zr.FILTER_DEFLATE64}]
+    my_filters = [{"id": FILTER_DEFLATE64}]
     with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
         archive.write(tmp_path.joinpath("10000SalesRecords.csv"), "10000SalesRecords.csv")
     # check extract
@@ -271,7 +272,7 @@ def test_compress_decompress_deflate64(tmp_path):
 
 @pytest.mark.basic
 def test_compress_deflate64(tmp_path):
-    my_filters = [{"id": py7zr.FILTER_DEFLATE64}]
+    my_filters = [{"id": FILTER_DEFLATE64}]
     with pytest.raises(UnsupportedCompressionMethodError):
         with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", filters=my_filters) as archive:
             archive.write(testdata_path.joinpath("src"), "src")
