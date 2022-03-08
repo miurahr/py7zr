@@ -30,7 +30,6 @@ from py7zr.properties import (
     FILTER_COPY,
     FILTER_CRYPTO_AES256_SHA256,
     FILTER_DEFLATE,
-    FILTER_DEFLATE64,
     FILTER_DELTA,
     FILTER_IA64,
     FILTER_LZMA,

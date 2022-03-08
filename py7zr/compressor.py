@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pyppmd
 import pyzstd
-from zipfile_deflate64 import deflate64
+from zipfile_deflate64 import deflate64  # type: ignore
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
@@ -265,7 +265,7 @@ class DeflateDecompressor(ISevenZipDecompressor):
 
 class Deflate64Compressor(ISevenZipCompressor):
     def __init__(self):
-        raise RuntimeError('Deflate64 compression not implemented yet')
+        raise RuntimeError("Deflate64 compression not implemented yet")
 
 
 class Deflate64Decompressor(ISevenZipDecompressor):
