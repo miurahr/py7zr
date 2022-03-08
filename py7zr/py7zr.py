@@ -46,7 +46,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize
+from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize, FILTER_DEFLATE64
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 if sys.platform.startswith("win"):
@@ -654,7 +654,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif filters is None:
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
-            pass
+            for f in filters:
+                if f["id"] == FILTER_DEFLATE64:
+                    raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
         self.header.filters = filters
         self.header.password = password
         if self.header.main_streams is not None:
@@ -670,7 +672,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif filters is None:
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
-            pass
+            for f in filters:
+                if f["id"] == FILTER_DEFLATE64:
+                    raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
