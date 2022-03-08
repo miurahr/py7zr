@@ -308,8 +308,9 @@ Supported algorithms are:
     * Deflate
     * Copy
     * ZStandard
-    * PPMd (Experimental)
     * Brotli
+    * Deflate64 (Decompression only)
+    * PPMd (Experimental)
 
 * crypt
     * 7zAES
@@ -320,7 +321,6 @@ Supported algorithms are:
 
 * No support
     * BCJ2
-    * Deflate64
 
 - A feature handling symbolic link is basically compatible with 'p7zip' implementation,
   but not work with original 7-zip because the original does not implement the feature.
@@ -336,18 +336,19 @@ Dependencies
 
 There are several dependencies to support algorithms and CLI expressions.
 
-================== ================================
-Package            Purpose
-================== ================================
-`Pycryptodomex`_   7zAES encryption
-`PyZstd`_          ZStandard compression
-`PyPPMd`_          PPMd compression
-`Brotli`_          Brotli compression (CPython)
-`BrotliCFFI`_      Brotli compression (PyPy)
-`pybcj`_           BCJ filter
-`multivolumefile`_ Multi-volume archive read/write
-`texttable`_       CLI formatter
-================== ================================
+===================== ===============================
+Package               Purpose
+===================== ===============================
+`PyCryptodomex`_      7zAES encryption
+`PyZstd`_             ZStandard compression
+`PyPPMd`_             PPMd compression
+`Brotli`_             Brotli compression (CPython)
+`BrotliCFFI`_         Brotli compression (PyPy)
+`zipfile-deflate64`_  DEFLATE64 decompression
+`pybcj`_              BCJ filters
+`multivolumefile`_    Multi-volume archive read/write
+`texttable`_          CLI formatter
+===================== ===============================
 
 
 .. _`Pycryptodomex` : https://www.pycryptodome.org/en/latest/index.html
@@ -355,6 +356,7 @@ Package            Purpose
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
+.. _`zipfile-deflate64` : https://github.com/brianhelba/zipfile-deflate64
 .. _`pybcj` : https://pypi.org/project/pybcj
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable

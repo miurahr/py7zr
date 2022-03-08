@@ -7,6 +7,22 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.0`_
+==========
+
+Added
+-----
+* Support DEFLATE64 decompression(#399)
+
+Fixed
+-----
+* Docs: fix typo for readall method argument(#416)
+
+Changed
+-------
+* Get status down for PPMd compression/decompression(#418)
+  PPMd decompression has a bug easily to fail decompression.
+
 `v0.17.4`_
 ==========
 
@@ -289,7 +305,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.17.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.0...HEAD
+.. _v0.18.0: https://github.com/miurahr/py7zr/compare/v0.17.4...v0.18.0
 .. _v0.17.4: https://github.com/miurahr/py7zr/compare/v0.17.3...v0.17.4
 .. _v0.17.3: https://github.com/miurahr/py7zr/compare/v0.17.2...v0.17.3
 .. _v0.17.2: https://github.com/miurahr/py7zr/compare/v0.17.1...v0.17.2

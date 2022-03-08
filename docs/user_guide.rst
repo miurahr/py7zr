@@ -32,20 +32,26 @@ Dependencies
 
 There are several dependencies to support algorithms and CLI expressions.
 
-================== ===============================
-Package            Purpose
-================== ===============================
-`PyCryptodomex`_   7zAES encryption
-`PyZstd`_          ZStandard compression
-`PyPPMd`_          PPMd compression
-`pybcj`_           BCJ filters
-`multivolumefile`_ Multi-volume archive read/write
-`texttable`_       CLI formatter
-================== ===============================
+===================== ===============================
+Package               Purpose
+===================== ===============================
+`PyCryptodomex`_      7zAES encryption
+`PyZstd`_             ZStandard compression
+`PyPPMd`_             PPMd compression
+`Brotli`_             Brotli compression (CPython)
+`BrotliCFFI`_         Brotli compression (PyPy)
+`zipfile-deflate64`_  DEFLATE64 decompression
+`pybcj`_              BCJ filters
+`multivolumefile`_    Multi-volume archive read/write
+`texttable`_          CLI formatter
+===================== ===============================
 
 .. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
 .. _`PyZstd` : https://pypi.org/project/pyzstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
+.. _`Brotli` : https://pypi.org/project/brotli
+.. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
+.. _`zipfile-deflate64` : https://github.com/brianhelba/zipfile-deflate64
 .. _`pybcj` : https://pypi.org/project/pybcj
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
