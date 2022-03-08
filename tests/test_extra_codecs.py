@@ -252,7 +252,7 @@ def test_decompress_brotli(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skip(reason="Deflate64 compression is not implemented yet.")
+#@pytest.mark.skip(reason="Deflate64 compression is not implemented yet.")
 def test_compress_decompress_deflate64(tmp_path):
     # prepare source data
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:

@@ -654,9 +654,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif filters is None:
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
-            for f in filters:
-                if f["id"] == FILTER_DEFLATE64:
-                    raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
+            pass
+            #for f in filters:
+            #    if f["id"] == FILTER_DEFLATE64:
+            #        raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
         self.header.filters = filters
         self.header.password = password
         if self.header.main_streams is not None:
@@ -672,9 +673,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif filters is None:
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         else:
-            for f in filters:
-                if f["id"] == FILTER_DEFLATE64:
-                    raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
+            pass
+            #for f in filters:
+            #    if f["id"] == FILTER_DEFLATE64:
+            #        raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
         self.sig_header._write_skelton(self.fp)
