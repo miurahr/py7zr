@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pyppmd
 import pyzstd
+from zipfile_deflate64 import deflate64  # type: ignore
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
@@ -45,6 +46,7 @@ from py7zr.properties import (
     FILTER_COPY,
     FILTER_CRYPTO_AES256_SHA256,
     FILTER_DEFLATE,
+    FILTER_DEFLATE64,
     FILTER_DELTA,
     FILTER_IA64,
     FILTER_LZMA,
@@ -250,6 +252,26 @@ class DeflateDecompressor(ISevenZipDecompressor):
     def __init__(self):
         self.flushed = False
         self._decompressor = zlib.decompressobj(wbits=-15)
+
+    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if len(data) == 0:
+            if self.flushed:
+                return b""
+            else:
+                self.flushed = True
+                return self._decompressor.flush()
+        return self._decompressor.decompress(data)
+
+
+class Deflate64Compressor(ISevenZipCompressor):
+    def __init__(self):
+        raise RuntimeError("Deflate64 compression not implemented yet")
+
+
+class Deflate64Decompressor(ISevenZipDecompressor):
+    def __init__(self):
+        self.flushed = False
+        self._decompressor = deflate64.Deflate64()
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if len(data) == 0:
@@ -497,6 +519,7 @@ algorithm_class_map = {
     FILTER_BZIP2: (bz2.BZ2Compressor, bz2.BZ2Decompressor),
     FILTER_COPY: (CopyCompressor, CopyDecompressor),
     FILTER_DEFLATE: (DeflateCompressor, DeflateDecompressor),
+    FILTER_DEFLATE64: (Deflate64Compressor, Deflate64Decompressor),
     FILTER_CRYPTO_AES256_SHA256: (AESCompressor, AESDecompressor),
     FILTER_X86: (BCJEncoder, BCJDecoder),
     FILTER_ARM: (BcjArmEncoder, BcjArmDecoder),
@@ -1006,6 +1029,14 @@ class SupportedMethods:
             "type": MethodsType.compressor,
         },
         {
+            "id": COMPRESSION_METHOD.MISC_DEFLATE64,
+            "name": "DEFLATE64",
+            "native": False,
+            "need_prop": False,
+            "filter_id": FILTER_DEFLATE64,
+            "type": MethodsType.compressor,
+        },
+        {
             "id": COMPRESSION_METHOD.CRYPT_AES256_SHA256,
             "name": "7zAES",
             "native": False,
@@ -1139,7 +1170,7 @@ def get_methods_names(coders_lists: List[List[dict]]) -> List[str]:
         "LZMA",
         "BZip2",
         "DEFLATE",
-        "DEFLATE64*",
+        "DEFLATE64",
         "delta",
         "COPY",
         "PPMd",
@@ -1157,7 +1188,6 @@ def get_methods_names(coders_lists: List[List[dict]]) -> List[str]:
     unsupported_methods = {
         COMPRESSION_METHOD.P7Z_BCJ2: "BCJ2*",
         COMPRESSION_METHOD.MISC_LZ4: "LZ4*",
-        COMPRESSION_METHOD.MISC_DEFLATE64: "DEFLATE64*",
     }
     methods_names = []
     for coders in coders_lists:

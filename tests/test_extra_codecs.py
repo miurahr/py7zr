@@ -9,6 +9,7 @@ from Cryptodome.Cipher import AES
 import py7zr
 import py7zr.compressor
 from py7zr import UnsupportedCompressionMethodError
+from py7zr.properties import FILTER_DEFLATE64
 from tests import p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -248,3 +249,36 @@ def test_decompress_brotli(tmp_path):
     with pytest.raises(UnsupportedCompressionMethodError):
         with py7zr.SevenZipFile(testdata_path.joinpath("zstdmt-brotli.7z").open(mode="rb")) as archive:
             archive.extractall(path=tmp_path.joinpath("tgt"))
+
+
+@pytest.mark.basic
+@pytest.mark.skip(reason="Deflate64 compression is not implemented yet.")
+def test_compress_decompress_deflate64(tmp_path):
+    # prepare source data
+    with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
+        arc.extractall(path=tmp_path)
+    # compress with deflate64
+    target = tmp_path.joinpath("target.7z")
+    my_filters = [{"id": FILTER_DEFLATE64}]
+    with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
+        archive.write(tmp_path.joinpath("10000SalesRecords.csv"), "10000SalesRecords.csv")
+    # check extract
+    tmp_path.joinpath("tgt").mkdir(exist_ok=True)
+    with py7zr.SevenZipFile(target, "r") as archive:
+        archive.extractall(path=tmp_path.joinpath("tgt"))
+    # check with p7zip
+    p7zip_test(tmp_path / "target.7z")
+
+
+@pytest.mark.basic
+def test_compress_deflate64(tmp_path):
+    my_filters = [{"id": FILTER_DEFLATE64}]
+    with pytest.raises(UnsupportedCompressionMethodError):
+        with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", filters=my_filters) as archive:
+            archive.write(testdata_path.joinpath("src"), "src")
+
+
+@pytest.mark.basic
+def test_decompress_deflate64(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath("deflate64.7z").open(mode="rb")) as archive:
+        archive.extractall(path=tmp_path.joinpath("tgt"))

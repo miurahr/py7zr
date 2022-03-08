@@ -20,7 +20,7 @@ def test_archiveinfo_deflate():
 def test_archiveinfo_deflate64():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "deflate64.7z"), "r") as ar:
         ai = ar.archiveinfo()
-        assert ai.method_names[0] == "DEFLATE64*"
+        assert ai.method_names[0] == "DEFLATE64"
 
 
 @pytest.mark.files
@@ -94,9 +94,8 @@ def test_archivetest_deflate():
 
 @pytest.mark.files
 def test_archivetest_deflate64():
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(os.path.join(testdata_path, "deflate64.7z"), "r") as ar:
-            assert ar.testzip() is None
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "deflate64.7z"), "r") as ar:
+        assert ar.testzip() is None
 
 
 @pytest.mark.files
