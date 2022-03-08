@@ -32,19 +32,19 @@ Dependencies
 
 There are several dependencies to support algorithms and CLI expressions.
 
-================== ===============================
-Package            Purpose
-================== ===============================
-`PyCryptodomex`_   7zAES encryption
-`PyZstd`_          ZStandard compression
-`PyPPMd`_          PPMd compression
-`Brotli`_          Brotli compression (CPython)
-`BrotliCFFI`_      Brotli compression (PyPy)
-`zipfile-deflate64`_ DEFLATE64 decompression
-`pybcj`_           BCJ filters
-`multivolumefile`_ Multi-volume archive read/write
-`texttable`_       CLI formatter
-================== ===============================
+===================== ===============================
+Package               Purpose
+===================== ===============================
+`PyCryptodomex`_      7zAES encryption
+`PyZstd`_             ZStandard compression
+`PyPPMd`_             PPMd compression
+`Brotli`_             Brotli compression (CPython)
+`BrotliCFFI`_         Brotli compression (PyPy)
+`zipfile-deflate64`_  DEFLATE64 decompression
+`pybcj`_              BCJ filters
+`multivolumefile`_    Multi-volume archive read/write
+`texttable`_          CLI formatter
+===================== ===============================
 
 .. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
 .. _`PyZstd` : https://pypi.org/project/pyzstd
