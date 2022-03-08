@@ -1,3 +1,4 @@
+include *.png
 include *.rst
 include *.svg
 include *.toml
@@ -23,6 +24,7 @@ recursive-include docs *.rst
 recursive-include docs *.yml
 recursive-include docs *.odp
 recursive-include docs *.pdf
+recursive-include docs *.svg
 recursive-include docs *.txt
 recursive-include docs Makefile
 prune .github

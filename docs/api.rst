@@ -215,7 +215,7 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.readall()
 
    Extract all members from the archive to memory and returns dictionary object.
-   Returned dictionary has a form of Dict[filename: str, BinaryIO: io.ByteIO object].
+   Returned dictionary has a form of Dict[filename: str, BinaryIO: io.BytesIO object].
    Once readall() called, the SevenZipFIle object become exhausted and EOF state.
    If you want to call read(), readall(), extract(), extractall() again,
    you should call reset() before it.

@@ -705,14 +705,15 @@ it SHOULD report it as not supported.
 
 Here is a list of famous codec IDs.
 
-========= ===========
-NAME      ID
-========= ===========
+========= =========== ===========
+NAME      ID          Note
+========= =========== ===========
 COPY      0x00
 DELTA     0x03
 BCJ       0x04
 LZMA      0x030101
 P7Z_BCJ   0x03030103
+P7Z_BCJ2  0x0303011b  (*1)(*2)
 BCJ_PPC   0x03030205
 BCJ_IA64  0x03030301
 BCJ_ARM   0x03030501
@@ -721,11 +722,20 @@ BCJ_SPARC 0x03030805
 LZMA2     0x21
 BZIP2     0x040202
 DEFLATE   0x040108
-DEFLATE64 0x040109
+DEFLATE64 0x040109    (*1)(*3)
 ZSTD      0x04f71101
-LZ4       0x04f71104
+BROTLI    0x04f71102
+LZ4       0x04f71104  (*1)
+LZS       0x04f71105  (*1)
+LIZARD    0x04f71106  (*1)
 AES       0x06f10701
-========= ===========
+========= =========== ===========
+
+* (*1) Py7zr does not support BCJ2, DEFLATE64, LZ4, LZS and LIZARD
+
+* (*2) There is no plan to support BCJ2 by py7zr since Python standard lzma module does not support.
+
+* (*3) DEFLATE64 is proposed to support, and work in progress in py7zr project.
 
 
 Substreams Information
@@ -921,14 +931,22 @@ Normal files
 Normal files are stored with packed streams and ordinal file information.
 Its contents are stored into packed stream.
 It SHOULD have an attribute of Windows such as ``FILE_ATTRIBUTE_ARCHIVE``.
-It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
+It MAY also have an attribute of UNIX such as ``rw_r__r__`` permissions.
+
+Empty files
+-----------
+
+Empty files, which size is zero, SHALL be stored without packed stream,
+and with flle information.
+It SHOULD have an attribute of Windows such as ``FILE_ATTRIBUTE_ARCHIVE``.
+It MAY also have an attribute of UNIX such as ``rw_r__r__`` permissions.
 
 Directories
 -----------
 
 Directories are stored without packed streams. It have entries in file information.
 It SHALL have an attribute which is ``FILE_ATTRIBUTE_DIRECTORY``.
-It MAY also have an attribute of UNIX such as ``rwxrwxrwx`` permissions.
+It MAY also have an attribute of UNIX such as ``rwxr_xr_x`` permissions.
 
 Special Files
 -------------
