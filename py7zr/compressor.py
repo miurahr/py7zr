@@ -1033,7 +1033,7 @@ class SupportedMethods:
             "name": "DEFLATE64",
             "native": False,
             "need_prop": False,
-            "filter_id": FILTER_DEFLATE64,
+            "filter_id": None,
             "type": MethodsType.compressor,
         },
         {
