@@ -16,7 +16,7 @@ Added
 
 Fixed
 -----
-* Docs: fix typo ``readall`` argument(#416)
+* Docs: fix typo for readall method argument(#416)
 
 Changed
 -------
