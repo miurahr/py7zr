@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pyppmd
 import pyzstd
-import codecs7z
+import codecs7z  # type: ignore
 from zipfile_deflate64 import deflate64  # type: ignore
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes

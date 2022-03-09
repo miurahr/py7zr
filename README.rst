@@ -2,7 +2,6 @@
 |logo| py7zr -- a 7z library on python
 ======================================
 
-
 .. |logo| image:: logo.svg
     :width: 80pt
     :height: 80pt
