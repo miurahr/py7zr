@@ -132,17 +132,17 @@ class ArchiveFile:
     @property
     def archivable(self) -> bool:
         """File has a Windows `archive` flag."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # type: ignore
 
     @property
     def is_directory(self) -> bool:
         """True if file is a directory, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore
 
     @property
     def readonly(self) -> bool:
         """True if file is readonly, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # type: ignore
 
     def _get_unix_extension(self) -> Optional[int]:
         attributes = self._get_property("attributes")
@@ -163,12 +163,12 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore
 
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)  # noqa  # noqa
+        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore
 
     @property
     def is_socket(self) -> bool:
@@ -852,37 +852,37 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f["emptystream"] = True
-                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
+                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                         f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
                     else:
                         f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
+                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
                 else:
                     f["emptystream"] = False
-                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
+                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore
                     f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
                     f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_dir():
                 f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_file():
                 f["emptystream"] = False
                 f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
         else:
             fstat = target.stat()
             if target.is_dir():
                 f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY
             elif target.is_file():
                 f["emptystream"] = False
                 f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
+                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE
 
         f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
         f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
@@ -896,7 +896,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["filename"] = pathlib.Path(arcname).as_posix()
         f["uncompressed"] = size
         f["emptystream"] = size == 0
-        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
+        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
         f["creationtime"] = ArchiveTimestamp.from_now()
         f["lastwritetime"] = ArchiveTimestamp.from_now()
         return f
