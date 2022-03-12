@@ -311,10 +311,9 @@ class PpmdDecompressor(ISevenZipDecompressor):
         self.decoder = pyppmd.Ppmd7Decoder(order, mem)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
-        if max_length <= 0:
-            return self.decoder.decode(data, 1)
         if len(data) == 0:
-            return self.decoder.flush(max_length)
+            if self.decoder.needs_input:
+                return self.decoder.decode(b"\0", max_length)
         return self.decoder.decode(data, max_length)
 
 
