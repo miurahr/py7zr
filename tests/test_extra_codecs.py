@@ -201,6 +201,12 @@ def test_extract_ppmd(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_ppmd2(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath("testdata-x5-ppmd.7z").open(mode="rb")) as archive:
+        archive.extractall(path=tmp_path)
+
+
+@pytest.mark.files
 def test_extract_deflate(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("deflate.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path)
