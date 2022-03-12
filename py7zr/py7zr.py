@@ -132,17 +132,23 @@ class ArchiveFile:
     @property
     def archivable(self) -> bool:
         """File has a Windows `archive` flag."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_ARCHIVE)  # type: ignore
+        if hasattr(stat, "FILE_ATTRIBUTE_ARCHIVE"):
+            return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_ARCHIVE"))
+        return False
 
     @property
     def is_directory(self) -> bool:
         """True if file is a directory, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore
+        if hasattr(stat, "FILE_ATTRIBUTE_DIRECTORY"):
+            return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_DIRECTORY"))
+        return False
 
     @property
     def readonly(self) -> bool:
         """True if file is readonly, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_READONLY)  # type: ignore
+        if hasattr(stat, "FILE_ATTRIBUTE_READONLY"):
+            return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_READONLY"))
+        return False
 
     def _get_unix_extension(self) -> Optional[int]:
         attributes = self._get_property("attributes")
@@ -163,12 +169,18 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISLNK(e)
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT)  # type: ignore
+        if hasattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT"):
+            return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT"))
+        return False
 
     @property
     def is_junction(self) -> bool:
         """True if file is a junction/reparse point on windows, otherwise False."""
-        return self._test_attribute(stat.FILE_ATTRIBUTE_REPARSE_POINT | stat.FILE_ATTRIBUTE_DIRECTORY)  # type: ignore
+        if hasattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT"):
+            return self._test_attribute(
+                getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT") | getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
+            )
+        return False
 
     @property
     def is_socket(self) -> bool:
@@ -852,27 +864,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     fstat = target.stat()
                     if stat.S_ISDIR(fstat.st_mode):
                         f["emptystream"] = True
-                        f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore
+                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                         f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
                     else:
                         f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
+                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
                         f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
                 else:
                     f["emptystream"] = False
-                    f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE | stat.FILE_ATTRIBUTE_REPARSE_POINT  # type: ignore
+                    f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE") | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT")
                     f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
                     f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_dir():
                 f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY  # type: ignore
+                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
                 f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
             elif target.is_file():
                 f["emptystream"] = False
                 f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
+                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
                 f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
         else:
             fstat = target.stat()
@@ -896,7 +908,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["filename"] = pathlib.Path(arcname).as_posix()
         f["uncompressed"] = size
         f["emptystream"] = size == 0
-        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # type: ignore
+        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
         f["creationtime"] = ArchiveTimestamp.from_now()
         f["lastwritetime"] = ArchiveTimestamp.from_now()
         return f
