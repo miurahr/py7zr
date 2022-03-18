@@ -630,10 +630,7 @@ def test_py7zr_extract_and_getnames(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb"))
     allfiles = archive.getnames()
     filter_pattern = re.compile(r"scripts.*")
-    targets = []
-    for f in allfiles:
-        if filter_pattern.match(f):
-            targets.append(f)
+    targets = [f for f in allfiles if filter_pattern.match(f)]
     archive.extract(path=tmp_path, targets=targets)
     archive.close()
     assert tmp_path.joinpath("scripts").is_dir()

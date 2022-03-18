@@ -187,7 +187,7 @@ Note: if you specify only a file but not a parent directory, it will fail.
     filter_pattern = re.compile(r'<your/target/file_and_directories/regex/expression>')
     with SevenZipFile('archive.7z', 'r') as archive:
         allfiles = archive.getnames()
-        selective_files = [f if filter_pattern.match(f) for f in allfiles]
+        selective_files = [f for f in allfiles if filter_pattern.match(f)]
         archive.extract(targets=selective_files)
 
 
