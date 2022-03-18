@@ -7,8 +7,20 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Fixed
+-----
+* ppmd: send extra byte b"\0" to pyppmd.Ppmd7Decompressor,
+  when input is exhausted, but it indicate needs_input.
+  This is a same behavior as p7zip decoder does. (#417)
+
+Changed
+-------
+* Bump PyPPMd@0.18.0
+
+
 `v0.18.1`_
 ==========
+
 Changed
 -------
 * Limit dependency pyppmd to v0.17.x
@@ -16,7 +28,6 @@ Changed
 Fixed
 -----
 * Fix mypy error with mypy 0.940(#421)
-
 
 `v0.18.0`_
 ==========
