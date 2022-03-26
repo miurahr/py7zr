@@ -81,10 +81,9 @@ debug = [
 ]
 
 [project.urls]
-homepage = "github.com/miurahr/py7zr"
-documentation = "readthedocs.org/py7zr"
-repository = "github.com/miurahr/py7zr"
-changelog = "github.com/miurahr/py7zr/blob/master/Changelog.rst"
+homepage = "https://github.com/miurahr/py7zr"
+documentation = "https://readthedocs.org/py7zr"
+changelog = "https://github.com/miurahr/py7zr/blob/master/Changelog.rst"
 
 [build-system]
 requires = ["setuptools>=58", "wheel", "setuptools_scm[toml]>=3.5.0"]
