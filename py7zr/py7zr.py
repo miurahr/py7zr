@@ -1250,8 +1250,8 @@ class Worker:
                     if exc_q.empty():
                         pass
                     else:
-                        (exc_type, exc_val, exc_tb) = exc_q.get()
-                        raise exc_type(exc_val).with_traceback(exc_tb)
+                        exc_info = exc_q.get()
+                        raise exc_info[1].with_traceback(exc_info[2])
         else:
             empty_files = [f for f in self.files if f.emptystream]
             self.extract_single(fp, empty_files, 0, 0, q)
