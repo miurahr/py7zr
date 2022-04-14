@@ -32,7 +32,9 @@ jobs:
           architecture: x64
       - name: Install system library(linux)
         if: runner.os == 'linux'
-        run: sudo apt install libarchive-dev
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y libarchive-dev
       - name: Download libarchive(Windows)
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v1.0.3
@@ -82,9 +84,7 @@ jobs:
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 20
-      - uses: uraimo/run-on-arch-action@v2.0.9
+      - uses: uraimo/run-on-arch-action@v2.2.0
         name: Build & run test
         with:
           arch: ${{ matrix.arch }}
@@ -95,6 +95,7 @@ jobs:
             apt-get install -q -y p7zip-full python3 python3-pip python3-cffi build-essential gcc git libffi-dev python3-dev libarchive-dev
             python3 -m pip install -U pip tox coverage[toml]
           run: |
+            git config --global --add safe.directory ${GITHUB_WORKSPACE}
             python3 -c "import platform;print('Machine type:', platform.machine())"
             python3 -m tox -e py38
           env: |
