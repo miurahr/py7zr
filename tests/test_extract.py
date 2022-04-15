@@ -266,6 +266,16 @@ def test_lzma2bcj2(tmp_path):
 
 
 @pytest.mark.files
+def test_lzma2bcj2_2(tmp_path):
+    """Test extract archive compressed with LZMA2 and BCJ2 in multiple chunks."""
+    with pytest.raises(UnsupportedCompressionMethodError):
+        with testdata_path.joinpath("lzma2bcj2_2.7z").open(mode="rb") as target:
+            archive = py7zr.SevenZipFile(target)
+            archive.extractall(path=tmp_path)
+            archive.close()
+
+
+@pytest.mark.files
 def test_extract_lzma_1(tmp_path):
     with testdata_path.joinpath("lzma_1.7z").open(mode="rb") as target:
         with py7zr.SevenZipFile(target) as ar:
