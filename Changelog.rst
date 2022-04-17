@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.4`_
+==========
+
+Fixed
+-----
+* Raise exception properly when threaded extraction(#431,#432)
+* Actions: fix tox test(#433)
+
+Changed
+-------
+* Change pyproject.toml:license table to be text key and SPDX license name(#435, #436)
+
+
 `v0.18.3`_
 ==========
 
@@ -332,7 +345,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.4...HEAD
+.. _v0.18.4: https://github.com/miurahr/py7zr/compare/v0.18.3...v0.18.4
 .. _v0.18.3: https://github.com/miurahr/py7zr/compare/v0.18.1...v0.18.3
 .. _v0.18.1: https://github.com/miurahr/py7zr/compare/v0.18.0...v0.18.1
 .. _v0.18.0: https://github.com/miurahr/py7zr/compare/v0.17.4...v0.18.0
