@@ -3,7 +3,7 @@ name = "py7zr"
 requires-python = ">=3.6"
 description = "Pure python 7-zip library"
 readme = "README.rst"
-license = {file = "LICENSE"}
+license = {text = "LGPL-2.1-or-later"}
 authors = [
     {name = "Hiroshi Miura", email = "miurahr@linux.com"},
 ]
