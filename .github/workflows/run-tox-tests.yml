@@ -47,9 +47,7 @@ jobs:
           $file = "libarchive-v3.5.3-win64.zip"
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
       - name: Install dependencies
-        run: |
-          pip install -U pip
-          pip install tox tox-gh-actions coveralls coverage[toml]
+        run: pip install -U pip tox tox-gh-actions coveralls coverage[toml] setuptools_scm[toml]
       - name: Test project with tox
         if: runner.os != 'Windows'
         run: |
