@@ -81,16 +81,23 @@ debug = [
 ]
 
 [project.urls]
-homepage = "https://github.com/miurahr/py7zr"
-documentation = "https://py7zr.readthedocs.io/en/stable/"
-changelog = "https://github.com/miurahr/py7zr/blob/master/Changelog.rst"
+Homepage = "https://py7zr.readthedocs.io/"
+Documentation = "https://py7zr.readthedocs.io/en/stable/"
+"Bug Tracker" = "https://github.com/miurahr/py7zr/issues"
+Source = "https://github.com/miurahr/py7zr"
+Changelog = "https://github.com/miurahr/py7zr/blob/master/Changelog.rst"
 
 [build-system]
-requires = ["setuptools>=58", "wheel", "setuptools_scm[toml]>=3.5.0"]
+requires = ["setuptools>=58", "wheel", "setuptools_scm[toml]>=6.0.1"]
 build-backend = "setuptools.build_meta"
 
-[tools.setuptools_scm]
+[tool.setuptools_scm]
 local_scheme = "no-local-version"
+write_to = "py7zr/version.py"
+write_to_template = """
+__version__ = \"{version}\"
+"""
+tag_regex = "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.coverage.run]
 branch = true
