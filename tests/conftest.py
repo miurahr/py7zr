@@ -43,3 +43,17 @@ def pytest_benchmark_update_machine_info(config, machine_info):
         brand = "{} core(s) {} CPU ".format(cpu_info.get("count", "unknown"), cpu_info.get("arch", "unknown"))
     machine_info["cpu"]["brand"] = brand
     machine_info["cpu"]["hz_actual_friendly"] = cpu_info.get("hz_actual_friendly", "unknown")
+
+
+def pytest_addoption(parser):
+    parser.addoption("--run-slow", action="store_true", default=False, help="run slow tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--run-slow"):
+        # --run-slow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)

@@ -46,7 +46,7 @@ from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
 from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
-from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, get_default_blocksize, FILTER_DEFLATE64
+from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 if sys.platform.startswith("win"):
@@ -1379,10 +1379,11 @@ class Worker:
         """
         assert folder is not None
         out_remaining = size
+        max_block_size = get_memory_limit()
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
         while out_remaining > 0:
-            tmp = decompressor.decompress(fp, out_remaining)
+            tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
                 out_remaining -= len(tmp)
                 fq.write(tmp)

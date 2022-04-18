@@ -74,6 +74,29 @@ jobs:
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
 
+  test_slow_tests:
+    name: Test slow test cases
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
+      - name: Install system library(linux)
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y libarchive-dev
+      - name: Install dependencies
+        run: |
+          pip install -U pip
+          pip install tox tox-gh-actions
+      - name: Test project with tox
+        run: tox
+        env:
+          PYTEST_ADDOPTS: "--no-cov --run-slow -k extract_high_compression_rate"
+
   test_on_aarch64:
     name: Test on ${{ matrix.arch }}
     runs-on: ubuntu-20.04

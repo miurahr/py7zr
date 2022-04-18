@@ -32,6 +32,7 @@ dependencies = [
       'importlib_metadata;python_version<"3.8"',
       'brotli>=1.0.9;platform_python_implementation=="CPython"',
       'brotlicffi>=1.0.9.2;platform_python_implementation=="PyPy"',
+      "psutil",
       "pyzstd>=0.14.4",
       "pyppmd>=0.18.1,<0.19.0",
       'pybcj>=0.5.0;platform_python_implementation=="CPython"',
@@ -139,6 +140,7 @@ markers = [
     "cli: mark a test as a cli test.",
     "benchmark: mark a test as a benchmarking.",
     "misc: misc tests",
+    "slow: mark a slow tests",
 ]
 
 [tool.tox]

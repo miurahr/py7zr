@@ -628,10 +628,7 @@ class SevenZipDecompressor:
     def _decompress(self, data, max_length: int):
         for i, decompressor in enumerate(self.chain):
             if self._unpacked[i] < self._unpacksizes[i]:
-                if isinstance(decompressor, LZMA1Decompressor) or isinstance(decompressor, PpmdDecompressor):
-                    data = decompressor.decompress(data, max_length)  # always give max_length for lzma1
-                else:
-                    data = decompressor.decompress(data)
+                data = decompressor.decompress(data, max_length)
                 self._unpacked[i] += len(data)
             elif len(data) == 0:
                 data = b""

@@ -1,11 +1,14 @@
 import ctypes
+import io
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
+from contextlib import contextmanager
 
 import multivolumefile
+import psutil  # type: ignore
 import pytest
 
 import py7zr
@@ -147,3 +150,79 @@ def test_extract_callback(tmp_path):
     cb = ECB(sys.stdout)
     with py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb")) as archive:
         archive.extractall(path=tmp_path, callback=cb)
+
+
+@pytest.mark.misc
+@pytest.mark.skipif(
+    sys.platform.startswith("win"),
+    reason="Only meaningful only on Unix-like OSes",
+)
+@pytest.mark.slow
+def test_extract_high_compression_rate(tmp_path):
+    gen = Generator()
+    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w") as source:
+        source.writef(gen, "source")
+    limit = int(1024e6)  # 1GB
+    with limit_memory(limit):
+        with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "r") as target:
+            target.extractall(path=tmp_path)
+
+
+@contextmanager
+def limit_memory(maxsize: int):
+    """
+    Decorator to limit memory. Raise MemoryError when the limit is exceeded.
+
+    :param maxsize: Maximum size of memory resource to limit
+    :raises: MemoryError: When function reaches the limit.
+    """
+    if sys.platform.startswith("win"):
+        yield
+    else:
+        import resource
+
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        soft_new = psutil.Process(os.getpid()).memory_info().rss + maxsize
+        if soft == -1 or soft_new < soft:
+            resource.setrlimit(resource.RLIMIT_AS, (soft_new, hard))
+        try:
+            yield
+        finally:
+            resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
+
+
+class Generator(io.BufferedIOBase):
+    def __init__(self):
+        super(Generator, self).__init__()
+        self.generated = 0
+        self.length = int(1e9)
+        self.seeked = False
+
+    def readinto(self, b):
+        if self.generated > self.length:
+            return b""
+        buf = self.generate_raw_bytes(len(b))
+        b[: len(buf)] = buf
+        self.generated += len(buf)
+        return len(buf)
+
+    def read1(self, size):
+        return self.read(size)
+
+    def read(self, size):
+        if self.generated > self.length:
+            return b""
+        self.generated += size
+        return self.generate_raw_bytes(size)
+
+    def seek(self, *args, **kwargs):
+        self.seeked = True
+
+    def tell(self) -> int:
+        if self.seeked:
+            return self.length
+        else:
+            return 0
+
+    def generate_raw_bytes(self, size):
+        return bytes(size)

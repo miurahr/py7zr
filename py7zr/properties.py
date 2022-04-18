@@ -25,6 +25,8 @@ import lzma
 import platform
 import sys
 
+import psutil  # type: ignore
+
 MAGIC_7Z = binascii.unhexlify("377abcaf271c")
 FINISH_7Z = binascii.unhexlify("377abcaf271d")
 
@@ -39,7 +41,7 @@ COMMAND_HELP_STRING = """<Commands>
 
 def is_64bit() -> bool:
     """check if running platform is 64bit python."""
-    return sys.maxsize > 1 << 32
+    return sys.maxsize > 1e32
 
 
 def is_pypy369later() -> bool:
@@ -82,6 +84,25 @@ def get_default_blocksize() -> int:
         return 1048576
     else:
         return 32768
+
+
+def get_memory_limit():
+    """
+    Get memory limit for allocating decompression chunk buffer.
+    :return: allowed chunk size in bytes.
+    """
+    default_limit = int(512e6)
+    if sys.platform.startswith("win"):
+        return default_limit
+    else:
+        import resource
+
+        soft, _ = resource.getrlimit(resource.RLIMIT_AS)
+        if soft == -1:
+            avmem = psutil.virtual_memory().available
+            return min(default_limit, avmem >> 2)
+        else:
+            return min(default_limit, soft >> 2)
 
 
 # Exposed constants
