@@ -3,15 +3,15 @@ pool:
 
 strategy:
   matrix:
-    Python36:
-      python.version: '3.6'
-      TOXENV: py36
-    Python37:
-      python.version: '3.7'
-      TOXENV: py37
     Python38:
       python.version: '3.8'
       TOXENV: py38
+    Python39:
+      python.version: '3.9'
+      TOXENV: py39
+    Python310:
+      python.version: '3.10'
+      TOXENV: py310
 
 steps:
 - task: UsePythonVersion@0
@@ -19,7 +19,7 @@ steps:
   inputs:
     versionSpec: '$(python.version)'
 
-- script: pip install wheel tox coveralls coverage[toml]
+- script: pip install wheel tox coveralls coverage[toml] setuptools_scm[toml]
   displayName: 'Install Tox'
 
 - script: |
