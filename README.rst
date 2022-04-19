@@ -37,6 +37,51 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+Compression algorithms
+======================
+
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support,
+and supports BZip2 and Deflate that are implemented in python core libraries,
+It also supports ZStandard, Brotli and PPMd with third party libraries.
+
+'py7zr' is also able to encrypt and decrypt data using 3rd party encryption library.
+
+
+Supported algorithms
+--------------------
+
+* compress
+    * LZMA2
+    * LZMA
+    * Bzip2
+    * Deflate
+    * Copy
+    * ZStandard
+    * Brotli
+    * Deflate64 (Decompression only)
+    * PPMd (Experimental)
+
+* crypt
+    * 7zAES
+
+* Filters
+    * Delta
+    * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
+
+- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
+  but not work with original 7-zip because the original does not implement the feature.
+
+- ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
+  not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+
+Not supported algorithms
+------------------------
+
+* BCJ2
+
+- liblzma, which Python's standard lzma module depends, does not provide BCJ2 filter.
+
+
 
 Install
 =======
@@ -294,43 +339,6 @@ Following improvements are included in CPython 3.10
 .. _`PyPy3-3090`: https://foss.heptapod.net/pypy/pypy/-/issues/3090
 .. _`PyPy3-3242`: https://foss.heptapod.net/pypy/pypy/-/issues/3242
 
-Compression Methods supported
-=============================
-
-'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
-It also support BZip2 and Deflate that are implemented in python core libraries,
-and ZStandard with third party libraries.
-
-Supported algorithms are:
-
-* compress
-    * LZMA2
-    * LZMA
-    * Bzip2
-    * Deflate
-    * Copy
-    * ZStandard
-    * Brotli
-    * Deflate64 (Decompression only)
-    * PPMd (Experimental)
-
-* crypt
-    * 7zAES
-
-* Filters
-    * Delta
-    * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
-
-* No support
-    * BCJ2
-
-- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
-  but not work with original 7-zip because the original does not implement the feature.
-
-- ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
-  not to be compatible with original 7-zip on windows/p7zip on linux/mac.
-- liblzma, which Python's standard lzma module depends, does not provide BCJ2 filter.
-- Deflate64 is proprietary algorithm.
 
 
 Dependencies
@@ -374,6 +382,9 @@ py7zr works well, but slower than `7-zip` and `p7zip` C/C++ implementation by se
 When compression/decompression **speed** is important, it is recommended to use these
 alternatives through `subprocess.run` python interface.
 
+py7zr consumes some memory to decompress and compress data. It requires about 300MiB - 700MiB free memory to work well at least.
+
+
 Use Cases
 =========
 
@@ -408,22 +419,3 @@ You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-WARNING
-=======
-
-**Test archive data, which affected a malware,  have been existed from Aug, 2020 - 20, Jan, 2021!**
-
-All the git history is re-writed, so please remove your local and fork copy of the git repository,
-and clone again(if necessary)!
-
-Problematic file is named `issue_218.7z` and `issue_218_2.7z`.
-
-**There is NO affected in library itself.**  and the test execution also does not extract the malware file.
-There is no problem when you install py7zr with `pip` command.
-
-Release that has a clean source:
-
-- v0.11.3 and later
-- v0.10.2
-- v0.9.10
-- v0.9.4 and before
