@@ -162,7 +162,7 @@ def test_extract_high_compression_rate(tmp_path):
     gen = Generator()
     with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w") as source:
         source.writef(gen, "source")
-    limit = int(1024e6)  # 1GB
+    limit = int(512e6)  # 0.5GB
     with limit_memory(limit):
         with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "r") as target:
             target.extractall(path=tmp_path)
@@ -206,10 +206,10 @@ class Generator(io.BufferedIOBase):
         self.generated += len(buf)
         return len(buf)
 
-    def read1(self, size):
+    def read1(self, size=-1):
         return self.read(size)
 
-    def read(self, size):
+    def read(self, size=-1):
         if self.generated > self.length:
             return b""
         self.generated += size
