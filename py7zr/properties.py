@@ -91,7 +91,7 @@ def get_memory_limit():
     Get memory limit for allocating decompression chunk buffer.
     :return: allowed chunk size in bytes.
     """
-    default_limit = int(512e6)
+    default_limit = int(128e6)
     if sys.platform.startswith("win"):
         return default_limit
     else:
@@ -100,9 +100,9 @@ def get_memory_limit():
         soft, _ = resource.getrlimit(resource.RLIMIT_AS)
         if soft == -1:
             avmem = psutil.virtual_memory().available
-            return min(default_limit, avmem >> 2)
+            return min(default_limit, (avmem - int(256e6)) >> 2)
         else:
-            return min(default_limit, soft >> 2)
+            return min(default_limit, (soft - int(256e6)) >> 2)
 
 
 # Exposed constants
