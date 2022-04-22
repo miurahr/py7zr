@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.5`_
+==========
+
+Fixed
+-----
+* Limit memory consumption for extraction(#430,#434,#440)
+* Pyproject.toml: setuptools_scm configuration(#438)
+
+Changed
+-------
+* Build package with ``pip wheel`` with python 3.9 on Ubuntu 20.04
+* Check py3.8, 3.9 and 3.10 on Azure-Pipelines CI/CD.
+
 `v0.18.4`_
 ==========
 
@@ -345,7 +358,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.5...HEAD
+.. _v0.18.5: https://github.com/miurahr/py7zr/compare/v0.18.4...v0.18.5
 .. _v0.18.4: https://github.com/miurahr/py7zr/compare/v0.18.3...v0.18.4
 .. _v0.18.3: https://github.com/miurahr/py7zr/compare/v0.18.1...v0.18.3
 .. _v0.18.1: https://github.com/miurahr/py7zr/compare/v0.18.0...v0.18.1
