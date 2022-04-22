@@ -39,6 +39,8 @@ dependencies = [
       "multivolumefile>=0.2.3",
       "zipfile-deflate64>=0.2.0",
 ]
+keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
+entry-points = {'console_scripts' = ['py7zr = py7zr.__main__:main']}
 dynamic = ["version"]
 
 [project.scripts]
