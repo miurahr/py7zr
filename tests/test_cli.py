@@ -12,7 +12,7 @@ import py7zr.callbacks
 import py7zr.cli
 import py7zr.properties
 
-from . import check_output, ltime2
+from . import check_output, libarchive_extract, ltime2, p7zip_test
 
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 os.umask(0o022)
@@ -374,6 +374,7 @@ def test_non7z_list(capsys):
 
 @pytest.mark.cli
 def test_archive_creation(tmp_path, capsys):
+    expected = ""
     tmp_path.joinpath("src").mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_1.7z"), path=tmp_path.joinpath("src"))
     os.chdir(str(tmp_path))
@@ -382,6 +383,10 @@ def test_archive_creation(tmp_path, capsys):
     cli = py7zr.cli.Cli()
     cli.run(["c", target, source])
     out, err = capsys.readouterr()
+    assert out == expected
+    #
+    p7zip_test(tmp_path / "target.7z")
+    libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
 
 
 @pytest.mark.cli
@@ -401,13 +406,19 @@ def test_archive_already_exist(tmp_path, capsys):
 
 
 @pytest.mark.cli
-def test_archive_append(tmp_path):
+def test_archive_append(tmp_path, capsys):
+    expected = ""
     py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_2.7z"), path=tmp_path.joinpath("src"))
     target = tmp_path / "target.7z"
     shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
     source = str(tmp_path / "src")
     cli = py7zr.cli.Cli()
     cli.run(["a", str(target), source])
+    out, err = capsys.readouterr()
+    assert err == expected
+    #
+    p7zip_test(tmp_path / "target.7z")
+    libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
 
 
 @pytest.mark.cli
@@ -424,6 +435,7 @@ def test_archive_without_extension(tmp_path, capsys):
 @pytest.mark.cli
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 def test_volume_creation(tmp_path, capsys):
+    expected = ""
     tmp_path.joinpath("src").mkdir()
     py7zr.unpack_7zarchive(os.path.join(testdata_path, "lzma2bcj.7z"), path=tmp_path.joinpath("src"))
     target = str(tmp_path / "target.7z")
@@ -431,6 +443,8 @@ def test_volume_creation(tmp_path, capsys):
     cli = py7zr.cli.Cli()
     cli.run(["c", target, source, "-v", "2m"])
     out, err = capsys.readouterr()
+    assert out == expected
+    assert err == expected
 
 
 @pytest.mark.cli
