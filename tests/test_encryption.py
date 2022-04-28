@@ -59,29 +59,6 @@ def test_extract_header_encrypted_no_password_2(tmp_path):
             archive.extractall(path=tmp_path)
 
 
-@pytest.mark.cli
-def test_cli_encrypted_no_password(capsys):
-    arcfile = os.path.join(testdata_path, "encrypted_1.7z")
-    expected = """Testing archive: {}
---
-Path = {}
-Type = 7z
-Phisical Size = 251
-Headers Size = 203
-Method = LZMA, 7zAES
-Solid = +
-Blocks = 1
-
-The archive is encrypted but password is not given. FAILED.
-""".format(
-        arcfile, arcfile
-    )
-    cli = py7zr.cli.Cli()
-    cli.run(["t", arcfile])
-    out, err = capsys.readouterr()
-    assert out == expected
-
-
 @pytest.mark.files
 @pytest.mark.timeout(45)
 @pytest.mark.skipif(
