@@ -409,15 +409,8 @@ class Cli:
             except getpass.GetPassWarning:
                 sys.stderr.write("Warning: your password may be shown.\n")
                 return 1
-        with py7zr.SevenZipFile(target, "w", password=password) as szf:
-            for path in filenames:
-                src = pathlib.Path(path)
-                if src.is_dir():
-                    szf.writeall(src)
-                else:
-                    szf.write(src)
         if volume_size is None:
-            with py7zr.SevenZipFile(target, "w") as szf:
+            with py7zr.SevenZipFile(target, "w", password=password) as szf:
                 for path in filenames:
                     src = pathlib.Path(path)
                     if src.is_dir():
@@ -428,7 +421,7 @@ class Cli:
         else:
             size = self._volumesize_unitconv(volume_size)
             with multivolumefile.MultiVolume(target, mode="wb", volume=size, ext_digits=4) as mvf:
-                with py7zr.SevenZipFile(mvf, "w") as szf:
+                with py7zr.SevenZipFile(mvf, "w", password=password) as szf:
                     for path in filenames:
                         src = pathlib.Path(path)
                         if src.is_dir():
