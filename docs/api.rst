@@ -225,7 +225,7 @@ SevenZipFile Object
 
    with SevenZipFile('archive.7z', 'r') as zip:
        for fname, bio in zip.readall().items():
-           print('{:s}: {:X}...'.format(name, bio.read(10))
+           print(f'{fname}: {bio.read(10)}...')
 
 
 .. py:method:: SevenZipFile.read(targets=None)
@@ -246,7 +246,7 @@ SevenZipFile Object
         targets = [f for f in allfiles if filter_pattern.match(f)]
    with SevenZipFile('archive.7z', 'r') as zip:
         for fname, bio in zip.read(targets).items():
-            print('{:s}: {:X}...'.format(name, bio.read(10))
+            print(f'{fname}: {bio.read(10)}...')
 
 
 .. py:method:: SevenZipFile.list()
