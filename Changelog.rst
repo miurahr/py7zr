@@ -7,11 +7,14 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.6`_
+==========
+
 Fixed
 =====
 
-* Some archive that compressed with LZMA+BCJ aborted with Segmentation fault
-  because of a PyBCJ bug. Bump PyBCJ@0.6.0 and fixed it. (#447)
+* Decompression of some LZMA+BCJ archive may abort with gegmentation fault
+  because of a PyBCJ bug. Bump ``PyBCJ@0.6.0`` that fixed it. (#447)
 
 Removed
 =======
@@ -57,7 +60,7 @@ Fixed
 
 Changed
 -------
-* Bump PyPPMd@0.18.1(#420,#427)
+* Bump ``PyPPMd@0.18.1`` (#420,#427)
 * pyproject.toml: Add project section(#428)
 
 
@@ -127,7 +130,7 @@ Fixed
 
 Changed
 -------
-* Azure: use macos@10.15 for test(#389)
+* Azure: use ``macos@10.15`` for test(#389)
 
 `v0.17.0`_
 ==========
@@ -370,7 +373,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.6...HEAD
+.. _v0.18.6: https://github.com/miurahr/py7zr/compare/v0.18.5...v0.18.6
 .. _v0.18.5: https://github.com/miurahr/py7zr/compare/v0.18.4...v0.18.5
 .. _v0.18.4: https://github.com/miurahr/py7zr/compare/v0.18.3...v0.18.4
 .. _v0.18.3: https://github.com/miurahr/py7zr/compare/v0.18.1...v0.18.3
