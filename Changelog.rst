@@ -7,6 +7,18 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Fixed
+=====
+
+* Some archive that compressed with LZMA+BCJ aborted with Segmentation fault
+  because of a PyBCJ bug. Bump PyBCJ@0.6.0 and fixed it. (#447)
+
+Removed
+=======
+
+* Remove in-source BCJ filter pure python code.
+  Now it have a place in a PyBCJ project. (#447)
+
 `v0.18.5`_
 ==========
 
