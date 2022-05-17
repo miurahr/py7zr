@@ -40,11 +40,11 @@ encryption and decryption written by Python programming language.
 Compression algorithms
 ======================
 
-'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support,
+``py7zr`` supports algorithms and filters which `lzma module`_ and `liblzma`_ support,
 and supports BZip2 and Deflate that are implemented in python core libraries,
 It also supports ZStandard, Brotli and PPMd with third party libraries.
 
-'py7zr' is also able to encrypt and decrypt data using 3rd party encryption library.
+``py7zr`` is also able to encrypt and decrypt data using 3rd party encryption library.
 
 
 Supported algorithms
@@ -68,18 +68,16 @@ Supported algorithms
     * Delta
     * BCJ(X86,ARMT,ARM,PPC,SPARC,IA64)
 
-- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
-  but not work with original 7-zip because the original does not implement the feature.
-
-- ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
-  not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+.. note::
+  * A feature handling symbolic link is basically compatible with ``p7zip`` implementation,
+    but not work with original 7-zip because the original does not implement the feature.
+  * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
+    not to be compatible with original 7-zip on windows/p7zip on linux/mac.
 
 Not supported algorithms
 ------------------------
 
-* BCJ2
-
-- liblzma, which Python's standard lzma module depends, does not provide BCJ2 filter.
+* BCJ2 (Standard `lzma module`_ does not provide).
 
 
 
@@ -223,7 +221,7 @@ You can also use 'with' block because py7zr provide context manager(v0.6 and lat
         z.writeall('./base_dir')
 
 
-py7zr also supports extraction of single or selected files by 'extract(targets=['file path'])'.
+``py7zr`` also supports extraction of single or selected files by 'extract(targets=['file path'])'.
 Note: if you specify only a file but not a parent directory, it will fail.
 
 .. code-block:: python
@@ -378,9 +376,9 @@ Performance
 You can find a compression and decompression benchmark results at
 [Github issue](https://github.com/miurahr/py7zr/issues/297) and [wiki page](https://github.com/miurahr/py7zr/wiki/Benchmarks)
 
-py7zr works well, but slower than `7-zip` and `p7zip` C/C++ implementation by several reasons.
+py7zr works well, but slower than ``7-zip`` and ``p7zip`` C/C++ implementation by several reasons.
 When compression/decompression **speed** is important, it is recommended to use these
-alternatives through `subprocess.run` python interface.
+alternatives through ``subprocess.run`` python interface.
 
 py7zr consumes some memory to decompress and compress data. It requires about 300MiB - 700MiB free memory to work well at least.
 
@@ -399,7 +397,7 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019-2021 Hiroshi Miura
+* Copyright (C) 2019-2022 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov
