@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import bcj  # type: ignore  # noqa
 import pyppmd
 import pyzstd
 from zipfile_deflate64 import deflate64  # type: ignore
@@ -61,10 +62,6 @@ from py7zr.properties import (
     get_default_blocksize,
 )
 
-try:
-    import bcj as BCJFilter  # type: ignore  # noqa
-except ImportError:
-    import py7zr.bcjfilter as BCJFilter  # type: ignore  # noqa
 try:
     import brotli  # type: ignore  # noqa
 except ImportError:
@@ -358,7 +355,7 @@ class PpmdCompressor(ISevenZipCompressor):
 
 class BcjSparcDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.SparcDecoder(size)
+        self.decoder = bcj.SparcDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -366,7 +363,7 @@ class BcjSparcDecoder(ISevenZipDecompressor):
 
 class BcjSparcEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.SparcEncoder()
+        self.encoder = bcj.SparcEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -377,7 +374,7 @@ class BcjSparcEncoder(ISevenZipCompressor):
 
 class BcjPpcDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.PPCDecoder(size)
+        self.decoder = bcj.PPCDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -385,7 +382,7 @@ class BcjPpcDecoder(ISevenZipDecompressor):
 
 class BcjPpcEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.PPCEncoder()
+        self.encoder = bcj.PPCEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -396,7 +393,7 @@ class BcjPpcEncoder(ISevenZipCompressor):
 
 class BcjArmtDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.ARMTDecoder(size)
+        self.decoder = bcj.ARMTDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -404,7 +401,7 @@ class BcjArmtDecoder(ISevenZipDecompressor):
 
 class BcjArmtEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.ARMTEncoder()
+        self.encoder = bcj.ARMTEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -415,7 +412,7 @@ class BcjArmtEncoder(ISevenZipCompressor):
 
 class BcjArmDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.ARMDecoder(size)
+        self.decoder = bcj.ARMDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -423,7 +420,7 @@ class BcjArmDecoder(ISevenZipDecompressor):
 
 class BcjArmEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.ARMEncoder()
+        self.encoder = bcj.ARMEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)
@@ -434,7 +431,7 @@ class BcjArmEncoder(ISevenZipCompressor):
 
 class BCJDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
-        self.decoder = BCJFilter.BCJDecoder(size)
+        self.decoder = bcj.BCJDecoder(size)
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
@@ -442,7 +439,7 @@ class BCJDecoder(ISevenZipDecompressor):
 
 class BCJEncoder(ISevenZipCompressor):
     def __init__(self):
-        self.encoder = BCJFilter.BCJEncoder()
+        self.encoder = bcj.BCJEncoder()
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.encoder.encode(data)

@@ -35,6 +35,8 @@ jobs:
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 20
       - name: Setup python
         uses: actions/setup-python@v2
         with:

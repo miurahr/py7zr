@@ -553,3 +553,9 @@ def test_extract_lzma_bcj_ppc(tmp_path):
 def test_extract_lzma_bcj_sparc(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("lzma_bcj_sparc.7z").open(mode="rb")) as ar:
         ar.extractall(tmp_path)
+
+
+@pytest.mark.files
+def test_extract_lzma_bcj_2(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath("lzma_bcj_2.7z").open(mode="rb")) as ar:
+        ar.extractall(tmp_path)
