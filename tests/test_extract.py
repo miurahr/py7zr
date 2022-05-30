@@ -559,3 +559,23 @@ def test_extract_lzma_bcj_sparc(tmp_path):
 def test_extract_lzma_bcj_2(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("lzma_bcj_2.7z").open(mode="rb")) as ar:
         ar.extractall(tmp_path)
+
+@pytest.mark.files
+def test_extract_hidden_linux_folder(tmp_path):
+    hidden_folder_name = ".hidden_folder"
+    with py7zr.SevenZipFile(testdata_path.joinpath("hidden_linux_folder.7z").open(mode="rb")) as archive:
+        assert sorted(archive.getnames()) == [
+            hidden_folder_name,
+        ]
+        archive.extractall(path=tmp_path)
+        assert tmp_path.joinpath(hidden_folder_name).exists()
+    
+@pytest.mark.files
+def test_extract_hidden_linux_file(tmp_path):
+    hidden_file_name = ".hidden_file.txt"
+    with py7zr.SevenZipFile(testdata_path.joinpath("hidden_linux_file.7z").open(mode="rb")) as archive:
+        assert sorted(archive.getnames()) == [
+            hidden_file_name,
+        ]
+        archive.extractall(path=tmp_path)
+        assert tmp_path.joinpath(hidden_file_name).exists()
