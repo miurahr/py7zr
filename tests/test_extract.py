@@ -560,6 +560,7 @@ def test_extract_lzma_bcj_2(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("lzma_bcj_2.7z").open(mode="rb")) as ar:
         ar.extractall(tmp_path)
 
+
 @pytest.mark.files
 def test_extract_hidden_linux_folder(tmp_path):
     hidden_folder_name = ".hidden_folder"
@@ -569,7 +570,8 @@ def test_extract_hidden_linux_folder(tmp_path):
         ]
         archive.extractall(path=tmp_path)
         assert tmp_path.joinpath(hidden_folder_name).exists()
-    
+
+
 @pytest.mark.files
 def test_extract_hidden_linux_file(tmp_path):
     hidden_file_name = ".hidden_file.txt"

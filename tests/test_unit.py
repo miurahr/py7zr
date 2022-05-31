@@ -790,16 +790,19 @@ def test_bcj_decode(tmp_path):
             data = f.read(8192)
         assert m.digest() == binascii.unhexlify("5ae0726746e2ccdad8f511ecfcf5f79df4533b83f86b1877cebc07f14a4e9b6a")
 
+
 @pytest.mark.unit
 def test_remove_relative_path_marker():
     filename = "relative_file"
     relative_file_path = f"{py7zr.helpers.RELATIVE_PATH_MARKER}{filename}"
     assert py7zr.helpers.remove_relative_path_marker(relative_file_path) == filename
-    
+
+
 @pytest.mark.unit
 def test_remove_relative_path_marker_no_change():
     absolute_file_path = "/absolute/path/file"
     assert py7zr.helpers.remove_relative_path_marker(absolute_file_path) == absolute_file_path
+
 
 @pytest.mark.unit
 def test_remove_relative_path_marker_ignore_marker():

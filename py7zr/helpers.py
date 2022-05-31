@@ -420,14 +420,15 @@ class Buffer:
 
     def __bytes__(self):
         return bytes(self._buf[0 : self._buflen])
-        
+
+
 def remove_relative_path_marker(path: str) -> str:
     """
     Removes './' from the beginning of a path-like string
     """
     processed_path = path
-    
+
     if path.startswith(RELATIVE_PATH_MARKER):
-        processed_path = path[len(RELATIVE_PATH_MARKER):]
+        processed_path = path[len(RELATIVE_PATH_MARKER) :]
 
     return processed_path
