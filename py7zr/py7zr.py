@@ -45,7 +45,15 @@ from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
-from py7zr.helpers import ArchiveTimestamp, MemIO, NullIO, calculate_crc32, filetime_to_dt, readlink
+from py7zr.helpers import (
+    ArchiveTimestamp,
+    MemIO,
+    NullIO,
+    calculate_crc32,
+    filetime_to_dt,
+    readlink,
+    remove_relative_path_marker,
+)
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
@@ -563,15 +571,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if path is None:
                 # do following but is_relative_to introduced in py 3.9
                 # so I replaced it with relative_to. when condition is not satisfied, raise ValueError
-                # if not pathlib.Path(...).joinpath(outname.lstrip("./")).is_relative_to(...):
+                # if not pathlib.Path(...).joinpath(remove_relative_path_marker(outname)).is_relative_to(...):
                 #    raise Bad7zFile
                 try:
-                    pathlib.Path(os.getcwd()).joinpath(outname.lstrip("./")).relative_to(os.getcwd())
+                    pathlib.Path(os.getcwd()).joinpath(remove_relative_path_marker(outname)).relative_to(os.getcwd())
                 except ValueError:
                     raise Bad7zFile
-                outfilename = pathlib.Path(outname.lstrip("./"))
+                outfilename = pathlib.Path(remove_relative_path_marker(outname))
             else:
-                outfilename = path.joinpath(outname.lstrip("./"))
+                outfilename = path.joinpath(remove_relative_path_marker(outname))
                 try:
                     outfilename.relative_to(path)
                 except ValueError:
