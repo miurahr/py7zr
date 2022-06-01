@@ -7,17 +7,25 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.7`_
+==========
+
+Fixed
+-----
+
+* Extraction wrongly renames unix hidden dot files/directories (#448)
+
 `v0.18.6`_
 ==========
 
 Fixed
-=====
+-----
 
 * Decompression of some LZMA+BCJ archive may abort with gegmentation fault
   because of a PyBCJ bug. Bump ``PyBCJ@0.6.0`` that fixed it. (#447)
 
 Removed
-=======
+-------
 
 * Remove in-source BCJ filter pure python code.
   Now it have a place in a PyBCJ project. (#447)
@@ -47,7 +55,6 @@ Changed
 -------
 * Change pyproject.toml:license table to be text key and SPDX license name(#435, #436)
 
-
 `v0.18.3`_
 ==========
 
@@ -62,7 +69,6 @@ Changed
 -------
 * Bump ``PyPPMd@0.18.1`` (#420,#427)
 * pyproject.toml: Add project section(#428)
-
 
 `v0.18.1`_
 ==========
@@ -111,6 +117,7 @@ Security
 
 `v0.17.2`_
 ==========
+
 Fixed
 -----
 * writef method detect wrong size of data(#397)
@@ -121,6 +128,7 @@ Changed
 
 `v0.17.1`_
 ==========
+
 Fixed
 -----
 * Allow 7zAES+LZMA2+BCJ combination for compression(#392)
@@ -227,7 +235,6 @@ Changed
 - Add minimum version requirement for PyCryptodome (#329)
 - Bump setuptools_scm @6.0.1
 
-
 `v0.15.1`_
 ==========
 
@@ -235,7 +242,6 @@ Changed
 -------
 - Update release automation script.
 - Bump ppmd-cffi and bcj-cffi versions(#320)
-
 
 `v0.15.0`_
 ==========
@@ -256,7 +262,6 @@ Fixed
 - README: description of dependencies.
 - ZStandard decompression on PyPy3
 
-
 `v0.14.1`_
 ==========
 
@@ -264,7 +269,6 @@ Fixed
 -----
 
 * Fix of empty file archive(#305,#310)
-
 
 `v0.14.0`_
 ==========
@@ -282,8 +286,6 @@ Changed
 * Use bcj-cffi library for lzma+bcj performance(#303)
 * CLI: Fix getting module_name on 3.6.13(#308)
 
-
-
 `v0.13.0`_
 ==========
 
@@ -299,7 +301,6 @@ Changed
 
 * Refactoring BCF Filter classes, and move to individual module.(#292)
 
-
 `v0.12.0`_
 ==========
 
@@ -314,7 +315,6 @@ Fixed
 
 * Crash when append files to an empty files archive(#286)
 
-
 `v0.11.3`_
 ==========
 
@@ -328,7 +328,6 @@ Security
 
 * Drop issue_218.7z test data wihch is reported a blackmoon trojan(#285)
 
-
 `v0.11.1`_
 ==========
 
@@ -341,7 +340,6 @@ Fixed
 
 * Fix to allow writing encrypted header(#280)
 * Avoid crash when creationtime is wrong or Unix epoch. (#275,#276)
-
 
 `v0.11.0`_
 ==========
@@ -373,7 +371,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.6...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.7...HEAD
+.. _v0.18.7: https://github.com/miurahr/py7zr/compare/v0.18.6...v0.18.7
 .. _v0.18.6: https://github.com/miurahr/py7zr/compare/v0.18.5...v0.18.6
 .. _v0.18.5: https://github.com/miurahr/py7zr/compare/v0.18.4...v0.18.5
 .. _v0.18.4: https://github.com/miurahr/py7zr/compare/v0.18.3...v0.18.4
