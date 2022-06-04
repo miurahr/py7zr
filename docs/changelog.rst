@@ -390,10 +390,10 @@ Changed
 
 * NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
 * Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
-  - PyPy issue: https://bitbucket.org/pypy/pypy/issues/3088/lzmalzmadecompressordecompress-data
+  - PyPy issue: `PyPy3-3088`_
 * Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
   when max_length > io.DEFAULT_BUFFER_SIZE.
-  - PyPy Issue: https://bitbucket.org/pypy/pypy/issues/3090/lzma-sometimes-decompresses-data
+  - PyPy Issue: `PyPy3-3090`_
   - bpo-21872: https://bugs.python.org/issue21872
   - Fix: https://github.com/python/cpython/pull/14048
 * Remove print functions from API and moves CLI
@@ -412,6 +412,8 @@ Fixed
 
 * Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
 
+.. _`PyPy3-3088`: https://foss.heptapod.net/pypy/pypy/-/issues/3088
+.. _`PyPy3-3090`: https://foss.heptapod.net/pypy/pypy/-/issues/3090
 
 
 `v0.3.5`_
