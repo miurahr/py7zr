@@ -47,7 +47,7 @@ jobs:
         if: runner.os == 'linux'
         run: |
           sudo apt-get update -q -y
-          sudo apt-get install -q -y libarchive-dev
+          sudo apt-get install -q -y libarchive-dev graphviz
       - name: Download libarchive(Windows)
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v1.0.3
@@ -59,6 +59,7 @@ jobs:
         run: |
           $file = "libarchive-v3.5.3-win64.zip"
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
+          choco install graphviz
       - name: Install dependencies
         run: |
           pip install -U pip tox wheel
