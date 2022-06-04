@@ -1023,19 +1023,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise ValueError("specified path is not a directory or a file")
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
-        """Write single target file into archive(Not implemented yet)."""
+        """Write single target file into archive."""
         if isinstance(file, str):
             path = pathlib.Path(file)
         elif isinstance(file, pathlib.Path):
             path = file
         else:
             raise ValueError("Unsupported file type.")
-        self.header.initialize()
+        folder = self.header.initialize()
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        folder = self.header.main_streams.unpackinfo.folders[-1]
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
     def writed(self, targets: Dict[str, IO[Any]]) -> None:
@@ -1059,12 +1058,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("Wrong argument passed for argument bio.")
         if size > 0:
-            self.header.initialize()
+            folder = self.header.initialize()
             file_info = self._make_file_info_from_name(bio, size, arcname)
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(file_info["emptystream"])
             self.files.append(file_info)
-            folder = self.header.main_streams.unpackinfo.folders[-1]
             self.worker.archive(self.fp, self.files, folder, deref=False)
         else:
             file_info = self._make_file_info_from_name(bio, size, arcname)
@@ -1463,8 +1461,9 @@ class Worker:
                 self.header.files_info.files[self.last_file_index]["maxsize"] = foutsize
         # Update size data in header
         self.header.main_streams.packinfo.numstreams += 1
-        self.header.main_streams.packinfo.crcs.append(compressor.digest)
-        self.header.main_streams.packinfo.digestdefined.append(True)
+        if self.header.main_streams.packinfo.enable_digests:
+            self.header.main_streams.packinfo.crcs.append(compressor.digest)
+            self.header.main_streams.packinfo.digestdefined.append(True)
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
