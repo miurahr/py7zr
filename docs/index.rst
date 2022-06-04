@@ -9,8 +9,9 @@ py7zr -- a 7z library on python
    api
    contribution
    archive_format
-   AUTHORS
+   authors
    glossary
+   changelog
 
 ==================
 Indices and tables

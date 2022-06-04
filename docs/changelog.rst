@@ -1,8 +1,8 @@
-====================
-Py7zr ChangeLog(old)
-====================
+:tocdepth: 2
 
-All notable changes to this project before v0.10.1 was documented in this file.
+.. _changelog:
+
+.. include:: ../Changelog.rst
 
 `v0.10.1`_
 ==========
