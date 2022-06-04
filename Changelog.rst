@@ -7,10 +7,22 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.8`_
+==========
+
 Fixed
 -----
 
 * Closing a SevenZipFile opened for appending, without adding a new file, raises exception (#378, #395)
+* Docs: fix URL link error (#450)
+* Actions: fix document compilation by installing graphviz (#450)
+
+Changed
+-------
+
+* Add changelog into Documentation (#450)
+* Test on python 3.11-beta (#450)
+* Bump Sphinx@5.0 for Documentation (#450)
 
 `v0.18.7`_
 ==========
@@ -376,7 +388,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.8...HEAD
+.. _v0.18.8: https://github.com/miurahr/py7zr/compare/v0.18.7...v0.18.8
 .. _v0.18.7: https://github.com/miurahr/py7zr/compare/v0.18.6...v0.18.7
 .. _v0.18.6: https://github.com/miurahr/py7zr/compare/v0.18.5...v0.18.6
 .. _v0.18.5: https://github.com/miurahr/py7zr/compare/v0.18.4...v0.18.5
