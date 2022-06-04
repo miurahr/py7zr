@@ -29,11 +29,6 @@ The module defines the following items:
    The class for reading 7z files.  See section sevenzipfile-object_
 
 
-.. class:: ArchiveInfo
-
-   The class used to represent information about an information of an archive file. See section archiveinfo-object_
-
-
 .. class:: FileInfo
 
    The class used to represent information about a member of an archive file. See section
