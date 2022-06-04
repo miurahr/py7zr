@@ -154,7 +154,7 @@ markers = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = mypy, check, pypy3, py{36,37,38,39,310}, py39d, docs, mprof
+envlist = mypy, check, pypy3, py{36,37,38,39,310,311}, py39d, docs, mprof
 
 [testenv]
 basepython =
