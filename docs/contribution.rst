@@ -80,6 +80,34 @@ guidelines
 * It also use MyPy static type check enforcement.
 
 
+Profiling
+=========
+
+CPU and memory profiling
+------------------------
+
+Run-time memory errors and leaks are among the most difficult
+errors to locate and the most important to correct.
+Memory profiling is used to detect memory leaks or unwanted memory usages.
+
+It is also a difficult work to improve performance. CPU profiling
+help us to understand where is a hot spot of execution of a program.
+
+mprofile
+--------
+
+mprofile is a tool to do a memory profiling task for python.
+py7zr project has a test configuration for the memory profiling.
+
+.. code-block::
+   env PYTEST_ADDOPTS=--run-slow tox -e mprof
+
+This example run all the test cases includes conditions
+which requires running duration.
+
+After running test, you can find a chart in project root.
+`memory-profiile.png` and raw data as `mprofile_yyyyMMddhhmmss.dat`
+
 
 Class and module design
 =======================
