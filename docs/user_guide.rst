@@ -49,7 +49,7 @@ Package               Purpose
 .. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
 .. _`PyZstd` : https://pypi.org/project/pyzstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
-.. _`Brotli` : https://pypi.org/project/brotli
+.. _`Brotli` : https://pypi.org/project/Brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
 .. _`zipfile-deflate64` : https://github.com/brianhelba/zipfile-deflate64
 .. _`pybcj` : https://pypi.org/project/pybcj
