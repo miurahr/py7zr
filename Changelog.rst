@@ -1,11 +1,16 @@
 ===============
-Py7zr ChangeLog
+Py7zr Changelog
 ===============
 
 All notable changes to this project will be documented in this file.
 
 `Unreleased`_
 =============
+
+Fixed
+-----
+
+* Closing a SevenZipFile opened for appending, without adding a new file, raises exception (#378, #395)
 
 `v0.18.7`_
 ==========
