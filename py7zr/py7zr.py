@@ -977,7 +977,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
         directory and set owner, modification time and permissions on
-        directories afterwards. `path' specifies a different directory
+        directories afterwards. ``path`` specifies a different directory
         to extract to.
         """
         self._extract(path=path, return_dict=False, callback=callback)
@@ -1099,7 +1099,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._var_release()
 
     def reset(self) -> None:
-        """When read mode, it reset file pointer, decompress worker and decompressor"""
+        """
+        When read mode, it reset file pointer, decompress worker and decompressor
+        """
         if self.mode == "r":
             self.fp.seek(self.afterheader)
             self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
@@ -1165,14 +1167,18 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
 
 
 def unpack_7zarchive(archive, path, extra=None):
-    """Function for registering with shutil.register_unpack_format()"""
+    """
+    Function for registering with shutil.register_unpack_format().
+    """
     arc = SevenZipFile(archive)
     arc.extractall(path)
     arc.close()
 
 
 def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
-    """Function for registering with shutil.register_archive_format()"""
+    """
+    Function for registering with shutil.register_archive_format().
+    """
     target_name = "{}.7z".format(base_name)
     with SevenZipFile(target_name, mode="w") as archive:
         archive.writeall(path=base_dir)
@@ -1180,7 +1186,9 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
 
 
 class Worker:
-    """Extract worker class to invoke handler"""
+    """
+    Extract worker class to invoke handler.
+    """
 
     def __init__(self, files, src_start: int, header, mp=False) -> None:
         self.target_filepath: Dict[int, Union[MemIO, pathlib.Path, None]] = {}
@@ -1272,7 +1280,9 @@ class Worker:
         exc_q: Optional[queue.Queue] = None,
         skip_notarget=True,
     ) -> None:
-        """Single thread extractor that takes file lists in single 7zip folder."""
+        """
+        Single thread extractor that takes file lists in single 7zip folder.
+        """
         if files is None:
             return
         try:
@@ -1357,7 +1367,9 @@ class Worker:
             self._check(fp, just_check, src_end)
 
     def _check(self, fp, check_target, src_end):
-        # delayed execution of crc check.
+        """
+        delayed execution of crc check.
+        """
         for f in check_target:
             with NullIO() as ofp:
                 crc32 = self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
@@ -1373,7 +1385,8 @@ class Worker:
         compressed_size: Optional[int],
         src_end: int,
     ) -> int:
-        """decompressor wrapper called from extract method.
+        """
+        decompressor wrapper called from extract method.
 
         :parameter fp: archive source file pointer
         :parameter folder: Folder object that have decompressor object.
@@ -1381,7 +1394,9 @@ class Worker:
         :parameter size: uncompressed size of target file.
         :parameter compressed_size: compressed size of target file.
         :parameter src_end: end position of the folder
+
         :returns None
+
         """
         assert folder is not None
         out_remaining = size
@@ -1402,7 +1417,9 @@ class Worker:
         return crc32
 
     def _find_link_target(self, target):
-        """Find the target member of a symlink or hardlink member in the archive."""
+        """
+        Find the target member of a symlink or hardlink member in the archive.
+        """
         targetname: str = target.as_posix()
         linkname = readlink(targetname)
         # Check windows full path symlinks

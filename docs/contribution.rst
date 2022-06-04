@@ -100,6 +100,7 @@ mprofile is a tool to do a memory profiling task for python.
 py7zr project has a test configuration for the memory profiling.
 
 .. code-block::
+
    env PYTEST_ADDOPTS=--run-slow tox -e mprof
 
 This example run all the test cases includes conditions

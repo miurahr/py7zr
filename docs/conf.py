@@ -35,8 +35,9 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.extlinks',
     'sphinx.ext.graphviz',
+    'sphinx.ext.viewcode',
     'sphinx_a4doc',
 ]
 
@@ -132,7 +133,7 @@ html_theme_options = {
     'page_width': 'auto',
     'badge_branch': 'master',
     'donate_url': 'https://liberapay.com/miurahr',
-    'truvis_button': True,
+    'travis_button': True,
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -309,3 +310,11 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+#-- Options for extlink extension
+extlinks = {'issue': ('https://github.com/miurahr/aqtinstall/issues/%s',
+                      'issue %s')}
+
+#-- Options for linkcheck
+linkcheck_ignore = [r'https://github.com/miurahr/py7zr/compare/.+',
+                   ]
