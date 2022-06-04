@@ -1088,9 +1088,11 @@ def test_compress_append_writestr_archive(tmp_path):
     target = tmp_path.joinpath("target.7z")
     with py7zr.SevenZipFile(target, "w"):
         pass
-    with py7zr.SevenZipFile(target, "a") as archive:
-        archive.writestr("Test", arcname="Test/Test.txt")
-        assert len(archive.files) == 1
+    archive = py7zr.SevenZipFile(target, "a")
+    archive.set_encoded_header_mode(False)
+    archive.writestr("Test", arcname="Test/Test.txt")
+    assert len(archive.files.files_list) == 1
+    archive.close()
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
@@ -1104,3 +1106,27 @@ def test_compress_simple_file_0(tmp_path):
     with tmp_path.joinpath("target.7z").open(mode="wb") as target:
         with py7zr.SevenZipFile(target, "w") as archive:
             archive.writeall(os.path.join(testdata_path, "src"), "src")
+
+
+@pytest.mark.basic
+def test_compress_append_archive_w_zerofile(tmp_path):
+    tmp_path.joinpath("src").mkdir()
+    with tmp_path.joinpath("src", "f").open(mode="w") as f:
+        f.write("")
+    target = tmp_path.joinpath("target.7z")
+    with py7zr.SevenZipFile(target, "w") as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+        archive.write(tmp_path.joinpath("src", "f"), "f")
+    with py7zr.SevenZipFile(target, "a") as archive:
+        archive.writestr("Test", arcname="Test/Test.txt")
+        assert len(archive.files.files_list) == 3
+    archive = py7zr.SevenZipFile(target, "a")
+    archive.set_encoded_header_mode(False)
+    assert len(archive.files.files_list) == 3
+    archive.close()
+    #
+    p7zip_test(tmp_path / "target.7z")
+    libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+    #
+    with py7zr.SevenZipFile(target, "r") as arc:
+        arc.extractall(path=tmp_path / "tgt")

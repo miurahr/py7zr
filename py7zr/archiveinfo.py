@@ -23,6 +23,7 @@
 #
 import functools
 import io
+import operator
 import os
 import struct
 from binascii import unhexlify
@@ -243,15 +244,16 @@ class PackInfo:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
             pid = file.read(1)
             if pid == PROPERTY.CRC:
-                self.enable_digests = True
                 self.digestdefined = read_boolean(file, self.numstreams, True)
                 for crcexist in self.digestdefined:
+                    self.enable_digests = True
                     if crcexist:
                         self.crcs.append(read_uint32(file)[0])
                 pid = file.read(1)
         if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover  # noqa
         self.packpositions = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]  # type: List[int]
+        self.enable_digests = len(self.crcs) > 0
         return self
 
     def write(self, file: BinaryIO):
@@ -263,6 +265,7 @@ class PackInfo:
         write_byte(file, PROPERTY.SIZE)
         for size in self.packsizes:
             write_uint64(file, size)
+        self.enable_digests = functools.reduce(operator.or_, self.digestdefined, self.enable_digests)
         if self.enable_digests:
             assert len(self.crcs) == self.numstreams
             write_byte(file, PROPERTY.CRC)
@@ -951,6 +954,7 @@ class Header:
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:
+                streams.packinfo.enable_digests = True
                 if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile("invalid block data")
             buffer2.write(folder_data)
@@ -1032,20 +1036,16 @@ class Header:
     def initialize(self):
         if not self._initialized:
             self._initialized = True
+            folder = Folder()
+            folder.password = self.password
+            folder.prepare_coderinfo(self.filters)
             if self.main_streams is not None:
                 # append mode
-                folder = Folder()
-                folder.password = self.password
-                folder.prepare_coderinfo(self.filters)
-                self.main_streams.packinfo.enable_digests = False  # FIXME
                 self.main_streams.unpackinfo.folders.append(folder)
                 self.main_streams.unpackinfo.numfolders += 1
                 self.main_streams.substreamsinfo.num_unpackstreams_folders.append(0)
             else:
                 # create new header
-                folder = Folder()
-                folder.password = self.password
-                folder.prepare_coderinfo(self.filters)
                 folders = [folder]
                 self.files_info = FilesInfo()
                 self.main_streams = StreamsInfo()
@@ -1065,6 +1065,9 @@ class Header:
                 self.main_streams.substreamsinfo.num_unpackstreams_folders = [0]
                 self.main_streams.packinfo.packsizes = []
                 self.main_streams.packinfo.crcs = []
+            return folder
+        else:
+            return self.main_streams.unpackinfo.folders[-1]
 
 
 class SignatureHeader:
