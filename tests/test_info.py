@@ -4,6 +4,10 @@ import pytest
 
 import py7zr
 from py7zr.exceptions import UnsupportedCompressionMethodError
+try:
+    from zipfile_deflate64 import deflate64  # type: ignore
+except ImportError:
+    deflate64 = None
 
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 os.umask(0o022)
@@ -93,6 +97,7 @@ def test_archivetest_deflate():
 
 
 @pytest.mark.files
+@pytest.mark.skipif(deflate64 is None, reason="deflate64 extension is not installed.")
 def test_archivetest_deflate64():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "deflate64.7z"), "r") as ar:
         assert ar.testzip() is None

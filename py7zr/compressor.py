@@ -32,7 +32,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import bcj  # type: ignore  # noqa
 import pyppmd
 import pyzstd
-from zipfile_deflate64 import deflate64  # type: ignore
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
@@ -66,6 +65,10 @@ try:
     import brotli  # type: ignore  # noqa
 except ImportError:
     import brotlicffi as brotli  # type: ignore  # noqa
+try:
+    from zipfile_deflate64 import deflate64  # type: ignore
+except ImportError:
+    deflate64 = None
 brotli_major = 1
 brotli_minor = 0
 
@@ -268,9 +271,15 @@ class Deflate64Compressor(ISevenZipCompressor):
 class Deflate64Decompressor(ISevenZipDecompressor):
     def __init__(self):
         self.flushed = False
-        self._decompressor = deflate64.Deflate64()
+        if deflate64 is not None:
+            self._decompressor = deflate64.Deflate64()
+            self._enabled = True
+        else:
+            self._enabled = False
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if not self._enabled:
+            raise UnsupportedCompressionMethodError(None, "extension deflate64 is not installed.")
         if len(data) == 0:
             if self.flushed:
                 return b""

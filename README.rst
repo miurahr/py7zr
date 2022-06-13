@@ -73,6 +73,10 @@ Supported algorithms
     but not work with original 7-zip because the original does not implement the feature.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+  * Deflate64 is optional codec. You need to install extension ``deflate64`` when install py7zr
+    like ``pip install py7zr[deflate64]``. Because a deflate64 library is provided only
+    for 64bit systems, you may get install error when using 32bit systems.
+
 
 Not supported algorithms
 ------------------------

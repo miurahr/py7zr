@@ -37,7 +37,6 @@ dependencies = [
       "pyppmd>=0.18.1,<0.19.0",
       "pybcj>=0.6.0",
       "multivolumefile>=0.2.3",
-      "zipfile-deflate64>=0.2.0",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["version", "entry-points"]
@@ -46,6 +45,7 @@ dynamic = ["version", "entry-points"]
 py7zr = "py7zr.__main__:main"
 
 [project.optional-dependencies]
+deflate64 = ["zipfile-deflate64>=0.2.0"]
 test_compat = ["libarchive-c"]
 test = [
       "pytest",
@@ -178,10 +178,10 @@ depends =
     pypy3,py{36,37,38,39,310}: clean, check
 
 [testenv:py38]
-extras = test, test_compat
+extras = test, test_compat, deflate64
 
 [testenv:pypy3]
-extras = test, test_compat
+extras = test, test_compat, deflate64
 
 [testenv:mprof]
 extras = test, debug
