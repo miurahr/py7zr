@@ -22,11 +22,6 @@ from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
 from . import libarchive_extract, ltime, p7zip_test
 
-try:
-    import zstandard as Zstd  # type: ignore
-except ImportError:
-    Zstd = None
-
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 
 
@@ -833,7 +828,6 @@ def test_compress_bz2_bcj(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
 def test_compress_zstd(tmp_path):
     my_filters = [{"id": py7zr.FILTER_ZSTD}]
     target = tmp_path.joinpath("target.7z")
@@ -848,7 +842,6 @@ def test_compress_zstd(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(Zstd is None, reason="zstd library is not exist.")
 def test_compress_zstd_2(tmp_path):
     my_filters = [{"id": py7zr.FILTER_ZSTD}]
     tmp_path.joinpath("src").mkdir()
