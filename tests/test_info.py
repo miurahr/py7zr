@@ -4,6 +4,7 @@ import pytest
 
 import py7zr
 from py7zr.exceptions import UnsupportedCompressionMethodError
+
 try:
     from zipfile_deflate64 import deflate64  # type: ignore
 except ImportError:

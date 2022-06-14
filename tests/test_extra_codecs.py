@@ -11,6 +11,7 @@ import py7zr.compressor
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.properties import FILTER_DEFLATE64
 from tests import p7zip_test
+
 try:
     from zipfile_deflate64 import deflate64  # type: ignore
 except ImportError:
