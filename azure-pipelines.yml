@@ -19,7 +19,7 @@ steps:
   inputs:
     versionSpec: '$(python.version)'
 
-- script: pip install wheel tox coveralls coverage[toml] setuptools_scm[toml]
+- script: pip install -U wheel tox coveralls coverage[toml] setuptools setuptools_scm[toml]
   displayName: 'Install Tox'
 
 - script: |
