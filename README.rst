@@ -58,7 +58,7 @@ Supported algorithms
     * Copy
     * ZStandard
     * Brotli
-    * Deflate64 (Decompression only)
+    * Deflate64 (Decompression only, python 3.7 or later)
     * PPMd (Experimental)
 
 * crypt
@@ -73,6 +73,8 @@ Supported algorithms
     but not work with original 7-zip because the original does not implement the feature.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+  * Deflate64 is optional decompress only codec that available for python 3.7 or later.
+
 
 Not supported algorithms
 ------------------------
