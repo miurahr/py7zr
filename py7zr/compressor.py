@@ -66,9 +66,9 @@ try:
 except ImportError:
     import brotlicffi as brotli  # type: ignore  # noqa
 try:
-    import inflate64  # type: ignore
+    import inflate64  # noqa
 except ImportError:
-    inflate64 = None
+    inflate64 = None  # type: ignore  # noqa
 brotli_major = 1
 brotli_minor = 0
 
