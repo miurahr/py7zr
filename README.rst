@@ -58,7 +58,7 @@ Supported algorithms
     * Copy
     * ZStandard
     * Brotli
-    * Deflate64 (Decompression only)
+    * Deflate64 (Decompression only, python 3.7 or later)
     * PPMd (Experimental)
 
 * crypt
@@ -73,6 +73,8 @@ Supported algorithms
     but not work with original 7-zip because the original does not implement the feature.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
+  * Deflate64 is optional decompress only codec that available for python 3.7 or later.
+
 
 Not supported algorithms
 ------------------------
@@ -352,7 +354,7 @@ Package               Purpose
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
-`zipfile-deflate64`_  DEFLATE64 decompression
+`inflate64`_          DEFLATE64 decompression
 `pybcj`_              BCJ filters
 `multivolumefile`_    Multi-volume archive read/write
 `texttable`_          CLI formatter
@@ -364,7 +366,7 @@ Package               Purpose
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
-.. _`zipfile-deflate64` : https://github.com/brianhelba/zipfile-deflate64
+.. _`inflate64` : https://pypi.org/project/inflate64
 .. _`pybcj` : https://pypi.org/project/pybcj
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
