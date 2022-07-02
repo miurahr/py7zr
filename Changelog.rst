@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.10`_
+===========
+
+Fixed
+-----
+
+* Actions: fix release script to produce wheel.
+  there is no wheel release for v0.18.5-v0.18.9
+
 `v0.18.9`_
 ==========
 
@@ -390,7 +399,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.9...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.10...HEAD
+.. _v0.18.10: https://github.com/miurahr/py7zr/compare/v0.18.9...v0.18.10
 .. _v0.18.9: https://github.com/miurahr/py7zr/compare/v0.18.7...v0.18.9
 .. _v0.18.7: https://github.com/miurahr/py7zr/compare/v0.18.6...v0.18.7
 .. _v0.18.6: https://github.com/miurahr/py7zr/compare/v0.18.5...v0.18.6
