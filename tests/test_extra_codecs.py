@@ -1,6 +1,8 @@
+import hashlib
 import io
 import os
 import pathlib
+import zipfile
 import zlib
 
 import pytest
@@ -18,6 +20,7 @@ except ImportError:
     inflate64 = None
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
+srcdata = testdata_path.joinpath("src.zip")
 os.umask(0o022)
 
 
@@ -292,5 +295,13 @@ def test_compress_deflate64(tmp_path):
 @pytest.mark.basic
 @pytest.mark.skipif(inflate64 is None, reason="inflate64 is not installed.")
 def test_decompress_deflate64(tmp_path):
+    with zipfile.ZipFile(srcdata) as srczip:
+        srczip.extractall(path=tmp_path.joinpath("src"))
     with py7zr.SevenZipFile(testdata_path.joinpath("deflate64.7z").open(mode="rb")) as archive:
         archive.extractall(path=tmp_path.joinpath("tgt"))
+    for target in tmp_path.joinpath("tgt").glob("test-file.*"):
+        m0 = hashlib.sha256()
+        m0.update(tmp_path.joinpath("tgt").joinpath(target).open("rb").read())
+        m1 = hashlib.sha256()
+        m1.update(tmp_path.joinpath("src").joinpath(target).open("rb").read())
+        assert m0.digest() == m1.digest(), "Fails digest for %s" % target
