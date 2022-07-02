@@ -30,7 +30,7 @@ jobs:
         run: python -m pip install -U pip wheel setuptools setuptools_scm[toml] twine build
       - name: Build release assets
         run: |
-          python -m build --sdist -wheel
+          python -m build --sdist --wheel
       - name: twine check
         run: python -m twine check dist/*
       - name: Publish distribution 📦 to Test PyPI
