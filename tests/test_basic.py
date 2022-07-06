@@ -222,6 +222,17 @@ def test_py7zr_extract_and_reset_iteration(tmp_path):
 
 
 @pytest.mark.api
+def test_py7zr_read_and_reset(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "read_reset.7z"), "rb"))
+    iterations = archive.getnames()
+    for target in iterations:
+        _dict = archive.read(targets=[target])
+        assert len(_dict) == 1
+        archive.reset()
+    archive.close()
+
+
+@pytest.mark.api
 def test_context_manager_1(tmp_path):
     with py7zr.SevenZipFile(os.path.join(testdata_path, "test_1.7z"), "r") as z:
         z.extractall(path=tmp_path)
