@@ -972,6 +972,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return alist
 
     def readall(self) -> Optional[Dict[str, IO[Any]]]:
+        self._dict = {}
         return self._extract(path=None, return_dict=True)
 
     def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
@@ -983,6 +984,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path=path, return_dict=False, callback=callback)
 
     def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+        self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
     def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
