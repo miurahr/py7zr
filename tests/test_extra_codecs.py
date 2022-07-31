@@ -266,8 +266,8 @@ def test_decompress_brotli(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skip(reason="Deflate64 compression is not implemented yet.")
-def test_compress_decompress_deflate64(tmp_path):
+@pytest.mark.skipif(inflate64 is None, reason="inflate64 is not installed.")
+def test_compress_deflate64(tmp_path):
     # prepare source data
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
         arc.extractall(path=tmp_path)
@@ -282,14 +282,6 @@ def test_compress_decompress_deflate64(tmp_path):
         archive.extractall(path=tmp_path.joinpath("tgt"))
     # check with p7zip
     p7zip_test(tmp_path / "target.7z")
-
-
-@pytest.mark.basic
-def test_compress_deflate64(tmp_path):
-    my_filters = [{"id": FILTER_DEFLATE64}]
-    with pytest.raises(UnsupportedCompressionMethodError):
-        with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", filters=my_filters) as archive:
-            archive.write(testdata_path.joinpath("src"), "src")
 
 
 @pytest.mark.basic
