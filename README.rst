@@ -58,7 +58,7 @@ Supported algorithms
     * Copy
     * ZStandard
     * Brotli
-    * Deflate64 (Decompression only, python 3.7 or later)
+    * Enhanced Deflate (Experimental)
     * PPMd (Experimental)
 
 * crypt
@@ -73,14 +73,13 @@ Supported algorithms
     but not work with original 7-zip because the original does not implement the feature.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
-  * Deflate64 is optional decompress only codec that available for python 3.7 or later.
+  * Enhanced Deflate is also known as `DEFLATE64` :sup:`TM` that is a registered trademark of `PKWARE, Inc.`
 
 
 Not supported algorithms
 ------------------------
 
 * BCJ2 (Standard `lzma module`_ does not provide).
-
 
 
 Install
@@ -352,7 +351,7 @@ Package               Purpose
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
-`inflate64`_          DEFLATE64 decompression
+`inflate64`_          Enhanced deflate compression
 `pybcj`_              BCJ filters
 `multivolumefile`_    Multi-volume archive read/write
 `texttable`_          CLI formatter

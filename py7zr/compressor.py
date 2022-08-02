@@ -66,9 +66,9 @@ try:
 except ImportError:
     import brotlicffi as brotli  # type: ignore  # noqa
 try:
-    import inflate64  # noqa
+    import inflate64 # noqa
 except ImportError:
-    inflate64 = None  # type: ignore  # noqa
+    inflate64 = None  # type: ignore # noqa
 brotli_major = 1
 brotli_minor = 0
 
@@ -265,7 +265,25 @@ class DeflateDecompressor(ISevenZipDecompressor):
 
 class Deflate64Compressor(ISevenZipCompressor):
     def __init__(self):
-        raise RuntimeError("Deflate64 compression not implemented yet")
+        self.flushed = False
+        if inflate64 is not None:
+            self._compressor = inflate64.Deflater()
+            self._enabled = True
+        else:
+            self._enabled = False
+
+    def compress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+        if not self._enabled:
+            raise UnsupportedCompressionMethodError(None, "inflate64 is not installed.")
+        return self._compressor.deflate(data)
+
+    def flush(self) -> bytes:
+        if not self._enabled:
+            raise UnsupportedCompressionMethodError(None, "inflate64 is not installed.")
+        if self.flushed:
+            return b""
+        self.flushed = True
+        return self._compressor.flush()
 
 
 class Deflate64Decompressor(ISevenZipDecompressor):
@@ -1141,12 +1159,6 @@ class SupportedMethods:
                 " Please consider to contribute to XZ/liblzma project"
                 " and help Python core team implementing it."
                 " Or please use another tool to extract it.",
-            )
-        if coder["method"] == COMPRESSION_METHOD.MISC_DEFLATE64:
-            raise UnsupportedCompressionMethodError(
-                coder["method"],
-                "DEFLATE64 compression is not supported by py7zr yet."
-                " Please check the progress in py7zr project home page.",
             )
         if coder["method"] == COMPRESSION_METHOD.MISC_LZ4:
             raise UnsupportedCompressionMethodError(
