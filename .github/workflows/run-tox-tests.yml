@@ -62,8 +62,8 @@ jobs:
           choco install graphviz
       - name: Install dependencies
         run: |
-          pip install -U pip tox wheel setuptools
-          pip install tox-gh-actions coveralls coverage[toml] setuptools_scm[toml]
+          pip install -U pip tox wheel setuptools setuptools_scm[toml]
+          pip install tox-gh-actions coveralls coverage[toml]
       - name: Test project with tox
         if: runner.os != 'Windows'
         run: |
@@ -106,8 +106,8 @@ jobs:
           sudo apt-get install -q -y libarchive-dev
       - name: Install dependencies
         run: |
-          pip install -U pip setuptools
-          pip install tox tox-gh-actions setuptools_scm[toml]
+          pip install -U pip setuptools setuptools_scm[toml]
+          pip install tox tox-gh-actions
       - name: Test project with tox
         run: tox
         env:
