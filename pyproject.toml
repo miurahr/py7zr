@@ -90,7 +90,7 @@ Source = "https://github.com/miurahr/py7zr"
 Changelog = "https://github.com/miurahr/py7zr/blob/master/Changelog.rst"
 
 [build-system]
-requires = ["setuptools>=58", "wheel", "setuptools_scm[toml]>=6.0.1"]
+requires = ["setuptools>=63", "wheel", "setuptools_scm[toml]>=7.0.5"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
