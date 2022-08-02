@@ -58,8 +58,8 @@ Supported algorithms
     * Copy
     * ZStandard
     * Brotli
+    * PPMd
     * Enhanced Deflate (Experimental)
-    * PPMd (Experimental)
 
 * crypt
     * 7zAES
