@@ -7,6 +7,26 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.0`_
+==========
+
+Added
+-----
+* Support enhanced deflate compression.(#472)
+
+Changed
+-------
+* Bump setuptools@63 and setuptools_scm@7 (#473)
+* CI: update script (#473)
+* Update tox config (#473)
+* Actions: change pypy version to 3.7 (#473)
+* Update readthedocs.yml (#473)
+
+Deprecated
+----------
+* Deprecate Python 3.6 support (#473)
+
+
 `v0.19.0`_
 ==========
 
@@ -257,7 +277,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.19.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.0...HEAD
+.. _v0.20.0: https://github.com/miurahr/py7zr/compare/v0.19.0...v0.20.0
 .. _v0.19.0: https://github.com/miurahr/py7zr/compare/v0.18.10...v0.19.0
 .. _v0.18.10: https://github.com/miurahr/py7zr/compare/v0.18.9...v0.18.10
 .. _v0.18.9: https://github.com/miurahr/py7zr/compare/v0.18.7...v0.18.9
