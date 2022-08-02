@@ -1,6 +1,6 @@
 [project]
 name = "py7zr"
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 description = "Pure python 7-zip library"
 readme = "README.rst"
 license = {text = "LGPL-2.1-or-later"}
@@ -16,11 +16,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",

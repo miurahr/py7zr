@@ -309,7 +309,7 @@ Requirements
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
-Minimum required version is Python 3.6.
+Minimum required version is Python 3.7.
 
 ``py7zr`` tested on Linux, macOS, Windows and Ubuntu aarch64.
 
@@ -319,8 +319,6 @@ Recommended versions are:
 
 - CPython 3.7.5, CPython 3.8.0 and later.
 - PyPy3.6-7.3.2 and later.
-
-- CPython 3.10.0 is supported from ``py7zr`` v0.17.0
 
 Following fixes are included in these versions, and it is not fixed on python3.6.
 
