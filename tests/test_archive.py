@@ -9,6 +9,7 @@ import pathlib
 import shutil
 import stat
 import sys
+import zipfile
 from datetime import datetime
 
 import pytest
@@ -1120,6 +1121,28 @@ def test_compress_append_archive_w_zerofile(tmp_path):
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+    #
+    with py7zr.SevenZipFile(target, "r") as arc:
+        arc.extractall(path=tmp_path / "tgt")
+
+
+@pytest.mark.basic
+def test_compress_file_append_dir(tmp_path):
+    srcpath = tmp_path.joinpath("src")
+    srcpath.mkdir()
+    with zipfile.ZipFile(pathlib.Path(testdata_path).joinpath("github_404.zip")) as zipsrc:
+        zipsrc.extractall(path=srcpath)
+    target = tmp_path.joinpath("target.7z")
+    with py7zr.SevenZipFile(target, "w") as archive:
+        archive.write(srcpath.joinpath("a.xlsx"), arcname="a.xlsx")
+    archive = py7zr.SevenZipFile(target, "a")
+    archive.set_encoded_header_mode(False)
+    archive.writeall(srcpath.joinpath("22"), arcname="22")
+    assert len(archive.files.files_list) == 8
+    archive.close()
+    #
+    p7zip_test(target)
+    libarchive_extract(target, tmp_path.joinpath("tgt2"))
     #
     with py7zr.SevenZipFile(target, "r") as arc:
         arc.extractall(path=tmp_path / "tgt")
