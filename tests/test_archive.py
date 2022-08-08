@@ -1140,8 +1140,30 @@ def test_compress_file_append_dir(tmp_path):
     archive.writeall(srcpath.joinpath("22"), arcname="22")
     assert len(archive.header.main_streams.unpackinfo.folders) == 2
     assert archive.header.main_streams.unpackinfo.numfolders == 2
-    assert len(archive.files.files_list) == 8
+    #
+    assert len(archive.header.files_info.files) == 8
+    assert archive.header.files_info.files[0].get("filename") == "a.xlsx"
+    assert archive.header.files_info.files[1].get("filename") == "22"
+    assert archive.header.files_info.files[2].get("filename") == "22/a.xlsx"
+    assert archive.header.files_info.files[3].get("filename") == "22/extra.csv"
+    #
     assert len(archive.header.files_info.emptyfiles) == 8
+    assert not archive.header.files_info.emptyfiles[0]
+    assert archive.header.files_info.emptyfiles[1]
+    assert not archive.header.files_info.emptyfiles[2]
+    #
+    assert len(archive.files.files_list) == 8
+    assert archive.files.files_list[0].get("filename") == "a.xlsx"
+    assert archive.files.files_list[0].get("uncompressed") == 10059
+    assert archive.files.files_list[1].get("filename") == "22"
+    assert archive.files.files_list[2].get("filename") == "22/a.xlsx"
+    assert archive.files.files_list[2].get("uncompressed") == 45298
+    assert archive.files.files_list[3].get("filename") == "22/extra.csv"
+    assert archive.files.files_list[3].get("uncompressed") == 45298
+    assert archive.files.files_list[4].get("filename") == "22/purchase_notice.csv"
+    assert archive.files.files_list[4].get("uncompressed") == 45298
+    assert archive.files.files_list[5].get("filename") == "22/res11.csv"
+    assert archive.files.files_list[5].get("uncompressed") == 10838
     archive.close()
     #
     p7zip_test(target)
