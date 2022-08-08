@@ -1138,7 +1138,10 @@ def test_compress_file_append_dir(tmp_path):
     archive = py7zr.SevenZipFile(target, "a")
     archive.set_encoded_header_mode(False)
     archive.writeall(srcpath.joinpath("22"), arcname="22")
+    assert len(archive.header.main_streams.unpackinfo.folders) == 2
+    assert archive.header.main_streams.unpackinfo.numfolders == 2
     assert len(archive.files.files_list) == 8
+    assert len(archive.header.files_info.emptyfiles) == 8
     archive.close()
     #
     p7zip_test(target)
