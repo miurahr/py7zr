@@ -751,6 +751,10 @@ class FilesInfo:
                 self._read_start_pos(buffer)
             else:
                 raise Bad7zFile("invalid type %r" % prop)  # pragma: no-cover
+        # re-calculate self.emptyfiles for next append
+        if numfiles > 0 and len(self.emptyfiles) == 0:
+            for f in self.files:
+                self.emptyfiles.append(f.get("emptystream"))
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
