@@ -68,9 +68,10 @@ check = [
       "mypy>=0.940",
       "mypy_extensions>=0.4.1",
       "check-manifest",
-      "flake8",
+      "flake8<5",
       "flake8-black",
       "flake8-deprecated",
+      "flake8-isort",
       "isort>=5.0.3",
       "pygments",
       "readme-renderer",
@@ -90,7 +91,7 @@ Source = "https://github.com/miurahr/py7zr"
 Changelog = "https://github.com/miurahr/py7zr/blob/master/Changelog.rst"
 
 [build-system]
-requires = ["setuptools>=63", "wheel", "setuptools_scm[toml]>=7.0.5"]
+requires = ["setuptools>=63", "build", "setuptools_scm[toml]>=7.0.5"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
@@ -154,22 +155,10 @@ markers = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
+isolated_build = True
 envlist = mypy, check, pypy{37,38}, py{37,38,39,310,311}, py39d, docs, mprof
 
 [testenv]
-basepython =
-    py37:   python3.7
-    py38:   python3.8
-    py39:   python3.9
-    py39d:  python3.9-dbg
-    py310:  python3.10
-    py311:  python3.11
-    pypy37:  pypy3.7
-    pypy38:  pypy3.8
-    docs:   python3.8
-    check:  python3.8
-    mprof:  python3.8
-    mypy:   python3.8
 passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
 extras = test
 commands =
