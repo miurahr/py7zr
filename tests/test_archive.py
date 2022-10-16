@@ -1133,8 +1133,10 @@ def test_compress_file_append_dir(tmp_path):
     with zipfile.ZipFile(pathlib.Path(testdata_path).joinpath("github_404.zip")) as zipsrc:
         zipsrc.extractall(path=srcpath)
     target = tmp_path.joinpath("target.7z")
-    with py7zr.SevenZipFile(target, "w") as archive:
-        archive.write(srcpath.joinpath("a.xlsx"), arcname="a.xlsx")
+    archive = py7zr.SevenZipFile(target, "w")
+    archive.write(srcpath.joinpath("a.xlsx"), arcname="a.xlsx")
+    archive.close()
+    #
     archive = py7zr.SevenZipFile(target, "a")
     archive.set_encoded_header_mode(False)
     archive.writeall(srcpath.joinpath("22"), arcname="22")
@@ -1143,9 +1145,20 @@ def test_compress_file_append_dir(tmp_path):
     #
     assert len(archive.header.files_info.files) == 8
     assert archive.header.files_info.files[0].get("filename") == "a.xlsx"
+    assert archive.header.files_info.files[0].get("digest") == 0x83ef96ba
     assert archive.header.files_info.files[1].get("filename") == "22"
     assert archive.header.files_info.files[2].get("filename") == "22/a.xlsx"
+    assert archive.header.files_info.files[2].get("digest") == 0x6d452c78
     assert archive.header.files_info.files[3].get("filename") == "22/extra.csv"
+    assert archive.header.files_info.files[3].get("digest") == 0xfb91a7eb
+    assert archive.header.files_info.files[4].get("filename") == "22/purchase_notice.csv"
+    assert archive.header.files_info.files[4].get("digest") == 0x18991f62
+    assert archive.header.files_info.files[5].get("filename") == "22/res11.csv"
+    assert archive.header.files_info.files[5].get("digest") == 0x4719daea
+    assert archive.header.files_info.files[6].get("filename") == "22/res122.csv"
+    assert archive.header.files_info.files[6].get("digest") == 0x72f7c99f
+    assert archive.header.files_info.files[7].get("filename") == "22/res_end.csv"
+    assert archive.header.files_info.files[7].get("digest") == 0xaa8b30d0
     #
     assert len(archive.header.files_info.emptyfiles) == 8
     assert not archive.header.files_info.emptyfiles[0]
@@ -1156,6 +1169,7 @@ def test_compress_file_append_dir(tmp_path):
     assert archive.files.files_list[0].get("filename") == "a.xlsx"
     assert archive.files.files_list[0].get("uncompressed") == 10059
     assert archive.files.files_list[1].get("filename") == "22"
+    assert archive.files.files_list[1].get("emptystream") is True
     assert archive.files.files_list[2].get("filename") == "22/a.xlsx"
     assert archive.files.files_list[2].get("uncompressed") == 45298
     assert archive.files.files_list[3].get("filename") == "22/extra.csv"
@@ -1164,6 +1178,10 @@ def test_compress_file_append_dir(tmp_path):
     assert archive.files.files_list[4].get("uncompressed") == 45298
     assert archive.files.files_list[5].get("filename") == "22/res11.csv"
     assert archive.files.files_list[5].get("uncompressed") == 10838
+    assert archive.files.files_list[6].get("filename") == "22/res122.csv"
+    assert archive.files.files_list[6].get("uncompressed") == 236458
+    assert archive.files.files_list[7].get("filename") == "22/res_end.csv"
+    assert archive.files.files_list[7].get("uncompressed") == 216681
     archive.close()
     #
     p7zip_test(target)
