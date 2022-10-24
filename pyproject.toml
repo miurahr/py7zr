@@ -198,9 +198,8 @@ deps =
 extras = check
 ignore_errors=true
 commands =
-    flake8 py7zr tests setup.py
-    isort --quiet --check-only --diff py7zr/*.py tests setup.py
-    python setup.py sdist
+    flake8 py7zr tests
+    python -m build --sdist
     twine check dist/*
     check-manifest {toxinidir}
 

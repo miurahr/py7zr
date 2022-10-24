@@ -29,7 +29,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import bcj  # type: ignore  # noqa
+import bcj
+import inflate64
 import pyppmd
 import pyzstd
 from Cryptodome.Cipher import AES
@@ -65,10 +66,6 @@ try:
     import brotli  # type: ignore  # noqa
 except ImportError:
     import brotlicffi as brotli  # type: ignore  # noqa
-try:
-    import inflate64 # noqa
-except ImportError:
-    inflate64 = None  # type: ignore # noqa
 brotli_major = 1
 brotli_minor = 0
 

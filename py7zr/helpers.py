@@ -34,7 +34,6 @@ import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
 
-
 # String used at the beginning of relative paths
 RELATIVE_PATH_MARKER = "./"
 
