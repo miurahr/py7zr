@@ -50,12 +50,13 @@ from py7zr.helpers import (
     MemIO,
     NullIO,
     calculate_crc32,
+    check_archive_path,
     filetime_to_dt,
+    get_sanitized_output_path,
+    is_target_path_valid,
     readlink,
-    remove_relative_path_marker,
 )
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
-from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 if sys.platform.startswith("win"):
     import _winapi
@@ -567,34 +568,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                         break
                     i += 1
             fnames.append(outname)
-            # check f.filename has invalid directory traversals
-            if path is None:
-                # do following but is_relative_to introduced in py 3.9
-                # so I replaced it with relative_to. when condition is not satisfied, raise ValueError
-                # if not pathlib.Path(...).joinpath(remove_relative_path_marker(outname)).is_relative_to(...):
-                #    raise Bad7zFile
-                try:
-                    pathlib.Path(os.getcwd()).joinpath(remove_relative_path_marker(outname)).relative_to(os.getcwd())
-                except ValueError:
-                    raise Bad7zFile
-                outfilename = pathlib.Path(remove_relative_path_marker(outname))
+            if path is None or path.is_absolute():
+                outfilename = get_sanitized_output_path(outname, path)
             else:
-                outfilename = path.joinpath(remove_relative_path_marker(outname))
-                try:
-                    outfilename.relative_to(path)
-                except ValueError:
-                    raise Bad7zFile
-            # When python on Windows and not python on Cygwin,
-            # Add win32 file namespace to exceed microsoft windows
-            # path length limitation to 260 bytes
-            # ref.
-            # https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
-            # In editions of Windows before Windows 10 version 1607,
-            # the maximum length for a path is MAX_PATH, which is defined as
-            # 260 characters. In later versions of Windows, changing a registry key
-            # or select option when python installation is required to remove the limit.
-            if is_windows_native_python() and outfilename.is_absolute() and not is_windows_unc_path(outfilename):
-                outfilename = pathlib.WindowsPath("\\\\?\\" + str(outfilename))
+                outfilename = get_sanitized_output_path(outname, pathlib.Path(os.getcwd()).joinpath(path))
             if targets is not None and f.filename not in targets:
                 self.worker.register_filelike(f.id, None)
                 continue
@@ -634,12 +611,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if callback is not None:
             self.worker.extract(
                 self.fp,
+                path,
                 parallel=(not self.password_protected and not self._filePassed),
                 q=self.q,
             )
         else:
             self.worker.extract(
                 self.fp,
+                path,
                 parallel=(not self.password_protected and not self._filePassed),
             )
 
@@ -1040,6 +1019,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.writef(input, target)
 
     def writef(self, bio: IO[Any], arcname: str):
+        if not check_archive_path(arcname):
+            raise ValueError(f"Specified path is bad: {arcname}")
+        return self._writef(bio, arcname)
+
+    def _writef(self, bio: IO[Any], arcname: str):
         if isinstance(bio, io.BytesIO):
             size = bio.getbuffer().nbytes
         elif isinstance(bio, io.TextIOBase):
@@ -1069,12 +1053,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.files.append(file_info)
 
     def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
+        if not check_archive_path(arcname):
+            raise ValueError(f"Specified path is bad: {arcname}")
+        return self._writestr(data, arcname)
+
+    def _writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
         if isinstance(data, str):
-            self.writef(io.BytesIO(data.encode("UTF-8")), arcname)
+            self._writef(io.BytesIO(data.encode("UTF-8")), arcname)
         elif isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview):
-            self.writef(io.BytesIO(data), arcname)
+            self._writef(io.BytesIO(bytes(data)), arcname)
         else:
             raise ValueError("Unsupported data type.")
 
@@ -1131,7 +1120,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
-            self.worker.extract(self.fp, parallel=(not self.password_protected), skip_notarget=False)  # TODO: print progress
+            self.worker.extract(
+                self.fp, None, parallel=(not self.password_protected), skip_notarget=False
+            )  # TODO: print progress
         except CrcError as crce:
             return crce.args[2]
         else:
@@ -1200,7 +1191,7 @@ class Worker:
         else:
             self.concurrent = Thread
 
-    def extract(self, fp: BinaryIO, parallel: bool, skip_notarget=True, q=None) -> None:
+    def extract(self, fp: BinaryIO, path: Optional[pathlib.Path], parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, "main_streams") and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
@@ -1209,6 +1200,7 @@ class Worker:
                 self.extract_single(
                     fp,
                     self.files,
+                    path,
                     self.src_start,
                     src_end,
                     q,
@@ -1219,7 +1211,7 @@ class Worker:
                 positions = self.header.main_streams.packinfo.packpositions
                 empty_files = [f for f in self.files if f.emptystream]
                 if not parallel:
-                    self.extract_single(fp, empty_files, 0, 0, q)
+                    self.extract_single(fp, empty_files, path, 0, 0, q)
                     for i in range(numfolders):
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
@@ -1227,6 +1219,7 @@ class Worker:
                         self.extract_single(
                             fp,
                             folders[i].files,
+                            path,
                             self.src_start + positions[i],
                             self.src_start + positions[i + 1],
                             q,
@@ -1236,7 +1229,7 @@ class Worker:
                     if getattr(fp, "name", None) is None:
                         raise InternalError("Caught unknown variable status error")
                     filename: str = getattr(fp, "name", "")  # do not become "" but it is for type check.
-                    self.extract_single(open(filename, "rb"), empty_files, 0, 0, q)
+                    self.extract_single(open(filename, "rb"), empty_files, path, 0, 0, q)
                     concurrent_tasks = []
                     exc_q: queue.Queue = queue.Queue()
                     for i in range(numfolders):
@@ -1248,6 +1241,7 @@ class Worker:
                             args=(
                                 filename,
                                 folders[i].files,
+                                path,
                                 self.src_start + positions[i],
                                 self.src_start + positions[i + 1],
                                 q,
@@ -1266,12 +1260,13 @@ class Worker:
                         raise exc_info[1].with_traceback(exc_info[2])
         else:
             empty_files = [f for f in self.files if f.emptystream]
-            self.extract_single(fp, empty_files, 0, 0, q)
+            self.extract_single(fp, empty_files, path, 0, 0, q)
 
     def extract_single(
         self,
         fp: Union[BinaryIO, str],
         files,
+        path,
         src_start: int,
         src_end: int,
         q: Optional[queue.Queue],
@@ -1287,7 +1282,7 @@ class Worker:
             if isinstance(fp, str):
                 fp = open(fp, "rb")
             fp.seek(src_start)
-            self._extract_single(fp, files, src_end, q, skip_notarget)
+            self._extract_single(fp, files, path, src_end, q, skip_notarget)
         except Exception as e:
             if exc_q is None:
                 raise e
@@ -1299,6 +1294,7 @@ class Worker:
         self,
         fp: BinaryIO,
         files,
+        path,
         src_end: int,
         q: Optional[queue.Queue],
         skip_notarget=True,
@@ -1331,20 +1327,28 @@ class Worker:
                         with io.BytesIO() as ofp:
                             self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                             dst: str = ofp.read().decode("utf-8")
-                            # fileish.unlink(missing_ok=True) > py3.7
-                            if fileish.exists():
-                                fileish.unlink()
-                            if sys.platform == "win32":  # hint for mypy
-                                _winapi.CreateJunction(str(fileish), dst)  # noqa
+                            if is_target_path_valid(path, fileish.parent.joinpath(dst)):
+                                # fileish.unlink(missing_ok=True) > py3.7
+                                if fileish.exists():
+                                    fileish.unlink()
+                                if sys.platform == "win32":  # hint for mypy
+                                    _winapi.CreateJunction(str(fileish), dst)  # noqa
+                            else:
+                                raise Bad7zFile("Junction point out of target directory.")
                     elif f.is_symlink and not isinstance(fileish, MemIO):
                         with io.BytesIO() as omfp:
                             self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end)
                             omfp.seek(0)
-                            sym_target = pathlib.Path(omfp.read().decode("utf-8"))
-                            # fileish.unlink(missing_ok=True) > py3.7
-                            if fileish.exists():
-                                fileish.unlink()
-                            fileish.symlink_to(sym_target)
+                            dst = omfp.read().decode("utf-8")
+                            # check sym_target points inside an archive target?
+                            if is_target_path_valid(path, fileish.parent.joinpath(dst)):
+                                sym_target = pathlib.Path(dst)
+                                # fileish.unlink(missing_ok=True) > py3.7
+                                if fileish.exists():
+                                    fileish.unlink()
+                                fileish.symlink_to(sym_target)
+                            else:
+                                raise Bad7zFile("Symlink point out of target directory.")
                     else:
                         with fileish.open(mode="wb") as obfp:
                             crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end)

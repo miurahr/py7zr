@@ -33,6 +33,8 @@ from typing import BinaryIO, Optional, Union
 import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
+from py7zr import Bad7zFile
+from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
 # String used at the beginning of relative paths
 RELATIVE_PATH_MARKER = "./"
@@ -265,7 +267,7 @@ class ArchiveTimestamp(int):
 def islink(path):
     """
     Cross-platform islink implementation.
-    Supports Windows NT symbolic links and reparse points.
+    Support Windows NT symbolic links and reparse points.
     """
     is_symlink = os.path.islink(str(path))
     if sys.version_info >= (3, 8) or sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
@@ -280,7 +282,7 @@ def islink(path):
 def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathlib.Path]:
     """
     Cross-platform compat implementation of os.readlink and Path.readlink().
-    Supports Windows NT symbolic links and reparse points.
+    Support Windows NT symbolic links and reparse points.
     When called with path argument as pathlike(str), return result as a pathlike(str).
     When called with Path object, return also Path object.
     When called with path argument as bytes, return result as a bytes.
@@ -431,3 +433,57 @@ def remove_relative_path_marker(path: str) -> str:
         processed_path = path[len(RELATIVE_PATH_MARKER) :]
 
     return processed_path
+
+
+def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathlib.Path:
+    """
+    check f.filename has invalid directory traversals
+    do following but is_relative_to introduced in py 3.9,
+    so I replaced it with relative_to. when condition is not satisfied, raise ValueError
+    if not pathlib.Path(...).joinpath(remove_relative_path_marker(outname)).is_relative_to(...):
+        raise Bad7zFile
+    """
+    if path is None:
+        try:
+            pathlib.Path(os.getcwd()).joinpath(fname).resolve().relative_to(os.getcwd())
+            outfile = pathlib.Path(remove_relative_path_marker(fname))
+        except ValueError:
+            raise Bad7zFile(f"Specified path is bad: {fname}")
+    else:
+        try:
+            outfile = path.joinpath(remove_relative_path_marker(fname))
+            outfile.resolve().relative_to(path)
+        except ValueError:
+            raise Bad7zFile(f"Specified path is bad: {fname}")
+    return outfile
+
+
+def check_archive_path(arcname: str) -> bool:
+    path = pathlib.Path("/foo/boo/fuga/hoge/a90sufoiasj09/dafj08sajfa/")  # dummy path
+    return is_target_path_valid(path, path.joinpath(arcname))
+
+
+def is_target_path_valid(path: pathlib.Path, target: pathlib.Path) -> bool:
+    try:
+        if path.is_absolute():
+            target.resolve().relative_to(path)
+        else:
+            target.resolve().relative_to(pathlib.Path(os.getcwd()).joinpath(path))
+    except ValueError:
+        return False
+    return True
+
+
+def check_win32_file_namespace(pathname: pathlib.Path) -> pathlib.Path:
+    # When python on Windows and not python on Cygwin,
+    # Add win32 file namespace to exceed Microsoft Windows
+    # path length limitation to 260 bytes
+    # ref.
+    # https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+    # In editions of Windows before Windows 10 version 1607,
+    # the maximum length for a path is MAX_PATH, which is defined as
+    # 260 characters. In later versions of Windows, changing a registry key
+    # or select option when python installation is required to remove the limit.
+    if is_windows_native_python() and pathname.is_absolute() and not is_windows_unc_path(pathname):
+        pathname = pathlib.WindowsPath("\\\\?\\" + str(pathname))
+    return pathname

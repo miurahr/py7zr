@@ -3,8 +3,6 @@ include *.rst
 include *.svg
 include *.toml
 include LICENSE
-include .coveragerc
-include tox.ini
 include py7zr/py.typed
 recursive-include py7zr *.py
 recursive-include tests *.py
@@ -25,7 +23,6 @@ recursive-include docs *.yml
 recursive-include docs *.odp
 recursive-include docs *.pdf
 recursive-include docs *.svg
-recursive-include docs *.txt
 recursive-include docs Makefile
 prune .github
 exclude .gitignore
