@@ -332,7 +332,7 @@ def test_skip():
     for i, cf in enumerate(archive.files):
         assert cf is not None
         archive.worker.register_filelike(cf.id, None)
-    archive.worker.extract(archive.fp, parallel=True)
+    archive.worker.extract(archive.fp, None, parallel=True)
     archive.close()
 
 
