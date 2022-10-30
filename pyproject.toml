@@ -37,7 +37,7 @@ dependencies = [
       "pyppmd>=0.18.1,<1.1.0",
       "pybcj>=0.6.0",
       "multivolumefile>=0.2.3",
-      'inflate64>=0.3.0;python_version>"3.6"',
+      'inflate64>=0.3.1;python_version>"3.6"',
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["version", "entry-points"]
