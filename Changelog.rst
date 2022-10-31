@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Security
+--------
+
+* Fix sanity check for path traversal attack(#480)
+* Add path checker in writef() and writestr() methods that ignores evil pass.
+  - When pass arcname as evil path such as "../../../../tmp/evil.sh"
+  - it raises ValueError
+* Check symlink and junction is under target folder when extraction
+
 `v0.20.0`_
 ==========
 
