@@ -1,6 +1,10 @@
 # Security protection test cases
-
+import ctypes
 import os
+import pathlib
+import sys
+from dataclasses import dataclass
+from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -50,6 +54,10 @@ def test_extract_path_traversal_attack(tmp_path):
             archive.extractall(path=tmp_path)
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
 @pytest.mark.misc
 def test_extract_symlink_attack(tmp_path):
     my_filters = [
@@ -71,3 +79,28 @@ def test_extract_symlink_attack(tmp_path):
     with pytest.raises(Bad7zFile):
         with SevenZipFile(target, "r") as archive:
             archive.extractall(path=target_dir)
+
+
+def test_write_compressed_archive(tmp_path):
+    @dataclass
+    class Contents:
+        filename: str
+        text: str
+
+    contents = (Contents(filename="bin/qmake", text="qqqqq"), Contents(filename="lib/libhoge.so", text="hoge"))
+    with TemporaryDirectory() as temp_path, SevenZipFile(
+        tmp_path / "tools_qtcreator-linux-qt.tools.qtcreator.7z", "w"
+    ) as archive:
+        dest = pathlib.Path(temp_path)
+        for folder in ("bin", "lib", "mkspecs"):
+            (dest / folder).mkdir(parents=True, exist_ok=True)
+        for f in contents:
+            full_path = dest / f.filename
+            if not full_path.parent.exists():
+                full_path.parent.mkdir(parents=True)
+            full_path.write_text(f.text, "utf_8")
+        archive.writeall(path=temp_path, arcname="target")
+    with TemporaryDirectory() as target_path, SevenZipFile(
+        tmp_path / "tools_qtcreator-linux-qt.tools.qtcreator.7z", "r"
+    ) as archive:
+        archive.extractall(path=target_path)
