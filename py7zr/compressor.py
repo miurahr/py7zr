@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import bcj  # type: ignore  # noqa
+import bcj
 import pyppmd
 import pyzstd
 from Cryptodome.Cipher import AES
