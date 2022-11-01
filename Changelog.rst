@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.11`_
+===========
+
+Security
+--------
+
+* Fix sanity check for path traversal attack(#480)
+* Add path checker in writef() and writestr() methods that ignores evil pass.
+  - When pass arcname as evil path such as "../../../../tmp/evil.sh"
+  - it raises ValueError
+* Check symlink and junction is under target folder when extraction
+* Add protection test against path traversal attack and symlink attack
+
 `v0.18.10`_
 ===========
 
@@ -399,7 +412,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.10...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.11...HEAD
+.. _v0.18.11: https://github.com/miurahr/py7zr/compare/v0.18.10...v0.18.11
 .. _v0.18.10: https://github.com/miurahr/py7zr/compare/v0.18.9...v0.18.10
 .. _v0.18.9: https://github.com/miurahr/py7zr/compare/v0.18.7...v0.18.9
 .. _v0.18.7: https://github.com/miurahr/py7zr/compare/v0.18.6...v0.18.7
