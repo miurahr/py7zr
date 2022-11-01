@@ -1,3 +1,5 @@
+# Security protection test cases
+
 import os
 
 import pytest
@@ -46,3 +48,26 @@ def test_extract_path_traversal_attack(tmp_path):
     with pytest.raises(Bad7zFile):
         with SevenZipFile(target, "r") as archive:
             archive.extractall(path=tmp_path)
+
+
+@pytest.mark.misc
+def test_extract_symlink_attack(tmp_path):
+    my_filters = [
+        {"id": FILTER_LZMA2, "preset": PRESET_DEFAULT},
+    ]
+    source_dir = tmp_path / "src"
+    symlink_file = source_dir / "symlink.sh"
+    source_dir.mkdir(exist_ok=True)
+    target_dir = tmp_path / "tgt"
+    target = tmp_path / "target.7z"
+    target_dir.mkdir(exist_ok=True)
+    bad_data = b"!#/bin/sh\necho bad\n"
+    bad_path = tmp_path.joinpath("evil.sh")
+    with bad_path.open("wb") as evil:
+        evil.write(bad_data)
+    symlink_file.symlink_to(bad_path)
+    with SevenZipFile(target, "w", filters=my_filters) as archive:
+        archive.writeall(source_dir, "src")
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=target_dir)
