@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2022 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 #
 # This library is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import BinaryIO, Optional, Union
+from typing import BinaryIO, List, Optional, Union
 
 import _hashlib  # type: ignore  # noqa
 
@@ -73,7 +73,7 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
 
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     """Calculate 7zip AES encryption key.
-    It utilize ctypes and memoryview buffer and zero-copy technology on Python."""
+    It uses ctypes and memoryview buffer and zero-copy technology on Python."""
     if digest not in ("sha256"):
         raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F
@@ -435,43 +435,75 @@ def remove_relative_path_marker(path: str) -> str:
     return processed_path
 
 
-def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathlib.Path:
-    """
-    check f.filename has invalid directory traversals
-    do following but is_relative_to introduced in py 3.9,
-    so I replaced it with relative_to. when condition is not satisfied, raise ValueError
-    if not pathlib.Path(...).joinpath(remove_relative_path_marker(outname)).is_relative_to(...):
-        raise Bad7zFile
-    """
-    if path is None:
-        try:
-            pathlib.Path(os.getcwd()).joinpath(fname).resolve().relative_to(os.getcwd())
-            outfile = pathlib.Path(remove_relative_path_marker(fname))
-        except ValueError:
-            raise Bad7zFile(f"Specified path is bad: {fname}")
-    else:
-        try:
-            outfile = path.joinpath(remove_relative_path_marker(fname))
-            outfile.resolve().relative_to(path)
-        except ValueError:
-            raise Bad7zFile(f"Specified path is bad: {fname}")
-    return outfile
-
-
-def check_archive_path(arcname: str) -> bool:
-    path = pathlib.Path("/foo/boo/fuga/hoge/a90sufoiasj09/dafj08sajfa/")  # dummy path
-    return is_target_path_valid(path, path.joinpath(arcname))
-
-
-def is_target_path_valid(path: pathlib.Path, target: pathlib.Path) -> bool:
-    try:
-        if path.is_absolute():
-            target.resolve().relative_to(path)
+def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
+    """Return a canonical path of target argument."""
+    stack: List[str] = []
+    for p in target.parts:
+        if p != ".." or len(stack) == 0:
+            stack.append(p)
+            continue
+        # treat '..'
+        if stack[-1] == "..":
+            stack.append(p)  # '../' + '../' -> '../../'
+        elif stack[-1] == "/":
+            pass  # '/' + '../' -> '/'
         else:
-            target.resolve().relative_to(pathlib.Path(os.getcwd()).joinpath(path))
+            stack.pop()  # 'foo/boo/' + '..' -> 'foo/'
+    return pathlib.PurePath(*stack)
+
+
+def is_relative_to(my: pathlib.PurePath, *other) -> bool:
+    """Return True when path is relative to other path, otherwise False."""
+    try:
+        my.relative_to(*other)
     except ValueError:
         return False
     return True
+
+
+def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathlib.Path:
+    """
+    check f.filename has invalid directory traversals
+    When condition is not satisfied, raise Bad7zFile
+    """
+    if path is None:
+        target_path = canonical_path(pathlib.Path.cwd().joinpath(fname))
+        if is_relative_to(target_path, pathlib.Path.cwd()):
+            return pathlib.Path(remove_relative_path_marker(fname))
+    else:
+        outfile = canonical_path(path.joinpath(remove_relative_path_marker(fname)))
+        if is_relative_to(outfile, path):
+            return pathlib.Path(outfile)
+    raise Bad7zFile(f"Specified path is bad: {fname}")
+
+
+def check_archive_path(arcname: str) -> bool:
+    """
+    Check arcname argument is valid for archive.
+    It should not be absolute, if so it returns False.
+    It should not be evil traversal attack path.
+    Otherwise, returns True.
+    """
+    if pathlib.PurePath(arcname).is_absolute():
+        return False
+    # test against dummy parent path
+    if sys.platform == "win32":
+        path = pathlib.Path("C:/foo/boo/fuga/hoge/a90sufoiasj09/dafj08sajfa/")
+    else:
+        path = pathlib.Path("/foo/boo/fuga/hoge/a90sufoiasj09/dafj08sajfa/")
+    return is_path_valid(path.joinpath(arcname), path)
+
+
+def is_path_valid(target: pathlib.Path, parent: pathlib.Path) -> bool:
+    """
+    Check if target path is valid against parent path.
+    It returns False when target path has '..' and point out of parent path.
+    Otherwise, returns True.
+    """
+    if parent.is_absolute():
+        return is_relative_to(canonical_path(target), parent)
+    else:
+        return is_relative_to(canonical_path(target), pathlib.Path.cwd().joinpath(parent))
 
 
 def check_win32_file_namespace(pathname: pathlib.Path) -> pathlib.Path:

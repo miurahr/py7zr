@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2022 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -53,7 +53,7 @@ from py7zr.helpers import (
     check_archive_path,
     filetime_to_dt,
     get_sanitized_output_path,
-    is_target_path_valid,
+    is_path_valid,
     readlink,
 )
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
@@ -1327,7 +1327,7 @@ class Worker:
                         with io.BytesIO() as ofp:
                             self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
                             dst: str = ofp.read().decode("utf-8")
-                            if is_target_path_valid(path, fileish.parent.joinpath(dst)):
+                            if is_path_valid(fileish.parent.joinpath(dst), path):
                                 # fileish.unlink(missing_ok=True) > py3.7
                                 if fileish.exists():
                                     fileish.unlink()
@@ -1341,7 +1341,7 @@ class Worker:
                             omfp.seek(0)
                             dst = omfp.read().decode("utf-8")
                             # check sym_target points inside an archive target?
-                            if is_target_path_valid(path, fileish.parent.joinpath(dst)):
+                            if is_path_valid(fileish.parent.joinpath(dst), path):
                                 sym_target = pathlib.Path(dst)
                                 # fileish.unlink(missing_ok=True) > py3.7
                                 if fileish.exists():
