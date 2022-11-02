@@ -1,3 +1,5 @@
+.. _changelog:
+
 ===============
 Py7zr Changelog
 ===============

@@ -1,4 +1,3 @@
-include *.png
 include *.rst
 include *.svg
 include *.toml

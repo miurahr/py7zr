@@ -1,8 +1,10 @@
 :tocdepth: 1
 
-.. _changelog:
+.. _previous_changes:
 
-.. include:: ../Changelog.rst
+================
+Previous changes
+================
 
 `v0.15.2`_
 ==========
