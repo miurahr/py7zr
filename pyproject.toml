@@ -2,7 +2,6 @@
 name = "py7zr"
 requires-python = ">=3.7"
 description = "Pure python 7-zip library"
-readme = "README.rst"
 license = {text = "LGPL-2.1-or-later"}
 authors = [
     {name = "Hiroshi Miura", email = "miurahr@linux.com"},
@@ -40,7 +39,16 @@ dependencies = [
       'inflate64>=0.3.1;python_version>"3.6"',
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
-dynamic = ["version", "entry-points"]
+dynamic = ["readme", "version"]
+
+[tool.setuptools]
+packages = ["py7zr"]
+
+[tool.setuptools.package-data]
+py7zr = ["py.typed"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.rst"]}
 
 [project.scripts]
 py7zr = "py7zr.__main__:main"
