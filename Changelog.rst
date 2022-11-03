@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.18.12`_
+===========
+
+Fixed
+-----
+
+* Fix error with good path data, when detecting wrong path
+  with new canonical_path(), and drop resolve() call on path.
+
 `v0.18.11`_
 ===========
 
@@ -412,7 +421,8 @@ Deprecated
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.11...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.18.12...HEAD
+.. _v0.18.12: https://github.com/miurahr/py7zr/compare/v0.18.11...v0.18.12
 .. _v0.18.11: https://github.com/miurahr/py7zr/compare/v0.18.10...v0.18.11
 .. _v0.18.10: https://github.com/miurahr/py7zr/compare/v0.18.9...v0.18.10
 .. _v0.18.9: https://github.com/miurahr/py7zr/compare/v0.18.7...v0.18.9
