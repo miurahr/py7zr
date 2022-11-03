@@ -11,7 +11,8 @@ py7zr -- a 7z library on python
    archive_format
    authors
    glossary
-   changelog
+   Changelog
+   previous_changes
 
 ==================
 Indices and tables
