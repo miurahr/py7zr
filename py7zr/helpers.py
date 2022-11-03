@@ -21,6 +21,7 @@
 #
 #
 import ctypes
+import hashlib
 import os
 import pathlib
 import platform
@@ -29,8 +30,6 @@ import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import BinaryIO, List, Optional, Union
-
-import _hashlib  # type: ignore  # noqa
 
 import py7zr.win32compat
 from py7zr import Bad7zFile
@@ -54,17 +53,23 @@ def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -
     return value & 0xFFFFFFFF
 
 
+def _get_hash(digest: str):
+    if digest not in hashlib.algorithms_available:
+        raise ValueError("Unknown digest method for password protection.")
+    if digest == "sha256":
+        return hashlib.sha256()
+    return hashlib.new(digest)
+
+
 def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     """Calculate 7zip AES encryption key. Base implementation."""
-    if digest not in ("sha256"):
-        raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F
     if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
         key: bytes = bytes(ba[:32])
     else:
         rounds = 1 << cycles
-        m = _hashlib.new(digest)
+        m = _get_hash(digest)
         for round in range(rounds):
             m.update(salt + password + round.to_bytes(8, byteorder="little", signed=False))
         key = m.digest()[:32]
@@ -74,14 +79,12 @@ def _calculate_key1(password: bytes, cycles: int, salt: bytes, digest: str) -> b
 def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     """Calculate 7zip AES encryption key.
     It uses ctypes and memoryview buffer and zero-copy technology on Python."""
-    if digest not in ("sha256"):
-        raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F
     if cycles == 0x3F:
         key: bytes = bytes(bytearray(salt + password + bytes(32))[:32])
     else:
         rounds = 1 << cycles
-        m = _hashlib.new(digest)
+        m = _get_hash(digest)
         length = len(salt) + len(password)
 
         class RoundBuf(ctypes.LittleEndianStructure):
@@ -106,8 +109,6 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
 def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     """Calculate 7zip AES encryption key.
     Concat values in order to reduce number of calls of Hash.update()."""
-    if digest not in ("sha256"):
-        raise ValueError("Unknown digest method for password protection.")
     assert cycles <= 0x3F
     if cycles == 0x3F:
         ba = bytearray(salt + password + bytes(32))
@@ -120,7 +121,7 @@ def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> b
         else:
             rounds = 1 << cycles
             stages = 1 << 0
-        m = _hashlib.new(digest)
+        m = _get_hash(digest)
         saltpassword = salt + password
         s = 0  # type: int  # (0..stages) * rounds
         if platform.python_implementation() == "PyPy":
