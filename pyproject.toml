@@ -156,7 +156,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{37,38}, py{37,38,39,310,311}, py39d, docs, mprof
+envlist = mypy, check, pypy{37,38,39}, py{37,38,39,310,311}, py39d, docs, mprof
 
 [testenv]
 passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
@@ -164,7 +164,7 @@ extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy3,py{36,37,38,39,310}: clean, check
+    pypy{37,38,39},py{36,37,38,39,310}: clean, check
 
 [testenv:py38]
 extras = test, test_compat
@@ -228,5 +228,5 @@ python =
     3.9: py39
     3.10: py310
     3.11: py311
-    pypy3.7: pypy37
+    pypy3.9: pypy39
 """

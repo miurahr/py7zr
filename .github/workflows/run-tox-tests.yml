@@ -17,24 +17,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
         python-version: [
             "3.7",
             "3.8",
             "3.9",
             "3.10",
-            "3.11-dev",
-            "pypy3.7",
+            "3.11",
+            "pypy3.9",
         ]
         include:
           - os: macos-latest
-            python-version: "3.10"
+            python-version: "3.11"
         exclude:
           - os: windows-latest
-            python-version: pypy3.7
+            python-version: pypy3.9
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 20
       - name: Setup python
@@ -89,15 +89,15 @@ jobs:
 
   test_slow_tests:
     name: Test slow test cases
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 20
       - name: Setup python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: '3.11'
           architecture: x64
       - name: Install system library(linux)
         run: |
@@ -114,14 +114,14 @@ jobs:
 
   test_on_aarch64:
     name: Test on ${{ matrix.arch }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         arch: [aarch64]
         distro: [ubuntu20.04]
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 20
       - uses: uraimo/run-on-arch-action@v2.2.0
@@ -147,11 +147,6 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/master'
     steps:
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-          architecture: x64
       - name: Tell Coveralls that the parallel build is finished
         run: |
           curl -k \
