@@ -1,6 +1,7 @@
 include *.rst
 include *.svg
 include *.toml
+include .flake8
 include LICENSE
 include py7zr/py.typed
 recursive-include py7zr *.py
