@@ -15,7 +15,6 @@ from py7zr import UnsupportedCompressionMethodError
 from py7zr.properties import FILTER_DEFLATE64
 from tests import p7zip_test
 
-
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
 srcdata = testdata_path.joinpath("src.zip")
 os.umask(0o022)
