@@ -24,6 +24,7 @@
 import bz2
 import lzma
 import struct
+import sys
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -263,15 +264,15 @@ class DeflateDecompressor(ISevenZipDecompressor):
 class Deflate64Compressor(ISevenZipCompressor):
     def __init__(self):
         self.flushed = False
-        if inflate64 is not None:
+        if hasattr(sys, "pypy_version_info"):
+            self._enabled = False  # compression on pypy is disabled
+        else:
             self._compressor = inflate64.Deflater()
             self._enabled = True
-        else:
-            self._enabled = False
 
     def compress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if not self._enabled:
-            raise UnsupportedCompressionMethodError(None, "inflate64 is not installed.")
+            raise UnsupportedCompressionMethodError(None, "deflate64 compression is disabled on pypy.")
         return self._compressor.deflate(data)
 
     def flush(self) -> bytes:

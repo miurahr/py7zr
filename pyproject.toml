@@ -169,7 +169,7 @@ depends =
 [testenv:py38]
 extras = test, test_compat
 
-[testenv:pypy3]
+[testenv:pypy38]
 extras = test, test_compat
 
 [testenv:mprof]
