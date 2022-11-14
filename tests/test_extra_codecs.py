@@ -262,7 +262,7 @@ def test_decompress_brotli(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 compression on pypy")
+@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 on pypy")
 def test_compress_deflate64(tmp_path):
     # prepare source data
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
@@ -281,6 +281,7 @@ def test_compress_deflate64(tmp_path):
 
 
 @pytest.mark.basic
+@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 on pypy")
 def test_decompress_deflate64(tmp_path):
     with zipfile.ZipFile(srcdata) as srczip:
         srczip.extractall(path=tmp_path.joinpath("src"))

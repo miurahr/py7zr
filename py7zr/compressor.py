@@ -272,12 +272,12 @@ class Deflate64Compressor(ISevenZipCompressor):
 
     def compress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if not self._enabled:
-            raise UnsupportedCompressionMethodError(None, "deflate64 compression is disabled on pypy.")
+            raise UnsupportedCompressionMethodError(None, "deflate64 is disabled on pypy.")
         return self._compressor.deflate(data)
 
     def flush(self) -> bytes:
         if not self._enabled:
-            raise UnsupportedCompressionMethodError(None, "inflate64 is not installed.")
+            raise UnsupportedCompressionMethodError(None, "deflate64 is disabled on pypy.")
         if self.flushed:
             return b""
         self.flushed = True
@@ -287,15 +287,15 @@ class Deflate64Compressor(ISevenZipCompressor):
 class Deflate64Decompressor(ISevenZipDecompressor):
     def __init__(self):
         self.flushed = False
-        if inflate64 is not None:
+        if hasattr(sys, "pypy_version_info"):
+            self._enabled = False
+        else:
             self._decompressor = inflate64.Inflater()
             self._enabled = True
-        else:
-            self._enabled = False
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         if not self._enabled:
-            raise UnsupportedCompressionMethodError(None, "inflate64 is not installed.")
+            raise UnsupportedCompressionMethodError(None, "deflate64 is disabled on pypy.")
         if len(data) == 0:
             if self.flushed:
                 return b""
