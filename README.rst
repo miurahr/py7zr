@@ -42,6 +42,15 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+Vulnerability warning
+=====================
+
+Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_ 
+
+You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
+
+.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
+
 Compression algorithms
 ======================
 
