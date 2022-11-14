@@ -45,7 +45,8 @@ encryption and decryption written by Python programming language.
 Vulnerability warning
 =====================
 
-Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_ 
+Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
+Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
 
 You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
 
