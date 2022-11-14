@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -98,7 +99,7 @@ def test_archivetest_deflate():
 
 
 @pytest.mark.files
-@pytest.mark.skipif(inflate64 is None, reason="inflate64 is not installed.")
+@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 on pypy")
 def test_archivetest_deflate64():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "deflate64.7z"), "r") as ar:
         assert ar.testzip() is None

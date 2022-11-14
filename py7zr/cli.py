@@ -340,11 +340,13 @@ class Cli:
         except py7zr.exceptions.PasswordRequired:
             print("The archive is encrypted, but password is not given. ABORT.")
             return 1
-        except lzma.LZMAError or _lzma.LZMAError:
+        except lzma.LZMAError:
             if password is None:
                 print("The archive is corrupted. ABORT.")
             else:
                 print("The archive is corrupted, or password is wrong. ABORT.")
+            return 1
+        except _lzma.LZMAError:
             return 1
 
         cb = None  # Optional[ExtractCallback]
@@ -365,11 +367,13 @@ class Cli:
         except py7zr.exceptions.PasswordRequired:
             print("The archive is encrypted, but password is not given. ABORT.")
             return 1
-        except lzma.LZMAError or _lzma.LZMAError:
+        except lzma.LZMAError:
             if password is None:
                 print("The archive is corrupted. ABORT.")
             else:
                 print("The archive is corrupted, or password is wrong. ABORT.")
+            return 1
+        except _lzma.LZMAError:
             return 1
         else:
             return 0

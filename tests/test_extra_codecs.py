@@ -2,6 +2,7 @@ import hashlib
 import io
 import os
 import pathlib
+import sys
 import zipfile
 import zlib
 
@@ -13,11 +14,6 @@ import py7zr.compressor
 from py7zr import UnsupportedCompressionMethodError
 from py7zr.properties import FILTER_DEFLATE64
 from tests import p7zip_test
-
-try:
-    import inflate64  # type: ignore
-except ImportError:
-    inflate64 = None
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
 srcdata = testdata_path.joinpath("src.zip")
@@ -266,7 +262,7 @@ def test_decompress_brotli(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(inflate64 is None, reason="inflate64 is not installed.")
+@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 on pypy")
 def test_compress_deflate64(tmp_path):
     # prepare source data
     with py7zr.SevenZipFile(testdata_path.joinpath("bzip2_2.7z").open(mode="rb")) as arc:
@@ -285,7 +281,7 @@ def test_compress_deflate64(tmp_path):
 
 
 @pytest.mark.basic
-@pytest.mark.skipif(inflate64 is None, reason="inflate64 is not installed.")
+@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="No support for deflate64 on pypy")
 def test_decompress_deflate64(tmp_path):
     with zipfile.ZipFile(srcdata) as srczip:
         srczip.extractall(path=tmp_path.joinpath("src"))
