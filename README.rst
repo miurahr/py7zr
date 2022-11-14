@@ -71,10 +71,12 @@ Supported algorithms
 .. note::
   * A feature handling symbolic link is basically compatible with ``p7zip`` implementation,
     but not work with original 7-zip because the original does not implement the feature.
+  * ``py7zr`` try checking symbolic links strictly and raise ValueError when bad link is requested,
+    but it does **not** guarantee to block all the bad cases.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
   * Enhanced Deflate is also known as `DEFLATE64` :sup:`TM` that is a registered trademark of `PKWARE, Inc.`
-
+  * Enhanced Deflate is tested only on CPython. It is disabled on PyPy.
 
 Not supported algorithms
 ------------------------
@@ -317,7 +319,7 @@ It hopefully works on M1 Mac too.
 Recommended versions are:
 
 - CPython 3.7.5, CPython 3.8.0 and later.
-- PyPy3.6-7.3.2 and later.
+- PyPy3.7-7.3.3 and later.
 
 Following fixes are included in these versions, and it is not fixed on python3.6.
 
