@@ -34,7 +34,7 @@
 .. image:: https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg
   :target: https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md
   
-..image:: https://snyk.io/advisor/python/py7zr/badge.svg
+.. image:: https://snyk.io/advisor/python/py7zr/badge.svg
   :target: https://snyk.io/advisor/python/py7zr
   :alt: py7zr
   
