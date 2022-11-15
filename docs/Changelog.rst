@@ -9,6 +9,18 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.3`_
+==========
+
+Fixed
+-----
+
+* Drop manual GC to improve performance when many files are handled. (#489, #490)
+* CI: fix test configurations (#494)
+  - Fix mypy error
+  - Skip deflate64 compression/decompression test on pypy
+  - There is an issue in dependency inflate64 library that causes SIGABORT and SIGSEGV on pypy
+
 `v0.20.2`_
 ==========
 
@@ -300,7 +312,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.2...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.3...HEAD
+.. _v0.20.3: https://github.com/miurahr/py7zr/compare/v0.20.2...v0.20.3
 .. _v0.20.2: https://github.com/miurahr/py7zr/compare/v0.20.1...v0.20.2
 .. _v0.20.1: https://github.com/miurahr/py7zr/compare/v0.20.0...v0.20.1
 .. _v0.20.0: https://github.com/miurahr/py7zr/compare/v0.19.0...v0.20.0
