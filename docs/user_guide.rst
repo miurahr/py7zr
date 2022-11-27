@@ -158,7 +158,7 @@ Extraction
 ----------
 
 Here is a several example for extraction from your python program.
-You can write it with very clean syntax because py7zr supports context maanager.
+You can write it with very clean syntax because py7zr supports context manager.
 
 .. code-block:: python
 
