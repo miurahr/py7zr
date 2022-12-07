@@ -42,6 +42,17 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+Security Notice
+===============
+
+py7zr v0.20.0 and before has a vulnerability. Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
+Please use v0.20.2 or later. 
+
+I realy appreciate Mr. Matteo Cosentino for notification and coorporation on security improvement.
+
+.. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
+
+
 Compression algorithms
 ======================
 
