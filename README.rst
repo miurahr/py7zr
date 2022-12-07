@@ -46,7 +46,7 @@ Security Notice
 ===============
 
 py7zr v0.20.0 and before has a vulnerability. Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
-Please use v0.20.2 or later. 
+Please use v0.20.2 or later,  v0.19.2 or v0.18.2.
 
 I realy appreciate Mr. Matteo Cosentino for notification and coorporation on security improvement.
 
