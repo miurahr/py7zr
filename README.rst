@@ -45,8 +45,14 @@ encryption and decryption written by Python programming language.
 Security Notice
 ===============
 
-py7zr v0.20.0 and before has a vulnerability. Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
-Please use v0.20.2 or later,  v0.19.2 or v0.18.2.
+Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
+Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
+
+Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
+
+You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
+
+.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
 
 I realy appreciate Mr. Matteo Cosentino for notification and coorporation on security improvement.
 
