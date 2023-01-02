@@ -167,7 +167,11 @@ isolated_build = True
 envlist = mypy, check, pypy{37,38,39}, py{37,38,39,310,311}, py39d, docs, mprof
 
 [testenv]
-passenv = GITHUB_* PYTEST_ADDOPTS COVERALLS_* LIBARCHIVE
+passenv =
+    GITHUB_*
+    PYTEST_ADDOPTS
+    COVERALLS_*
+    LIBARCHIVE
 extras = test
 commands =
     python -m pytest -vv
