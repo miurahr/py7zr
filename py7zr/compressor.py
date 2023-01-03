@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2021 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2023 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -532,7 +532,7 @@ class ZstdDecompressor(ISevenZipDecompressor):
         return self.decompressor.decompress(data)
 
 
-algorithm_class_map = {
+algorithm_class_map: Dict[int, Tuple[Any, Any]] = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
     FILTER_BROTLI: (BrotliCompressor, BrotliDecompressor),
     FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
@@ -546,7 +546,7 @@ algorithm_class_map = {
     FILTER_ARMTHUMB: (BcjArmtEncoder, BcjArmtDecoder),
     FILTER_POWERPC: (BcjPpcEncoder, BcjPpcDecoder),
     FILTER_SPARC: (BcjSparcEncoder, BcjSparcDecoder),
-}  # type: Dict[int, Tuple[Any, Any]]
+}
 
 
 class LZMA1Decompressor(ISevenZipDecompressor):
