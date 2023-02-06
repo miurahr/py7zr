@@ -25,7 +25,6 @@ import lzma
 import platform
 import sys
 
-
 MAGIC_7Z = binascii.unhexlify("377abcaf271c")
 FINISH_7Z = binascii.unhexlify("377abcaf271d")
 

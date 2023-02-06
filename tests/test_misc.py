@@ -6,12 +6,9 @@ import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
-
 import multivolumefile
 import pytest
-
 import py7zr
-
 from . import libarchive_extract, p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
