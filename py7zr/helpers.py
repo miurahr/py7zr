@@ -473,7 +473,7 @@ def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathl
             return pathlib.Path(remove_relative_path_marker(fname))
     else:
         outfile = canonical_path(path.joinpath(remove_relative_path_marker(fname)))
-        if is_relative_to(outfile, path):
+        if is_relative_to(outfile, canonical_path(path)):
             return pathlib.Path(outfile)
     raise Bad7zFile(f"Specified path is bad: {fname}")
 
