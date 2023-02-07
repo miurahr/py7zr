@@ -50,7 +50,7 @@ Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose
 
 Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
 
-You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
+You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12.
 
 .. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
 
