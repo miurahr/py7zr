@@ -6,9 +6,12 @@ import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
+
 import multivolumefile
 import pytest
+
 import py7zr
+
 from . import libarchive_extract, p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -172,10 +175,11 @@ def limit_memory(maxsize: int):
     :param maxsize: Maximum size of memory resource to limit
     :raises: MemoryError: When function reaches the limit.
     """
-    if sys.platform.startswith("win") or sys.platform.startswith('cygwin'):
+    if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
         yield
     else:
         import resource
+
         import psutil  # type: ignore
 
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)

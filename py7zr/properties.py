@@ -90,10 +90,11 @@ def get_memory_limit():
     :return: allowed chunk size in bytes.
     """
     default_limit = int(128e6)
-    if sys.platform.startswith("win") or sys.platform.startswith('cygwin'):
+    if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
         return default_limit
     else:
         import resource
+
         import psutil  # type: ignore
 
         soft, _ = resource.getrlimit(resource.RLIMIT_AS)
