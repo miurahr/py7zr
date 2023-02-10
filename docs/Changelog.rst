@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.4`_
+==========
+
+Fixed
+-----
+* Installation error in Cygwin (#504)
+
+
 `v0.20.3`_
 ==========
 
@@ -312,7 +320,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.4...HEAD
+.. _v0.20.4: https://github.com/miurahr/py7zr/compare/v0.20.3...v0.20.4
 .. _v0.20.3: https://github.com/miurahr/py7zr/compare/v0.20.2...v0.20.3
 .. _v0.20.2: https://github.com/miurahr/py7zr/compare/v0.20.1...v0.20.2
 .. _v0.20.1: https://github.com/miurahr/py7zr/compare/v0.20.0...v0.20.1
