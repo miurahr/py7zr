@@ -76,7 +76,6 @@ class CliExtractCallback(ExtractCallback):
 
 
 class Cli:
-
     dunits = {
         "b": 1,
         "B": 1,

@@ -460,7 +460,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (maxsize, compressed, uncompressed, packsize, solid,) = self._get_fileinfo_sizes(
+                (
+                    maxsize,
+                    compressed,
+                    uncompressed,
+                    packsize,
+                    solid,
+                ) = self._get_fileinfo_sizes(
                     pstat,
                     subinfo,
                     packinfo,
