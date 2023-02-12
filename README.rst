@@ -301,7 +301,7 @@ To create archive with algorithms such as zstandard, you can call with custom fi
 
     my_filters = [{"id": py7zr.FILTER_ZSTD}]
     another_filters = [{"id": py7zr.FILTER_ARM}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
-    with py7zr.SevenZipFile('target.7z', 'w', filters=my_filter) as archive:
+    with py7zr.SevenZipFile('target.7z', 'w', filters=my_filters) as archive:
         archive.writeall('/path/to/base_dir', 'base')
 
 
