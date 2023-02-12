@@ -77,13 +77,14 @@ check = [
       "mypy_extensions>=0.4.1",
       "check-manifest",
       "flake8<5",
-      "flake8-black",
+      "flake8-black>=0.3.6",
       "flake8-deprecated",
       "flake8-isort",
       "isort>=5.0.3",
       "pygments",
       "readme-renderer",
       "twine",
+      "black>=23.1.0",
 ]
 debug = [
       "pytest",
@@ -121,7 +122,7 @@ exclude_lines = ["if __name__ == .__main__.:", "pragma: no-cover", "@abstract", 
 
 [tool.black]
 line-length = 125
-target-version = ['py38']
+target-version = ['py39']
 
 [tool.isort]
 known_first_party = ['py7zr']
@@ -236,8 +237,8 @@ commands =
 [gh-actions]
 python =
     3.7: py37
-    3.8: py38, check, mypy, docs
-    3.9: py39
+    3.8: py38
+    3.9: py39, check, docs, mypy
     3.10: py310
     3.11: py311
     pypy-3.9: pypy39
