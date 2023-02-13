@@ -75,6 +75,7 @@ docs = [
 check = [
       "mypy>=0.940",
       "mypy_extensions>=0.4.1",
+      "types-psutil",
       "check-manifest",
       "flake8<5",
       "flake8-black>=0.3.6",

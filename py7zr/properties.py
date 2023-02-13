@@ -95,7 +95,7 @@ def get_memory_limit():
     else:
         import resource
 
-        import psutil  # type: ignore
+        import psutil
 
         soft, _ = resource.getrlimit(resource.RLIMIT_AS)
         if soft == -1:
