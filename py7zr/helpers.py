@@ -467,6 +467,9 @@ def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathl
     check f.filename has invalid directory traversals
     When condition is not satisfied, raise Bad7zFile
     """
+    if fname.startswith("/"):
+        fname = fname.lstrip("/")
+
     if path is None:
         target_path = canonical_path(pathlib.Path.cwd().joinpath(fname))
         if is_relative_to(target_path, pathlib.Path.cwd()):
