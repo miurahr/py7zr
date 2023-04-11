@@ -596,6 +596,10 @@ def test_extract_root_path_arcname(tmp_path):
         assert len(iterations) == 1
 
         _dict = archive.read(targets=iterations)
+        if _dict is None:
+            # fix typing errors
+            raise RuntimeError("Failed to read archive")
+
         assert len(_dict) == 1
         assert [*_dict.keys()] == [filename]
         assert _dict[filename].read() == content
