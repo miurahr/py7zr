@@ -591,7 +591,7 @@ def test_extract_root_path_arcname(tmp_path):
     content = bytes("This is a test", "ascii")
     filename = "a/b/test.txt"  # expected arcname
 
-    with py7zr.SevenZipFile(filename_7z, 'r') as archive:
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
         iterations = archive.getnames()
         assert len(iterations) == 1
 
@@ -604,6 +604,6 @@ def test_extract_root_path_arcname(tmp_path):
         assert [*_dict.keys()] == [filename]
         assert _dict[filename].read() == content
 
-    with py7zr.SevenZipFile(filename_7z, 'r') as archive:
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
         archive.extractall(path=tmp_path)
         assert tmp_path.joinpath(filename).exists()
