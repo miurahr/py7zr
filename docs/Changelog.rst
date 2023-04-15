@@ -9,6 +9,17 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.5`_
+==========
+
+Fixed
+-----
+* Remove root reference from file names (#513)
+
+Document
+--------
+* fix typo in the readme (#510)
+
 `v0.20.4`_
 ==========
 
@@ -320,7 +331,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.4...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.5...HEAD
+.. _v0.20.5: https://github.com/miurahr/py7zr/compare/v0.20.4...v0.20.5
 .. _v0.20.4: https://github.com/miurahr/py7zr/compare/v0.20.3...v0.20.4
 .. _v0.20.3: https://github.com/miurahr/py7zr/compare/v0.20.2...v0.20.3
 .. _v0.20.2: https://github.com/miurahr/py7zr/compare/v0.20.1...v0.20.2
