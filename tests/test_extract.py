@@ -581,3 +581,29 @@ def test_extract_hidden_linux_file(tmp_path):
         ]
         archive.extractall(path=tmp_path)
         assert tmp_path.joinpath(hidden_file_name).exists()
+
+
+@pytest.mark.files
+def test_extract_root_path_arcname(tmp_path):
+    # This test checks the extraction of a file with a arcname like
+    # "/a/b/test.txt" which shouldn't fail.
+    filename_7z = testdata_path.joinpath("root_path_arcname.7z")
+    content = bytes("This is a test", "ascii")
+    filename = "a/b/test.txt"  # expected arcname
+
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        iterations = archive.getnames()
+        assert len(iterations) == 1
+
+        _dict = archive.read(targets=iterations)
+        if _dict is None:
+            # fix typing errors
+            raise RuntimeError("Failed to read archive")
+
+        assert len(_dict) == 1
+        assert [*_dict.keys()] == [filename]
+        assert _dict[filename].read() == content
+
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        archive.extractall(path=tmp_path)
+        assert tmp_path.joinpath(filename).exists()
