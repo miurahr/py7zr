@@ -785,6 +785,8 @@ class FilesInfo:
                 if f[name] is not None:
                     defined.append(True)
                     num_defined += 1
+                    continue
+            defined.append(False)
         size = num_defined * 8 + 2
         if not reduce(and_, defined, True):
             size += bits_to_bytes(num_defined)
