@@ -178,7 +178,7 @@ extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy{37,38,39},py{36,37,38,39,310}: clean, check
+    pypy{37,38,39},py{37,38,39,310,311}: clean, check
 
 [testenv:py38]
 extras = test, test_compat
