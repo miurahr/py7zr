@@ -90,19 +90,22 @@ def get_memory_limit():
     :return: allowed chunk size in bytes.
     """
     default_limit = int(128e6)
-    if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
-        return default_limit
-    else:
+    if sys.platform.startswith("linux") or sys.platform.startswith("darwin") or sys.platform.startswith("openbsd"):
         import resource
 
         import psutil
 
-        soft, _ = resource.getrlimit(resource.RLIMIT_AS)
-        if soft == -1:
-            avmem = psutil.virtual_memory().available
-            return min(default_limit, (avmem - int(256e6)) >> 2)
-        else:
-            return min(default_limit, (soft - int(256e6)) >> 2)
+        try:
+            soft, _ = resource.getrlimit(resource.RLIMIT_DATA)
+            if soft == -1:
+                avmem = psutil.virtual_memory().available
+                return min(default_limit, (avmem - int(256e6)) >> 2)
+            else:
+                return min(default_limit, (soft - int(256e6)) >> 2)
+        except AttributeError:
+            pass
+    # fall back to default
+    return default_limit
 
 
 # Exposed constants
