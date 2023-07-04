@@ -213,7 +213,7 @@ as a virtual single file, (ex. multivolumefile library)
                 outfile.write(infile.read())
     with py7zr.SevenZipFile("result.7z", "r") as archive:
         archive.extractall()
-    os.unlink("result.7z)
+    os.unlink("result.7z")
 
 Here is another example. This example use multivolumefile library.
 The multivolumefile library is in pre-alpha status, so it is not recommend to use
