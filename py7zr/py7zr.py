@@ -1472,6 +1472,9 @@ class Worker:
     def writestr(self, fp: BinaryIO, f, folder):
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
+        if insize == 0:
+            fp.seek(-1 * foutsize, 1)  # rewind
+            return 0, None
         return self._after_write(insize, foutsize, crc)
 
     def flush_archive(self, fp, folder):
