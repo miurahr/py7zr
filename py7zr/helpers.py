@@ -456,7 +456,7 @@ def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
 def is_relative_to(my: pathlib.PurePath, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
     try:
-        my.relative_to(*other)
+        my.relative_to(canonical_path(*other))
     except ValueError:
         return False
     return True

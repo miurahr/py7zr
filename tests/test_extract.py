@@ -607,3 +607,11 @@ def test_extract_root_path_arcname(tmp_path):
     with py7zr.SevenZipFile(filename_7z, "r") as archive:
         archive.extractall(path=tmp_path)
         assert tmp_path.joinpath(filename).exists()
+
+
+@pytest.mark.files
+def test_extract_target_parent_folder(tmp_path):
+    target_path = pathlib.Path(os.path.relpath(tmp_path, os.getcwd()))
+    f = "solid.7z"
+    archive = py7zr.SevenZipFile(testdata_path.joinpath(f).open(mode="rb"))
+    check_archive(archive, target_path, False)
