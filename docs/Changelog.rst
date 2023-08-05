@@ -9,6 +9,20 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.6`_
+==========
+
+Fixed
+-----
+- fix: sanitize path when write (#525)
+- fix: allow specify target path in relative path (#530)
+- Avoid AttributeError on OpenBSD (#521)
+- Error appending file: KeyError: 'lastwritetime' (#517)
+
+Document
+--------
+- Fixing a string quote in user_guide document(#524)
+
 `v0.20.5`_
 ==========
 
@@ -331,7 +345,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.5...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.6...HEAD
+.. _v0.20.6: https://github.com/miurahr/py7zr/compare/v0.20.5...v0.20.6
 .. _v0.20.5: https://github.com/miurahr/py7zr/compare/v0.20.4...v0.20.5
 .. _v0.20.4: https://github.com/miurahr/py7zr/compare/v0.20.3...v0.20.4
 .. _v0.20.3: https://github.com/miurahr/py7zr/compare/v0.20.2...v0.20.3
