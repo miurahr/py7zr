@@ -32,6 +32,7 @@ import io
 import os
 import pathlib
 import queue
+import re
 import stat
 import sys
 from multiprocessing import Process
@@ -43,7 +44,14 @@ import multivolumefile
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names
-from py7zr.exceptions import Bad7zFile, CrcError, DecompressionError, InternalError, UnsupportedCompressionMethodError
+from py7zr.exceptions import (
+    AbsolutePathError,
+    Bad7zFile,
+    CrcError,
+    DecompressionError,
+    InternalError,
+    UnsupportedCompressionMethodError,
+)
 from py7zr.helpers import (
     ArchiveTimestamp,
     MemIO,
@@ -900,6 +908,25 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["lastwritetime"] = ArchiveTimestamp.from_now()
         return f
 
+    def _sanitize_archive_arcname(self, arcname):
+        if isinstance(arcname, str):
+            path = arcname
+        else:
+            path = str(arcname)
+        # Strip leading / (tar's directory separator) from filenames.
+        # Include os.sep (target OS directory separator) as well.
+        if path.startswith(("/", os.sep)):
+            path = path.lstrip("/" + os.sep)
+        if re.match("^[a-zA-Z]:", path):
+            path = path[2:]
+            # strip again
+            if path.startswith(("/", os.sep)):
+                path = path.lstrip("/" + os.sep)
+        if os.path.isabs(path) or re.match("^[a-zA-Z]:", path):
+            # Path is absolute even after stripping.
+            raise AbsolutePathError(arcname)
+        return path
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> List[str]:
@@ -1005,12 +1032,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
         """Write single target file into archive."""
+        if not isinstance(file, str) and not isinstance(file, pathlib.Path):
+            raise ValueError("Unsupported file type.")
+        if arcname is None:
+            arcname = self._sanitize_archive_arcname(file)
+        else:
+            arcname = self._sanitize_archive_arcname(arcname)
         if isinstance(file, str):
             path = pathlib.Path(file)
-        elif isinstance(file, pathlib.Path):
-            path = file
         else:
-            raise ValueError("Unsupported file type.")
+            path = file
         folder = self.header.initialize()
         file_info = self._make_file_info(path, arcname, self.dereference)
         self.header.files_info.files.append(file_info)
