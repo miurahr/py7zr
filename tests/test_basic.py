@@ -278,4 +278,4 @@ def test_py7zr_list_values():
 def test_multiple_uses():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "test_multiple.7z"), "w") as archive:
         archive.writestr('1', '1.txt')
-		archive.test()
+        archive.test()
