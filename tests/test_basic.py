@@ -273,3 +273,4 @@ def test_py7zr_list_values():
     assert file_list[1].crc32 == 0xB36AAEDB
     assert file_list[2].crc32 == 0xDCBF8D07
     assert file_list[3].crc32 == 0x80FC72BE
+
