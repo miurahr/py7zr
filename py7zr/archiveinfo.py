@@ -933,7 +933,7 @@ class Header:
             self._extract_header_info(buffer)
             return
         if pid != PROPERTY.ENCODED_HEADER:
-            raise TypeError("Unknown field: %r" % id)  # pragma: no-cover
+            raise TypeError("Unknown field: %r" % pid)  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
         buffer2 = io.BytesIO()
