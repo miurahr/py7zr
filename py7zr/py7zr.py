@@ -1449,7 +1449,7 @@ class Worker:
                 crc32 = calculate_crc32(tmp, crc32)
             else:
                 # The message q is not passed here, so we use a simpler one for now
-                warnings.warn("There are some data after the end of the payload data")
+                warnings.warn("There are some data after the end of the payload data!")
                 # out_remaining -= 1
                 # or make it simpler, just break.
                 break
