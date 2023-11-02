@@ -35,6 +35,7 @@ import queue
 import re
 import stat
 import sys
+import warnings
 from multiprocessing import Process
 from threading import Thread
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
@@ -1446,6 +1447,13 @@ class Worker:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
+            else:
+                # The message q is not passed here, so we use a simpler one for now
+                warnings.warn("There are some data after the end of the payload data")
+                # out_remaining -= 1
+                # or make it simpler, just break.
+                break
+
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:
