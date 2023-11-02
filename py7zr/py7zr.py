@@ -1220,7 +1220,7 @@ class Worker:
         self.src_start = src_start
         self.header = header
         self.current_file_index = len(self.files)
-        self.last_file_index = len(self.files)
+        self.last_file_index = len(self.files) - 1
         if mp:
             self.concurrent: Union[Type[Thread], Type[Process]] = Process
         else:
