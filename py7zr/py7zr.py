@@ -1450,9 +1450,9 @@ class Worker:
             else:
                 # The message q is not passed here, so we use a simpler one for now
                 warnings.warn("There are some data after the end of the payload data!")
-                # out_remaining -= 1
+                out_remaining -= 1
                 # or make it simpler, just break.
-                break
+                # break
 
             if out_remaining <= 0:
                 break
