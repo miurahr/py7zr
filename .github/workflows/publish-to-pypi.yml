@@ -17,11 +17,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 20
-      - name: Fetch release tag
-        run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+        uses: actions/checkout@v4
       - name: Set up Python 3.9🐍
         uses: actions/setup-python@v2
         with:
