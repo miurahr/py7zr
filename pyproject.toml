@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -27,16 +28,16 @@ classifiers = [
 ]
 dependencies = [
       "texttable",
-      "pycryptodomex>=3.6.6",
+      "pycryptodomex>=3.16.0",
       'importlib_metadata;python_version<"3.8"',
-      'brotli>=1.0.9;platform_python_implementation=="CPython"',
-      'brotlicffi>=1.0.9.2;platform_python_implementation=="PyPy"',
+      'brotli>=1.1.0;platform_python_implementation=="CPython"',
+      'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
-      "pyzstd>=0.14.4",
-      "pyppmd>=0.18.1,<1.1.0",
-      "pybcj>=0.6.0",
+      "pyzstd>=0.15.9",
+      "pyppmd>=1.1.0,<1.2.0",
+      "pybcj>=1.0.0,<1.1.0",
       "multivolumefile>=0.2.3",
-      'inflate64>=0.3.1;python_version>"3.6"',
+      "inflate64>=1.0.0,<1.1.0",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["readme", "version"]
@@ -166,7 +167,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{37,38,39}, py{37,38,39,310,311}, py39d, docs, mprof
+envlist = mypy, check, pypy{38,39,310}, py{38,39,310,311,312}, py39d, docs, mprof
 
 [testenv]
 passenv =
@@ -178,7 +179,7 @@ extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy{37,38,39},py{37,38,39,310,311}: clean, check
+    pypy{38,39,310},py{38,39,310,311,312}: clean, check
 
 [testenv:py38]
 extras = test, test_compat
@@ -237,10 +238,10 @@ commands =
 
 [gh-actions]
 python =
-    3.7: py37
     3.8: py38
     3.9: py39, check, docs, mypy
     3.10: py310
     3.11: py311
+    3.12: py312
     pypy-3.9: pypy39
 """
