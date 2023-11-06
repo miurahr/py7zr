@@ -1,6 +1,7 @@
 include *.rst
 include *.svg
 include *.toml
+include *.txt
 include .flake8
 include LICENSE
 include py7zr/py.typed
