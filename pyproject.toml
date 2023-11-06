@@ -205,7 +205,7 @@ deps =
 
 [testenv:mypy]
 extras = check
-commands = mypy py7zr
+commands = mypy py7zr --check-untyped-defs
 deps =
     pyzstd
 
