@@ -66,7 +66,10 @@ from py7zr.properties import (
 try:
     import brotli  # type: ignore  # noqa
 except ImportError:
-    import brotlicffi as brotli  # type: ignore  # noqa
+    try:
+        import brotlicffi as brotli  # type: ignore  # noqa
+    except ImportError:
+        brotli = None  # type: ignore
 brotli_major = 1
 brotli_minor = 0
 
@@ -475,6 +478,11 @@ class BCJEncoder(ISevenZipCompressor):
 
 class BrotliCompressor(ISevenZipCompressor):
     def __init__(self, level):
+        if brotli is None:
+            raise UnsupportedCompressionMethodError(
+                None,
+                "Brotli library load error may be happened. Please check your environment have a required system library.",
+            )
         self._compressor = brotli.Compressor(quality=level)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
@@ -486,6 +494,11 @@ class BrotliCompressor(ISevenZipCompressor):
 
 class BrotliDecompressor(ISevenZipDecompressor):
     def __init__(self, properties: bytes, block_size: int):
+        if brotli is None:
+            raise UnsupportedCompressionMethodError(
+                None,
+                "Brotli library load error may be happened. Please check your environment have a required system library.",
+            )
         if len(properties) != 3:
             raise UnsupportedCompressionMethodError(properties, "Unknown size of properties are passed")
         if (properties[0], properties[1]) > (brotli_major, brotli_minor):

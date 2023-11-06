@@ -24,8 +24,9 @@ using standard 'pip' command as like follows;
     $ pip install py7zr
 
 The py7zr depends on several external libraries. You should install these libraries with py7zr.
-There are ``PyCryptodome``, ``PyZstd``, ``PyPPMd``, ``bcj-cffi``, ``texttable``, and ``multivolumefile``.
-These pakcages are automatically installed when installing with ``pip`` command.
+There are `PyCryptodomex`_, `PyZstd`_, `PyPPMd`_, `pybcj`_, `texttable`_, and `multivolumefile`_.
+There are also dependency whether `Brotli`_ or `BrotliCFFI`_ depends on your python flavour.
+These packages are automatically installed when installing with ``pip`` command.
 
 Dependencies
 ------------
@@ -56,6 +57,21 @@ Package               Purpose
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
 
+.. note::
+
+    There is known issue when you run ``py7zr`` on Windows platform.
+    `issue#527`_ report that when installed on Azure VM Windows,
+    it failed to import `Brotli`_ library even when ``pip install``
+    was successfully executed. It is because `Brotli`_ library depends
+    ``vc_redist.x64`` Microsoft system library which should be come with
+    python distribution, but Brotli library does not find the DLL in search
+    path on certain environment. Please check details at `Brotli Issue#782`_
+
+    Current ``py7zr`` detect the import failure, and raise exception only when
+    user try to compress/decompress with Brotli compression algorithm.
+
+.. _`issue#527`: https://github.com/miurahr/py7zr/issues/527
+.. _`Brotli Issue#782`: https://github.com/google/brotli/issues/782#issuecomment-559516099
 
 
 Run Command
