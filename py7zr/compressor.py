@@ -69,7 +69,7 @@ except ImportError:
     try:
         import brotlicffi as brotli  # type: ignore  # noqa
     except ImportError:
-        brotli = None  # type: ignore
+        brotli = None
 brotli_major = 1
 brotli_minor = 0
 
