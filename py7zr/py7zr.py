@@ -335,8 +335,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         blocksize: Optional[int] = None,
         mp: bool = False,
     ) -> None:
+        # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+        # early check unsupported mode.
+        if mode == "x":
+            raise NotImplementedError
         self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
@@ -393,15 +397,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self._real_get_contents(password)
                 self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
                 self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-            elif mode in "w":
+            elif mode == "w":
                 self._prepare_write(filters, password)
-            elif mode in "x":
-                raise NotImplementedError
             elif mode == "a":
                 self._real_get_contents(password)
                 self._prepare_append(filters, password)
             else:
-                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")
+                raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")  # never come here
         except Exception as e:
             self._fpclose()
             raise e
@@ -468,21 +470,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (
-                    maxsize,
-                    compressed,
-                    uncompressed,
-                    packsize,
-                    solid,
-                ) = self._get_fileinfo_sizes(
-                    pstat,
-                    subinfo,
-                    packinfo,
-                    folder,
-                    packsizes,
-                    unpacksizes,
-                    file_in_solid,
-                    numinstreams,
+                (maxsize, compressed, uncompressed, packsize, solid) = self._get_fileinfo_sizes(
+                    pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams
                 )
                 pstat.input += 1
                 folder.solid = solid
@@ -692,10 +681,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
 
     def _write_flush(self):
-        if self.header._initialized:
-            folder = self.header.main_streams.unpackinfo.folders[-1]
-            self.worker.flush_archive(self.fp, folder)
-        self._write_header()
+        if self.header is not None:
+            if self.header._initialized:
+                folder = self.header.main_streams.unpackinfo.folders[-1]
+                self.worker.flush_archive(self.fp, folder)
+            self._write_header()
 
     def _write_header(self):
         """Write header and update signature header."""
