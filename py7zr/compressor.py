@@ -562,6 +562,17 @@ algorithm_class_map: Dict[int, Tuple[Any, Any]] = {
 }
 
 
+class LZMA1Compressor(ISevenZipCompressor):
+    def __init__(self, filters):
+        self._compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._compressor.compress(data)
+
+    def flush(self) -> bytes:
+        return self._compressor.flush()
+
+
 class LZMA1Decompressor(ISevenZipDecompressor):
     def __init__(self, filters, unpacksize):
         self._decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
@@ -844,7 +855,7 @@ class SevenZipCompressor:
             raise UnsupportedCompressionMethodError(filters, "Unknown combination of methods.")
 
     def _set_native_compressors_coders(self, filters):
-        self.chain.append(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
+        self.chain.append(LZMA1Compressor(filters))
         self._unpacksizes.append(0)
         for filter in filters:
             self.coders.insert(0, SupportedMethods.get_coder(filter))
@@ -910,14 +921,16 @@ class SevenZipCompressor:
                 data += compressor.flush()
             else:
                 data = compressor.flush()
+        if data is None:
+            return 0
         self.packsize += len(data)
         self.digest = calculate_crc32(data, self.digest)
         fp.write(data)
         return len(data)
 
     @property
-    def unpacksizes(self):
-        result = []
+    def unpacksizes(self) -> List[int]:
+        result: List[int] = []
         shift = 0
         prev = False
         for i, r in enumerate(self.methods_map):
@@ -936,8 +949,8 @@ class MethodsType(Enum):
 class SupportedMethods:
     """Hold list of methods."""
 
-    formats = [{"name": "7z", "magic": MAGIC_7Z}]
-    methods = [
+    formats: List[Dict[str, Any]] = [{"name": "7z", "magic": MAGIC_7Z}]
+    methods: List[Dict[str, Any]] = [
         {
             "id": COMPRESSION_METHOD.COPY,
             "name": "COPY",

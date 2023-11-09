@@ -468,21 +468,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (
-                    maxsize,
-                    compressed,
-                    uncompressed,
-                    packsize,
-                    solid,
-                ) = self._get_fileinfo_sizes(
-                    pstat,
-                    subinfo,
-                    packinfo,
-                    folder,
-                    packsizes,
-                    unpacksizes,
-                    file_in_solid,
-                    numinstreams,
+                (maxsize, compressed, uncompressed, packsize, solid) = self._get_fileinfo_sizes(
+                    pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams
                 )
                 pstat.input += 1
                 folder.solid = solid
@@ -806,7 +793,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return False
 
     def _var_release(self):
-        self._dict = None
+        self._dict = {}
         self.worker.close()
         del self.worker
         del self.files
@@ -1458,12 +1445,12 @@ class Worker:
         Find the target member of a symlink or hardlink member in the archive.
         """
         targetname: str = target.as_posix()
-        linkname = readlink(targetname)
+        linkname: Union[str, pathlib.Path] = readlink(targetname)
         # Check windows full path symlinks
-        if linkname.startswith("\\\\?\\"):
-            linkname = linkname[4:]
+        if str(linkname).startswith("\\\\?\\"):
+            linkname = str(linkname)[4:]
         # normalize as posix style
-        linkname: str = pathlib.Path(linkname).as_posix()
+        linkname = pathlib.Path(linkname).as_posix()
         member = None
         for j in range(len(self.files)):
             if linkname == self.files[j].origin.as_posix():

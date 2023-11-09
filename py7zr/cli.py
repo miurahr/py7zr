@@ -150,7 +150,8 @@ class Cli:
     @staticmethod
     def _get_version():
         s = inspect.stack()
-        module_name = inspect.getmodule(s[0][0]).__name__
+        _module = inspect.getmodule(s[0][0])
+        module_name = _module.__name__ if _module is not None else "unknown"
         py_version = platform.python_version()
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
@@ -177,7 +178,7 @@ class Cli:
         table.set_cols_align(["l", "r"])
         for f in SupportedMethods.formats:
             m = "".join(" {:02x}".format(x) for x in f["magic"])
-            table.add_row([f["name"], m])
+            table.add_row([str(f["name"]), m])
         print(table.draw())
         print("\nCodecs and hashes:")
         table = texttable.Texttable()
@@ -185,8 +186,10 @@ class Cli:
         table.set_cols_dtype(["t", "t"])
         table.set_cols_align(["l", "r"])
         for c in SupportedMethods.methods:
-            m = "".join("{:02x}".format(x) for x in c["id"])
-            table.add_row([m, c["name"]])
+            method_id: bytes = c["id"]
+            m = "".join("{:02x}".format(x) for x in method_id)
+            method_name: str = c["name"]
+            table.add_row([m, method_name])
         table.add_row(["0", "CRC32"])
         if is_check_supported(CHECK_SHA256):
             table.add_row(["0", "SHA256"])
@@ -218,10 +221,11 @@ class Cli:
             archive_info = a.archiveinfo()
             archive_list = a.list()
             if verbose:
-                if isinstance(target, io.IOBase):
-                    file.write("Listing archive: {}\n".format(target.name))
+                if isinstance(target, io.FileIO) or isinstance(target, multivolumefile.MultiVolume):
+                    file_name: str = target.name  # type: ignore
                 else:
-                    file.write("Listing archive: {}\n".format(str(target)))
+                    file_name = str(target)
+                file.write("Listing archive: {}\n".format(file_name))
                 file.write("--\n")
                 file.write("Path = {}\n".format(archive_info.filename))
                 file.write("Type = 7z\n")
@@ -385,9 +389,12 @@ class Cli:
 
     def _volumesize_unitconv(self, size: str) -> int:
         m = self.unit_pattern.match(size)
-        num = m.group(1)
-        unit = m.group(2)
-        return int(num) if unit is None else int(num) * self.dunits[unit]
+        if m is not None:
+            num = m.group(1)
+            unit = m.group(2)
+            return int(num) if unit is None else int(num) * self.dunits[unit]
+        else:
+            return -1
 
     def run_create(self, args):
         sztarget = args.arcfile  # type: str
