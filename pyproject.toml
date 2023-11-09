@@ -76,6 +76,7 @@ docs = [
 check = [
       "mypy>=0.940",
       "mypy_extensions>=0.4.1",
+      "lxml",
       "types-psutil",
       "check-manifest",
       "flake8<7",
@@ -139,8 +140,10 @@ line_length = 125
 [tool.mypy]
 warn_redundant_casts = true
 warn_unused_ignores = true
+warn_return_any = false
 strict_optional = true
 show_column_numbers = true
+check_untyped_defs = true
 
 [tool.check-manifest]
 ignore = ["py7zr/version.py", "azure-pipelines.yml", ".readthedocs.yml", "codecov.yml"]
@@ -205,7 +208,7 @@ deps =
 
 [testenv:mypy]
 extras = check
-commands = mypy py7zr --check-untyped-defs
+commands = mypy --html-report build/mypy py7zr
 deps =
     pyzstd
 
