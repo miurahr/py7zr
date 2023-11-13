@@ -9,6 +9,18 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.20.8`_
+==========
+Fixed
+-----
+* Detect brotli import error (#543)
+
+Changed
+-------
+* refactor: hardening SevenZipFile constructor (#547)
+* refactor: improve type safe functions (#545)
+* chore: add git export configuration (#544)
+
 `v0.20.7`_
 ==========
 Changed
@@ -351,7 +363,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.7...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.8...HEAD
+.. _v0.20.8: https://github.com/miurahr/py7zr/compare/v0.20.7...v0.20.8
 .. _v0.20.7: https://github.com/miurahr/py7zr/compare/v0.20.6...v0.20.7
 .. _v0.20.6: https://github.com/miurahr/py7zr/compare/v0.20.5...v0.20.6
 .. _v0.20.5: https://github.com/miurahr/py7zr/compare/v0.20.4...v0.20.5
