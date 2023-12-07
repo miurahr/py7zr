@@ -425,7 +425,11 @@ def test_close_unlink(tmp_path):
 @pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="Not working with pypy3")
 def test_asyncio_executor(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, "test_1.7z"), str(tmp_path.joinpath("test_1.7z")))
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     task = asyncio.ensure_future(aio7zr(tmp_path.joinpath("test_1.7z"), path=tmp_path))
     loop.run_until_complete(task)
     loop.run_until_complete(asyncio.sleep(3))
