@@ -892,7 +892,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["data"] = bio
         f["filename"] = pathlib.Path(arcname).as_posix()
         f["uncompressed"] = size
-        f["emptystream"] = size == None
+        f["emptystream"] = False
         f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
         f["creationtime"] = ArchiveTimestamp.from_now()
         f["lastwritetime"] = ArchiveTimestamp.from_now()
