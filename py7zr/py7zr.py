@@ -553,30 +553,30 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 else:
                     raise e
-        fnames: List[str] = []  # check duplicated filename in one archive?
+        if targets is not None:
+            # faster lookups
+            targets = set(targets)
+        fnames: Dict[str, int] = {}  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
+            if targets is not None and f.filename not in targets:
+                self.worker.register_filelike(f.id, None)
+                continue
+
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
             if f.filename not in fnames:
                 outname = f.filename
+                fnames[f.filename] = 0
             else:
-                i = 0
-                while True:
-                    outname = f.filename + "_%d" % i
-                    if outname not in fnames:
-                        break
-                    i += 1
-            fnames.append(outname)
+                outname = f.filename + "_%d" % fnames[f.filename]
+                fnames[f.filename] += 1
             if path is None or path.is_absolute():
                 outfilename = get_sanitized_output_path(outname, path)
             else:
                 outfilename = get_sanitized_output_path(outname, pathlib.Path(os.getcwd()).joinpath(path))
-            if targets is not None and f.filename not in targets:
-                self.worker.register_filelike(f.id, None)
-                continue
             if return_dict:
                 if f.is_directory or f.is_socket:
                     # ignore special files and directories
