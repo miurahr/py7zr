@@ -37,7 +37,7 @@ import stat
 import sys
 from multiprocessing import Process
 from threading import Thread
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
+from typing import IO, Any, BinaryIO, Dict, Collection, List, Optional, Tuple, Type, Union
 
 import multivolumefile
 
@@ -527,7 +527,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _extract(
         self,
         path: Optional[Any] = None,
-        targets: Optional[List[str]] = None,
+        targets: Optional[Collection[str]] = None,
         return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
     ) -> Optional[Dict[str, IO[Any]]]:
@@ -979,11 +979,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         self._extract(path=path, return_dict=False, callback=callback)
 
-    def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+    def read(self, targets: Optional[Collection[str]] = None) -> Optional[Dict[str, IO[Any]]]:
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None) -> None:
         self._extract(path, targets, return_dict=False)
 
     def reporter(self, callback: ExtractCallback):
