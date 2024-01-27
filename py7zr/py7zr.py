@@ -37,7 +37,7 @@ import stat
 import sys
 from multiprocessing import Process
 from threading import Thread
-from typing import IO, Any, BinaryIO, Dict, Collection, List, Optional, Tuple, Type, Union
+from typing import IO, Any, BinaryIO, Collection, Dict, List, Optional, Tuple, Type, Union
 
 import multivolumefile
 
