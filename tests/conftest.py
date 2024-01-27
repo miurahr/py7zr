@@ -1,4 +1,4 @@
-# Configuration for pytest to automatically collect types.
+# Configuration for pytest.
 # Thanks to Guilherme Salgado.
 
 import cpuinfo
