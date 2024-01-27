@@ -1,6 +1,5 @@
 # Configuration for pytest to automatically collect types.
 # Thanks to Guilherme Salgado.
-import os
 
 import cpuinfo
 import pytest
