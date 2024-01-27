@@ -9,7 +9,7 @@ import pathlib
 import shutil
 import stat
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -43,7 +43,7 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, "r")
     assert archive.testzip() is None
     archive.close()
-    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
+    mtime = datetime.fromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime, timezone.utc)
     expected = (
         "total 1 files and directories in archive\n"
         "   Date      Time    Attr         Size   Compressed  Name\n"
@@ -171,7 +171,7 @@ def test_compress_file_0(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, "r")
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] == 1
     assert archive.testzip() is None
-    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
+    mtime = datetime.fromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime, timezone.utc)
     expected = (
         "total 1 files and directories in archive\n"
         "   Date      Time    Attr         Size   Compressed  Name\n"
