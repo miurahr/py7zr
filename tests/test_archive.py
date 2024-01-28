@@ -1163,3 +1163,11 @@ def test_compress_win32_absolute_arcname(tmp_path):
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+
+@pytest.mark.files
+def test_empty_stream(tmp_path):
+  try:
+    with py7zr.SevenZipFile(file="test.7z",mode="w") as archive:
+      archive.writestr(data="",arcname="empty.txt")
+  except:
+    pytest.fail("Exception raised")
