@@ -35,6 +35,7 @@ import queue
 import re
 import stat
 import sys
+import warnings
 from multiprocessing import Process
 from threading import Thread
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
@@ -1430,12 +1431,22 @@ class Worker:
         max_block_size = get_memory_limit()
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
+
+        data_error_break = False
         while out_remaining > 0:
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
+            else:
+                # Break if the code falls to this section twice
+                if data_error_break:
+                    break
+                # The message q is not passed here, so we use a simpler one for now
+                warnings.warn("There are some data after the end of the payload data!")
+                data_error_break=True
+
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:
