@@ -35,6 +35,7 @@ import queue
 import re
 import stat
 import sys
+import time
 from multiprocessing import Process
 from threading import Thread
 from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
@@ -1434,8 +1435,8 @@ class Worker:
         max_block_size = get_memory_limit()
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
-        report_step_size = 25 * 2 ** 20
-        decompressed_part_size = 0
+        previous_update_at = time.time()
+        decompressed_bytes = 0
         while out_remaining > 0:
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
@@ -1443,10 +1444,12 @@ class Worker:
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
             if q is not None:
-                decompressed_part_size += len(tmp)
-                if out_remaining <= 0 or decompressed_part_size >= report_step_size:
-                    q.put(("u", None, str(decompressed_part_size)))
-                    decompressed_part_size = 0
+                time_delta = time.time() - previous_update_at
+                decompressed_bytes += len(tmp)
+                if out_remaining <= 0 or time_delta >= 1:
+                    q.put(("u", None, str(decompressed_bytes)))
+                    previous_update_at += time_delta
+                    decompressed_bytes = 0
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:
