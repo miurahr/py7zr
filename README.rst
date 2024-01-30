@@ -42,6 +42,16 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+Discussion Forum
+================
+
+You are welcome to join discussions on project forum/builtin-board at
+https://github.com/miurahr/py7zr/discussions
+
+You can see announcements of new releases, questions and answers, and
+new feature ideas. When you doubt for usage of py7zr library with unclear
+manuals, please feel easy to raise question on forum.
+
 Security Notice
 ===============
 
@@ -435,7 +445,7 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019-2022 Hiroshi Miura
+* Copyright (C) 2019-2024 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov
