@@ -36,6 +36,11 @@ class Callback(ABC):
         pass  # noqa
 
     @abstractmethod
+    def report_update(self, decompressed_bytes):
+        """report an event for decompressed part of file."""
+        pass  # noqa
+
+    @abstractmethod
     def report_end(self, processing_file_path, wrote_bytes):
         """report an end event of specified archive file and its output bytes."""
         pass  # noqa
