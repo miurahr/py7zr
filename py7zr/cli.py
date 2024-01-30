@@ -57,6 +57,9 @@ class CliExtractCallback(ExtractCallback):
         self.ofd.write("- {}".format(processing_file_path))
         self.pwidth += len(processing_file_path) + 2
 
+    def report_update(self, decompressed_bytes):
+        pass
+
     def report_end(self, processing_file_path, wrote_bytes):
         self.total_bytes += int(wrote_bytes)
         plest = self.columns - self.pwidth
