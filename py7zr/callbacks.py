@@ -37,7 +37,8 @@ class Callback(ABC):
 
     @abstractmethod
     def report_update(self, decompressed_bytes):
-        """report an event when large file is being extracted more than 1 second or when extraction is finished."""
+        """report an event when large file is being extracted more than 1 second or when extraction is finished.
+        receives a number of decompressed bytes since the last update."""
         pass  # noqa
 
     @abstractmethod
