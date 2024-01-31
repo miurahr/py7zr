@@ -138,7 +138,7 @@ def test_extract_callback(tmp_path):
             self.ofd.write('start "{}" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
 
         def report_update(self, decompressed_bytes):
-            self.ofd.write('decompressed part of {} bytes\n'.format(decompressed_bytes))
+            self.ofd.write("decompressed part of {} bytes\n".format(decompressed_bytes))
 
         def report_end(self, processing_file_path, wrote_bytes):
             self.ofd.write('end "{}" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))
