@@ -35,9 +35,10 @@ import queue
 import re
 import stat
 import sys
+import time
 from multiprocessing import Process
 from threading import Thread
-from typing import IO, Any, BinaryIO, Dict, List, Optional, Tuple, Type, Union
+from typing import IO, Any, BinaryIO, Collection, Dict, List, Optional, Tuple, Type, Union
 
 import multivolumefile
 
@@ -527,7 +528,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _extract(
         self,
         path: Optional[Any] = None,
-        targets: Optional[List[str]] = None,
+        targets: Optional[Collection[str]] = None,
         return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
     ) -> Optional[Dict[str, IO[Any]]]:
@@ -553,30 +554,30 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 else:
                     raise e
-        fnames: List[str] = []  # check duplicated filename in one archive?
+        if targets is not None:
+            # faster lookups
+            targets = set(targets)
+        fnames: Dict[str, int] = {}  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
+            if targets is not None and f.filename not in targets:
+                self.worker.register_filelike(f.id, None)
+                continue
+
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
             # Currently always overwrite by latter archives.
             # TODO: provide option to select overwrite or skip.
             if f.filename not in fnames:
                 outname = f.filename
+                fnames[f.filename] = 0
             else:
-                i = 0
-                while True:
-                    outname = f.filename + "_%d" % i
-                    if outname not in fnames:
-                        break
-                    i += 1
-            fnames.append(outname)
+                outname = f.filename + "_%d" % fnames[f.filename]
+                fnames[f.filename] += 1
             if path is None or path.is_absolute():
                 outfilename = get_sanitized_output_path(outname, path)
             else:
                 outfilename = get_sanitized_output_path(outname, pathlib.Path(os.getcwd()).joinpath(path))
-            if targets is not None and f.filename not in targets:
-                self.worker.register_filelike(f.id, None)
-                continue
             if return_dict:
                 if f.is_directory or f.is_socket:
                     # ignore special files and directories
@@ -979,11 +980,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         self._extract(path=path, return_dict=False, callback=callback)
 
-    def read(self, targets: Optional[List[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+    def read(self, targets: Optional[Collection[str]] = None) -> Optional[Dict[str, IO[Any]]]:
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[List[str]] = None) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None) -> None:
         self._extract(path, targets, return_dict=False)
 
     def reporter(self, callback: ExtractCallback):
@@ -997,6 +998,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     break
                 elif item[0] == "s":
                     callback.report_start(item[1], item[2])
+                elif item[0] == "u":
+                    callback.report_update(item[2])
                 elif item[0] == "e":
                     callback.report_end(item[1], item[2])
                 elif item[0] == "pre":
@@ -1350,7 +1353,7 @@ class Worker:
                 if not f.emptystream:
                     if f.is_junction and not isinstance(fileish, MemIO) and sys.platform == "win32":
                         with io.BytesIO() as ofp:
-                            self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end)
+                            self.decompress(fp, f.folder, ofp, f.uncompressed, f.compressed, src_end, q)
                             dst: str = ofp.read().decode("utf-8")
                             if is_path_valid(fileish.parent.joinpath(dst), path):
                                 # fileish.unlink(missing_ok=True) > py3.7
@@ -1362,7 +1365,7 @@ class Worker:
                                 raise Bad7zFile("Junction point out of target directory.")
                     elif f.is_symlink and not isinstance(fileish, MemIO):
                         with io.BytesIO() as omfp:
-                            self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end)
+                            self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end, q)
                             omfp.seek(0)
                             dst = omfp.read().decode("utf-8")
                             # check sym_target points inside an archive target?
@@ -1376,7 +1379,7 @@ class Worker:
                                 raise Bad7zFile("Symlink point out of target directory.")
                     else:
                         with fileish.open(mode="wb") as obfp:
-                            crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end)
+                            crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end, q)
                             obfp.seek(0)
                             if f.crc32 is not None and crc32 != f.crc32:
                                 raise CrcError(crc32, f.crc32, f.filename)
@@ -1411,6 +1414,7 @@ class Worker:
         size: int,
         compressed_size: Optional[int],
         src_end: int,
+        q: Optional[queue.Queue] = None,
     ) -> int:
         """
         decompressor wrapper called from extract method.
@@ -1421,6 +1425,7 @@ class Worker:
         :parameter size: uncompressed size of target file.
         :parameter compressed_size: compressed size of target file.
         :parameter src_end: end position of the folder
+        :parameter q: the queue for the reporter
 
         :returns None
 
@@ -1430,12 +1435,21 @@ class Worker:
         max_block_size = get_memory_limit()
         crc32 = 0
         decompressor = folder.get_decompressor(compressed_size)
+        previous_update_at = time.time()
+        decompressed_bytes = 0
         while out_remaining > 0:
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
+            if q is not None:
+                time_delta = time.time() - previous_update_at
+                decompressed_bytes += len(tmp)
+                if out_remaining <= 0 or time_delta >= 1:
+                    q.put(("u", None, str(decompressed_bytes)))
+                    previous_update_at += time_delta
+                    decompressed_bytes = 0
             if out_remaining <= 0:
                 break
         if fp.tell() >= src_end:

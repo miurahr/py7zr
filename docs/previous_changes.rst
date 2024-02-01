@@ -565,8 +565,8 @@ Fixed
 
 * Update README to indicate supported python version as 3.5 and later, pypy3 7.1 and later.
 
-.. _`PyPy3-3088`: https://foss.heptapod.net/pypy/pypy/-/issues/3088
-.. _`PyPy3-3090`: https://foss.heptapod.net/pypy/pypy/-/issues/3090
+.. _`PyPy3-3088`: https://github.com/pypy/pypy/issues/3088
+.. _`PyPy3-3090`: https://github.com/pypy/pypy/issues/3090
 
 
 `v0.3.5`_
