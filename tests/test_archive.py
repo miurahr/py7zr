@@ -1167,8 +1167,10 @@ def test_compress_win32_absolute_arcname(tmp_path):
 
 @pytest.mark.files
 def test_empty_stream(tmp_path):
-    try:
-        with py7zr.SevenZipFile(file=tmp_path / "test.7z", mode="w") as archive:
-            archive.writestr(data="", arcname="empty.txt")
-    except AttributeError:
-        pytest.fail("Exception raised")
+    archive = py7zr.SevenZipFile(file=tmp_path / "test.7z", mode="w")
+    archive.writestr(data="", arcname="empty.txt")
+    assert len(archive.files.files_list) == 1
+    assert archive.header.files_info.files[0]["emptystream"] is True
+    archive.close()
+    p7zip_test(tmp_path / "test.7z")
+
