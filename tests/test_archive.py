@@ -1170,7 +1170,7 @@ def test_empty_stream(tmp_path):
     archive = py7zr.SevenZipFile(file=tmp_path / "test.7z", mode="w")
     archive.writestr(data="", arcname="empty.txt")
     assert len(archive.files.files_list) == 1
-    assert archive.header.files_info.files[0]['uncompressed'] == 0
+    assert archive.header.files_info.files[0]["uncompressed"] == 0
     archive.close()
     p7zip_test(tmp_path / "test.7z")
 
