@@ -1173,4 +1173,3 @@ def test_empty_stream(tmp_path):
     assert archive.header.files_info.files[0]["uncompressed"] == 0
     archive.close()
     p7zip_test(tmp_path / "test.7z")
-
