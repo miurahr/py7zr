@@ -1163,3 +1163,13 @@ def test_compress_win32_absolute_arcname(tmp_path):
     #
     p7zip_test(tmp_path / "target.7z")
     libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+
+
+@pytest.mark.files
+def test_empty_stream(tmp_path):
+    archive = py7zr.SevenZipFile(file=tmp_path / "test.7z", mode="w")
+    archive.writestr(data="", arcname="empty.txt")
+    assert len(archive.files.files_list) == 1
+    assert archive.header.files_info.files[0]["uncompressed"] == 0
+    archive.close()
+    p7zip_test(tmp_path / "test.7z")

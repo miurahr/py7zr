@@ -893,7 +893,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["data"] = bio
         f["filename"] = pathlib.Path(arcname).as_posix()
         f["uncompressed"] = size
-        f["emptystream"] = size == 0
+        f["emptystream"] = False
         f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
         f["creationtime"] = ArchiveTimestamp.from_now()
         f["lastwritetime"] = ArchiveTimestamp.from_now()
@@ -1067,7 +1067,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             size = last - current
         else:
             raise ValueError("Wrong argument passed for argument bio.")
-        if size > 0:
+        if size >= 0:
             folder = self.header.initialize()
             file_info = self._make_file_info_from_name(bio, size, arcname)
             self.header.files_info.files.append(file_info)
