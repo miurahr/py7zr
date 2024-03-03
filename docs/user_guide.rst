@@ -252,6 +252,10 @@ following code will extract multi-volume archive.
             archive.extractall()
 
 
+
+Creation of multi-volume archive
+------------------------------------
+
 If you want to create multi volume archive using multivolumefile library,
 following example do it for you.
 

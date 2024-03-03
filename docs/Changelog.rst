@@ -9,6 +9,21 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.21.0`_
+==========
+Changed
+-------
+* Speed up extraction when number of files is very large (#555)
+* Replace deprecated functions on python 3.12 (#550)
+
+Added
+-----
+* Add report_update() for logging large files extraction (#558)
+
+Document
+--------
+* Add subsection of multi-volume creation (#568)
+
 `v0.20.8`_
 ==========
 Fixed
@@ -363,7 +378,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.20.8...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.21.0...HEAD
+.. _v0.21.0: https://github.com/miurahr/py7zr/compare/v0.20.8...v0.21.0
 .. _v0.20.8: https://github.com/miurahr/py7zr/compare/v0.20.7...v0.20.8
 .. _v0.20.7: https://github.com/miurahr/py7zr/compare/v0.20.6...v0.20.7
 .. _v0.20.6: https://github.com/miurahr/py7zr/compare/v0.20.5...v0.20.6

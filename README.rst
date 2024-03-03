@@ -42,8 +42,20 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
+Discussion Forum
+================
+
+You are welcome to join discussions on project forum/builtin-board at
+https://github.com/miurahr/py7zr/discussions
+
+You can see announcements of new releases, questions and answers, and
+new feature ideas. When you doubt for usage of py7zr library with unclear
+manuals, please feel easy to raise question on forum.
+
 Security Notice
 ===============
+
+Please find a `Security Policy`_ of this project.
 
 Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
 Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
@@ -54,10 +66,11 @@ You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.
 
 .. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
 
-I realy appreciate Mr. Matteo Cosentino for notification and coorporation on security improvement.
+I really appreciate Mr. Matteo Cosentino for notification and corporation on security improvement.
 
 .. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
 
+.. _`Security Policy` : https://py7zr.readthedocs.io/en/latest/SECURITY.html
 
 Compression algorithms
 ======================
@@ -136,9 +149,15 @@ User manuals
 Developer guide
 ---------------
 
-* `Contributor guide`_ for one want to contribute the project.
+* `Contribution guidelines`_ for this project.
 
-* `7z file specification`_
+* `Contribution guidelines(html)`_  for this project.
+
+* `Code of conduct`_ for this project.
+
+* `Code of conduct(html)`_ for this project.
+
+* `7z file specification`_ that py7zr stand on.
 
 
 .. _`User Guide`: https://py7zr.readthedocs.io/en/latest/user_guide.html
@@ -147,7 +166,13 @@ Developer guide
 
 .. _`Manual` : https://py7zr.readthedocs.io/en/stable/
 
-.. _`Contributor guide` : https://py7zr.readthedocs.io/en/latest/contribution.html
+.. _`Contribution guidelines(html)` : https://py7zr.readthedocs.io/en/latest/contribution.html
+
+.. _`Contribution guidelines` : docs/contribution.rst
+
+.. _`Code  of conduct` : docs/CODE_OF_CONDUCT.rst
+
+.. _`Code  of conduct(html)` : https://py7zr.readthedocs.io/en/latest/CODE_OF_CONDUCT.html
 
 .. _`7z file specification` : https://py7zr.readthedocs.io/en/latest/archive_format.html
 
@@ -420,7 +445,7 @@ Use Cases
 License
 =======
 
-* Copyright (C) 2019-2022 Hiroshi Miura
+* Copyright (C) 2019-2024 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov

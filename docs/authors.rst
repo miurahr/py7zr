@@ -12,6 +12,7 @@ Contributors, listed alphabetically, are:
 * Alan Lee -- Update documentation
 * Alexander Kapshuna -- Fix shutil integration (#353)
 * @andrebrait -- Fix exception for empty 7z file (#118)
+* Antoine C -- Support Python 3.12 and later (#550)
 * @amarcu5 -- fix error when large compressed headers (#281)
 * c.foster -- Default exceptions to include the exception type
 * chigusa -- Fix UTF-16 path parsing for extraction (#391)
@@ -24,5 +25,7 @@ Contributors, listed alphabetically, are:
 * Megan Leet -- Fix infinite loop when extraction (#354)
 * @padremayi -- Fix crash on wrong crationtime in archive (#275)
 * @royopa -- Fix typo (#108)
+* Sergei -- Update report_update() (#558)
 * T. Yamada -- Deflate64 decompression (#399)
+* Vlad Firoiu -- Speed-up extraction when number of files is very large(#555)
 * @Zoynels -- Mmeory IO API(#111, #119)

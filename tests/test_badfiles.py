@@ -90,7 +90,7 @@ def test_write_compressed_archive(tmp_path):
     contents = (Contents(filename="bin/qmake", text="qqqqq"), Contents(filename="lib/libhoge.so", text="hoge"))
     with TemporaryDirectory() as temp_path, SevenZipFile(
         tmp_path / "tools_qtcreator-linux-qt.tools.qtcreator.7z", "w"
-    ) as archive:
+    ) as archive:  # fmt: skip
         dest = pathlib.Path(temp_path)
         for folder in ("bin", "lib", "mkspecs"):
             (dest / folder).mkdir(parents=True, exist_ok=True)
@@ -102,5 +102,5 @@ def test_write_compressed_archive(tmp_path):
         archive.writeall(path=temp_path, arcname="target")
     with TemporaryDirectory() as target_path, SevenZipFile(
         tmp_path / "tools_qtcreator-linux-qt.tools.qtcreator.7z", "r"
-    ) as archive:
+    ) as archive:  # fmt: skip
         archive.extractall(path=target_path)
