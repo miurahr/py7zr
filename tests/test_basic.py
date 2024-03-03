@@ -293,9 +293,9 @@ def test_decrypt_memory_read():
         "HmmmTaSI/atXtuwiN5mGrqyFZTC/V2VEohWua1Yk1K+jXy+32hBwnK2clyr3rN5L"
         "Abv5g2wXBiABCYCFAAcLAQABIwMBAQVdABAAAAyAlgoBouB4BAAA"
     )
-    arc = py7zr.SevenZipFile(BytesIO(data), password="boom")
-    result = arc.read(["bar.txt"])
-    assert "bar.txt" in result
-    bina = result.get("bar.txt")
-    assert isinstance(bina, BytesIO)
-    assert bina.read() == b"refinery"
+    with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+        result = arc.read(["bar.txt"])
+        assert "bar.txt" in result
+        bina = result.get("bar.txt")
+        assert isinstance(bina, BytesIO)
+        assert bina.read() == b"refinery"
