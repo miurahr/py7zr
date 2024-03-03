@@ -1,7 +1,9 @@
+import base64
 import os
 import pathlib
 import re
 import shutil
+from io import BytesIO
 
 import pytest
 
@@ -280,3 +282,20 @@ def test_multiple_uses():
     with py7zr.SevenZipFile(os.path.join(testdata_path, "test_multiple.7z"), "w") as archive:
         archive.writestr("1", "1.txt")
         archive.test()
+
+
+@pytest.mark.basic
+def test_decrypt_memory_read():
+    data = base64.b64decode(
+        "N3q8ryccAAT9xtacpQAAAAAAAAAiAAAAAAAAAEerl+XBRlkrcJwwoqgijCyuEh0S"
+        "qLfjamv2F2vNJGFGyHDfpAAAgTMHrg/QDrA8nzkQnJ+m1TPasi6xAvSHzZaZrISL"
+        "D+EsvFULZ44Kf7Ewy47PApbKruXCaOSUsjzeqpG8VBcx66h2cV/lnGDfUjtVsyGB"
+        "HmmmTaSI/atXtuwiN5mGrqyFZTC/V2VEohWua1Yk1K+jXy+32hBwnK2clyr3rN5L"
+        "Abv5g2wXBiABCYCFAAcLAQABIwMBAQVdABAAAAyAlgoBouB4BAAA"
+    )
+    arc = py7zr.SevenZipFile(BytesIO(data), password="boom")
+    result = arc.read(["bar.txt"])
+    assert "bar.txt" in result
+    bina = result.get("bar.txt")
+    assert isinstance(bina, BytesIO)
+    assert bina.read() == b"refinery"
