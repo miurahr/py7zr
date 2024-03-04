@@ -918,6 +918,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise AbsolutePathError(arcname)
         return path
 
+    def _is_collection_of_str(self, t):
+        if t is None:
+            return True
+        if isinstance(t, str):
+            return False
+        try:
+            len(t)
+            return all(isinstance(x, str) for x in t)
+        except Exception:
+            return False
+
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> List[str]:
@@ -981,10 +992,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path=path, return_dict=False, callback=callback)
 
     def read(self, targets: Optional[Collection[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+        if not self._is_collection_of_str(targets):
+            raise TypeError("Wrong argument type given.")
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
     def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None) -> None:
+        if not self._is_collection_of_str(targets):
+            raise TypeError("Wrong argument type given.")
         self._extract(path, targets, return_dict=False)
 
     def reporter(self, callback: ExtractCallback):

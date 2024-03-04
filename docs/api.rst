@@ -180,14 +180,19 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.extract(path=None, targets=None)
 
    Extract specified pathspec archived files to current working directory.
-   'path' specifies a differenct directory to extract to.
+   'path' specifies a different directory to extract to.
 
-   'targets' is a list of archived files to be extracted. py7zr looks for files
-   and directories as same as specified in 'targets'.
+   'targets' is a COLLECTION of archived file names to be extracted.
+   py7zr looks for files and directories as same as specified in element
+   of 'targets'.
 
-   Once extract() called, the SevenZipFIle object become exhausted and EOF state.
-   If you want to call read(), readall(), extract(), extractall() again,
-   you should call reset() before it.
+   When the method get a ``str`` object or another object other than collection
+   such as LIST or SET, it will raise :exc:`TypeError`.
+
+   Once extract() called, the ``SevenZipFile`` object become exhausted,
+   and an EOF state.
+   If you want to call :meth:`read`, :meth:`readall`, :meth:`extract`, :meth:`extractall`
+   again, you should call :meth:`reset` before it.
 
    **CAUTION** when specifying files and not specifying parent directory,
    py7zr will fails with no such directory. When you want to extract file
@@ -226,8 +231,14 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.read(targets=None)
 
    Extract specified list of target archived files to dictionary object.
-   'targets' is a list of archived files to be extracted. py7zr looks for files
-   and directories as same as specified in 'targets'.
+
+   'targets' is a COLLECTION of archived file names to be extracted.
+   py7zr looks for files and directories as same as specified in element
+   of 'targets'.
+
+   When the method get a ``str`` object or another object other than collection
+   such as LIST or SET, it will raise :exc:`TypeError`.
+
    When targets is None, it behave as same as readall().
    Once read() called, the SevenZipFIle object become exhausted and EOF state.
    If you want to call read(), readall(), extract(), extractall() again,

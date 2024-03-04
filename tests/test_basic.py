@@ -285,7 +285,7 @@ def test_multiple_uses():
 
 
 @pytest.mark.basic
-def test_decrypt_memory_read():
+def test_read_collection_argument():
     data = base64.b64decode(
         "N3q8ryccAAT9xtacpQAAAAAAAAAiAAAAAAAAAEerl+XBRlkrcJwwoqgijCyuEh0S"
         "qLfjamv2F2vNJGFGyHDfpAAAgTMHrg/QDrA8nzkQnJ+m1TPasi6xAvSHzZaZrISL"
@@ -294,8 +294,20 @@ def test_decrypt_memory_read():
         "Abv5g2wXBiABCYCFAAcLAQABIwMBAQVdABAAAAyAlgoBouB4BAAA"
     )
     with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-        result = arc.read(["bar.txt"])
+        result = arc.read(["bar.txt"])  # list -> ok
         assert "bar.txt" in result
         bina = result.get("bar.txt")
         assert isinstance(bina, BytesIO)
         assert bina.read() == b"refinery"
+    with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+        result = arc.read({"bar.txt"})  # set -> ok
+        assert result.get("bar.txt").read() == b"refinery"
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.read(("bar.txt"))  # tuple -> bad
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.read("bar.txt")  # str -> bad
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.extract(targets="bar.txt")  # str -> bad
