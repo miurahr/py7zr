@@ -304,7 +304,7 @@ def test_read_collection_argument():
         assert result.get("bar.txt").read() == b"refinery"
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-            arc.read(("bar.txt"))  # tuple -> bad
+            arc.read(("bar.txt",))  # tuple -> bad
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
             arc.read("bar.txt")  # str -> bad
