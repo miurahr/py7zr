@@ -959,6 +959,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def needs_password(self) -> bool:
         return self.password_protected
 
+    def listname(self) -> List[str]:
+        """Returns a list of all the members of the archive as a list of their."""
+        alist: List[str] = []
+        for f in self.files:
+            alist.append(f.filename)
+        return alist
+
     def list(self) -> List[FileInfo]:
         """Returns contents information"""
         alist: List[FileInfo] = []

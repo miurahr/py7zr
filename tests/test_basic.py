@@ -311,3 +311,11 @@ def test_read_collection_argument():
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
             arc.extract(targets="bar.txt")  # str -> bad
+
+
+@pytest.mark.basic
+def test_basic_listname(tmp_path):
+    expected = ["scripts", "scripts/py7zr", "setup.cfg", "setup.py"]
+    with py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb")) as archive:
+        result = archive.listname()
+        assert result == expected
