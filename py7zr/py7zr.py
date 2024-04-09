@@ -1202,9 +1202,8 @@ def unpack_7zarchive(archive, path, extra=None):
     """
     Function for registering with shutil.register_unpack_format().
     """
-    arc = SevenZipFile(archive)
-    arc.extractall(path)
-    arc.close()
+    with SevenZipFile(archive) as arc:
+        arc.extractall(path)
 
 
 def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
