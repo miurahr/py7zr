@@ -1,8 +1,17 @@
 # Configuration for pytest.
 # Thanks to Guilherme Salgado.
 
+import shutil
+
 import cpuinfo
 import pytest
+
+from py7zr import unpack_7zarchive
+
+
+@pytest.fixture(scope="session")
+def register_shutil_unpack_format():
+    shutil.register_unpack_format("7zip", [".7z"], unpack_7zarchive)
 
 
 def pytest_benchmark_update_json(config, benchmarks, output_json):

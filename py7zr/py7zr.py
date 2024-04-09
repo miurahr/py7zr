@@ -37,6 +37,7 @@ import stat
 import sys
 import time
 from multiprocessing import Process
+from shutil import ReadError
 from threading import Thread
 from typing import IO, Any, BinaryIO, Collection, Dict, List, Optional, Tuple, Type, Union
 
@@ -1210,6 +1211,8 @@ def unpack_7zarchive(archive, path, extra=None):
     """
     Function for registering with shutil.register_unpack_format().
     """
+    if not is_7zfile(archive):
+        raise ReadError(f"{archive} is not a 7zip file.")
     with SevenZipFile(archive) as arc:
         arc.extractall(path)
 
