@@ -566,7 +566,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     self.worker.register_filelike(f.id, None)
                     continue
             elif targets is not None and recursive == True:
-                if f.filename not in targets and not any([target in f.filename for target in targets]):
+                if f.filename not in targets and not any([f.filename.startswith(target) for target in targets]):
                     self.worker.register_filelike(f.id, None)
                     continue
 
