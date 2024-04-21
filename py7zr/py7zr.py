@@ -531,6 +531,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         targets: Optional[Collection[str]] = None,
         return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
+        recursive: Optional[bool] = False,
     ) -> Optional[Dict[str, IO[Any]]]:
         if callback is None:
             pass
@@ -560,9 +561,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         fnames: Dict[str, int] = {}  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
-            if targets is not None and f.filename not in targets:
-                self.worker.register_filelike(f.id, None)
-                continue
+            if targets is not None and recursive == False:
+                if f.filename not in targets:
+                    self.worker.register_filelike(f.id, None)
+                    continue
+            elif targets is not None and recursive == True:
+                if f.filename not in targets and not any([target in f.filename for target in targets]):
+                    self.worker.register_filelike(f.id, None)
+                    continue
 
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
@@ -997,10 +1003,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
-        self._extract(path, targets, return_dict=False)
+        self._extract(path, targets, return_dict=False, recursive=recursive)
 
     def reporter(self, callback: ExtractCallback):
         while True:
