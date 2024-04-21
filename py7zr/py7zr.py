@@ -339,9 +339,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        # early check unsupported mode.
-        if mode == "x":
-            raise NotImplementedError
         self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
@@ -399,6 +396,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
                 self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
             elif mode == "w":
+                self._prepare_write(filters, password)
+            elif mode == "x":
                 self._prepare_write(filters, password)
             elif mode == "a":
                 self._real_get_contents(password)
