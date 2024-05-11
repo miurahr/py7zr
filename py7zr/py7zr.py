@@ -561,11 +561,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         fnames: Dict[str, int] = {}  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
-            if targets is not None and recursive == False:
+            if targets is not None and recursive is False:
                 if f.filename not in targets:
                     self.worker.register_filelike(f.id, None)
                     continue
-            elif targets is not None and recursive == True:
+            elif targets is not None and recursive is True:
                 if f.filename not in targets and not any([f.filename.startswith(target) for target in targets]):
                     self.worker.register_filelike(f.id, None)
                     continue
@@ -1003,7 +1003,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False) -> None:
+    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None,
+                recursive: Optional[bool] = False) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         self._extract(path, targets, return_dict=False, recursive=recursive)
