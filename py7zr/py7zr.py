@@ -1003,8 +1003,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
-    def extract(self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None,
-                recursive: Optional[bool] = False) -> None:
+    def extract(
+        self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False
+    ) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         self._extract(path, targets, return_dict=False, recursive=recursive)
