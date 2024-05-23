@@ -23,6 +23,7 @@ Contributors, listed alphabetically, are:
 * Kyle Altendorf -- Fix multithreading problem (#82)
 * Martin Larralde -- Fix writef method (#397)
 * Megan Leet -- Fix infinite loop when extraction (#354)
+* Nikolaos Episkopos -- Add recursive subdirectories extraction (#585)
 * @padremayi -- Fix crash on wrong crationtime in archive (#275)
 * @royopa -- Fix typo (#108)
 * Sergei -- Update report_update() (#558)

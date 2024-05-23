@@ -186,7 +186,7 @@ SevenZipFile Object
    py7zr looks for files and directories as same as specified in element
    of 'targets'.
 
-   When the method get a ``str`` object or another object other than collection
+   When the method gets a ``str`` object or another object other than collection
    such as LIST or SET, it will raise :exc:`TypeError`.
 
    Once extract() called, the ``SevenZipFile`` object become exhausted,
@@ -199,6 +199,20 @@ SevenZipFile Object
    'somedir/somefile' then pass a list: ['somedirectory', 'somedir/somefile']
    as a target argument.
 
+
+.. py:method:: SevenZipFile.extract(path=None, targets=None, recursive=True)
+
+   'recursive' is a BOOLEAN which if set True, helps with simplifying subcontents
+   extraction.
+
+   Instead of specifying all files / directories under a parent
+   directory by passing a list of 'targets', specifying only the parent directory
+   and setting 'recursive' to True forces an automatic extraction of all
+   subdirectories and subcontents recursively.
+
+   If 'recursive' is not set, it defaults to False, so the extraction proceeds as
+   if the parameter did not exist.
+
    Please see 'tests/test_basic.py: test_py7zr_extract_and_getnames()' for
    example code.
 
@@ -210,6 +224,8 @@ SevenZipFile Object
         targets = [f if filter_pattern.match(f) for f in allfiles]
    with SevenZipFile('archive.7z', 'r') as zip:
         zip.extract(targets=targets)
+   with SevenZipFile('archive.7z', 'r') as zip:
+        zip.extract(targets=targets, recursive=True)
 
 
 .. py:method:: SevenZipFile.readall()
