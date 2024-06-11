@@ -154,7 +154,7 @@ def write_uint64(file: Union[BinaryIO, WriteWithCrc], value: int):
     if value < 0x80:
         file.write(pack("B", value))
         return
-    if value > 0x01FFFFFFFFFFFFFF:
+    if value > 0xFFFFFFFFFFFFFF:
         file.write(b"\xff")
         file.write(value.to_bytes(8, "little"))
         return
