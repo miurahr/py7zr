@@ -49,7 +49,7 @@ The module defines the following items:
 .. code-block:: python
 
     shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
-    shutil.unpack_archive(filename, [, extract_dir])
+    shutil.unpack_archive(filename, extract_dir)
 
 
 .. function:: pack_7zarchive(archive, path, extra=None)
