@@ -9,6 +9,24 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.21.1`_
+==========
+Fixed
+-----
+* Follow shutil.register_unpack_format() convention of raising a ReadError
+  when the library cannot handle a file (#583)
+* ensure unpack_7zarchive closes the archive (#584)
+* 64bit OS detection (#580)
+
+Added
+-----
+* Add recursive sub-directories and files extraction (#585)
+
+Changed
+-------
+* check targets argument type for read and extract method (#577)
+* Treat zero byte stream as a file (#551)
+
 `v0.21.0`_
 ==========
 Changed
@@ -378,7 +396,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.21.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.21.1...HEAD
+.. _v0.21.1: https://github.com/miurahr/py7zr/compare/v0.21.0...v0.21.1
 .. _v0.21.0: https://github.com/miurahr/py7zr/compare/v0.20.8...v0.21.0
 .. _v0.20.8: https://github.com/miurahr/py7zr/compare/v0.20.7...v0.20.8
 .. _v0.20.7: https://github.com/miurahr/py7zr/compare/v0.20.6...v0.20.7
