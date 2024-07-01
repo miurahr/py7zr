@@ -7,12 +7,12 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 
 import pytest
 
 import py7zr
-from py7zr import unpack_7zarchive
 from py7zr.exceptions import CrcError, UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
@@ -306,8 +306,7 @@ def test_zerosize_mem():
 
 
 @pytest.mark.api
-def test_register_unpack_archive(tmp_path):
-    shutil.register_unpack_format("7zip", [".7z"], unpack_7zarchive)
+def test_register_unpack_archive(register_shutil_unpack_format, tmp_path):
     shutil.unpack_archive(str(testdata_path.joinpath("test_1.7z")), str(tmp_path))
     target = tmp_path.joinpath("setup.cfg")
     expected_mode = 33188
@@ -324,6 +323,12 @@ def test_register_unpack_archive(tmp_path):
     m = hashlib.sha256()
     m.update(tmp_path.joinpath("scripts/py7zr").open("rb").read())
     assert m.digest() == binascii.unhexlify("b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd")
+
+
+@pytest.mark.api
+def test_register_unpack_archive_error(register_shutil_unpack_format, tmp_path):
+    with tempfile.NamedTemporaryFile(suffix=".7z") as f, pytest.raises(shutil.ReadError):
+        shutil.unpack_archive(f.name, str(tmp_path))
 
 
 @pytest.mark.files
