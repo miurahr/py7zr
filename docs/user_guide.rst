@@ -173,7 +173,7 @@ Programming APIs
 Extraction
 ----------
 
-Here is a simple example to extract a 7-zip archive from your python program.
+Here is a simple example to extract a 7-zip archive using the python programming language.
 
 .. code-block:: python
 
