@@ -62,7 +62,6 @@ test = [
       "pytest-cov",
       "pytest-remotedata",
       "pytest-timeout",
-      "pyannotate",
       "py-cpuinfo",
       "coverage[toml]>=5.2",
       "coveralls>=2.1.1",
@@ -129,7 +128,7 @@ target-version = ['py39']
 
 [tool.isort]
 known_first_party = ['py7zr']
-known_third_party = ["docutils", "flake8", "pyannotate_runtime", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
+known_third_party = ["docutils", "flake8", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
