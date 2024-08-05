@@ -9,6 +9,22 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Added
+-----
+* Add mode "x" for SevenZipFile (#588)
+
+Fixed
+-----
+* Fix NUMBER encoding of integer when 8 bytes(#591)
+
+Changed
+-------
+* Remove pyannotate from pyproject.toml (#598)
+
+Document
+--------
+* Update user guide (#596)
+
 `v0.21.1`_
 ==========
 Fixed
