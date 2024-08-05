@@ -280,6 +280,9 @@ SevenZipFile Object
 
     Return a ArchiveInfo object.
 
+.. py:method:: SevenZipFile.namelist()
+
+    Return a list of archive members by name.
 
 .. py:method:: SevenZipFile.test()
 
@@ -324,6 +327,11 @@ SevenZipFile Object
 
    Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
    Default is `True`.
+
+
+.. py:attribute:: SevenZipFile.filename
+
+   Name of the SEVEN ZIP file.
 
 
 Compression Methods

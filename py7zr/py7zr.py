@@ -941,6 +941,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Return the members of the archive as a list of their names. It has
         the same order as the list returned by getmembers().
         """
+        return self.namelist()
+
+    def namelist(self) -> List[str]:
+        """Return a list of archive members by name."""
         return list(map(lambda x: x.filename, self.files))
 
     def archiveinfo(self) -> ArchiveInfo:
