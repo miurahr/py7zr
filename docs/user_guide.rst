@@ -173,8 +173,7 @@ Programming APIs
 Extraction
 ----------
 
-Here is a several example for extraction from your python program.
-You can write it with very clean syntax because py7zr supports context manager.
+Here is a simple example to extract a 7-zip archive using the python programming language.
 
 .. code-block:: python
 
@@ -183,7 +182,8 @@ You can write it with very clean syntax because py7zr supports context manager.
         archive.extractall(path="/tmp")
 
 
-This example extract a 7-zip archive file "Archive.7z" into "/tmp" target directory.
+This example extracts the contents of "Archive.7z" into the "/tmp" directory.
+Utilizing the built-in context manager makes the syntax clean and concise.
 
 
 Make archive
