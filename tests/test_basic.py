@@ -42,6 +42,13 @@ def test_basic_append_mode(tmp_path):
 
 
 @pytest.mark.api
+def test_basic_append_mode_on_non_existent_file(tmp_path):
+    target = tmp_path.joinpath("test_non_existent_file.7z")
+    with py7zr.SevenZipFile(target, mode="a") as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+
+
+@pytest.mark.api
 def test_basic_wrong_option_value(tmp_path):
     with pytest.raises(ValueError):
         py7zr.SevenZipFile(tmp_path.joinpath("test_p.7z"), mode="p")
