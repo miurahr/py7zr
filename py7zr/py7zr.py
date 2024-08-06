@@ -343,7 +343,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # check if it's a non existent file opened in append mode.
         if mode == "a" and isinstance(file, (str, pathlib.Path)):
             if not os.path.isfile(file):
-                # Nothing to append because file doesn't exist, write instead. 
+                # Nothing to append because file doesn't exist, write instead.
                 mode = "w"
         self.fp: BinaryIO
         self.mp = mp
