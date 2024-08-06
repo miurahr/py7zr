@@ -52,26 +52,6 @@ You can see announcements of new releases, questions and answers, and
 new feature ideas. When you doubt for usage of py7zr library with unclear
 manuals, please feel easy to raise question on forum.
 
-Security Notice
-===============
-
-Please find a `Security Policy`_ of this project.
-
-Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
-Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
-
-Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
-
-You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
-
-.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
-
-I really appreciate Mr. Matteo Cosentino for notification and corporation on security improvement.
-
-.. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
-
-.. _`Security Policy` : https://py7zr.readthedocs.io/en/latest/SECURITY.html
-
 Compression algorithms
 ======================
 
@@ -357,7 +337,7 @@ Requirements
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
-Minimum required version is Python 3.7.
+Minimum required version is Python 3.8.
 
 ``py7zr`` tested on Linux, macOS, Windows and Ubuntu aarch64.
 
@@ -365,8 +345,8 @@ It hopefully works on M1 Mac too.
 
 Recommended versions are:
 
-- CPython 3.7.5, CPython 3.8.0 and later.
-- PyPy3.7-7.3.3 and later.
+- CPython 3.8.0 and later.
+- PyPy3.8-7.3.8 and later.
 
 Following fixes are included in these versions, and it is not fixed on python3.6.
 
@@ -441,6 +421,26 @@ Use Cases
 .. _aqtinstall: https://github.com/miurahr/aqtinstall
 .. _PreNLP: https://github.com/lyeoni/prenlp
 .. _mlox: https://github.com/mlox/mlox
+
+Security
+========
+
+Please find a `Security Policy`_ of this project.
+
+Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
+Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
+
+Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
+
+You are recommend to update immediately to version 0.20.2 or later
+
+.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
+
+I really appreciate Mr. Matteo Cosentino for notification and corporation on security improvement.
+
+.. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
+
+.. _`Security Policy` : https://py7zr.readthedocs.io/en/latest/SECURITY.html
 
 License
 =======

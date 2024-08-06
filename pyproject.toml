@@ -1,6 +1,6 @@
 [project]
 name = "py7zr"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 description = "Pure python 7-zip library"
 license = {text = "LGPL-2.1-or-later"}
 authors = [
@@ -15,7 +15,6 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -29,7 +28,6 @@ classifiers = [
 dependencies = [
       "texttable",
       "pycryptodomex>=3.16.0",
-      'importlib_metadata;python_version<"3.8"',
       'brotli>=1.1.0;platform_python_implementation=="CPython"',
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
