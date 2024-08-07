@@ -340,11 +340,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        # check if it's a non existent file opened in append mode.
-        if mode == "a" and isinstance(file, (str, pathlib.Path)):
-            if not os.path.isfile(file):
+
+        # Check if we were passed a file-like object or not
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+
+            # check if it's a non existent file opened in append mode.
+            if mode == "a" and not os.path.isfile(file):
                 # Nothing to append because file doesn't exist, write instead.
                 mode = "w"
+
         self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
@@ -354,9 +359,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._block_size = get_default_blocksize()
 
         # https://github.com/python/cpython/blob/b5e142ba7c2063efe9bb8065c3b0bad33e2a9afa/Lib/zipfile/__init__.py#L1350
-        # Check if we were passed a file-like object or not
-        if isinstance(file, os.PathLike):
-            file = os.fspath(file)
         if isinstance(file, str):
             # No, it's a filename
             self._filePassed = False
