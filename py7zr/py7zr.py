@@ -374,14 +374,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
             while True:
                 try:
-                    self.fp = io.open(file, filemode)  # type: ignore
+                    self.fp = open(file, filemode)  # type: ignore
                 except OSError:
                     if filemode in modeDict:
                         filemode = modeDict[filemode]
                         continue
                     raise
                 break
-            self.mode = filemode
+            self.mode = mode
         elif isinstance(file, multivolumefile.MultiVolume):
             self._filePassed = True
             self.fp = file
