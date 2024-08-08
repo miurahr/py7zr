@@ -27,11 +27,11 @@ classifiers = [
 ]
 dependencies = [
       "texttable",
-      "pycryptodomex>=3.16.0",
+      "pycryptodomex>=3.20.0",
       'brotli>=1.1.0;platform_python_implementation=="CPython"',
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
-      "pyzstd>=0.15.9",
+      "pyzstd>=0.16.1",
       "pyppmd>=1.1.0,<1.2.0",
       "pybcj>=1.0.0,<1.1.0",
       "multivolumefile>=0.2.3",
@@ -65,14 +65,14 @@ test = [
       "coveralls>=2.1.1",
 ]
 docs = [
-      "sphinx>=5.0",
+      "sphinx>=7.0.0",
       "sphinx-py3doc-enhanced-theme",
       "sphinx-a4doc",
       "docutils",
 ]
 check = [
-      "mypy>=0.940",
-      "mypy_extensions>=0.4.1",
+      "mypy>=1.10.0",
+      "mypy_extensions>=1.0.0",
       "lxml",
       "types-psutil",
       "check-manifest",
@@ -80,11 +80,11 @@ check = [
       "flake8-black>=0.3.6",
       "flake8-deprecated",
       "flake8-isort",
-      "isort>=5.0.3",
+      "isort>=5.13.2",
       "pygments",
       "readme-renderer",
       "twine",
-      "black>=23.1.0",
+      "black>=24.8.0",
 ]
 debug = [
       "pytest",
