@@ -414,10 +414,12 @@ py7zr consumes some memory to decompress and compress data. It requires about 30
 Use Cases
 =========
 
+- `PyTorch`_  Open-source deep learning framework.
 - `aqtinstall`_ Another (unofficial) Qt (aqt) CLI Installer on multi-platforms.
 - PreNLP_ Preprocessing Library for Natural Language Processing
 - mlox_  a tool for sorting and analyzing Morrowind plugin load order
 
+.. _`PyTorch`: https://pytorch.org/
 .. _aqtinstall: https://github.com/miurahr/aqtinstall
 .. _PreNLP: https://github.com/lyeoni/prenlp
 .. _mlox: https://github.com/mlox/mlox
