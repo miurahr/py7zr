@@ -957,6 +957,22 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Return a list of archive members by name."""
         return list(map(lambda x: x.filename, self.files))
 
+    def getinfo(self, name: str) -> FileInfo:
+        """Return a FileInfo object with information about the archive member *name*.
+        Calling getinfo() for a name not currently contained in the archive will raise a KeyError."""
+        # For interoperability with ZipFile
+        name = name.removesuffix("/")
+
+        # https://more-itertools.readthedocs.io/en/stable/_modules/more_itertools/recipes.html#first_true
+        sevenzipinfo = next(filter(lambda member: member.filename == name, self.list()), None)
+
+        # ZipFile and TarFile raise KeyError if the named member is not found
+        # So for consistency, we'll also raise KeyError here
+        if sevenzipinfo is None:
+            raise KeyError(f"{name} not found in {self.filename}")
+
+        return sevenzipinfo
+
     def archiveinfo(self) -> ArchiveInfo:
         total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
         if isinstance(self.fp, multivolumefile.MultiVolume):
