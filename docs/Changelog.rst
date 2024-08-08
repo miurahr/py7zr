@@ -9,16 +9,22 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v0.22.0`_
+==========
+
 Added
 -----
 * Add mode "x" for SevenZipFile (#588)
+* Add SevenZipFile#namelist method (#600)
 
 Fixed
 -----
+* Append mode on non-existent files (#604)
 * Fix NUMBER encoding of integer when 8 bytes(#591)
 
 Changed
 -------
+* Minimum required Python version to be Python 3.8 (#601)
 * Remove pyannotate from pyproject.toml (#598)
 
 Document
@@ -412,7 +418,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.21.1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.22.0...HEAD
+.. _v0.22.0: https://github.com/miurahr/py7zr/compare/v0.21.1...v0.22.0
 .. _v0.21.1: https://github.com/miurahr/py7zr/compare/v0.21.0...v0.21.1
 .. _v0.21.0: https://github.com/miurahr/py7zr/compare/v0.20.8...v0.21.0
 .. _v0.20.8: https://github.com/miurahr/py7zr/compare/v0.20.7...v0.20.8
