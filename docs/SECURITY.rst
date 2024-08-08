@@ -7,11 +7,9 @@ Supported Versions
 +---------+---------------------+
 | Version | Status              |
 +=========+=====================+
-| 0.22.x  | Stable version      |
+| 1.0.x   | Stable version      |
 +---------+---------------------+
-| 0.21.x  | Security fixes only |
-+---------+---------------------+
-| < 0.21  | not supported       |
+| < 1.0.0 | not supported       |
 +---------+---------------------+
 
 Reporting a Vulnerability

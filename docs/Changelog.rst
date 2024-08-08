@@ -9,6 +9,20 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.0.0-rc1`_
+=============
+
+Changed
+-------
+* Bump dependencies versions
+    - pycryptodomex@3.32.0
+    - pyzstd@0.16.1
+    - sphinx@7.0.0
+    - mypy@1.10.0
+    - mypy_extensions@1.0.0
+    - isort@5.13.2
+    - black@24.8.0
+
 `v0.22.0`_
 ==========
 
@@ -418,7 +432,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v0.22.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...HEAD
+.. _v1.0.0-rc1: https://github.com/miurahr/py7zr/compare/v0.22.0...v1.0.0-rc1
 .. _v0.22.0: https://github.com/miurahr/py7zr/compare/v0.21.1...v0.22.0
 .. _v0.21.1: https://github.com/miurahr/py7zr/compare/v0.21.0...v0.21.1
 .. _v0.21.0: https://github.com/miurahr/py7zr/compare/v0.20.8...v0.21.0
