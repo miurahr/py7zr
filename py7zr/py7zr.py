@@ -965,7 +965,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         name = remove_trailing_slash(name)
 
         # https://more-itertools.readthedocs.io/en/stable/_modules/more_itertools/recipes.html#first_true
-        sevenzipinfo = next(filter(lambda member: member.filename == name, self.list()), None)
+        sevenzipinfo = next(filter(lambda member: member.filename == name, self.files), None)
 
         # ZipFile and TarFile raise KeyError if the named member is not found
         # So for consistency, we'll also raise KeyError here
