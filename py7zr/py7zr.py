@@ -970,7 +970,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # ZipFile and TarFile raise KeyError if the named member is not found
         # So for consistency, we'll also raise KeyError here
         if sevenzipinfo is None:
-            raise KeyError(f"{name} not found in {self.filename}")
+            raise KeyError(f"'{name}' not found in archive.")
 
         return sevenzipinfo
 
