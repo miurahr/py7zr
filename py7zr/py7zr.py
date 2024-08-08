@@ -340,16 +340,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-
-        # Check if we were passed a file-like object or not
-        if isinstance(file, os.PathLike):
-            file = os.fspath(file)
-
-            # check if it's a non existent file opened in append mode.
-            if mode == "a" and not os.path.isfile(file):
-                # Nothing to append because file doesn't exist, write instead.
-                mode = "w"
-
         self.fp: BinaryIO
         self.mp = mp
         self.password_protected = password is not None
@@ -359,6 +349,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._block_size = get_default_blocksize()
 
         # https://github.com/python/cpython/blob/b5e142ba7c2063efe9bb8065c3b0bad33e2a9afa/Lib/zipfile/__init__.py#L1350
+        # Check if we were passed a file-like object or not
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
         if isinstance(file, str):
             # No, it's a filename
             self._filePassed = False
@@ -409,8 +402,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif mode == "x":
                 self._prepare_write(filters, password)
             elif mode == "a":
-                self._real_get_contents(password)
-                self._prepare_append(filters, password)
+                try:
+                    # Append if it's an existing 7zip file
+                    self._real_get_contents(password)
+                    self._prepare_append(filters, password)
+                except Bad7zFile:
+                    # Not an existing 7zip file, write instead
+                    self._prepare_write(filters, password)
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")  # never come here
         except Exception as e:
@@ -784,9 +782,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     @staticmethod
     def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader, io.IOBase]) -> bool:
-        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
-        fp.seek(-len(MAGIC_7Z), 1)
-        return result
+        try:
+            result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
+            fp.seek(-len(MAGIC_7Z), 1)
+            return result
+        except OSError:
+            # A new empty file raises OSError
+            return False
 
     def _get_method_names(self) -> List[str]:
         try:
