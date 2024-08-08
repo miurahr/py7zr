@@ -347,34 +347,35 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self._block_size = blocksize
         else:
             self._block_size = get_default_blocksize()
+
+        # https://github.com/python/cpython/blob/b5e142ba7c2063efe9bb8065c3b0bad33e2a9afa/Lib/zipfile/__init__.py#L1350
         # Check if we were passed a file-like object or not
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
         if isinstance(file, str):
-            self._filePassed: bool = False
-            self.filename: str = file
-            if mode == "r":
-                self.fp = open(file, "rb")
-            elif mode == "w":
-                self.fp = open(file, "w+b")
-            elif mode == "x":
-                self.fp = open(file, "x+b")
-            elif mode == "a":
-                self.fp = open(file, "r+b")
-            else:
-                raise ValueError("File open error.")
-            self.mode = mode
-        elif isinstance(file, pathlib.Path):
+            # No, it's a filename
             self._filePassed = False
-            self.filename = str(file)
-            if mode == "r":
-                self.fp = file.open(mode="rb")  # noqa   # typeshed issue: 2911
-            elif mode == "w":
-                self.fp = file.open(mode="w+b")  # noqa
-            elif mode == "x":
-                self.fp = file.open(mode="x+b")  # noqa
-            elif mode == "a":
-                self.fp = file.open(mode="r+b")  # noqa
-            else:
-                raise ValueError("File open error.")
+            self.filename = file
+            modeDict = {
+                "r": "rb",
+                "w": "w+b",
+                "x": "x+b",
+                "a": "r+b",
+                "r+b": "w+b",
+                "w+b": "wb",
+                "x+b": "xb",
+            }
+            filemode = modeDict[mode]
+
+            while True:
+                try:
+                    self.fp = open(file, filemode)  # type: ignore
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
             self.mode = mode
         elif isinstance(file, multivolumefile.MultiVolume):
             self._filePassed = True
@@ -401,8 +402,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif mode == "x":
                 self._prepare_write(filters, password)
             elif mode == "a":
-                self._real_get_contents(password)
-                self._prepare_append(filters, password)
+                try:
+                    # Append if it's an existing 7zip file
+                    self._real_get_contents(password)
+                    self._prepare_append(filters, password)
+                except Bad7zFile:
+                    # Not an existing 7zip file, write instead
+                    self._prepare_write(filters, password)
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")  # never come here
         except Exception as e:
@@ -776,9 +782,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     @staticmethod
     def _check_7zfile(fp: Union[BinaryIO, io.BufferedReader, io.IOBase]) -> bool:
-        result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
-        fp.seek(-len(MAGIC_7Z), 1)
-        return result
+        try:
+            result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
+            fp.seek(-len(MAGIC_7Z), 1)
+            return result
+        except OSError:
+            # A new empty file raises OSError
+            return False
 
     def _get_method_names(self) -> List[str]:
         try:
