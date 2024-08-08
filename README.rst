@@ -90,7 +90,7 @@ Supported algorithms
     but it does **not** guarantee to block all the bad cases.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
-  * Enhanced Deflate is also known as `DEFLATE64` :sup:`TM` that is a registered trademark of `PKWARE, Inc.`
+  * Enhanced Deflate is also known as ``DEFLATE64`` :sup:`TM` that is a registered trademark of ``PKWARE, Inc.``
   * Enhanced Deflate is tested only on CPython. It is disabled on PyPy.
 
 Not supported algorithms
