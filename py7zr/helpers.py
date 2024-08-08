@@ -25,6 +25,7 @@ import hashlib
 import os
 import pathlib
 import platform
+import posixpath
 import sys
 import time as _time
 import zlib
@@ -434,6 +435,15 @@ def remove_relative_path_marker(path: str) -> str:
         processed_path = path[len(RELATIVE_PATH_MARKER) :]
 
     return processed_path
+
+
+def remove_trailing_slash(path: str) -> str:
+    """
+    Removes '/' from the end of a path-like string
+    """
+    if path.endswith(posixpath.sep):
+        return path[:-1]
+    return path
 
 
 def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:

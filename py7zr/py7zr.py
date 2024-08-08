@@ -64,6 +64,7 @@ from py7zr.helpers import (
     get_sanitized_output_path,
     is_path_valid,
     readlink,
+    remove_trailing_slash,
 )
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
 
@@ -961,7 +962,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Return a FileInfo object with information about the archive member *name*.
         Calling getinfo() for a name not currently contained in the archive will raise a KeyError."""
         # For interoperability with ZipFile
-        name = name.removesuffix("/")
+        name = remove_trailing_slash(name)
 
         # https://more-itertools.readthedocs.io/en/stable/_modules/more_itertools/recipes.html#first_true
         sevenzipinfo = next(filter(lambda member: member.filename == name, self.list()), None)
