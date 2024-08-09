@@ -165,6 +165,12 @@ SevenZipFile Object
    Return a list of archive files by name.
 
 
+.. py:method:: SevenZipFile.getinfo(name)
+
+   Return a FileInfo object with information about the archive member *name*.
+   Calling :meth:`getinfo` for a name not currently contained in the archive will raise a :exc:`KeyError`.
+
+
 .. py:method:: SevenZipFile.needs_password()
 
    Return `True` if the archive is encrypted, or is going to create
