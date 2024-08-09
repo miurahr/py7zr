@@ -325,7 +325,7 @@ Changed
 
 Security
 --------
-* Check against directory traversal attack by file pathes in archive (#406,#407)
+* Check against directory traversal attack by file paths in archive (#406,#407)
 
 `v0.17.2`_
 ==========

@@ -403,7 +403,7 @@ class Folder:
         self.digestdefined = False
         num_bindpairs = sum([c["numoutstreams"] for c in self.coders]) - 1
         self.bindpairs = [Bond(incoder=i + 1, outcoder=i) for i in range(num_bindpairs)]
-        # Only simple codecs are suport, assert it
+        # Only simple codecs are support, assert it
         assert sum([c["numinstreams"] for c in self.coders]) == sum([c["numoutstreams"] for c in self.coders])
 
     def write(self, file: BinaryIO):
@@ -1147,7 +1147,7 @@ class SignatureHeader:
         write_real_uint64(file, self.nextheadersize)
         write_uint32(file, self.nextheadercrc)
 
-    def _write_skelton(self, file: BinaryIO):
+    def _write_skeleton(self, file: BinaryIO):
         file.seek(0, 0)
         write_bytes(file, MAGIC_7Z)
         write_byte(file, self.version[0])

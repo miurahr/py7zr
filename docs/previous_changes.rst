@@ -114,7 +114,7 @@ Fixed
 Security
 --------
 
-* Drop issue_218.7z test data wihch is reported a blackmoon trojan(#285)
+* Drop issue_218.7z test data which is reported a blackmoon trojan(#285)
 
 `v0.11.1`_
 ==========
@@ -287,7 +287,7 @@ Changed
   7zip and p7zip(#145)
 * Enhance encryption strength, IV is now 16 bytes, and generated
   with cryptodom.random module.(#145)
-* Refactoring compression algorythm related modules.
+* Refactoring compression algorithm related modules.
 
 Fixed
 -----
@@ -431,7 +431,7 @@ Changed
 * Update calculate_key helper to improve performance.
 * Introduce zero-copy buffer helper.
 * Change decompressor class interface
-    - change max_length type to int and defualt to -1.
+    - change max_length type to int and default to -1.
 * Update decryption function to improve performance.
 * SevenZipFile(file-object, 'r') now can run extract() well even unlink before extract().
 * Concurrency strategy: change to threading instead of multiprocessing. (#92)
@@ -446,7 +446,7 @@ Changed
 * Concurrency implementation changes to use multiprocessing.Process() instead of
   concurrency.futures to avoid freeze or deadlock with application usage of it.(#70)
 * Stop checking coverage because coverage.py > 5.0.0 produce error when multiprocessing.Process() usage.
-* Drop handlers, NullHandler, BufferHnalder, and FileHander.
+* Drop handlers, NullHandler, BufferHandler, and FileHandler.
 
 Fixed
 -----
@@ -544,7 +544,7 @@ Changed
 * NullHandler, BufferHandler, FileHandler: open() now takes mode argument.
 * Upper limit of max_length of decompress() call is now io.DEFAULT_BUFFER_SIZE.
   - PyPy issue: `PyPy3-3088`_
-* Drop padding logic introduced in v0.3.5 that may be cuased by python core bug,
+* Drop padding logic introduced in v0.3.5 that may be caused by python core bug,
   when max_length > io.DEFAULT_BUFFER_SIZE.
   - PyPy Issue: `PyPy3-3090`_
   - bpo-21872: https://bugs.python.org/issue21872
@@ -604,7 +604,7 @@ Fixed
 Added
 -----
 
-* Add test for zerofile with multi-foler archive.
+* Add test for zerofile with multi-folder archive.
 
 Fixed
 -----

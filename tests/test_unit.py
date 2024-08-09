@@ -46,7 +46,7 @@ def test_py7zr_mainstreams():
 
 
 @pytest.mark.unit
-def test_py7zr_folder_retrive():
+def test_py7zr_folder_retrieve():
     header_data = io.BytesIO(b"\x0b" b"\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00")
     pid = header_data.read(1)
     assert pid == py7zr.properties.Property.FOLDER
