@@ -117,7 +117,7 @@ def test_callback_raw_class():
 
 
 def test_callback_not_concrete_class():
-    # test the case when passed arugment is abstract class
+    # test the case when passed argument is abstract class
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
             cb = callback()

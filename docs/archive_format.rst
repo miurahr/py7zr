@@ -341,7 +341,7 @@ Next Header CRC
 Next header CRC SHALL a ``CRC32`` of Header that SHALL be stored in ``UINT32``.
 
 
-.. _`PorpertyIDs`:
+.. _`PropertyIDs`:
 
 Property IDs
 ------------
@@ -626,7 +626,7 @@ Flag is defined in one byte as following bit definitions.
    - optional:
       - one_or_more:
          - Input Index, NUMBER
-         - Outout Index, NUMBER
+         - Output Index, NUMBER
    - one_or_more:
       - Packed Stream Index, NUMBER
 

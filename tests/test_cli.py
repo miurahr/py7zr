@@ -164,7 +164,7 @@ def test_cli_list_verbose(capsys):
 --
 Path = {}
 Type = 7z
-Phisical Size = 657
+Physical Size = 657
 Headers Size = 216
 Method = LZMA2
 Solid = +
@@ -194,7 +194,7 @@ def test_cli_test(capsys):
 --
 Path = {}
 Type = 7z
-Phisical Size = 1663
+Physical Size = 1663
 Headers Size = 203
 Method = LZMA2
 Solid = -
@@ -470,7 +470,7 @@ def test_list_multivolume(capsys):
 --
 Path = {}
 Type = 7z
-Phisical Size = 52337
+Physical Size = 52337
 Headers Size = 518
 Method = LZMA2, BCJ
 Solid = +
@@ -521,7 +521,7 @@ def test_cli_encrypted_no_password(capsys):
 --
 Path = {}
 Type = 7z
-Phisical Size = 251
+Physical Size = 251
 Headers Size = 203
 Method = LZMA, 7zAES
 Solid = +

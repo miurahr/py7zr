@@ -75,7 +75,7 @@ Code style
 The py7zr uses the PEP8 code style. In addition to the standard PEP8, we have an extended
 guidelines
 
-* line length should not exceed 125 charactors.
+* line length should not exceed 125 characters.
 
 * It also use MyPy static type check enforcement.
 

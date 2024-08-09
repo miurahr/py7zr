@@ -1186,10 +1186,10 @@ class SupportedMethods:
             )
         if coder["method"] == COMPRESSION_METHOD.MISC_LZ4:
             raise UnsupportedCompressionMethodError(
-                coder["method"], "Archive is compressed by an unsupported algorythm LZ4."
+                coder["method"], "Archive is compressed by an unsupported algorithm LZ4."
             )
         raise UnsupportedCompressionMethodError(
-            coder["method"], "Archive is compressed by an unsupported compression algorythm."
+            coder["method"], "Archive is compressed by an unsupported compression algorithm."
         )
 
     @classmethod
