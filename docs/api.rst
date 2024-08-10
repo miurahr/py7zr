@@ -161,6 +161,7 @@ SevenZipFile Object
 
 
 .. py:method:: SevenZipFile.getnames()
+               SevenZipFile.namelist()
 
    Return a list of archive files by name.
 
@@ -286,9 +287,7 @@ SevenZipFile Object
 
     Return a ArchiveInfo object.
 
-.. py:method:: SevenZipFile.namelist()
 
-    Return a list of archive members by name.
 
 .. py:method:: SevenZipFile.test()
 
