@@ -1031,6 +1031,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def read(self, targets: Optional[Collection[str]] = None) -> Optional[Dict[str, IO[Any]]]:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
+        # For interoperability with ZipFile, we strip any trailing slashes
+        # This also matches the behavior of TarFile
+        if targets is not None:
+            targets = [remove_trailing_slash(target) for target in targets]
         self._dict = {}
         return self._extract(path=None, targets=targets, return_dict=True)
 
@@ -1039,6 +1043,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
+        # For interoperability with ZipFile, we strip any trailing slashes
+        # This also matches the behavior of TarFile
+        if targets is not None:
+            targets = [remove_trailing_slash(target) for target in targets]
         self._extract(path, targets, return_dict=False, recursive=recursive)
 
     def reporter(self, callback: ExtractCallback):
