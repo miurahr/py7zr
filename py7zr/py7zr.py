@@ -237,7 +237,7 @@ class ArchiveFile:
 
 
 class ArchiveFileList(collections.abc.Iterable):
-    """Iteratable container of ArchiveFile."""
+    """Iterable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
         self.files_list: List[dict] = []
@@ -444,7 +444,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
         if header is None:
             return
-        header._initilized = True
+        header._initialized = True
         self.header = header
         header.size += 32 + self.sig_header.nextheadersize
         buffer.close()
@@ -688,7 +688,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
-        self.sig_header._write_skelton(self.fp)
+        self.sig_header._write_skeleton(self.fp)
         self.afterheader = self.fp.tell()
         self.header = Header.build_header(filters, password)
         self.fp.seek(self.afterheader)

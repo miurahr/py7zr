@@ -233,7 +233,7 @@ class Cli:
                 file.write("Path = {}\n".format(archive_info.filename))
                 file.write("Type = 7z\n")
                 fstat = archive_info.stat
-                file.write("Phisical Size = {}\n".format(fstat.st_size))
+                file.write("Physical Size = {}\n".format(fstat.st_size))
                 file.write("Headers Size = {}\n".format(archive_info.header_size))
                 file.write("Method = {}\n".format(", ".join(archive_info.method_names)))
                 if archive_info.solid:
@@ -290,7 +290,7 @@ class Cli:
         file.write("Path = {}\n".format(archive.filename))
         file.write("Type = 7z\n")
         fstat = os.stat(archive.filename)
-        file.write("Phisical Size = {}\n".format(fstat.st_size))
+        file.write("Physical Size = {}\n".format(fstat.st_size))
         file.write("Headers Size = {}\n".format(archive.header.size))
         file.write("Method = {}\n".format(", ".join(archive._get_method_names())))
         if archive._is_solid():
