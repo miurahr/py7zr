@@ -34,11 +34,11 @@ jobs:
             python-version: 'pypy-3.9'
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 20
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -q -y libarchive-dev graphviz
       - name: Download libarchive(Windows)
         if: runner.os == 'Windows'
-        uses: carlosperate/download-file-action@v1.0.3
+        uses: carlosperate/download-file-action@v2
         with:
           file-url: "https://libarchive.org/downloads/libarchive-v3.5.3-win64.zip"
           file-name: "libarchive-v3.5.3-win64.zip"
@@ -91,11 +91,11 @@ jobs:
     name: Test slow test cases
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 20
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           architecture: x64
@@ -121,10 +121,10 @@ jobs:
         distro: [ubuntu20.04]
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 20
-      - uses: uraimo/run-on-arch-action@v2.2.0
+      - uses: uraimo/run-on-arch-action@v2
         name: Build & run test
         with:
           arch: ${{ matrix.arch }}
