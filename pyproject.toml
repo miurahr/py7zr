@@ -1,6 +1,6 @@
 [project]
 name = "py7zr"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 description = "Pure python 7-zip library"
 license = {text = "LGPL-2.1-or-later"}
 authors = [
@@ -15,11 +15,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -167,7 +167,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{38,39,310}, py{38,39,310,311,312}, py39d, docs, mprof
+envlist = mypy, check, pypy{39,310}, py{39,310,311,312,313}, py39d, docs, mprof
 
 [testenv]
 passenv =
@@ -179,12 +179,12 @@ extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy{38,39,310},py{38,39,310,311,312}: clean, check
+    pypy{39,310},py{39,310,311,312,313}: clean, check
 
-[testenv:py38]
+[testenv:py39]
 extras = test, test_compat
 
-[testenv:pypy38]
+[testenv:pypy39]
 extras = test, test_compat
 
 [testenv:mprof]
@@ -238,10 +238,10 @@ commands =
 
 [gh-actions]
 python =
-    3.8: py38
     3.9: py39, check, docs, mypy
     3.10: py310
     3.11: py311
     3.12: py312
+    3.13: py313
     pypy-3.9: pypy39
 """
