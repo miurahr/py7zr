@@ -444,9 +444,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)
         if header is None:
             return
-        header._initialized = True
-        self.header = header
         header.size += 32 + self.sig_header.nextheadersize
+        self.header = header
         buffer.close()
         self.files = ArchiveFileList()
         if getattr(self.header, "files_info", None) is None:
