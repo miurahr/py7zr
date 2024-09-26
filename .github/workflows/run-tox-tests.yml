@@ -19,11 +19,11 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-latest]
         python-version: [
-            "3.8",
             "3.9",
             "3.10",
             "3.11",
             "3.12",
+            "3.13-dev", # Not yet released, so we need to use -dev to get the release candidate
             "pypy-3.9",
         ]
         include:
@@ -137,7 +137,7 @@ jobs:
           run: |
             git config --global --add safe.directory ${GITHUB_WORKSPACE}
             python3 -c "import platform;print('Machine type:', platform.machine())"
-            python3 -m tox -e py38
+            python3 -m tox -e py39
           env: |
             PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
 

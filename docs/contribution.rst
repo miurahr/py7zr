@@ -20,7 +20,7 @@ The py7zr is written in the Python programming language. Python installation for
 various platforms with various ways. You need to install Python environment which
 support `pip` command. Venv/Virtualenv is recommended for development.
 
-We have a test suite with python 3.6, 3.7, 3.8 and pypy3.
+We have a test suite with python 3.9, 3.10, 3.11, 3.12, 3.13, and pypy3.
 If you want to run all the test with these versions and variant on your local,
 you should install these versions. You can run test with CI environment on
 Github actions.
