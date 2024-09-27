@@ -486,7 +486,7 @@ class UnpackInfo:
     def _read(self, file: BinaryIO):
         pid = file.read(1)
         if pid != PROPERTY.FOLDER:
-            raise Bad7zFile("folder id expected but %s found" % repr(pid))  # pragma: no-cover
+            raise Bad7zFile(f"folder id expected but {repr(pid)} found")  # pragma: no-cover
         self.numfolders = read_uint64(file)
         self.folders = []
         external = read_byte(file)
@@ -503,7 +503,7 @@ class UnpackInfo:
     def _retrieve_coders_info(self, file: BinaryIO):
         pid = file.read(1)
         if pid != PROPERTY.CODERS_UNPACK_SIZE:
-            raise Bad7zFile("coders unpack size id expected but %s found" % repr(pid))  # pragma: no-cover
+            raise Bad7zFile(f"coders unpack size id expected but {repr(pid)} found")  # pragma: no-cover
         for folder in self.folders:
             for c in folder.coders:
                 for _ in range(c["numoutstreams"]):
@@ -517,9 +517,7 @@ class UnpackInfo:
                 folder.crc = crcs[idx]
             pid = file.read(1)
         if pid != PROPERTY.END:
-            raise Bad7zFile(
-                "end id expected but 0x{:02x} found at 0x{:08x}".format(ord(pid), file.tell())
-            )  # pragma: no-cover  # noqa
+            raise Bad7zFile(f"end id expected but 0x{ord(pid):02x} found at 0x{file.tell():08x}")  # pragma: no-cover  # noqa
 
     def write(self, file: Union[BinaryIO, WriteWithCrc]):
         assert self.numfolders == len(self.folders)
@@ -606,7 +604,7 @@ class SubstreamsInfo:
                         didx += 1
             pid = file.read(1)
         if pid != PROPERTY.END:
-            raise Bad7zFile("end id expected but %r found" % pid)  # pragma: no-cover
+            raise Bad7zFile(f"end id expected but {repr(pid)} found")  # pragma: no-cover
         if not self.digestsdefined:
             self.digestsdefined = [False] * num_digests_total
             self.digests = [0] * num_digests_total
@@ -667,7 +665,7 @@ class StreamsInfo:
             self.substreamsinfo = SubstreamsInfo.retrieve(file, self.unpackinfo.numfolders, self.unpackinfo.folders)
             pid = file.read(1)
         if pid != PROPERTY.END:
-            raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover
+            raise Bad7zFile(f"end id expected but {repr(pid)} found")  # pragma: no-cover
 
     def write(self, file: Union[BinaryIO, WriteWithCrc]):
         write_byte(file, PROPERTY.MAIN_STREAMS_INFO)
@@ -765,7 +763,7 @@ class FilesInfo:
             elif prop == PROPERTY.START_POS:
                 self._read_start_pos(buffer)
             else:
-                raise Bad7zFile("invalid type %r" % prop)  # pragma: no-cover
+                raise Bad7zFile(f"invalid type {repr(prop)}")  # pragma: no-cover
 
     def _read_name(self, buffer: BinaryIO) -> None:
         for f in self.files:
@@ -934,7 +932,7 @@ class Header:
             self._extract_header_info(buffer)
             return
         if pid != PROPERTY.ENCODED_HEADER:
-            raise TypeError("Unknown field: %r" % pid)  # pragma: no-cover
+            raise TypeError(f"Unknown field: {repr(pid)}")  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
         buffer2 = io.BytesIO()
@@ -964,7 +962,7 @@ class Header:
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
         if pid != PROPERTY.HEADER:
-            raise TypeError("Unknown field: %r" % pid)  # pragma: no-cover
+            raise TypeError(f"Unknown field: {repr(pid)}")  # pragma: no-cover
         self._extract_header_info(buffer2)
 
     def _encode_header(self, file: BinaryIO, afterheader: int, filters):
@@ -1027,7 +1025,7 @@ class Header:
             self.files_info = FilesInfo.retrieve(fp)
             pid = fp.read(1)
         if pid != PROPERTY.END:
-            raise Bad7zFile("end id expected but %s found" % (repr(pid)))  # pragma: no-cover
+            raise Bad7zFile(f"end id expected but {repr(pid)} found")  # pragma: no-cover
 
     @staticmethod
     def build_header(filters, password):

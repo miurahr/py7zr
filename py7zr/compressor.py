@@ -372,11 +372,11 @@ class PpmdCompressor(ISevenZipCompressor):
             elif mem.lower().endswith("b") and mem[:-1].isdecimal():
                 size = int(mem[:-1])
             else:
-                raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+                raise ValueError(f"Ppmd:Unsupported memory size is specified: {mem}")
         elif isinstance(mem, int):
             size = 1 << mem
         else:
-            raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+            raise ValueError(f"Ppmd:Unsupported memory size is specified: {mem}")
         properties = struct.pack("<BLBB", order, size, 0, 0)
         return properties
 
@@ -504,9 +504,7 @@ class BrotliDecompressor(ISevenZipDecompressor):
         if (properties[0], properties[1]) > (brotli_major, brotli_minor):
             raise UnsupportedCompressionMethodError(
                 properties,
-                "Unsupported brotli version: {}.{} our {}.{}".format(
-                    properties[0], properties[1], brotli_major, brotli_minor
-                ),
+                f"Unsupported brotli version: {properties[0]}.{properties[1]} our {brotli_major}.{brotli_minor}",
             )
         self._prefix_checked = False
         self._decompressor = brotli.Decompressor()
@@ -605,9 +603,7 @@ class SevenZipDecompressor:
         else:
             self.block_size = get_default_blocksize()
         if len(coders) > 4:
-            raise UnsupportedCompressionMethodError(
-                coders, "Maximum cascade of filters is 4 but got {}.".format(len(coders))
-            )
+            raise UnsupportedCompressionMethodError(coders, f"Maximum cascade of filters is 4 but got {len(coders)}.")
         self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
         # Check if password given for encrypted archive
         if SupportedMethods.needs_password(coders) and password is None:
@@ -775,10 +771,10 @@ class SevenZipDecompressor:
         if SupportedMethods.is_native_coder(coder):
             raise UnsupportedCompressionMethodError(coder, "Unknown method code:{}".format(coder["method"]))
         if filter_id not in algorithm_class_map:
-            raise UnsupportedCompressionMethodError(coder, "Unknown method filter_id:{}".format(filter_id))
+            raise UnsupportedCompressionMethodError(coder, f"Unknown method filter_id:{filter_id}")
         if algorithm_class_map[filter_id][1] is None:
             raise UnsupportedCompressionMethodError(
-                coder, "Decompression is not supported by {}.".format(SupportedMethods.get_method_name_id(filter_id))
+                coder, f"Decompression is not supported by {SupportedMethods.get_method_name_id(filter_id)}."
             )
         #
         if SupportedMethods.is_crypto_id(filter_id):
@@ -819,9 +815,7 @@ class SevenZipCompressor:
         else:
             self.filters = filters
         if len(self.filters) > 4:
-            raise UnsupportedCompressionMethodError(
-                filters, "Maximum cascade of filters is 4 but got {}.".format(len(self.filters))
-            )
+            raise UnsupportedCompressionMethodError(filters, f"Maximum cascade of filters is 4 but got {len(self.filters)}.")
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
         self.coders: List[Dict[str, Any]] = []
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native

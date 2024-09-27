@@ -389,7 +389,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.filename = getattr(file, "name", None)
             self.mode = mode  # noqa
         else:
-            raise TypeError("invalid file: {}".format(type(file)))
+            raise TypeError(f"invalid file: {type(file)}")
         self.encoded_header_mode = True
         self.header_encryption = header_encryption
         self._fileRefCnt = 1
@@ -619,9 +619,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 if target_dir.is_dir():
                     pass
                 elif target_dir.is_file():
-                    raise DecompressionError("Directory {} is existed as a normal file.".format(str(target_dir)))
+                    raise DecompressionError(f"Directory {target_dir} is existed as a normal file.")
                 else:
-                    raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
+                    raise DecompressionError(f"Directory {target_dir} making fails on unknown condition.")
 
         if callback is not None:
             self.worker.extract(
@@ -1238,7 +1238,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with file.open(mode="rb") as fp:  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise TypeError("invalid type: file should be str, pathlib.Path or BinaryIO, but {}".format(type(file)))
+            raise TypeError(f"invalid type: file should be str, pathlib.Path or BinaryIO, but {type(file)}")
     except OSError:
         pass
     return result
@@ -1258,7 +1258,7 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
     """
     Function for registering with shutil.register_archive_format().
     """
-    target_name = "{}.7z".format(base_name)
+    target_name = f"{base_name}.7z"
     with SevenZipFile(target_name, mode="w") as archive:
         archive.writeall(path=base_dir)
     return target_name
