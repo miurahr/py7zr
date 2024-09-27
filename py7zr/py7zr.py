@@ -36,10 +36,11 @@ import re
 import stat
 import sys
 import time
+from collections.abc import Collection
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, Any, BinaryIO, Collection, Dict, List, Optional, Tuple, Type, Union
+from typing import IO, Any, BinaryIO, Optional, Union
 
 import multivolumefile
 
@@ -87,11 +88,11 @@ class ArchiveFile:
     The class also hold an archive parameter where file is exist in
     archive file folder(container)."""
 
-    def __init__(self, id: int, file_info: Dict[str, Any]) -> None:
+    def __init__(self, id: int, file_info: dict[str, Any]) -> None:
         self.id = id
         self._file_info = file_info
 
-    def file_properties(self) -> Dict[str, Any]:
+    def file_properties(self) -> dict[str, Any]:
         """Return file properties as a hash object. Following keys are included: ‘readonly’, ‘is_directory’,
         ‘posix_mode’, ‘archivable’, ‘emptystream’, ‘filename’, ‘creationtime’, ‘lastaccesstime’,
         ‘lastwritetime’, ‘attributes’
@@ -129,7 +130,7 @@ class ArchiveFile:
         return self._get_property("emptystream")
 
     @property
-    def uncompressed(self) -> List[int]:
+    def uncompressed(self) -> list[int]:
         return self._get_property("uncompressed")
 
     @property
@@ -240,11 +241,11 @@ class ArchiveFileList(collections.abc.Iterable):
     """Iterable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
-        self.files_list: List[dict] = []
+        self.files_list: list[dict] = []
         self.index = 0
         self.offset = offset
 
-    def append(self, file_info: Dict[str, Any]) -> None:
+    def append(self, file_info: dict[str, Any]) -> None:
         self.files_list.append(file_info)
 
     def __len__(self) -> int:
@@ -286,10 +287,10 @@ class ArchiveInfo:
         filename: str,
         stat: os.stat_result,
         header_size: int,
-        method_names: List[str],
+        method_names: list[str],
         solid: bool,
         blocks: int,
-        uncompressed: List[int],
+        uncompressed: list[int],
     ):
         self.stat = stat
         self.filename = filename
@@ -331,7 +332,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         file: Union[BinaryIO, str, pathlib.Path],
         mode: str = "r",
         *,
-        filters: Optional[List[Dict[str, int]]] = None,
+        filters: Optional[list[dict[str, int]]] = None,
         dereference=False,
         password: Optional[str] = None,
         header_encryption: bool = False,
@@ -389,7 +390,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.filename = getattr(file, "name", None)
             self.mode = mode  # noqa
         else:
-            raise TypeError("invalid file: {}".format(type(file)))
+            raise TypeError(f"invalid file: {type(file)}")
         self.encoded_header_mode = True
         self.header_encryption = header_encryption
         self._fileRefCnt = 1
@@ -415,7 +416,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self._dict: Dict[str, IO[Any]] = {}
+        self._dict: dict[str, IO[Any]] = {}
         self.dereference = dereference
         self.reporterd: Optional[Thread] = None
         self.q: queue.Queue[Any] = queue.Queue()
@@ -538,7 +539,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
         recursive: Optional[bool] = False,
-    ) -> Optional[Dict[str, IO[Any]]]:
+    ) -> Optional[dict[str, IO[Any]]]:
         if callback is None:
             pass
         elif isinstance(callback, ExtractCallback):
@@ -546,8 +547,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.reporterd.start()
         else:
             raise ValueError("Callback specified is not an instance of subclass of py7zr.callbacks.ExtractCallback class")
-        target_files: List[Tuple[pathlib.Path, Dict[str, Any]]] = []
-        target_dirs: List[pathlib.Path] = []
+        target_files: list[tuple[pathlib.Path, dict[str, Any]]] = []
+        target_dirs: list[pathlib.Path] = []
         if path is not None:
             if isinstance(path, str):
                 path = pathlib.Path(path)
@@ -564,7 +565,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if targets is not None:
             # faster lookups
             targets = set(targets)
-        fnames: Dict[str, int] = {}  # check duplicated filename in one archive?
+        fnames: dict[str, int] = {}  # check duplicated filename in one archive?
         self.q.put(("pre", None, None))
         for f in self.files:
             if targets is not None and recursive is False:
@@ -619,9 +620,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 if target_dir.is_dir():
                     pass
                 elif target_dir.is_file():
-                    raise DecompressionError("Directory {} is existed as a normal file.".format(str(target_dir)))
+                    raise DecompressionError(f"Directory {target_dir} is existed as a normal file.")
                 else:
-                    raise DecompressionError("Directory {} making fails on unknown condition.".format(str(target_dir)))
+                    raise DecompressionError(f"Directory {target_dir} making fails on unknown condition.")
 
         if callback is not None:
             self.worker.extract(
@@ -790,7 +791,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             # A new empty file raises OSError
             return False
 
-    def _get_method_names(self) -> List[str]:
+    def _get_method_names(self) -> list[str]:
         try:
             return get_methods_names([folder.coders for folder in self.header.main_streams.unpackinfo.folders])
         except KeyError:
@@ -821,8 +822,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         del self.sig_header
 
     @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> Dict[str, Any]:
-        f: Dict[str, Any] = {}
+    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
+        f: dict[str, Any] = {}
         f["origin"] = target
         if arcname is not None:
             f["filename"] = pathlib.Path(arcname).as_posix()
@@ -903,8 +904,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
         return f
 
-    def _make_file_info_from_name(self, bio, size: int, arcname: str) -> Dict[str, Any]:
-        f: Dict[str, Any] = {}
+    def _make_file_info_from_name(self, bio, size: int, arcname: str) -> dict[str, Any]:
+        f: dict[str, Any] = {}
         f["origin"] = None
         f["data"] = bio
         f["filename"] = pathlib.Path(arcname).as_posix()
@@ -947,13 +948,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
-    def getnames(self) -> List[str]:
+    def getnames(self) -> list[str]:
         """Return the members of the archive as a list of their names. It has
         the same order as the list returned by getmembers().
         """
         return self.namelist()
 
-    def namelist(self) -> List[str]:
+    def namelist(self) -> list[str]:
         """Return a list of archive members by name."""
         return list(map(lambda x: x.filename, self.files))
 
@@ -995,9 +996,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def needs_password(self) -> bool:
         return self.password_protected
 
-    def list(self) -> List[FileInfo]:
+    def list(self) -> list[FileInfo]:
         """Returns contents information"""
-        alist: List[FileInfo] = []
+        alist: list[FileInfo] = []
         lastmodified: Optional[datetime.datetime] = None
         for f in self.files:
             if f.lastwritetime is not None:
@@ -1015,7 +1016,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
         return alist
 
-    def readall(self) -> Optional[Dict[str, IO[Any]]]:
+    def readall(self) -> Optional[dict[str, IO[Any]]]:
         self._dict = {}
         return self._extract(path=None, return_dict=True)
 
@@ -1027,7 +1028,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         self._extract(path=path, return_dict=False, callback=callback)
 
-    def read(self, targets: Optional[Collection[str]] = None) -> Optional[Dict[str, IO[Any]]]:
+    def read(self, targets: Optional[Collection[str]] = None) -> Optional[dict[str, IO[Any]]]:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
@@ -1051,7 +1052,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def reporter(self, callback: ExtractCallback):
         while True:
             try:
-                item: Optional[Tuple[str, str, str]] = self.q.get(timeout=1)
+                item: Optional[tuple[str, str, str]] = self.q.get(timeout=1)
             except queue.Empty:
                 pass
             else:
@@ -1103,7 +1104,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    def writed(self, targets: Dict[str, IO[Any]]) -> None:
+    def writed(self, targets: dict[str, IO[Any]]) -> None:
         for target, input in targets.items():
             self.writef(input, target)
 
@@ -1188,7 +1189,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def test(self) -> Optional[bool]:
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
-        crcs: Optional[List[int]] = self.header.main_streams.packinfo.crcs
+        crcs: Optional[list[int]] = self.header.main_streams.packinfo.crcs
         if crcs is None or len(crcs) == 0:
             return None
         packpos = self.afterheader + self.header.main_streams.packinfo.packpos
@@ -1238,7 +1239,7 @@ def is_7zfile(file: Union[BinaryIO, str, pathlib.Path]) -> bool:
             with file.open(mode="rb") as fp:  # noqa
                 result = SevenZipFile._check_7zfile(fp)
         else:
-            raise TypeError("invalid type: file should be str, pathlib.Path or BinaryIO, but {}".format(type(file)))
+            raise TypeError(f"invalid type: file should be str, pathlib.Path or BinaryIO, but {type(file)}")
     except OSError:
         pass
     return result
@@ -1258,7 +1259,7 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
     """
     Function for registering with shutil.register_archive_format().
     """
-    target_name = "{}.7z".format(base_name)
+    target_name = f"{base_name}.7z"
     with SevenZipFile(target_name, mode="w") as archive:
         archive.writeall(path=base_dir)
     return target_name
@@ -1270,14 +1271,14 @@ class Worker:
     """
 
     def __init__(self, files, src_start: int, header, mp=False) -> None:
-        self.target_filepath: Dict[int, Union[MemIO, pathlib.Path, None]] = {}
+        self.target_filepath: dict[int, Union[MemIO, pathlib.Path, None]] = {}
         self.files = files
         self.src_start = src_start
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files) - 1
         if mp:
-            self.concurrent: Union[Type[Thread], Type[Process]] = Process
+            self.concurrent: Union[type[Thread], type[Process]] = Process
         else:
             self.concurrent = Thread
 
@@ -1393,7 +1394,7 @@ class Worker:
         Single thread extractor that takes file lists in single 7zip folder.
         this may raise exception.
         """
-        just_check: List[ArchiveFile] = []
+        just_check: list[ArchiveFile] = []
         for f in files:
             if q is not None:
                 q.put(

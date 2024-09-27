@@ -29,7 +29,7 @@ import re
 import shutil
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import _lzma  # type: ignore
 import multivolumefile
@@ -54,7 +54,7 @@ class CliExtractCallback(ExtractCallback):
         pass
 
     def report_start(self, processing_file_path, processing_bytes):
-        self.ofd.write("- {}".format(processing_file_path))
+        self.ofd.write(f"- {processing_file_path}")
         self.pwidth += len(processing_file_path) + 2
 
     def report_update(self, decompressed_bytes):
@@ -64,7 +64,7 @@ class CliExtractCallback(ExtractCallback):
         self.total_bytes += int(wrote_bytes)
         plest = self.columns - self.pwidth
         progress = self.total_bytes / self.archive_total
-        msg = "({:.0%})\n".format(progress)
+        msg = f"({progress:.0%})\n"
         if plest - len(msg) > 0:
             self.ofd.write(msg.rjust(plest))
         else:
@@ -158,13 +158,8 @@ class Cli:
         py_version = platform.python_version()
         py_impl = platform.python_implementation()
         py_build = platform.python_compiler()
-        return "{} Version {} : {} (Python {} [{} {}])".format(
-            module_name,
-            py7zr.__version__,
-            py7zr.__copyright__,
-            py_version,
-            py_impl,
-            py_build,
+        return (
+            f"{module_name} Version {py7zr.__version__} : {py7zr.__copyright__} (Python {py_version} [{py_impl} {py_build}])"
         )
 
     def show_help(self, args):
@@ -180,7 +175,7 @@ class Cli:
         table.set_cols_dtype(["t", "t"])
         table.set_cols_align(["l", "r"])
         for f in SupportedMethods.formats:
-            m = "".join(" {:02x}".format(x) for x in f["magic"])
+            m = "".join(f" {x:02x}" for x in f["magic"])
             table.add_row([str(f["name"]), m])
         print(table.draw())
         print("\nCodecs and hashes:")
@@ -190,7 +185,7 @@ class Cli:
         table.set_cols_align(["l", "r"])
         for c in SupportedMethods.methods:
             method_id: bytes = c["id"]
-            m = "".join("{:02x}".format(x) for x in method_id)
+            m = "".join(f"{x:02x}" for x in method_id)
             method_name: str = c["name"]
             table.add_row([m, method_name])
         table.add_row(["0", "CRC32"])
@@ -228,19 +223,19 @@ class Cli:
                     file_name: str = target.name  # type: ignore
                 else:
                     file_name = str(target)
-                file.write("Listing archive: {}\n".format(file_name))
+                file.write(f"Listing archive: {file_name}\n")
                 file.write("--\n")
-                file.write("Path = {}\n".format(archive_info.filename))
+                file.write(f"Path = {archive_info.filename}\n")
                 file.write("Type = 7z\n")
                 fstat = archive_info.stat
-                file.write("Physical Size = {}\n".format(fstat.st_size))
-                file.write("Headers Size = {}\n".format(archive_info.header_size))
+                file.write(f"Physical Size = {fstat.st_size}\n")
+                file.write(f"Headers Size = {archive_info.header_size}\n")
                 file.write("Method = {}\n".format(", ".join(archive_info.method_names)))
                 if archive_info.solid:
                     file.write("Solid = {}\n".format("+"))
                 else:
                     file.write("Solid = {}\n".format("-"))
-                file.write("Blocks = {}\n".format(archive_info.blocks))
+                file.write(f"Blocks = {archive_info.blocks}\n")
                 file.write("\n")
             file.write(
                 "total %d files and directories in %sarchive\n"
@@ -287,17 +282,17 @@ class Cli:
     @staticmethod
     def print_archiveinfo(archive, file):
         file.write("--\n")
-        file.write("Path = {}\n".format(archive.filename))
+        file.write(f"Path = {archive.filename}\n")
         file.write("Type = 7z\n")
         fstat = os.stat(archive.filename)
-        file.write("Physical Size = {}\n".format(fstat.st_size))
-        file.write("Headers Size = {}\n".format(archive.header.size))
+        file.write(f"Physical Size = {fstat.st_size}\n")
+        file.write(f"Headers Size = {archive.header.size}\n")
         file.write("Method = {}\n".format(", ".join(archive._get_method_names())))
         if archive._is_solid():
             file.write("Solid = {}\n".format("+"))
         else:
             file.write("Solid = {}\n".format("-"))
-        file.write("Blocks = {}\n".format(len(archive.header.main_streams.unpackinfo.folders)))
+        file.write(f"Blocks = {len(archive.header.main_streams.unpackinfo.folders)}\n")
 
     def run_test(self, args):
         target = args.arcfile
@@ -308,7 +303,7 @@ class Cli:
             try:
                 a = py7zr.SevenZipFile(f)
                 file = sys.stdout
-                file.write("Testing archive: {}\n".format(a.filename))
+                file.write(f"Testing archive: {a.filename}\n")
                 self.print_archiveinfo(archive=a, file=file)
                 file.write("\n")
                 if a.testzip() is None:
@@ -400,8 +395,8 @@ class Cli:
             return -1
 
     def run_create(self, args):
-        sztarget = args.arcfile  # type: str
-        filenames = args.filenames  # type: List[str]
+        sztarget: str = args.arcfile
+        filenames: list[str] = args.filenames
         volume_size = args.volume[0] if getattr(args, "volume", None) is not None else None
         if volume_size is not None and not self._check_volumesize_valid(volume_size):
             sys.stderr.write("Error: Specified volume size is invalid.\n")
@@ -445,7 +440,7 @@ class Cli:
 
     def run_append(self, args):
         sztarget: str = args.arcfile
-        filenames: List[str] = args.filenames
+        filenames: list[str] = args.filenames
         if not sztarget.endswith(".7z"):
             sys.stderr.write("Error: specified archive file is invalid.")
             self.show_help(args)

@@ -30,9 +30,8 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import BinaryIO, List, Optional, Union
+from typing import BinaryIO, Optional, Union
 
-import py7zr.win32compat
 from py7zr import Bad7zFile
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
 
@@ -266,19 +265,12 @@ class ArchiveTimestamp(int):
         return ArchiveTimestamp((_time.time() - TIMESTAMP_ADJUST) * 10000000.0)
 
 
-def islink(path):
+def islink(path: Union[str, pathlib.Path]) -> bool:
     """
     Cross-platform islink implementation.
     Support Windows NT symbolic links and reparse points.
     """
-    is_symlink = os.path.islink(str(path))
-    if sys.version_info >= (3, 8) or sys.platform != "win32" or sys.getwindowsversion()[0] < 6:
-        return is_symlink
-    # special check for directory junctions which py38 does.
-    if is_symlink:
-        if py7zr.win32compat.is_reparse_point(path):
-            is_symlink = False
-    return is_symlink
+    return os.path.islink(path)
 
 
 def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathlib.Path]:
@@ -289,23 +281,13 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
     When called with Path object, return also Path object.
     When called with path argument as bytes, return result as a bytes.
     """
-    if sys.version_info >= (3, 9):
-        if isinstance(path, pathlib.Path) and dir_fd is None:
-            return path.readlink()
-        else:
-            return os.readlink(path, dir_fd=dir_fd)
-    elif sys.version_info >= (3, 8) or sys.platform != "win32":
-        res = os.readlink(path, dir_fd=dir_fd)
-        # Hack to handle a wrong type of results
-        if isinstance(res, bytes):
-            res = os.fsdecode(res)
-        if isinstance(path, pathlib.Path):
-            return pathlib.Path(res)
-        else:
-            return res
-    elif not os.path.exists(str(path)):
+    if not os.path.exists(str(path)):
         raise OSError(22, "Invalid argument", path)
-    return py7zr.win32compat.readlink(path)
+
+    if isinstance(path, pathlib.Path) and dir_fd is None:
+        return path.readlink()
+    else:
+        return os.readlink(path, dir_fd=dir_fd)
 
 
 class MemIO:
@@ -448,7 +430,7 @@ def remove_trailing_slash(path: str) -> str:
 
 def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
     """Return a canonical path of target argument."""
-    stack: List[str] = []
+    stack: list[str] = []
     for p in target.parts:
         if p != ".." or len(stack) == 0:
             stack.append(p)
