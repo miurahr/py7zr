@@ -30,7 +30,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import BinaryIO, List, Optional, Union
+from typing import BinaryIO, Optional, Union
 
 import py7zr.win32compat
 from py7zr import Bad7zFile
@@ -448,7 +448,7 @@ def remove_trailing_slash(path: str) -> str:
 
 def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
     """Return a canonical path of target argument."""
-    stack: List[str] = []
+    stack: list[str] = []
     for p in target.parts:
         if p != ".." or len(stack) == 0:
             stack.append(p)

@@ -29,7 +29,7 @@ import re
 import shutil
 import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import _lzma  # type: ignore
 import multivolumefile
@@ -395,8 +395,8 @@ class Cli:
             return -1
 
     def run_create(self, args):
-        sztarget = args.arcfile  # type: str
-        filenames = args.filenames  # type: List[str]
+        sztarget: str = args.arcfile
+        filenames: list[str] = args.filenames
         volume_size = args.volume[0] if getattr(args, "volume", None) is not None else None
         if volume_size is not None and not self._check_volumesize_valid(volume_size):
             sys.stderr.write("Error: Specified volume size is invalid.\n")
@@ -440,7 +440,7 @@ class Cli:
 
     def run_append(self, args):
         sztarget: str = args.arcfile
-        filenames: List[str] = args.filenames
+        filenames: list[str] = args.filenames
         if not sztarget.endswith(".7z"):
             sys.stderr.write("Error: specified archive file is invalid.")
             self.show_help(args)
