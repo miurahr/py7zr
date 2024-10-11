@@ -1,5 +1,10 @@
 version: 2
 
+build:
+  os: "ubuntu-22.04"
+  tools:
+    python: "3.11"
+
 sphinx:
   configuration: docs/conf.py
 
@@ -8,10 +13,8 @@ formats:
   - pdf
 
 python:
-   version: 3.8
    install:
       - method: pip
         path: .
         extra_requirements:
            - docs
-   system_packages: false

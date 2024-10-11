@@ -49,7 +49,7 @@ The module defines the following items:
 .. code-block:: python
 
     shutil.register_unpack_format('7zip', ['.7z'], unpack_7zarchive)
-    shutil.unpack_archive(filename, [, extract_dir])
+    shutil.unpack_archive(filename, extract_dir)
 
 
 .. function:: pack_7zarchive(archive, path, extra=None)
@@ -161,8 +161,15 @@ SevenZipFile Object
 
 
 .. py:method:: SevenZipFile.getnames()
+               SevenZipFile.namelist()
 
    Return a list of archive files by name.
+
+
+.. py:method:: SevenZipFile.getinfo(name)
+
+   Return a FileInfo object with information about the archive member *name*.
+   Calling :meth:`getinfo` for a name not currently contained in the archive will raise a :exc:`KeyError`.
 
 
 .. py:method:: SevenZipFile.needs_password()
@@ -180,19 +187,38 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.extract(path=None, targets=None)
 
    Extract specified pathspec archived files to current working directory.
-   'path' specifies a differenct directory to extract to.
+   'path' specifies a different directory to extract to.
 
-   'targets' is a list of archived files to be extracted. py7zr looks for files
-   and directories as same as specified in 'targets'.
+   'targets' is a COLLECTION of archived file names to be extracted.
+   py7zr looks for files and directories as same as specified in element
+   of 'targets'.
 
-   Once extract() called, the SevenZipFIle object become exhausted and EOF state.
-   If you want to call read(), readall(), extract(), extractall() again,
-   you should call reset() before it.
+   When the method gets a ``str`` object or another object other than collection
+   such as LIST or SET, it will raise :exc:`TypeError`.
+
+   Once extract() called, the ``SevenZipFile`` object become exhausted,
+   and an EOF state.
+   If you want to call :meth:`read`, :meth:`readall`, :meth:`extract`, :meth:`extractall`
+   again, you should call :meth:`reset` before it.
 
    **CAUTION** when specifying files and not specifying parent directory,
    py7zr will fails with no such directory. When you want to extract file
    'somedir/somefile' then pass a list: ['somedirectory', 'somedir/somefile']
    as a target argument.
+
+
+.. py:method:: SevenZipFile.extract(path=None, targets=None, recursive=True)
+
+   'recursive' is a BOOLEAN which if set True, helps with simplifying subcontents
+   extraction.
+
+   Instead of specifying all files / directories under a parent
+   directory by passing a list of 'targets', specifying only the parent directory
+   and setting 'recursive' to True forces an automatic extraction of all
+   subdirectories and subcontents recursively.
+
+   If 'recursive' is not set, it defaults to False, so the extraction proceeds as
+   if the parameter did not exist.
 
    Please see 'tests/test_basic.py: test_py7zr_extract_and_getnames()' for
    example code.
@@ -205,6 +231,8 @@ SevenZipFile Object
         targets = [f if filter_pattern.match(f) for f in allfiles]
    with SevenZipFile('archive.7z', 'r') as zip:
         zip.extract(targets=targets)
+   with SevenZipFile('archive.7z', 'r') as zip:
+        zip.extract(targets=targets, recursive=True)
 
 
 .. py:method:: SevenZipFile.readall()
@@ -226,8 +254,14 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.read(targets=None)
 
    Extract specified list of target archived files to dictionary object.
-   'targets' is a list of archived files to be extracted. py7zr looks for files
-   and directories as same as specified in 'targets'.
+
+   'targets' is a COLLECTION of archived file names to be extracted.
+   py7zr looks for files and directories as same as specified in element
+   of 'targets'.
+
+   When the method get a ``str`` object or another object other than collection
+   such as LIST or SET, it will raise :exc:`TypeError`.
+
    When targets is None, it behave as same as readall().
    Once read() called, the SevenZipFIle object become exhausted and EOF state.
    If you want to call read(), readall(), extract(), extractall() again,
@@ -252,6 +286,7 @@ SevenZipFile Object
 .. py:method:: SevenZipFile.archiveinfo()
 
     Return a ArchiveInfo object.
+
 
 
 .. py:method:: SevenZipFile.test()
@@ -297,6 +332,11 @@ SevenZipFile Object
 
    Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
    Default is `True`.
+
+
+.. py:attribute:: SevenZipFile.filename
+
+   Name of the SEVEN ZIP file.
 
 
 Compression Methods

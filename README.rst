@@ -42,22 +42,15 @@
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
 
-Security Notice
-===============
+Discussion Forum
+================
 
-Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
-Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
+You are welcome to join discussions on project forum/builtin-board at
+https://github.com/miurahr/py7zr/discussions
 
-Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
-
-You are recommend to update immediately to version 0.20.2 or later, 0.19.2 or 0.18.12
-
-.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
-
-I realy appreciate Mr. Matteo Cosentino for notification and coorporation on security improvement.
-
-.. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
-
+You can see announcements of new releases, questions and answers, and
+new feature ideas. When you doubt for usage of py7zr library with unclear
+manuals, please feel easy to raise question on forum.
 
 Compression algorithms
 ======================
@@ -97,7 +90,7 @@ Supported algorithms
     but it does **not** guarantee to block all the bad cases.
   * ZStandard and Brotli is not default methods of 7-zip, so these archives are considered
     not to be compatible with original 7-zip on windows/p7zip on linux/mac.
-  * Enhanced Deflate is also known as `DEFLATE64` :sup:`TM` that is a registered trademark of `PKWARE, Inc.`
+  * Enhanced Deflate is also known as ``DEFLATE64`` :sup:`TM` that is a registered trademark of ``PKWARE, Inc.``
   * Enhanced Deflate is tested only on CPython. It is disabled on PyPy.
 
 Not supported algorithms
@@ -136,9 +129,15 @@ User manuals
 Developer guide
 ---------------
 
-* `Contributor guide`_ for one want to contribute the project.
+* `Contribution guidelines`_ for this project.
 
-* `7z file specification`_
+* `Contribution guidelines(html)`_  for this project.
+
+* `Code of conduct`_ for this project.
+
+* `Code of conduct(html)`_ for this project.
+
+* `7z file specification`_ that py7zr stand on.
 
 
 .. _`User Guide`: https://py7zr.readthedocs.io/en/latest/user_guide.html
@@ -147,7 +146,13 @@ Developer guide
 
 .. _`Manual` : https://py7zr.readthedocs.io/en/stable/
 
-.. _`Contributor guide` : https://py7zr.readthedocs.io/en/latest/contribution.html
+.. _`Contribution guidelines(html)` : https://py7zr.readthedocs.io/en/latest/contribution.html
+
+.. _`Contribution guidelines` : docs/contribution.rst
+
+.. _`Code  of conduct` : docs/CODE_OF_CONDUCT.rst
+
+.. _`Code  of conduct(html)` : https://py7zr.readthedocs.io/en/latest/CODE_OF_CONDUCT.html
 
 .. _`7z file specification` : https://py7zr.readthedocs.io/en/latest/archive_format.html
 
@@ -301,7 +306,7 @@ To create archive with algorithms such as zstandard, you can call with custom fi
 
     my_filters = [{"id": py7zr.FILTER_ZSTD}]
     another_filters = [{"id": py7zr.FILTER_ARM}, {"id": py7zr.FILTER_LZMA2, "preset": 7}]
-    with py7zr.SevenZipFile('target.7z', 'w', filters=my_filter) as archive:
+    with py7zr.SevenZipFile('target.7z', 'w', filters=my_filters) as archive:
         archive.writeall('/path/to/base_dir', 'base')
 
 
@@ -332,7 +337,7 @@ Requirements
 `py7zr` uses a python3 standard `lzma module`_ for extraction and compression.
 The standard lzma module uses `liblzma`_ that support core compression algorithm of 7zip.
 
-Minimum required version is Python 3.7.
+Minimum required version is Python 3.9.
 
 ``py7zr`` tested on Linux, macOS, Windows and Ubuntu aarch64.
 
@@ -340,8 +345,8 @@ It hopefully works on M1 Mac too.
 
 Recommended versions are:
 
-- CPython 3.7.5, CPython 3.8.0 and later.
-- PyPy3.7-7.3.3 and later.
+- CPython 3.9.0 and later.
+- PyPy3.9-7.3.8 and later.
 
 Following fixes are included in these versions, and it is not fixed on python3.6.
 
@@ -409,18 +414,40 @@ py7zr consumes some memory to decompress and compress data. It requires about 30
 Use Cases
 =========
 
+- `PyTorch`_  Open-source deep learning framework.
 - `aqtinstall`_ Another (unofficial) Qt (aqt) CLI Installer on multi-platforms.
 - PreNLP_ Preprocessing Library for Natural Language Processing
 - mlox_  a tool for sorting and analyzing Morrowind plugin load order
 
+.. _`PyTorch`: https://pytorch.org/
 .. _aqtinstall: https://github.com/miurahr/aqtinstall
 .. _PreNLP: https://github.com/lyeoni/prenlp
 .. _mlox: https://github.com/mlox/mlox
 
+Security
+========
+
+Please find a `Security Policy`_ of this project.
+
+Version 0.20.0, 0.19.0, 0.18.10 or before has a `vulnerability for path traversal`_  attack.
+Details are on "CVE-2022-44900: path traversal vulnerability in py7zr" `disclose article`_ .
+
+Affected versions  are vulnerable to Directory Traversal due to insufficient checks in the 'py7zr.py' and 'helpers.py' files
+
+You are recommend to update immediately to version 0.20.2 or later
+
+.. _`vulnerability for path traversal`: https://security.snyk.io/vuln/SNYK-PYTHON-PY7ZR-3092461
+
+I really appreciate Mr. Matteo Cosentino for notification and corporation on security improvement.
+
+.. _`disclose article`: https://lessonsec.com/cve/cve-2022-44900/
+
+.. _`Security Policy` : https://py7zr.readthedocs.io/en/latest/SECURITY.html
+
 License
 =======
 
-* Copyright (C) 2019-2022 Hiroshi Miura
+* Copyright (C) 2019-2024 Hiroshi Miura
 
 * pylzma Copyright (c) 2004-2015 by Joachim Bauch
 * 7-Zip Copyright (C) 1999-2010 Igor Pavlov

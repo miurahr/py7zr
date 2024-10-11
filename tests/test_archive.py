@@ -9,7 +9,7 @@ import pathlib
 import shutil
 import stat
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -43,7 +43,7 @@ def test_compress_single_encoded_header(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, "r")
     assert archive.testzip() is None
     archive.close()
-    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
+    mtime = datetime.fromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime, timezone.utc)
     expected = (
         "total 1 files and directories in archive\n"
         "   Date      Time    Attr         Size   Compressed  Name\n"
@@ -171,7 +171,7 @@ def test_compress_file_0(capsys, tmp_path):
     archive = py7zr.SevenZipFile(target, "r")
     assert archive.header.main_streams.substreamsinfo.num_unpackstreams_folders[0] == 1
     assert archive.testzip() is None
-    mtime = datetime.utcfromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime)
+    mtime = datetime.fromtimestamp(pathlib.Path(os.path.join(testdata_path, "test1.txt")).stat().st_mtime, timezone.utc)
     expected = (
         "total 1 files and directories in archive\n"
         "   Date      Time    Attr         Size   Compressed  Name\n"
@@ -1123,3 +1123,53 @@ def test_compress_append_archive_w_zerofile(tmp_path):
     #
     with py7zr.SevenZipFile(target, "r") as arc:
         arc.extractall(path=tmp_path / "tgt")
+
+
+@pytest.mark.files
+def test_compress_absolute_arcname(tmp_path):
+    tmp_path.joinpath("src").mkdir()
+    tmp_path.joinpath("tgt").mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_2.7z"), path=tmp_path.joinpath("src"))
+    target = tmp_path.joinpath("target.7z")
+    archive = py7zr.SevenZipFile(target, "w")
+    archive.set_encoded_header_mode(False)
+    archive.writeall(str(tmp_path.joinpath("src")), "/foo")
+    archive.close()
+    reader = py7zr.SevenZipFile(target, "r")
+    reader.extractall(path=tmp_path.joinpath("tgt"))
+    reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath("src"), tmp_path.joinpath("tgt").joinpath("foo"))
+    assert dc.diff_files == []
+    #
+    p7zip_test(tmp_path / "target.7z")
+    libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+
+
+@pytest.mark.files
+def test_compress_win32_absolute_arcname(tmp_path):
+    tmp_path.joinpath("src").mkdir()
+    tmp_path.joinpath("tgt").mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_2.7z"), path=tmp_path.joinpath("src"))
+    target = tmp_path.joinpath("target.7z")
+    archive = py7zr.SevenZipFile(target, "w")
+    archive.set_encoded_header_mode(False)
+    archive.writeall(str(tmp_path.joinpath("src")), "C:/foo")
+    archive.close()
+    reader = py7zr.SevenZipFile(target, "r")
+    reader.extractall(path=tmp_path.joinpath("tgt"))
+    reader.close()
+    dc = filecmp.dircmp(tmp_path.joinpath("src"), tmp_path.joinpath("tgt").joinpath("foo"))
+    assert dc.diff_files == []
+    #
+    p7zip_test(tmp_path / "target.7z")
+    libarchive_extract(tmp_path / "target.7z", tmp_path.joinpath("tgt2"))
+
+
+@pytest.mark.files
+def test_empty_stream(tmp_path):
+    archive = py7zr.SevenZipFile(file=tmp_path / "test.7z", mode="w")
+    archive.writestr(data="", arcname="empty.txt")
+    assert len(archive.files.files_list) == 1
+    assert archive.header.files_info.files[0]["uncompressed"] == 0
+    archive.close()
+    p7zip_test(tmp_path / "test.7z")

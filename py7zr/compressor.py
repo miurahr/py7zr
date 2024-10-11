@@ -28,7 +28,7 @@ import sys
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import bcj
 import inflate64
@@ -66,7 +66,10 @@ from py7zr.properties import (
 try:
     import brotli  # type: ignore  # noqa
 except ImportError:
-    import brotlicffi as brotli  # type: ignore  # noqa
+    try:
+        import brotlicffi as brotli  # type: ignore  # noqa
+    except ImportError:
+        brotli = None
 brotli_major = 1
 brotli_minor = 0
 
@@ -356,7 +359,7 @@ class PpmdCompressor(ISevenZipCompressor):
         return order, mem
 
     @classmethod
-    def encode_filter_properties(cls, filter: Dict[str, Union[str, int]]):
+    def encode_filter_properties(cls, filter: dict[str, Union[str, int]]):
         order = filter.get("order", 8)
         mem = filter.get("mem", 24)
         if isinstance(mem, str):
@@ -369,11 +372,11 @@ class PpmdCompressor(ISevenZipCompressor):
             elif mem.lower().endswith("b") and mem[:-1].isdecimal():
                 size = int(mem[:-1])
             else:
-                raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+                raise ValueError(f"Ppmd:Unsupported memory size is specified: {mem}")
         elif isinstance(mem, int):
             size = 1 << mem
         else:
-            raise ValueError("Ppmd:Unsupported memory size is specified: {0}".format(mem))
+            raise ValueError(f"Ppmd:Unsupported memory size is specified: {mem}")
         properties = struct.pack("<BLBB", order, size, 0, 0)
         return properties
 
@@ -475,6 +478,11 @@ class BCJEncoder(ISevenZipCompressor):
 
 class BrotliCompressor(ISevenZipCompressor):
     def __init__(self, level):
+        if brotli is None:
+            raise UnsupportedCompressionMethodError(
+                None,
+                "Brotli library load error may be happened. Please check your environment have a required system library.",
+            )
         self._compressor = brotli.Compressor(quality=level)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
@@ -486,14 +494,17 @@ class BrotliCompressor(ISevenZipCompressor):
 
 class BrotliDecompressor(ISevenZipDecompressor):
     def __init__(self, properties: bytes, block_size: int):
+        if brotli is None:
+            raise UnsupportedCompressionMethodError(
+                None,
+                "Brotli library load error may be happened. Please check your environment have a required system library.",
+            )
         if len(properties) != 3:
             raise UnsupportedCompressionMethodError(properties, "Unknown size of properties are passed")
         if (properties[0], properties[1]) > (brotli_major, brotli_minor):
             raise UnsupportedCompressionMethodError(
                 properties,
-                "Unsupported brotli version: {}.{} our {}.{}".format(
-                    properties[0], properties[1], brotli_major, brotli_minor
-                ),
+                f"Unsupported brotli version: {properties[0]}.{properties[1]} our {brotli_major}.{brotli_minor}",
             )
         self._prefix_checked = False
         self._decompressor = brotli.Decompressor()
@@ -532,7 +543,7 @@ class ZstdDecompressor(ISevenZipDecompressor):
         return self.decompressor.decompress(data)
 
 
-algorithm_class_map: Dict[int, Tuple[Any, Any]] = {
+algorithm_class_map: dict[int, tuple[Any, Any]] = {
     FILTER_ZSTD: (ZstdCompressor, ZstdDecompressor),
     FILTER_BROTLI: (BrotliCompressor, BrotliDecompressor),
     FILTER_PPMD: (PpmdCompressor, PpmdDecompressor),
@@ -547,6 +558,17 @@ algorithm_class_map: Dict[int, Tuple[Any, Any]] = {
     FILTER_POWERPC: (BcjPpcEncoder, BcjPpcDecoder),
     FILTER_SPARC: (BcjSparcEncoder, BcjSparcDecoder),
 }
+
+
+class LZMA1Compressor(ISevenZipCompressor):
+    def __init__(self, filters):
+        self._compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters)
+
+    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+        return self._compressor.compress(data)
+
+    def flush(self) -> bytes:
+        return self._compressor.flush()
 
 
 class LZMA1Decompressor(ISevenZipDecompressor):
@@ -564,9 +586,9 @@ class SevenZipDecompressor:
 
     def __init__(
         self,
-        coders: List[Dict[str, Any]],
+        coders: list[dict[str, Any]],
         packsize: int,
-        unpacksizes: List[int],
+        unpacksizes: list[int],
         crc: Optional[int],
         password: Optional[str] = None,
         blocksize: Optional[int] = None,
@@ -581,10 +603,8 @@ class SevenZipDecompressor:
         else:
             self.block_size = get_default_blocksize()
         if len(coders) > 4:
-            raise UnsupportedCompressionMethodError(
-                coders, "Maximum cascade of filters is 4 but got {}.".format(len(coders))
-            )
-        self.methods_map = [SupportedMethods.is_native_coder(coder) for coder in coders]  # type: List[bool]
+            raise UnsupportedCompressionMethodError(coders, f"Maximum cascade of filters is 4 but got {len(coders)}.")
+        self.methods_map: list[bool] = [SupportedMethods.is_native_coder(coder) for coder in coders]
         # Check if password given for encrypted archive
         if SupportedMethods.needs_password(coders) and password is None:
             raise PasswordRequired(coders, "Password is required for extracting given archive.")
@@ -610,8 +630,8 @@ class SevenZipDecompressor:
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
-        self.chain = []  # type: List[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]]
-        self._unpacksizes = []  # type: List[int]
+        self.chain: list[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]] = []
+        self._unpacksizes: list[int] = []
         self.input_size = self.input_size
         shift = 0
         prev = False
@@ -713,8 +733,8 @@ class SevenZipDecompressor:
     def unused_size(self):
         return len(self._unused)
 
-    def _get_lzma_decompressor(self, coders: List[Dict[str, Any]], unpacksize: int):
-        filters: List[Dict[str, Any]] = []
+    def _get_lzma_decompressor(self, coders: list[dict[str, Any]], unpacksize: int):
+        filters: list[dict[str, Any]] = []
         lzma1 = False
         for coder in coders:
             if coder["numinstreams"] != 1 or coder["numoutstreams"] != 1:
@@ -735,7 +755,7 @@ class SevenZipDecompressor:
             return lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
 
     def _get_alternative_decompressor(
-        self, coder: Dict[str, Any], unpacksize=None, password=None
+        self, coder: dict[str, Any], unpacksize=None, password=None
     ) -> Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]:  # noqa
         filter_id = SupportedMethods.get_filter_id(coder)
         # Special treatment for BCJ filters
@@ -751,10 +771,10 @@ class SevenZipDecompressor:
         if SupportedMethods.is_native_coder(coder):
             raise UnsupportedCompressionMethodError(coder, "Unknown method code:{}".format(coder["method"]))
         if filter_id not in algorithm_class_map:
-            raise UnsupportedCompressionMethodError(coder, "Unknown method filter_id:{}".format(filter_id))
+            raise UnsupportedCompressionMethodError(coder, f"Unknown method filter_id:{filter_id}")
         if algorithm_class_map[filter_id][1] is None:
             raise UnsupportedCompressionMethodError(
-                coder, "Decompression is not supported by {}.".format(SupportedMethods.get_method_name_id(filter_id))
+                coder, f"Decompression is not supported by {SupportedMethods.get_method_name_id(filter_id)}."
             )
         #
         if SupportedMethods.is_crypto_id(filter_id):
@@ -781,11 +801,11 @@ class SevenZipCompressor:
     ]
 
     def __init__(self, filters=None, password=None, blocksize: Optional[int] = None):
-        self.filters: List[Dict[str, Any]] = []
-        self.chain: List[ISevenZipCompressor] = []
+        self.filters: list[dict[str, Any]] = []
+        self.chain: list[ISevenZipCompressor] = []
         self.digest = 0
         self.packsize = 0
-        self._unpacksizes: List[int] = []
+        self._unpacksizes: list[int] = []
         if blocksize:
             self._block_size = blocksize
         else:
@@ -795,11 +815,9 @@ class SevenZipCompressor:
         else:
             self.filters = filters
         if len(self.filters) > 4:
-            raise UnsupportedCompressionMethodError(
-                filters, "Maximum cascade of filters is 4 but got {}.".format(len(self.filters))
-            )
+            raise UnsupportedCompressionMethodError(filters, f"Maximum cascade of filters is 4 but got {len(self.filters)}.")
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
-        self.coders: List[Dict[str, Any]] = []
+        self.coders: list[dict[str, Any]] = []
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
             self._set_native_compressors_coders(self.filters)
             return
@@ -831,7 +849,7 @@ class SevenZipCompressor:
             raise UnsupportedCompressionMethodError(filters, "Unknown combination of methods.")
 
     def _set_native_compressors_coders(self, filters):
-        self.chain.append(lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters))
+        self.chain.append(LZMA1Compressor(filters))
         self._unpacksizes.append(0)
         for filter in filters:
             self.coders.insert(0, SupportedMethods.get_coder(filter))
@@ -897,14 +915,16 @@ class SevenZipCompressor:
                 data += compressor.flush()
             else:
                 data = compressor.flush()
+        if data is None:
+            return 0
         self.packsize += len(data)
         self.digest = calculate_crc32(data, self.digest)
         fp.write(data)
         return len(data)
 
     @property
-    def unpacksizes(self):
-        result = []
+    def unpacksizes(self) -> list[int]:
+        result: list[int] = []
         shift = 0
         prev = False
         for i, r in enumerate(self.methods_map):
@@ -923,8 +943,8 @@ class MethodsType(Enum):
 class SupportedMethods:
     """Hold list of methods."""
 
-    formats = [{"name": "7z", "magic": MAGIC_7Z}]
-    methods = [
+    formats: list[dict[str, Any]] = [{"name": "7z", "magic": MAGIC_7Z}]
+    methods: list[dict[str, Any]] = [
         {
             "id": COMPRESSION_METHOD.COPY,
             "name": "COPY",
@@ -1125,7 +1145,7 @@ class SupportedMethods:
         return method["id"]
 
     @classmethod
-    def get_coder(cls, filter) -> Dict[str, Any]:
+    def get_coder(cls, filter) -> dict[str, Any]:
         method = cls.get_method_id(filter["id"])
         if filter["id"] in [lzma.FILTER_LZMA1, lzma.FILTER_LZMA2, lzma.FILTER_DELTA]:
             properties: Optional[bytes] = lzma._encode_filter_properties(filter)  # type: ignore  # noqa
@@ -1160,10 +1180,10 @@ class SupportedMethods:
             )
         if coder["method"] == COMPRESSION_METHOD.MISC_LZ4:
             raise UnsupportedCompressionMethodError(
-                coder["method"], "Archive is compressed by an unsupported algorythm LZ4."
+                coder["method"], "Archive is compressed by an unsupported algorithm LZ4."
             )
         raise UnsupportedCompressionMethodError(
-            coder["method"], "Archive is compressed by an unsupported compression algorythm."
+            coder["method"], "Archive is compressed by an unsupported compression algorithm."
         )
 
     @classmethod
@@ -1173,7 +1193,7 @@ class SupportedMethods:
         )
 
 
-def get_methods_names(coders_lists: List[List[dict]]) -> List[str]:
+def get_methods_names(coders_lists: list[list[dict]]) -> list[str]:
     # list of known method names with a display priority order
 
     methods_namelist = [

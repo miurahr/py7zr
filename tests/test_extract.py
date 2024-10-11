@@ -7,12 +7,12 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 
 import pytest
 
 import py7zr
-from py7zr import unpack_7zarchive
 from py7zr.exceptions import CrcError, UnsupportedCompressionMethodError
 from py7zr.helpers import UTC
 
@@ -306,8 +306,7 @@ def test_zerosize_mem():
 
 
 @pytest.mark.api
-def test_register_unpack_archive(tmp_path):
-    shutil.register_unpack_format("7zip", [".7z"], unpack_7zarchive)
+def test_register_unpack_archive(register_shutil_unpack_format, tmp_path):
     shutil.unpack_archive(str(testdata_path.joinpath("test_1.7z")), str(tmp_path))
     target = tmp_path.joinpath("setup.cfg")
     expected_mode = 33188
@@ -324,6 +323,12 @@ def test_register_unpack_archive(tmp_path):
     m = hashlib.sha256()
     m.update(tmp_path.joinpath("scripts/py7zr").open("rb").read())
     assert m.digest() == binascii.unhexlify("b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd")
+
+
+@pytest.mark.api
+def test_register_unpack_archive_error(register_shutil_unpack_format, tmp_path):
+    with tempfile.NamedTemporaryFile(suffix=".7z") as f, pytest.raises(shutil.ReadError):
+        shutil.unpack_archive(f.name, str(tmp_path))
 
 
 @pytest.mark.files
@@ -425,7 +430,11 @@ def test_close_unlink(tmp_path):
 @pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="Not working with pypy3")
 def test_asyncio_executor(tmp_path):
     shutil.copyfile(os.path.join(testdata_path, "test_1.7z"), str(tmp_path.joinpath("test_1.7z")))
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     task = asyncio.ensure_future(aio7zr(tmp_path.joinpath("test_1.7z"), path=tmp_path))
     loop.run_until_complete(task)
     loop.run_until_complete(asyncio.sleep(3))
@@ -581,3 +590,37 @@ def test_extract_hidden_linux_file(tmp_path):
         ]
         archive.extractall(path=tmp_path)
         assert tmp_path.joinpath(hidden_file_name).exists()
+
+
+@pytest.mark.files
+def test_extract_root_path_arcname(tmp_path):
+    # This test checks the extraction of a file with a arcname like
+    # "/a/b/test.txt" which shouldn't fail.
+    filename_7z = testdata_path.joinpath("root_path_arcname.7z")
+    content = bytes("This is a test", "ascii")
+    filename = "a/b/test.txt"  # expected arcname
+
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        iterations = archive.getnames()
+        assert len(iterations) == 1
+
+        _dict = archive.read(targets=iterations)
+        if _dict is None:
+            # fix typing errors
+            raise RuntimeError("Failed to read archive")
+
+        assert len(_dict) == 1
+        assert [*_dict.keys()] == [filename]
+        assert _dict[filename].read() == content
+
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        archive.extractall(path=tmp_path)
+        assert tmp_path.joinpath(filename).exists()
+
+
+@pytest.mark.files
+def test_extract_target_parent_folder(tmp_path):
+    target_path = pathlib.Path(os.path.relpath(tmp_path, os.getcwd()))
+    f = "solid.7z"
+    archive = py7zr.SevenZipFile(testdata_path.joinpath(f).open(mode="rb"))
+    check_archive(archive, target_path, False)

@@ -161,7 +161,7 @@ if sys.platform == "win32":
         CloseHandle(handle)
         if not status:
             logger = getLogger(__file__)
-            logger.error("Failed IOCTL access to REPARSE_POINT {})".format(target))
+            logger.error(f"Failed IOCTL access to REPARSE_POINT {target})")
             raise ValueError("not a symbolic link or access permission violation")
 
         if buf.reparse_tag == IO_REPARSE_TAG_SYMLINK:

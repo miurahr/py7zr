@@ -117,7 +117,7 @@ def test_callback_raw_class():
 
 
 def test_callback_not_concrete_class():
-    # test the case when passed arugment is abstract class
+    # test the case when passed argument is abstract class
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
             cb = callback()
@@ -136,6 +136,9 @@ def test_extract_callback(tmp_path):
 
         def report_start(self, processing_file_path, processing_bytes):
             self.ofd.write('start "{}" (compressed in {} bytes)\n'.format(processing_file_path, processing_bytes))
+
+        def report_update(self, decompressed_bytes):
+            self.ofd.write("decompressed part of {} bytes\n".format(decompressed_bytes))
 
         def report_end(self, processing_file_path, wrote_bytes):
             self.ofd.write('end "{}" extracted to {} bytes\n'.format(processing_file_path, wrote_bytes))

@@ -1,13 +1,13 @@
 [project]
 name = "py7zr"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 description = "Pure python 7-zip library"
 license = {text = "LGPL-2.1-or-later"}
 authors = [
     {name = "Hiroshi Miura", email = "miurahr@linux.com"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
@@ -15,11 +15,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -27,16 +27,15 @@ classifiers = [
 ]
 dependencies = [
       "texttable",
-      "pycryptodomex>=3.6.6",
-      'importlib_metadata;python_version<"3.8"',
-      'brotli>=1.0.9;platform_python_implementation=="CPython"',
-      'brotlicffi>=1.0.9.2;platform_python_implementation=="PyPy"',
+      "pycryptodomex>=3.20.0",
+      'brotli>=1.1.0;platform_python_implementation=="CPython"',
+      'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
-      "pyzstd>=0.14.4",
-      "pyppmd>=0.18.1,<1.1.0",
-      "pybcj>=0.6.0",
+      "pyzstd>=0.16.1",
+      "pyppmd>=1.1.0,<1.2.0",
+      "pybcj>=1.0.0,<1.1.0",
       "multivolumefile>=0.2.3",
-      'inflate64>=0.3.1;python_version>"3.6"',
+      "inflate64>=1.0.0,<1.1.0",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["readme", "version"]
@@ -61,30 +60,31 @@ test = [
       "pytest-cov",
       "pytest-remotedata",
       "pytest-timeout",
-      "pyannotate",
       "py-cpuinfo",
       "coverage[toml]>=5.2",
       "coveralls>=2.1.1",
 ]
 docs = [
-      "sphinx>=5.0",
+      "sphinx>=7.0.0",
       "sphinx-py3doc-enhanced-theme",
       "sphinx-a4doc",
       "docutils",
 ]
 check = [
-      "mypy>=0.940",
-      "mypy_extensions>=0.4.1",
+      "mypy>=1.10.0",
+      "mypy_extensions>=1.0.0",
+      "lxml",
+      "types-psutil",
       "check-manifest",
-      "flake8<5",
+      "flake8<8",
       "flake8-black>=0.3.6",
       "flake8-deprecated",
       "flake8-isort",
-      "isort>=5.0.3",
+      "isort>=5.13.2",
       "pygments",
       "readme-renderer",
       "twine",
-      "black>=23.1.0",
+      "black>=24.8.0",
 ]
 debug = [
       "pytest",
@@ -126,7 +126,7 @@ target-version = ['py39']
 
 [tool.isort]
 known_first_party = ['py7zr']
-known_third_party = ["docutils", "flake8", "pyannotate_runtime", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
+known_third_party = ["docutils", "flake8", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
@@ -137,8 +137,10 @@ line_length = 125
 [tool.mypy]
 warn_redundant_casts = true
 warn_unused_ignores = true
+warn_return_any = false
 strict_optional = true
 show_column_numbers = true
+check_untyped_defs = true
 
 [tool.check-manifest]
 ignore = ["py7zr/version.py", "azure-pipelines.yml", ".readthedocs.yml", "codecov.yml"]
@@ -165,7 +167,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{37,38,39}, py{37,38,39,310,311}, py39d, docs, mprof
+envlist = mypy, check, pypy{39,310}, py{39,310,311,312,313}, py39d, docs, mprof
 
 [testenv]
 passenv =
@@ -177,12 +179,12 @@ extras = test
 commands =
     python -m pytest -vv
 depends =
-    pypy{37,38,39},py{36,37,38,39,310}: clean, check
+    pypy{39,310},py{39,310,311,312,313}: clean, check
 
-[testenv:py38]
+[testenv:py39]
 extras = test, test_compat
 
-[testenv:pypy38]
+[testenv:pypy39]
 extras = test, test_compat
 
 [testenv:mprof]
@@ -203,7 +205,7 @@ deps =
 
 [testenv:mypy]
 extras = check
-commands = mypy py7zr
+commands = mypy --html-report build/mypy py7zr
 deps =
     pyzstd
 
@@ -236,10 +238,10 @@ commands =
 
 [gh-actions]
 python =
-    3.7: py37
-    3.8: py38
     3.9: py39, check, docs, mypy
     3.10: py310
     3.11: py311
+    3.12: py312
+    3.13: py313
     pypy-3.9: pypy39
 """

@@ -1,17 +1,17 @@
 pool:
-  vmImage: 'macOS-10.15'
+  vmImage: 'macOS-latest'
 
 strategy:
   matrix:
-    Python38:
-      python.version: '3.8'
-      TOXENV: py38
     Python39:
       python.version: '3.9'
       TOXENV: py39
     Python310:
       python.version: '3.10'
       TOXENV: py310
+    Python311:
+      python.version: '3.11'
+      TOXENV: py311
 
 steps:
 - task: UsePythonVersion@0

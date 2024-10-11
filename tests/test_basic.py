@@ -1,7 +1,9 @@
+import base64
 import os
 import pathlib
 import re
 import shutil
+from io import BytesIO
 
 import pytest
 
@@ -24,8 +26,10 @@ def test_basic_initinfo():
 
 
 @pytest.mark.api
-def test_basic_not_implemented_yet1(tmp_path):
-    with pytest.raises(NotImplementedError):
+def test_basic_exclusive_mode(tmp_path):
+    with py7zr.SevenZipFile(tmp_path.joinpath("test_x.7z"), mode="x") as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    with pytest.raises(FileExistsError):
         py7zr.SevenZipFile(tmp_path.joinpath("test_x.7z"), mode="x")
 
 
@@ -33,6 +37,13 @@ def test_basic_not_implemented_yet1(tmp_path):
 def test_basic_append_mode(tmp_path):
     target = tmp_path.joinpath("test_a.7z")
     shutil.copy(os.path.join(testdata_path, "test_1.7z"), target)
+    with py7zr.SevenZipFile(target, mode="a") as archive:
+        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+
+
+@pytest.mark.api
+def test_basic_append_mode_on_non_existent_file(tmp_path):
+    target = tmp_path.joinpath("test_non_existent_file.7z")
     with py7zr.SevenZipFile(target, mode="a") as archive:
         archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
 
@@ -194,11 +205,45 @@ def test_py7zr_extract_specified_file(tmp_path):
 
 
 @pytest.mark.api
+def test_py7zr_extract_specified_file_with_trailing_slash(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb"))
+    expected = [
+        {
+            "filename": "scripts/py7zr",
+            "mode": 33261,
+            "mtime": 1552522208,
+            "digest": "b0385e71d6a07eb692f5fb9798e9d33aaf87be7dfff936fd2473eab2a593d4fd",
+        }
+    ]
+    archive.extract(path=tmp_path, targets=["scripts/", "scripts/py7zr/"])
+    archive.close()
+    assert tmp_path.joinpath("scripts").is_dir()
+    assert tmp_path.joinpath("scripts/py7zr").exists()
+    assert not tmp_path.joinpath("setup.cfg").exists()
+    assert not tmp_path.joinpath("setup.py").exists()
+    check_output(expected, tmp_path)
+
+
+@pytest.mark.api
 def test_py7zr_extract_and_getnames(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb"))
     allfiles = archive.getnames()
     filter_pattern = re.compile(r"scripts.*")
     targets = [f for f in allfiles if filter_pattern.match(f)]
+    archive.extract(path=tmp_path, targets=targets)
+    archive.close()
+    assert tmp_path.joinpath("scripts").is_dir()
+    assert tmp_path.joinpath("scripts/py7zr").exists()
+    assert not tmp_path.joinpath("setup.cfg").exists()
+    assert not tmp_path.joinpath("setup.py").exists()
+
+
+@pytest.mark.api
+def test_py7zr_extract_with_trailing_slash_and_getnames(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb"))
+    allfiles = archive.getnames()
+    filter_pattern = re.compile(r"scripts.*")
+    targets = [f"{f}/" for f in allfiles if filter_pattern.match(f)]
     archive.extract(path=tmp_path, targets=targets)
     archive.close()
     assert tmp_path.joinpath("scripts").is_dir()
@@ -227,6 +272,17 @@ def test_py7zr_read_and_reset(tmp_path):
     iterations = archive.getnames()
     for target in iterations:
         _dict = archive.read(targets=[target])
+        assert len(_dict) == 1
+        archive.reset()
+    archive.close()
+
+
+@pytest.mark.api
+def test_py7zr_read_with_trailing_slash_and_reset(tmp_path):
+    archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "read_reset.7z"), "rb"))
+    iterations = archive.getnames()
+    for target in iterations:
+        _dict = archive.read(targets=[f"{target}/"])
         assert len(_dict) == 1
         archive.reset()
     archive.close()
@@ -273,3 +329,39 @@ def test_py7zr_list_values():
     assert file_list[1].crc32 == 0xB36AAEDB
     assert file_list[2].crc32 == 0xDCBF8D07
     assert file_list[3].crc32 == 0x80FC72BE
+
+
+@pytest.mark.basic
+def test_multiple_uses():
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "test_multiple.7z"), "w") as archive:
+        archive.writestr("1", "1.txt")
+        archive.test()
+
+
+@pytest.mark.basic
+def test_read_collection_argument():
+    data = base64.b64decode(
+        "N3q8ryccAAT9xtacpQAAAAAAAAAiAAAAAAAAAEerl+XBRlkrcJwwoqgijCyuEh0S"
+        "qLfjamv2F2vNJGFGyHDfpAAAgTMHrg/QDrA8nzkQnJ+m1TPasi6xAvSHzZaZrISL"
+        "D+EsvFULZ44Kf7Ewy47PApbKruXCaOSUsjzeqpG8VBcx66h2cV/lnGDfUjtVsyGB"
+        "HmmmTaSI/atXtuwiN5mGrqyFZTC/V2VEohWua1Yk1K+jXy+32hBwnK2clyr3rN5L"
+        "Abv5g2wXBiABCYCFAAcLAQABIwMBAQVdABAAAAyAlgoBouB4BAAA"
+    )
+    with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+        result = arc.read(["bar.txt"])  # list -> ok
+        assert "bar.txt" in result
+        bina = result.get("bar.txt")
+        assert isinstance(bina, BytesIO)
+        assert bina.read() == b"refinery"
+    with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+        result = arc.read({"bar.txt"})  # set -> ok
+        assert result.get("bar.txt").read() == b"refinery"
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.read(("bar.txt",))  # tuple -> bad
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.read("bar.txt")  # str -> bad
+    with pytest.raises(TypeError):
+        with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
+            arc.extract(targets="bar.txt")  # str -> bad
