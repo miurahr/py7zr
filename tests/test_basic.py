@@ -12,6 +12,7 @@ import py7zr.archiveinfo
 import py7zr.callbacks
 import py7zr.cli
 import py7zr.properties
+from py7zr.io import MemIO
 
 from . import check_output, decode_all
 
@@ -351,7 +352,7 @@ def test_read_collection_argument():
         result = arc.read(["bar.txt"])  # list -> ok
         assert "bar.txt" in result
         bina = result.get("bar.txt")
-        assert isinstance(bina, BytesIO)
+        assert isinstance(bina, MemIO)
         assert bina.read() == b"refinery"
     with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
         result = arc.read({"bar.txt"})  # set -> ok
