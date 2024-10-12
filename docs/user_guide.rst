@@ -71,7 +71,7 @@ Package               Purpose
     user try to compress/decompress with Brotli compression algorithm.
 
 .. _`issue#527`: https://github.com/miurahr/py7zr/issues/527
-.. _`Brotli Issue#782`: https://github.com/google/brotli/issues/782#issuecomment-559516099
+.. _`Brotli Issue#782`: https://github.com/google/brotli/issues/782
 
 
 Run Command
