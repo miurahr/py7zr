@@ -1106,7 +1106,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             path = file
         folder = self.header.initialize()
-        file_info = self._make_file_info(path, arcname, dereference or self.dereference)
+        file_info = self._make_file_info(path, arcname, dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
