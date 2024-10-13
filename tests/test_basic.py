@@ -1,4 +1,3 @@
-import _lzma
 import base64
 import os
 import pathlib
@@ -6,6 +5,7 @@ import re
 import shutil
 from io import BytesIO
 
+import _lzma
 import pytest
 
 import py7zr
