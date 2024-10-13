@@ -146,6 +146,15 @@ def test_digests_corrupted():
         assert archive.test() is None
         archive.reset()
         assert archive.testzip() == "src/scripts/py7zr"
+    assert archive.fp.closed
+
+
+@pytest.mark.basic
+def test_digests_corrupted():
+    arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
+    with py7zr.SevenZipFile(arcfile) as archive:
+        assert archive.test() is None
+    assert archive.fp.closed
 
 
 @pytest.mark.unit
