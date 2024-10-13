@@ -428,7 +428,7 @@ def remove_trailing_slash(path: str) -> str:
     return path
 
 
-def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
+def canonical_path(target: pathlib.Path) -> pathlib.Path:
     """Return a canonical path of target argument."""
     stack: list[str] = []
     for p in target.parts:
@@ -442,10 +442,10 @@ def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
             pass  # '/' + '../' -> '/'
         else:
             stack.pop()  # 'foo/boo/' + '..' -> 'foo/'
-    return pathlib.PurePath(*stack)
+    return pathlib.Path(*stack)
 
 
-def is_relative_to(my: pathlib.PurePath, *other) -> bool:
+def is_relative_to(my: pathlib.Path, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
     try:
         my.relative_to(canonical_path(*other))
@@ -480,7 +480,7 @@ def check_archive_path(arcname: str) -> bool:
     It should not be evil traversal attack path.
     Otherwise, returns True.
     """
-    if pathlib.PurePath(arcname).is_absolute():
+    if pathlib.Path(arcname).is_absolute():
         return False
     # test against dummy parent path
     if sys.platform == "win32":
