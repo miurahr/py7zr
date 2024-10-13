@@ -776,19 +776,19 @@ def test_bcj_encode(tmp_path):
             odata = filter.flush()
             m.update(odata)
             fo.write(odata)
-        assert m.digest() == binascii.unhexlify("e396dadbbe0be4190cdea986e0ec949b049ded2b38df19268a78d32b90b72d42")
+        assert m.digest() == binascii.unhexlify("40cb9389e9eb800540389321cace40866168a2bee563e404be680c8dda3f3d4f")
 
 
 @pytest.mark.unit
-def test_bcj_decode(tmp_path):
+def test_bcj_decode():
     with open(os.path.join(testdata_path, "bcj.bin"), "rb") as f:
-        filter = py7zr.compressor.BCJDecoder(12800)
+        filter = py7zr.compressor.BCJDecoder(1052)
         m = hashlib.sha256()
         data = f.read(8192)
         while len(data) > 0:
             m.update(filter.decompress(data))
             data = f.read(8192)
-        assert m.digest() == binascii.unhexlify("5ae0726746e2ccdad8f511ecfcf5f79df4533b83f86b1877cebc07f14a4e9b6a")
+        assert m.digest() == binascii.unhexlify("10c9fae2722a8dab791fd3a59393bd8ad00121db7088cd86fd8bcd36f4a12e65")
 
 
 @pytest.mark.unit
