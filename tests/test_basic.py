@@ -149,14 +149,6 @@ def test_digests_corrupted():
     assert archive.fp.closed
 
 
-@pytest.mark.basic
-def test_digests_corrupted():
-    arcfile = os.path.join(testdata_path, "crc_corrupted.7z")
-    with py7zr.SevenZipFile(arcfile) as archive:
-        assert archive.test() is None
-    assert archive.fp.closed
-
-
 @pytest.mark.unit
 def test_py7zr_write_mode(tmp_path):
     target = tmp_path.joinpath("target.7z")
