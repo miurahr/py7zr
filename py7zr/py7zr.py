@@ -719,7 +719,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path, arcname, dereference: bool = False):
+    def _writeall(self, path, arcname, dereference: bool = self.dereference):
         try:
             if path.is_symlink() and not dereference:
                 self.write(path, arcname)
@@ -1082,18 +1082,18 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = False):
+    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = self.dereference):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
         if not path.exists():
             raise ValueError("specified path does not exist.")
         if path.is_dir() or path.is_file():
-            self._writeall(path, arcname, dereference or self.dereference)
+            self._writeall(path, arcname, dereference)
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = False):
+    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = self.dereference):
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
@@ -1110,7 +1110,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        self.worker.archive(self.fp, self.files, folder, deref=dereference or self.dereference)
+        self.worker.archive(self.fp, self.files, folder, deref=dereference)
 
     def writed(self, targets: dict[str, IO[Any]]) -> None:
         for target, input in targets.items():
