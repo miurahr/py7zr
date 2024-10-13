@@ -393,7 +393,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise TypeError(f"invalid file: {type(file)}")
         self.encoded_header_mode = True
         self.header_encryption = header_encryption
-        self._fileRefCnt = 1
         try:
             if mode == "r":
                 self._real_get_contents(password)
@@ -428,9 +427,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.close()
 
     def _fpclose(self) -> None:
-        assert self._fileRefCnt > 0
-        self._fileRefCnt -= 1
-        if not self._fileRefCnt and not self._filePassed:
+        if not self._filePassed:
             self.fp.close()
 
     def _real_get_contents(self, password) -> None:
