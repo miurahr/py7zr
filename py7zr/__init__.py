@@ -43,6 +43,7 @@ from py7zr.properties import (
     PRESET_EXTREME,
 )
 from py7zr.py7zr import ArchiveInfo, FileInfo, SevenZipFile, is_7zfile, pack_7zarchive, unpack_7zarchive
+from py7zr.io import Py7zIO, WriterFactory
 from py7zr.version import __version__
 
 __copyright__ = "Copyright (C) 2019-2021 Hiroshi Miura"
@@ -60,6 +61,8 @@ __all__ = [
     "UnsupportedCompressionMethodError",
     "Bad7zFile",
     "DecompressionError",
+    "Py7zIO",
+    "WriterFactory",
     "FILTER_LZMA",
     "FILTER_LZMA2",
     "FILTER_DELTA",

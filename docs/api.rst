@@ -235,10 +235,13 @@ SevenZipFile Object
         zip.extract(targets=targets, recursive=True)
 
 
-.. py:method:: SevenZipFile.readall()
+.. py:method:: SevenZipFile.readall(factory: WriterFactory = factory)
 
-   Extract all members from the archive to memory and returns dictionary object.
-   Returned dictionary has a form of Dict[filename: str, BinaryIO: io.BytesIO object].
+   Extract all members from the archive to object which implement Py7zIO interface,
+   and returns dictionary object which key is archived filename and value is given object
+   that factory class provide.
+
+   Returned dictionary has a form of Dict[str, Py7zIO].
    Once readall() called, the SevenZipFIle object become exhausted and EOF state.
    If you want to call read(), readall(), extract(), extractall() again,
    you should call reset() before it.
@@ -246,12 +249,40 @@ SevenZipFile Object
 
 .. code-block:: python
 
+   class MyWriter(Py7zIO):
+       def __init__(self):
+           self.buf = None
+           self.empty = True
+
+       def write(self, s: [bytes, bytearray]):
+           """keep only first 10 bytes"""
+           if self.empty:
+               self.buf = s[:10]
+               self.empty = False
+
+       def read(self, length: int = 0) -> bytes:
+           if self.empty:
+               return None
+           return self.buf[:length]
+
+       def seek(self, offset: int, whence: int = 0) -> int:
+           return 0
+
+       def size(self) -> int:
+           return len(self.buf)
+
+
+   class MyFactory(WriterFactory):
+       def create(self, fname) -> Py7zIO:
+           return MyWriter()
+
+
    with SevenZipFile('archive.7z', 'r') as zip:
-       for fname, bio in zip.readall().items():
-           print(f'{fname}: {bio.read(10)}...')
+       for fname, py7zio in zip.readall(MyFactory()).items():
+           print(f'{fname}: {py7zio.read(10)}...')
 
 
-.. py:method:: SevenZipFile.read(targets=None)
+.. py:method:: SevenZipFile.read(factory: WriterFactory, targets=None)
 
    Extract specified list of target archived files to dictionary object.
 

@@ -6,11 +6,13 @@ import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
+from typing import Optional, Union
 
 import multivolumefile
 import pytest
 
 import py7zr
+from py7zr import SevenZipFile
 
 from . import libarchive_extract, p7zip_test
 
@@ -84,11 +86,45 @@ def test_bcj_file(tmp_path):
         libarchive_extract(target, tmp_path / "tgt2")
 
 
+class TestArchiveWriter(py7zr.io.Py7zIO):
+
+    def __init__(self, fname, target: SevenZipFile):
+        self.fname = fname
+        self.target = target
+        self.buffer = io.BytesIO()
+
+    def write(self, s: Union[bytes, bytearray]) -> int:
+        self.buffer.write(s)
+
+    def read(self, size: Optional[int] = None) -> bytes:
+        return self.buffer.read(size)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return self.buffer.seek(offset, whence)
+
+    def flush(self) -> None:
+        pass
+
+    def close(self) -> None:
+        self.target.writef(self.buffer, self.fname)
+
+    def size(self) -> int:
+        return self.buffer.getbuffer().nbytes
+
+
+class TestWriterFactory(py7zr.io.WriterFactory):
+    def __init__(self, target: SevenZipFile):
+        self.target = target
+
+    def create(self, filename: str) -> py7zr.io.Py7zIO:
+        return TestArchiveWriter(filename, self.target)
+
+
 @pytest.mark.files
-def test_read_writed(tmp_path):
+def test_read_write_new(tmp_path):
     with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w") as target:
         with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
-            target.writed(source.readall())
+            source.readall(TestWriterFactory(target))
     p7zip_test(tmp_path / "target.7z")
 
 

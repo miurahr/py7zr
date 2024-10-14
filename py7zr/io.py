@@ -16,6 +16,7 @@
 #    You should have received a copy of the GNU Lesser General Public
 #    License along with this library; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+import hashlib
 import io
 from abc import ABC, abstractmethod
 from typing import Optional, Union
@@ -44,12 +45,41 @@ class Py7zIO(ABC):
         pass
 
 
+class HashIO(Py7zIO):
+    def __init__(self, filename):
+        self.filename = filename
+        self.hash = hashlib.sha256()
+        self.size = 0
+
+    def write(self, s: Union[bytes, bytearray]) -> int:
+        self.size += len(s)
+        self.hash.update(s)
+        return len(s)
+
+    def read(self, size: Optional[int] = None) -> bytes:
+        return self.hash.digest()
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return 0
+
+    def flush(self) -> None:
+        pass
+
+    def size(self) -> int:
+        return self.size
+
+
 class Py7zBytesIO(Py7zIO):
-    def __init__(self):
+    def __init__(self, filename: str, limit: int):
+        self.filename = filename
+        self.limit = limit
         self._buffer = io.BytesIO()
 
     def write(self, s: Union[bytes, bytearray]) -> int:
-        return self._buffer.write(s)
+        if self.size() < self.limit:
+            return self._buffer.write(s)
+        else:
+            return 0
 
     def read(self, size: Optional[int] = None) -> bytes:
         return self._buffer.read(size)
@@ -72,13 +102,29 @@ class WriterFactory(ABC):
         pass
 
 
-class BytesIOFactory(WriterFactory):
-
+class HashIOFactory(WriterFactory):
     def __init__(self):
         pass
 
     def create(self, filename: str) -> Py7zIO:
-        return Py7zBytesIO()
+        return HashIO(filename)
+
+
+class BytesIOFactory(WriterFactory):
+
+    def __init__(self, limit: int):
+        self.limit = limit
+
+    def create(self, filename: str) -> Py7zIO:
+        return Py7zBytesIO(filename, self.limit)
+
+
+class NullIOFactory(WriterFactory):
+    def __init__(self):
+        pass
+
+    def create(self, filename: str) -> Py7zIO:
+        return NullIO()
 
 
 class MemIO:
@@ -160,7 +206,7 @@ class MemIO:
         pass
 
 
-class NullIO:
+class NullIO(Py7zIO):
     """pathlib.Path-like IO class of /dev/null"""
 
     def __init__(self):
@@ -190,6 +236,12 @@ class NullIO:
 
     def mkdir(self):
         return None
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        pass
+
+    def size(self):
+        return 0
 
     def __enter__(self):
         return self

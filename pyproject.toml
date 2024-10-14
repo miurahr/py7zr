@@ -36,6 +36,7 @@ dependencies = [
       "pybcj>=1.0.0,<1.1.0",
       "multivolumefile>=0.2.3",
       "inflate64>=1.0.0,<1.1.0",
+      "deprecated",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["readme", "version"]
