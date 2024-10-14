@@ -6,6 +6,7 @@ py7zr -- a 7z library on python
    :maxdepth: 3
 
    user_guide
+   advanced
    SECURITY
    api
    contribution

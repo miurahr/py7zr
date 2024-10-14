@@ -249,15 +249,16 @@ SevenZipFile Object
 
 .. code-block:: python
 
-   class MyWriter(Py7zIO):
-       def __init__(self):
+   class MyIO(Py7zIO):
+       def __init__(self, limit):
+           self.limit = limit
            self.buf = None
            self.empty = True
 
        def write(self, s: [bytes, bytearray]):
-           """keep only first 10 bytes"""
+           """keep only bytes of limit"""
            if self.empty:
-               self.buf = s[:10]
+               self.buf = s[:self.limit]
                self.empty = False
 
        def read(self, length: int = 0) -> bytes:
@@ -273,13 +274,23 @@ SevenZipFile Object
 
 
    class MyFactory(WriterFactory):
+
+       def __init(self, size):
+           self.size = size
+           self.products = {}
+
        def create(self, fname) -> Py7zIO:
-           return MyWriter()
+           product = MyIO(self.size)
+           self.products[fname] = product
+           return product
 
 
+   size = 10
+   factory = MyFactory(size)
    with SevenZipFile('archive.7z', 'r') as zip:
-       for fname, py7zio in zip.readall(MyFactory()).items():
-           print(f'{fname}: {py7zio.read(10)}...')
+       zip.readall(factory)
+   for fname in factory.products.keys():
+       print(f'{fname}: {factory.products[fname].read(size)}...')
 
 
 .. py:method:: SevenZipFile.read(factory: WriterFactory, targets=None)
