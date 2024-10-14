@@ -49,14 +49,14 @@ class HashIO(Py7zIO):
     def __init__(self, filename):
         self.filename = filename
         self.hash = hashlib.sha256()
-        self.size = 0
+        self._size: int = 0
 
     def write(self, s: Union[bytes, bytearray]) -> int:
-        self.size += len(s)
+        self._size += len(s)
         self.hash.update(s)
         return len(s)
 
-    def read(self, size: Optional[int] = None) -> bytes:
+    def read(self, length: Optional[int] = None) -> bytes:
         return self.hash.digest()
 
     def seek(self, offset: int, whence: int = 0) -> int:
@@ -66,7 +66,7 @@ class HashIO(Py7zIO):
         pass
 
     def size(self) -> int:
-        return self.size
+        return self._size
 
 
 class Py7zBytesIO(Py7zIO):
@@ -119,7 +119,7 @@ class BytesIOFactory(WriterFactory):
 
     def __init__(self, limit: int):
         self.limit = limit
-        self.products = {}
+        self.products: dict[str, Py7zBytesIO] = {}
 
     def create(self, filename: str) -> Py7zIO:
         product = Py7zBytesIO(filename, self.limit)
@@ -141,14 +141,11 @@ class NullIOFactory(WriterFactory):
 class MemIO:
     """pathlib.Path-like IO class to write memory"""
 
-    def __init__(self, fname: str, factory: Optional[WriterFactory] = None):
+    def __init__(self, fname: str, factory: WriterFactory):
         self._buf: Optional[Py7zIO] = None
         self._closed = True
         self.fname = fname
-        if factory is None:
-            self.factory: WriterFactory = BytesIOFactory()
-        else:
-            self.factory = factory
+        self.factory = factory
 
     @property
     def mode(self) -> str:
@@ -249,7 +246,7 @@ class NullIO(Py7zIO):
         return None
 
     def seek(self, offset: int, whence: int = 0) -> int:
-        pass
+        return offset
 
     def size(self):
         return 0

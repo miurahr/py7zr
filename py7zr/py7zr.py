@@ -535,11 +535,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         path: Optional[Any] = None,
         targets: Optional[Collection[str]] = None,
-        return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
         recursive: Optional[bool] = False,
         writer_factory: Optional[WriterFactory] = None,
-    ) -> Optional[dict[str, MemIO]]:
+    ) -> None:
         if callback is None:
             pass
         elif isinstance(callback, ExtractCallback):

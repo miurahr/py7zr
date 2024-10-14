@@ -65,7 +65,7 @@ test = [
       "coverage[toml]>=5.2",
       "coveralls>=2.1.1",
       "requests",
-      "pytest-httpserver"
+      "pytest-httpserver",
 ]
 docs = [
       "sphinx>=7.0.0",
@@ -88,6 +88,7 @@ check = [
       "readme-renderer",
       "twine",
       "black>=24.8.0",
+      "types-Deprecated"
 ]
 debug = [
       "pytest",
