@@ -1022,7 +1022,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         directories afterwards. ``path`` specifies a different directory
         to extract to.
         """
-        self._extract(path=path, return_dict=False, callback=callback)
+        self._extract(path=path, callback=callback)
 
     def read(self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
         if not self._is_none_or_collection(targets):
@@ -1042,7 +1042,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._extract(path, targets, return_dict=False, recursive=recursive)
+        self._extract(path, targets, recursive=recursive)
 
     def reporter(self, callback: ExtractCallback):
         while True:
