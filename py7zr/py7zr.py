@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2022 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2024 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -43,6 +43,7 @@ from threading import Thread
 from typing import IO, Any, BinaryIO, Optional, Union
 
 import multivolumefile
+from deprecated import deprecated
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -57,8 +58,6 @@ from py7zr.exceptions import (
 )
 from py7zr.helpers import (
     ArchiveTimestamp,
-    MemIO,
-    NullIO,
     calculate_crc32,
     check_archive_path,
     filetime_to_dt,
@@ -67,6 +66,7 @@ from py7zr.helpers import (
     readlink,
     remove_trailing_slash,
 )
+from py7zr.io import MemIO, NullIO, WriterFactory
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
 
 if sys.platform.startswith("win"):
@@ -415,7 +415,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self._dict: dict[str, IO[Any]] = {}
         self.dereference = dereference
         self.reporterd: Optional[Thread] = None
         self.q: queue.Queue[Any] = queue.Queue()
@@ -533,10 +532,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         path: Optional[Any] = None,
         targets: Optional[Collection[str]] = None,
-        return_dict: bool = False,
         callback: Optional[ExtractCallback] = None,
         recursive: Optional[bool] = False,
-    ) -> Optional[dict[str, IO[Any]]]:
+        writer_factory: Optional[WriterFactory] = None,
+    ) -> None:
         if callback is None:
             pass
         elif isinstance(callback, ExtractCallback):
@@ -588,15 +587,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = get_sanitized_output_path(outname, path)
             else:
                 outfilename = get_sanitized_output_path(outname, pathlib.Path(os.getcwd()).joinpath(path))
-            if return_dict:
+            if writer_factory is not None:
                 if f.is_directory or f.is_socket:
                     # ignore special files and directories
                     pass
                 else:
                     fname = outfilename.as_posix()
-                    _buf = io.BytesIO()
-                    self._dict[fname] = _buf
-                    self.worker.register_filelike(f.id, MemIO(_buf))
+                    self.worker.register_filelike(f.id, MemIO(fname, writer_factory))
             elif f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)
@@ -637,8 +634,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
         self.q.put(("post", None, None))
         # early return when dict specified
-        if return_dict:
-            return self._dict
+        if writer_factory is not None:
+            return
         # set file properties
         for outfilename, properties in target_files:
             # mtime
@@ -1013,9 +1010,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
         return alist
 
-    def readall(self) -> Optional[dict[str, IO[Any]]]:
-        self._dict = {}
-        return self._extract(path=None, return_dict=True)
+    def readall(self, factory: WriterFactory) -> None:
+        return self._extract(path=None, writer_factory=factory)
 
     def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
@@ -1023,17 +1019,16 @@ class SevenZipFile(contextlib.AbstractContextManager):
         directories afterwards. ``path`` specifies a different directory
         to extract to.
         """
-        self._extract(path=path, return_dict=False, callback=callback)
+        self._extract(path=path, callback=callback)
 
-    def read(self, targets: Optional[Collection[str]] = None) -> Optional[dict[str, IO[Any]]]:
+    def read(self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._dict = {}
-        return self._extract(path=None, targets=targets, return_dict=True)
+        return self._extract(path=None, targets=targets, writer_factory=factory)
 
     def extract(
         self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False
@@ -1044,7 +1039,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._extract(path, targets, return_dict=False, recursive=recursive)
+        self._extract(path, targets, recursive=recursive)
 
     def reporter(self, callback: ExtractCallback):
         while True:
@@ -1101,6 +1096,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
+    @deprecated(version="1.0.0-rc2", reason="Dropped the interface which read/write through dictionary.")
     def writed(self, targets: dict[str, IO[Any]]) -> None:
         for target, input in targets.items():
             self.writef(input, target)
@@ -1124,6 +1120,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             last = bio.tell()
             bio.seek(current, os.SEEK_SET)
             size = last - current
+        elif isinstance(bio, MemIO):
+            size = bio.__sizeof__()
         else:
             raise ValueError("Wrong argument passed for argument bio.")
         if size >= 0:
@@ -1409,7 +1407,8 @@ class Worker:
                 # delayed execution of crc check.
                 self._check(fp, just_check, src_end)
                 just_check = []
-                fileish.parent.mkdir(parents=True, exist_ok=True)
+                if not isinstance(fileish, MemIO):
+                    fileish.parent.mkdir(parents=True, exist_ok=True)
                 if not f.emptystream:
                     if f.is_junction and not isinstance(fileish, MemIO) and sys.platform == "win32":
                         with io.BytesIO() as ofp:

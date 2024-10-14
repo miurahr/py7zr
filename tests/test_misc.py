@@ -85,14 +85,6 @@ def test_bcj_file(tmp_path):
 
 
 @pytest.mark.files
-def test_read_writed(tmp_path):
-    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w") as target:
-        with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
-            target.writed(source.readall())
-    p7zip_test(tmp_path / "target.7z")
-
-
-@pytest.mark.files
 @pytest.mark.skipif(
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",

@@ -38,7 +38,8 @@ from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
-from py7zr.helpers import Buffer, calculate_crc32, calculate_key
+from py7zr.helpers import calculate_crc32, calculate_key
+from py7zr.io import Buffer
 from py7zr.properties import (
     COMPRESSION_METHOD,
     FILTER_ARM,
