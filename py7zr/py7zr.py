@@ -42,7 +42,7 @@ from shutil import ReadError
 from threading import Thread
 from typing import IO, Any, BinaryIO, Optional, Union
 
-import deprecated
+from deprecated import deprecated
 import multivolumefile
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
@@ -416,7 +416,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         except Exception as e:
             self._fpclose()
             raise e
-        self._dict: dict[str, MemIO] = {}
         self.dereference = dereference
         self.reporterd: Optional[Thread] = None
         self.q: queue.Queue[Any] = queue.Queue()
@@ -592,15 +591,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 outfilename = get_sanitized_output_path(outname, path)
             else:
                 outfilename = get_sanitized_output_path(outname, pathlib.Path(os.getcwd()).joinpath(path))
-            if return_dict:
+            if writer_factory is not None:
                 if f.is_directory or f.is_socket:
                     # ignore special files and directories
                     pass
                 else:
                     fname = outfilename.as_posix()
-                    _buf = MemIO(fname, writer_factory)
-                    self._dict[fname] = _buf
-                    self.worker.register_filelike(f.id, _buf)
+                    self.worker.register_filelike(f.id, MemIO(fname, writer_factory))
             elif f.is_directory:
                 if not outfilename.exists():
                     target_dirs.append(outfilename)
@@ -641,8 +638,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
         self.q.put(("post", None, None))
         # early return when dict specified
-        if return_dict:
-            return self._dict
+        if writer_factory is not None:
+            return
         # set file properties
         for outfilename, properties in target_files:
             # mtime
@@ -1017,9 +1014,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
         return alist
 
-    def readall(self, factory: WriterFactory) -> Optional[dict[str, MemIO]]:
-        self._dict = {}
-        return self._extract(path=None, return_dict=True, writer_factory=factory)
+    def readall(self, factory: WriterFactory) -> None:
+        return self._extract(path=None, writer_factory=factory)
 
     def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
         """Extract all members from the archive to the current working
@@ -1030,15 +1026,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path=path, return_dict=False, callback=callback)
 
     def read(
-        self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> Optional[dict[str, MemIO]]:
+        self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._dict = {}
-        return self._extract(path=None, targets=targets, return_dict=True, writer_factory=factory)
+        return self._extract(path=None, targets=targets, writer_factory=factory)
 
     def extract(
         self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False
@@ -1106,7 +1101,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    @deprecated
+    @deprecated(version="1.0.0-rc2", reason="Dropped the interface which read/write through dictionary.")
     def writed(self, targets: dict[str, IO[Any]]) -> None:
         for target, input in targets.items():
             self.writef(input, target)
