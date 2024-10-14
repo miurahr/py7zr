@@ -104,19 +104,30 @@ class WriterFactory(ABC):
 
 class HashIOFactory(WriterFactory):
     def __init__(self):
-        pass
+        self.products = {}
 
     def create(self, filename: str) -> Py7zIO:
-        return HashIO(filename)
+        product = HashIO(filename)
+        self.products[filename] = product
+        return product
+
+    def get(self, filename: str) -> Py7zIO:
+        return self.products[filename]
 
 
 class BytesIOFactory(WriterFactory):
 
     def __init__(self, limit: int):
         self.limit = limit
+        self.products = {}
 
     def create(self, filename: str) -> Py7zIO:
-        return Py7zBytesIO(filename, self.limit)
+        product = Py7zBytesIO(filename, self.limit)
+        self.products[filename] = product
+        return product
+
+    def get(self, filename):
+        return self.products[filename]
 
 
 class NullIOFactory(WriterFactory):
