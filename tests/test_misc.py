@@ -6,13 +6,11 @@ import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
-from typing import Optional, Union
 
 import multivolumefile
 import pytest
 
 import py7zr
-from py7zr import SevenZipFile
 
 from . import libarchive_extract, p7zip_test
 

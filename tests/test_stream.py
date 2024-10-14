@@ -8,6 +8,7 @@ import pytest
 import py7zr
 import py7zr.io
 from py7zr import SevenZipFile
+
 from . import p7zip_test
 
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
@@ -54,4 +55,3 @@ def test_read_write_new(tmp_path):
         with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
             source.readall(TestWriterFactory(target))
     p7zip_test(tmp_path / "target.7z")
-

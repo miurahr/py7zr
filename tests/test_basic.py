@@ -12,7 +12,6 @@ import py7zr.archiveinfo
 import py7zr.callbacks
 import py7zr.cli
 import py7zr.properties
-from py7zr.io import MemIO
 
 from . import check_output, decode_all
 

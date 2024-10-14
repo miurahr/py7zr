@@ -1,4 +1,3 @@
-import io
 import os
 import pathlib
 from typing import Optional
@@ -9,15 +8,15 @@ from pytest_httpserver import HTTPServer
 import py7zr
 import py7zr.io
 
-from py7zr import Py7zIO
-
 testdata_path = pathlib.Path(os.path.dirname(__file__)).joinpath("data")
 os.umask(0o022)
 
 
 def test_extract_stream(httpserver: HTTPServer):
     httpserver.expect_request("/setup.cfg", method="PUT").respond_with_data("ok")
-    httpserver.expect_request("/setup.cfg", method="GET").respond_with_data(b"[flake8]\nmax-line-length = 125\n\n[bdist_wheel]\nuniversal=1\n")
+    httpserver.expect_request("/setup.cfg", method="GET").respond_with_data(
+        b"[flake8]\nmax-line-length = 125\n\n[bdist_wheel]\nuniversal=1\n"
+    )
     httpserver.expect_request("/setup.py", method="PUT").respond_with_data("ok")
     httpserver.expect_request("/scripts/py7zr", method="PUT").respond_with_data("ok")
     factory = StreamWriterFactory(httpserver)
@@ -64,7 +63,7 @@ class StreamWriterFactory(py7zr.io.WriterFactory):
         self.httpserver: HTTPServer = httpserver
         self.products = {}
 
-    def create(self, filename: str) -> Py7zIO:
+    def create(self, filename: str) -> py7zr.io.Py7zIO:
         product = StreamWriter(self.httpserver, filename)
         self.products[filename] = product
         return product

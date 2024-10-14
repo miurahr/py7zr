@@ -42,8 +42,8 @@ from shutil import ReadError
 from threading import Thread
 from typing import IO, Any, BinaryIO, Optional, Union
 
-from deprecated import deprecated
 import multivolumefile
+from deprecated import deprecated
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -1024,8 +1024,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """
         self._extract(path=path, return_dict=False, callback=callback)
 
-    def read(
-        self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
+    def read(self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
