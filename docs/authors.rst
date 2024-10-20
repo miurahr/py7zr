@@ -33,4 +33,4 @@ Contributors, listed alphabetically, are:
 * Sergei -- Update report_update() (#558)
 * T. Yamada -- Deflate64 decompression (#399)
 * Vlad Firoiu -- Speed-up extraction when number of files is very large(#555)
-* @Zoynels -- Mmeory IO API(#111, #119)
+* @Zoynels -- BytesIO dictionary API (#111, #119) (removed in v1.0.0-rc2)

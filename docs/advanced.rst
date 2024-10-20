@@ -7,11 +7,11 @@ Advanced usage
 Stream 7z content
 -----------------
 
-The py7zr provide a way to stream archive content with ``read`` and ``readall`` methods.
-The ``read`` and ``readall`` methods accept an object which implement ``py7zr.io.WriterFactory`` interface.
+The py7zr provide a way to stream archive content with ``extract`` and ``extractall`` methods.
+The methods accept an object which implement ``py7zr.io.WriterFactory`` interface as ``factory`` arugment.
 Your custom class which implements ``WriterFactory`` interface should have ``create`` method.
 The ``create`` method should return your custom class object which implements ``Py7zIO`` interface.
-The ``Py7zIO`` interface is mostly as same as Python Standard ``BinaryIO`` but it also have ``size`` method.
+The ``Py7zIO`` interface is as similar as Python Standard ``BinaryIO`` but it also have ``size`` method.
 
 When the py7zr extract the archive contents, it calls the factory object with filename and ask creating the io object.
 The py7zr write the io object with ``write`` method, which is as similar as an object returned by the standard ``open`` method.
@@ -19,9 +19,9 @@ The py7zr write the io object with ``write`` method, which is as similar as an o
 You can process ``write`` in your custom class. The method is called on-the-fly when the py7zr move to extract the target
 archive file.
 
-Note: Because the py7zr run in multi-threaded, your custom class should be thread-safe.
+Note: Because the py7zr may run in multi-threaded, your custom class should be thread-safe.
 
-The py7zr provide the way to stream content without buffering all the archive content in a memory, which causes memory error when extract a large archive.
+The py7zr provide the way to stream content without buffering all the archive content in a memory.
 
 Example to extract into network storage
 ---------------------------------------
@@ -36,7 +36,7 @@ all the mandatory headers are omitted.
     def extract_stream():
         factory = StreamIOFactory()
         with py7zr.SevenZipFile("target.7z") as archive:
-            archive.readall(factory=factory)
+            archive.extractall(factory=factory)
 
 
     class StreamIO(py7zr.io.Py7zIO):

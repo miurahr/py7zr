@@ -1013,36 +1013,24 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
         return alist
 
-    def readall(self, factory: WriterFactory) -> None:
-        return self._extract(path=None, writer_factory=factory)
-
-    def extractall(self, path: Optional[Any] = None, callback: Optional[ExtractCallback] = None) -> None:
+    def extractall(self, path: Optional[Any] = None, *, callback: Optional[ExtractCallback] = None, factory: Optional[WriterFactory] = None) -> None:
         """Extract all members from the archive to the current working
         directory and set owner, modification time and permissions on
-        directories afterwards. ``path`` specifies a different directory
+        directories afterward. ``path`` specifies a different directory
         to extract to.
         """
-        self._extract(path=path, callback=callback)
-
-    def read(self, factory: WriterFactory, targets: Optional[Collection[str]] = None) -> None:
-        if not self._is_none_or_collection(targets):
-            raise TypeError("Wrong argument type given.")
-        # For interoperability with ZipFile, we strip any trailing slashes
-        # This also matches the behavior of TarFile
-        if targets is not None:
-            targets = [remove_trailing_slash(target) for target in targets]
-        return self._extract(path=None, targets=targets, writer_factory=factory)
+        self._extract(path=path, callback=callback, writer_factory=factory)
 
     def extract(
-        self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False
-    ) -> None:
+        self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False,
+            *, callback: Optional[ExtractCallback] = None, factory: Optional[WriterFactory] = None) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._extract(path, targets, recursive=recursive)
+        self._extract(path, targets, recursive=recursive, callback=callback, writer_factory=factory)
 
     def reporter(self, callback: ExtractCallback):
         while True:
@@ -1098,11 +1086,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
-
-    @deprecated(version="1.0.0-rc2", reason="Dropped the interface which read/write through dictionary.")
-    def writed(self, targets: dict[str, IO[Any]]) -> None:
-        for target, input in targets.items():
-            self.writef(input, target)
 
     def writef(self, bio: IO[Any], arcname: str):
         if not check_archive_path(arcname):
