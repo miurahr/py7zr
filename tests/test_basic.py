@@ -271,7 +271,7 @@ def test_py7zr_read_and_reset(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "read_reset.7z"), "rb"))
     iterations = archive.getnames()
     for target in iterations:
-        archive.read(factory=py7zr.io.NullIOFactory(), targets=[target])
+        archive.extract(targets=[target], factory=py7zr.io.NullIOFactory())
         archive.reset()
     archive.close()
 
@@ -281,7 +281,7 @@ def test_py7zr_read_with_trailing_slash_and_reset(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "read_reset.7z"), "rb"))
     iterations = archive.getnames()
     for target in iterations:
-        archive.read(factory=py7zr.io.NullIOFactory(), targets=[f"{target}/"])
+        archive.extract(targets=[f"{target}/"], factory=py7zr.io.NullIOFactory())
         archive.reset()
     archive.close()
 
@@ -347,19 +347,19 @@ def test_read_collection_argument():
     )
     factory = py7zr.io.BytesIOFactory(64)
     with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-        arc.read(factory, ["bar.txt"])  # list -> ok
+        arc.extract(targets=["bar.txt"], factory=factory)  # list -> ok
         assert "bar.txt" in factory.products
         bina = factory.get("bar.txt")
         assert bina.read() == b"refinery"
     with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-        arc.read(factory, {"bar.txt"})  # set -> ok
+        arc.extract(targets={"bar.txt"}, factory=factory)  # set -> ok
         assert factory.get("bar.txt").read() == b"refinery"
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-            arc.read(factory, ("bar.txt",))  # tuple -> bad
+            arc.extract(targets=("bar.txt",), factory=factory)  # tuple -> bad
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
-            arc.read(factory, "bar.txt")  # str -> bad
+            arc.extract(targets="bar.txt", factory=factory)  # str -> bad
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
             arc.extract(targets="bar.txt")  # str -> bad

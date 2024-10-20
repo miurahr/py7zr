@@ -21,7 +21,7 @@ def test_extract_stream(httpserver: HTTPServer):
     httpserver.expect_request("/scripts/py7zr", method="PUT").respond_with_data("ok")
     factory = StreamWriterFactory(httpserver)
     with py7zr.SevenZipFile(testdata_path.joinpath("test_1.7z").open(mode="rb")) as archive:
-        archive.readall(factory=factory)
+        archive.extractall(factory=factory)
     assert len(factory.products) == 3
     assert "setup.cfg" in factory.products.keys()
     assert "setup.py" in factory.products.keys()

@@ -51,7 +51,7 @@ def check_archive(archive, tmp_path, return_dict: bool):
         assert tmp_path.joinpath("test1.txt").open("rb").read() == bytes("This file is located in the root.", "ascii")
     else:
         factory = py7zr.io.BytesIOFactory(64)
-        archive.readall(factory)
+        archive.extractall(factory=factory)
         actual = factory.get("test/test2.txt").read()
         assert actual == bytes("This file is located in a folder.", "ascii")
         actual = factory.get("test1.txt").read()
@@ -93,7 +93,7 @@ def test_github_14(tmp_path):
 def test_github_14_mem(tmp_path):
     archive = py7zr.SevenZipFile(testdata_path.joinpath("github_14.7z").open(mode="rb"))
     factory = py7zr.io.BytesIOFactory(limit=32)
-    archive.readall(factory)
+    archive.extractall(factory=factory)
     actual = factory.get("github_14").read()
     assert actual == bytes("Hello GitHub issue #14.\n", "ascii")
 
@@ -108,7 +108,7 @@ def _test_umlaut_archive(filename: str, target: pathlib.Path, return_dict: bool)
         assert actual == "This file contains a german umlaut in the filename."
     else:
         factory = py7zr.io.BytesIOFactory(64)
-        archive.readall(factory)
+        archive.extractall(factory=factory)
         actual = factory.products["t\xe4st.txt"].read()
         assert actual == b"This file contains a german umlaut in the filename."
     archive.close()
@@ -191,7 +191,7 @@ def test_extract_symlink(tmp_path):
 @pytest.mark.files
 def test_extract_symlink_mem():
     with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
-        archive.readall(py7zr.io.NullIOFactory())
+        archive.extractall(factory=py7zr.io.NullIOFactory())
 
 
 @pytest.mark.files
@@ -252,7 +252,7 @@ def test_lzma2bcj_mem():
         "mingw64/bin/libszip-0.dll",
     ]
     factory = py7zr.io.HashIOFactory()
-    archive.readall(factory)
+    archive.extractall(factory=factory)
     digest = factory.products["mingw64/bin/libszip-0.dll"].read()
     assert digest == binascii.unhexlify("13926e3f080c9ca557165864ce5722acc4f832bb52a92d8d86c7f6e583708c4d")
     archive.close()
@@ -289,7 +289,7 @@ def test_extract_lzma_1(tmp_path):
 def test_extract_lzma2_1(tmp_path):
     with testdata_path.joinpath("lzma2_1.7z").open(mode="rb") as target:
         with py7zr.SevenZipFile(target) as ar:
-            ar.readall(py7zr.io.NullIOFactory())
+            ar.extractall(factory=py7zr.io.NullIOFactory())
 
 
 @pytest.mark.files
@@ -304,7 +304,7 @@ def test_zerosize(tmp_path):
 def test_zerosize_mem():
     with testdata_path.joinpath("zerosize.7z").open(mode="rb") as target:
         archive = py7zr.SevenZipFile(target)
-        archive.readall(py7zr.io.NullIOFactory())
+        archive.extractall(factory=py7zr.io.NullIOFactory())
         archive.close()
 
 
@@ -363,7 +363,7 @@ def test_github_14_multi_mem():
     archive = py7zr.SevenZipFile(str(testdata_path.joinpath("github_14_multi.7z")), "r")
     assert archive.getnames() == ["github_14_multi", "github_14_multi"]
     factory = py7zr.io.BytesIOFactory(32)
-    archive.readall(factory)
+    archive.extractall(factory=factory)
     actual_1 = factory.get("github_14_multi").read()
     assert actual_1 == bytes("Hello GitHub issue #14 1/2.\n", "ascii")
     actual_2 = factory.get("github_14_multi_0").read()
@@ -385,7 +385,7 @@ def test_multiblock(tmp_path):
 def test_multiblock_mem():
     archive = py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb"))
     factory = py7zr.io.HashIOFactory()
-    archive.readall(factory)
+    archive.extractall(factory=factory)
     digest = factory.products["bin/7zdec.exe"].read()
     assert digest == binascii.unhexlify("e14d8201c5c0d1049e717a63898a3b1c7ce4054a24871daebaa717da64dcaff5")
     archive.close()
@@ -455,7 +455,7 @@ def test_no_main_streams(tmp_path):
 @pytest.mark.files
 def test_no_main_streams_mem():
     archive = py7zr.SevenZipFile(testdata_path.joinpath("test_folder.7z").open(mode="rb"))
-    archive.readall(py7zr.io.NullIOFactory())
+    archive.extractall(factory=py7zr.io.NullIOFactory())
     archive.close()
 
 
@@ -541,7 +541,7 @@ def test_decompress_small_files(tmp_path):
 @pytest.mark.files
 def test_extract_lzma_bcj_x86(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("lzma_bcj_x86.7z").open(mode="rb")) as ar:
-        ar.readall(py7zr.io.NullIOFactory())
+        ar.extractall(tmp_path)
 
 
 @pytest.mark.files
@@ -609,7 +609,7 @@ def test_extract_root_path_arcname(tmp_path):
         assert len(iterations) == 1
 
         factory = py7zr.io.BytesIOFactory(32)
-        archive.read(factory=factory, targets=iterations)
+        archive.extract(targets=iterations, factory=factory)
         assert len(factory.products) == 1
         assert filename in factory.products.keys()
         assert factory.products[filename].read() == content
