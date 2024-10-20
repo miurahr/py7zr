@@ -43,7 +43,6 @@ from threading import Thread
 from typing import IO, Any, BinaryIO, Optional, Union
 
 import multivolumefile
-from deprecated import deprecated
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
 from py7zr.callbacks import ExtractCallback
@@ -1013,7 +1012,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
             )
         return alist
 
-    def extractall(self, path: Optional[Any] = None, *, callback: Optional[ExtractCallback] = None, factory: Optional[WriterFactory] = None) -> None:
+    def extractall(
+        self,
+        path: Optional[Any] = None,
+        *,
+        callback: Optional[ExtractCallback] = None,
+        factory: Optional[WriterFactory] = None,
+    ) -> None:
         """Extract all members from the archive to the current working
         directory and set owner, modification time and permissions on
         directories afterward. ``path`` specifies a different directory
@@ -1022,8 +1027,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path=path, callback=callback, writer_factory=factory)
 
     def extract(
-        self, path: Optional[Any] = None, targets: Optional[Collection[str]] = None, recursive: Optional[bool] = False,
-            *, callback: Optional[ExtractCallback] = None, factory: Optional[WriterFactory] = None) -> None:
+        self,
+        path: Optional[Any] = None,
+        targets: Optional[Collection[str]] = None,
+        recursive: Optional[bool] = False,
+        *,
+        callback: Optional[ExtractCallback] = None,
+        factory: Optional[WriterFactory] = None,
+    ) -> None:
         if not self._is_none_or_collection(targets):
             raise TypeError("Wrong argument type given.")
         # For interoperability with ZipFile, we strip any trailing slashes
