@@ -85,14 +85,6 @@ def test_bcj_file(tmp_path):
 
 
 @pytest.mark.files
-def test_read_writed(tmp_path):
-    with py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w") as target:
-        with py7zr.SevenZipFile(testdata_path.joinpath("mblock_1.7z").open(mode="rb")) as source:
-            target.writed(source.readall())
-    p7zip_test(tmp_path / "target.7z")
-
-
-@pytest.mark.files
 @pytest.mark.skipif(
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
@@ -104,24 +96,25 @@ def test_double_extract_symlink(tmp_path):
         archive.extractall(path=tmp_path)
 
 
-class callback(py7zr.callbacks.ExtractCallback):
+class ProgressCallbackExample(py7zr.callbacks.ExtractCallback):
     def __init__(self):
         pass
 
 
 def test_callback_raw_class():
     # test the case when passed argument is class name.
+    # it is wrong, so it become the error.
     with pytest.raises(ValueError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
-            z.extractall(None, callback)
+            z.extractall(None, callback=ProgressCallbackExample)
 
 
 def test_callback_not_concrete_class():
     # test the case when passed argument is abstract class
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
-            cb = callback()
-            z.extractall(None, cb)
+            cb = ProgressCallbackExample()
+            z.extractall(None, callback=cb)
 
 
 @pytest.mark.api

@@ -178,13 +178,11 @@ SevenZipFile Object
    encrypted archive. Otherwise return `False`
 
 
-.. py:method:: SevenZipFile.extractall(path=None)
+.. py:method:: SevenZipFile.extractall(path=None, recursive=True, *, progress_callback, factory)
 
-   Extract all members from the archive to current working directory.  *path*
-   specifies a different directory to extract to.
+   Extract all members from the archive to current working directory.
 
-
-.. py:method:: SevenZipFile.extract(path=None, targets=None)
+.. py:method:: SevenZipFile.extract(path=None, targets=None, recursive=True, *, progress_callback, factory)
 
    Extract specified pathspec archived files to current working directory.
    'path' specifies a different directory to extract to.
@@ -198,16 +196,12 @@ SevenZipFile Object
 
    Once extract() called, the ``SevenZipFile`` object become exhausted,
    and an EOF state.
-   If you want to call :meth:`read`, :meth:`readall`, :meth:`extract`, :meth:`extractall`
-   again, you should call :meth:`reset` before it.
+   If you want to call :meth:`extract`, :meth:`extractall` again, you should call :meth:`reset` before it.
 
    **CAUTION** when specifying files and not specifying parent directory,
    py7zr will fails with no such directory. When you want to extract file
    'somedir/somefile' then pass a list: ['somedirectory', 'somedir/somefile']
    as a target argument.
-
-
-.. py:method:: SevenZipFile.extract(path=None, targets=None, recursive=True)
 
    'recursive' is a BOOLEAN which if set True, helps with simplifying subcontents
    extraction.
@@ -215,13 +209,18 @@ SevenZipFile Object
    Instead of specifying all files / directories under a parent
    directory by passing a list of 'targets', specifying only the parent directory
    and setting 'recursive' to True forces an automatic extraction of all
-   subdirectories and subcontents recursively.
+   subdirectories and sub-contents recursively.
 
    If 'recursive' is not set, it defaults to False, so the extraction proceeds as
    if the parameter did not exist.
 
    Please see 'tests/test_basic.py: test_py7zr_extract_and_getnames()' for
    example code.
+
+   'progress_callback' is an object to give a extraction progress to caller.
+
+   'factory' is an object to extract user specified object other than file system.
+   When 'factory' specified, `path` is ignored. 'factory' object should implement Py7zIO interface.
 
 .. code-block:: python
 
@@ -235,47 +234,50 @@ SevenZipFile Object
         zip.extract(targets=targets, recursive=True)
 
 
-.. py:method:: SevenZipFile.readall()
-
-   Extract all members from the archive to memory and returns dictionary object.
-   Returned dictionary has a form of Dict[filename: str, BinaryIO: io.BytesIO object].
-   Once readall() called, the SevenZipFIle object become exhausted and EOF state.
-   If you want to call read(), readall(), extract(), extractall() again,
-   you should call reset() before it.
-   You can get extracted data from dictionary value as such
-
 .. code-block:: python
 
+   class MyIO(Py7zIO):
+       def __init__(self, limit):
+           self.limit = limit
+           self.buf = None
+           self.empty = True
+
+       def write(self, s: [bytes, bytearray]):
+           """keep only bytes of limit"""
+           if self.empty:
+               self.buf = s[:self.limit]
+               self.empty = False
+
+       def read(self, length: int = 0) -> bytes:
+           if self.empty:
+               return None
+           return self.buf[:length]
+
+       def seek(self, offset: int, whence: int = 0) -> int:
+           return 0
+
+       def size(self) -> int:
+           return len(self.buf)
+
+
+   class MyFactory(WriterFactory):
+
+       def __init(self, size):
+           self.size = size
+           self.products = {}
+
+       def create(self, fname) -> Py7zIO:
+           product = MyIO(self.size)
+           self.products[fname] = product
+           return product
+
+
+   size = 10
+   factory = MyFactory(size)
    with SevenZipFile('archive.7z', 'r') as zip:
-       for fname, bio in zip.readall().items():
-           print(f'{fname}: {bio.read(10)}...')
-
-
-.. py:method:: SevenZipFile.read(targets=None)
-
-   Extract specified list of target archived files to dictionary object.
-
-   'targets' is a COLLECTION of archived file names to be extracted.
-   py7zr looks for files and directories as same as specified in element
-   of 'targets'.
-
-   When the method get a ``str`` object or another object other than collection
-   such as LIST or SET, it will raise :exc:`TypeError`.
-
-   When targets is None, it behave as same as readall().
-   Once read() called, the SevenZipFIle object become exhausted and EOF state.
-   If you want to call read(), readall(), extract(), extractall() again,
-   you should call reset() before it.
-
-.. code-block:: python
-
-   filter_pattern = re.compile(r'scripts.*')
-   with SevenZipFile('archive.7z', 'r') as zip:
-        allfiles = zip.getnames()
-        targets = [f for f in allfiles if filter_pattern.match(f)]
-   with SevenZipFile('archive.7z', 'r') as zip:
-        for fname, bio in zip.read(targets).items():
-            print(f'{fname}: {bio.read(10)}...')
+       zip.extractall(factory=factory)
+   for fname in factory.products.keys():
+       print(f'{fname}: {factory.products[fname].read(size)}...')
 
 
 .. py:method:: SevenZipFile.list()

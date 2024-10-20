@@ -28,7 +28,7 @@ def test_extract_encrypted_1(tmp_path):
 @pytest.mark.files
 def test_extract_encrypted_1_mem():
     archive = py7zr.SevenZipFile(testdata_path.joinpath("encrypted_1.7z").open(mode="rb"), password="secret")
-    _dict = archive.readall()
+    archive.extractall(factory=py7zr.io.NullIOFactory())
     archive.close()
 
 
