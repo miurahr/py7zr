@@ -6,11 +6,6 @@ on:
       - master
       - releases/*
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-
 
 jobs:
   build:
@@ -23,7 +18,7 @@ jobs:
             "3.10",
             "3.11",
             "3.12",
-            "3.13-dev", # Not yet released, so we need to use -dev to get the release candidate
+            "3.13",
             "pypy-3.9",
         ]
         include:
@@ -101,7 +96,7 @@ jobs:
           PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
   test_slow_tests:
-    name: Test slow test cases
+    name: Test slow cases
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

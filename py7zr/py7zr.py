@@ -74,7 +74,6 @@ if sys.platform.startswith("win"):
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
 
-
 class ArchiveFile:
     """Represent each files metadata inside archive file.
     It holds file properties; filename, permissions, and type whether

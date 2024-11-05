@@ -26,6 +26,7 @@ recursive-include docs *.pdf
 recursive-include docs *.svg
 recursive-include docs Makefile
 prune .github
+exclude utils/reviewdog_install.sh
 exclude .gitignore
 exclude .readthedocs.yml
 exclude codecov.yml
