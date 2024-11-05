@@ -238,7 +238,7 @@ commands =
 
 [gh-actions]
 python =
-    3.9: py39, check, docs, mypy
+    3.9: py39
     3.10: py310
     3.11: py311
     3.12: py312

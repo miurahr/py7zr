@@ -87,6 +87,33 @@ jobs:
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
 
+  linter:
+    name: Linter checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+      - name: Install dependencies
+        run: |
+          pip install -U pip tox wheel setuptools setuptools_scm[toml]
+      - name: Lint checks
+        run: |
+          tox -e check | reviewdog -f flake8 -reporter=github-pr-review -fail-level=error
+          tox -e mypy | reviewdog -f mypy -reporter=github-pr-review -fail-level=error
+          tox -e docs
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test_slow_tests:
     name: Test slow test cases
     runs-on: ubuntu-22.04
@@ -124,6 +151,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 20
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
       - uses: uraimo/run-on-arch-action@v2
         name: Build & run test
         with:
