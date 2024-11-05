@@ -167,7 +167,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{39,310}, py{39,310,311,312,313}, py39d, docs, mprof
+envlist = mypy, check, pypy{39,310}, py{39,310,311,312,313}, py39d, docs, mprof, distcheck
 
 [testenv]
 passenv =
@@ -178,8 +178,6 @@ passenv =
 extras = test
 commands =
     python -m pytest -vv
-depends =
-    pypy{39,310},py{39,310,311,312,313}: clean, check
 
 [testenv:py39]
 extras = test, test_compat
@@ -211,12 +209,15 @@ deps =
 
 [testenv:check]
 extras = check
-ignore_errors=true
 commands =
+    check-manifest {toxinidir}
     flake8 py7zr tests
+
+[testenv:distcheck]
+extras = check
+commands =
     python -m build --sdist
     twine check dist/*
-    check-manifest {toxinidir}
 
 [testenv:clean]
 deps = coverage[toml]>=5.2
