@@ -137,7 +137,7 @@ jobs:
           run: |
             git config --global --add safe.directory ${GITHUB_WORKSPACE}
             python3 -c "import platform;print('Machine type:', platform.machine())"
-            python3 -m tox -e py311
+            python3 -m tox -e py310
           env: |
             PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
 
