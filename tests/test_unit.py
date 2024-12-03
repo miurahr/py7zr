@@ -15,6 +15,7 @@ import pytest
 import py7zr.archiveinfo
 import py7zr.compressor
 import py7zr.helpers
+import py7zr.io
 import py7zr.properties
 from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
 
@@ -739,7 +740,7 @@ def test_lzmadecompressor_lzmabcj():
 
 @pytest.mark.unit
 def test_unit_buffer():
-    buf = py7zr.helpers.Buffer(size=16)
+    buf = py7zr.io.Buffer(size=16)
     buf.add(b"12345")
     assert len(buf) == 5
     assert buf.get() == bytearray(b"12345")

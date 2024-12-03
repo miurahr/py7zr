@@ -63,6 +63,8 @@ test = [
       "py-cpuinfo",
       "coverage[toml]>=5.2",
       "coveralls>=2.1.1",
+      "requests",
+      "pytest-httpserver",
 ]
 docs = [
       "sphinx>=7.0.0",
