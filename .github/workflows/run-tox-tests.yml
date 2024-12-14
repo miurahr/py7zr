@@ -88,10 +88,12 @@ jobs:
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
       - uses: actions/setup-java@v4
+        if: runner.os != 'Windows'
         with:
           distribution: 'temurin'
           java-version: '21'
       - name: Send coverage to codacy
+        if: runner.os != 'Windows'
         run: |
           curl -LS -o codacy-coverage-reporter-assembly.jar "$(curl -LSs https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | endswith(".jar"))) | .[0].browser_download_url')"
           java -jar codacy-coverage-reporter-assembly.jar report -l Python -t ${PROJECT_TOKEN} --partial -r cobertura.xml
