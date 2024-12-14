@@ -67,6 +67,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           tox
+          coverage xml -o cobertura.xml
         env:
           PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
       - name: Test project with tox (windows)
@@ -74,18 +75,22 @@ jobs:
         run: |
           echo LIBARCHIVE="${env:LIBARCHIVE}"
           tox
+          coverage xml -o cobertura.xml
         env:
           LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
           PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
-      - name: Send coverage to coveralls
-        if: github.ref == 'refs/heads/master'
+      - name: Send coverage to coveralls and codacy
         run: |
           coveralls
+          curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
+          chmod +x codacy-coverage-reporter
+          ./codacy-coverage-reporter report -l Python -t ${PROJECT_TOKEN} --partial -r covertura.xml
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
+          PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
   test_slow_tests:
     name: Test slow test cases
@@ -124,8 +129,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 20
-      - uses: uraimo/run-on-arch-action@v2
-        name: Build & run test
+      - name: Build & run test
+        uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
@@ -134,24 +139,37 @@ jobs:
             apt-get update -q -y
             apt-get install -q -y p7zip-full python3 python3-pip python3-cffi build-essential gcc git libffi-dev python3-dev libarchive-dev
             python3 -m pip install -U pip tox setuptools setuptools_scm[toml] coverage[toml]
+            curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
+            chmod +x codacy-coverage-reporter
           run: |
             git config --global --add safe.directory ${GITHUB_WORKSPACE}
             python3 -c "import platform;print('Machine type:', platform.machine())"
             python3 -m tox -e py310
+            coveralls
+            python3 -m coverage xml -o cobertura.xml
+            ./codacy-coverage-reporter report -l Python -t ${PROJECT_TOKEN} --partial -r covertura.xml
           env: |
             PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
+            COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            COVERALLS_PARALLEL: true
+            COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
+            PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
   finish:
     runs-on: ubuntu-latest
     name: finish parallel build
     needs: build
-    if: github.ref == 'refs/heads/master'
     steps:
       - name: Tell Coveralls that the parallel build is finished
         run: |
           curl -k \
               https://coveralls.io/webhook?repo_token=$COVERALLS_REPO_TOKEN \
               -d "payload[build_num]=$GITHUB_SHA&payload[status]=done"
+          curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
+          chmod +x codacy-coverage-reporter
+          ./codacy-coverage-reporter final -t ${PROJECT_TOKEN}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
