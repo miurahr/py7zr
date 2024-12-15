@@ -1,6 +1,7 @@
 import ctypes
 import os
 import pathlib
+import subprocess
 import sys
 
 import pytest
@@ -63,7 +64,9 @@ def test_hardlink_readlink(tmp_path):
     hard = tmp_path / "target" / "link"
     hard.parent.mkdir(parents=True, exist_ok=True)
     if sys.platform.startswith("win"):
-        os.system("mklink /H %s %s" % (str(hard), str(target.resolve())))
+        cmd_path = r"c:\Windows\System32\cmd.exe"
+        command = [cmd_path, "/c", "mklink", "/H", str(hard), str(target.resolve())]
+        subprocess.run(command)
     else:
         os.link(str(target.resolve()), str(hard))
     assert hard.open("r").read() == "Original"
@@ -82,7 +85,9 @@ def test_junction_readlink(tmp_path):
         f.write("Original")
     junction = tmp_path / "target" / "link"
     junction.parent.mkdir(parents=True, exist_ok=True)
-    os.system("mklink /J %s %s" % (str(junction), str(target.resolve())))
+    cmd_path = r"c:\Windows\System32\cmd.exe"
+    command = [cmd_path, "/c", "mklink", "/J", str(junction), str(target.resolve())]
+    subprocess.run(command)
     assert not os.path.islink(str(junction))
     assert py7zr.win32compat.is_reparse_point(str(junction))
     assert py7zr.win32compat.readlink(str(junction)) == PATH_PREFIX + str(target.resolve())
