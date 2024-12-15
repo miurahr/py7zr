@@ -25,8 +25,8 @@ jobs:
           pip install .[check]
       - name: Lint checks
         run: |
-          flake8 py7zr tests | ./bin/reviewdog -f flake8 -reporter=github-pr-check -level=error -fail-level=any
-          mypy py7zr | ./bin/reviewdog -f mypy -reporter=github-pr-check -level=error
+          flake8 py7zr tests | ./bin/reviewdog -efm="%f:%l:%c: %m" -name="flake8" -reporter=github-pr-review -level=error -fail-level=any
+          mypy py7zr | ./bin/reviewdog -f mypy -reporter=github-pr-review -level=error
           pylint **/*.py | ./bin/reviewdog -efm="%f:%l:%c: %m" -name="pylint" -reporter=github-pr-check -fail-level=error -level=warning
         env:
           REVIEWDOG_TOKEN: ${{ secrets.REVIEWDOG_TOKEN }}
