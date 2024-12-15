@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 20
       - name: Setup python
         uses: actions/setup-python@v5
         with:
@@ -23,11 +21,9 @@ jobs:
         run: |
           pip install -U pip tox wheel setuptools setuptools_scm[toml]
           pip install .[check]
-      - name: Lint checks
+      - name: run reviewdog
         run: |
-          flake8 py7zr tests | ./bin/reviewdog -f flake8 -reporter=github-pr-check
-          mypy py7zr | ./bin/reviewdog -f mypy -reporter=github-pr-check
-          pylint **/*.py | ./bin/reviewdog -efm="%f:%l:%c: %m" -name="pylint" -reporter=github-pr-check -level=warning
+          ./bin/reviewdog -runners=flake8,mypy,pylint -reporter=github-pr-check -conf=.reviewdog.yml
         env:
           REVIEWDOG_TOKEN: ${{ secrets.REVIEWDOG_TOKEN }}
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
