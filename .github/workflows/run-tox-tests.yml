@@ -6,6 +6,10 @@ on:
       - master
       - releases/*
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   build:
