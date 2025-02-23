@@ -33,7 +33,7 @@ archives = [
     ),
     (
         "qtbase.7z",
-        "http://qt.mirrors.tds.net/qt/online/qtsdkrepository/"
+        "https://download.qt.io/online/qtsdkrepository/"
         "windows_x86/desktop/qt5_5132/qt.qt5.5132.win32_mingw73/"
         "5.13.2-0-201910281254qtbase-Windows-Windows_7-Mingw73-Windows-Windows_7-X86.7z",
     ),
