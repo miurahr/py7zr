@@ -19,3 +19,5 @@ type_info.json
 coverage.xml
 py7zr/version.py
 prof
+cmake-build-debug
+bin/

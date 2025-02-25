@@ -38,9 +38,23 @@
   :target: https://snyk.io/advisor/python/py7zr
   :alt: py7zr
   
+.. image:: https://app.codacy.com/project/badge/Grade/d9d82e1c1708470a921a3a974ea0eedd
+  :target: https://app.codacy.com/gh/miurahr/py7zr/dashboard
+  :alt: Codacy
+
 
 py7zr is a library and utility to support 7zip archive compression, decompression,
 encryption and decryption written by Python programming language.
+
+Incompatible change
+===================
+
+There is incompatible change between v1.0.0-rc1 to v1.0.0-rc2.
+I abandon methods ``read`` and ``readall``.
+When you want to extract the archive to memory, you need to use
+``extract`` method with ``factory`` argument. The ``factory`` takes a factory class, as of the GoF design pattern,
+that provides object implements ``Py7zIO`` interface as a call back instance.
+``SevenZipFile`` extract and write uncompressed data into your ``Py7zIO`` object.
 
 Discussion Forum
 ================

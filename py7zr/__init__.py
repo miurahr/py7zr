@@ -18,6 +18,7 @@
 #    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 from py7zr.exceptions import Bad7zFile, DecompressionError, PasswordRequired, UnsupportedCompressionMethodError
+from py7zr.io import Py7zIO, WriterFactory
 from py7zr.properties import (
     CHECK_CRC32,
     CHECK_CRC64,
@@ -60,6 +61,8 @@ __all__ = [
     "UnsupportedCompressionMethodError",
     "Bad7zFile",
     "DecompressionError",
+    "Py7zIO",
+    "WriterFactory",
     "FILTER_LZMA",
     "FILTER_LZMA2",
     "FILTER_DELTA",

@@ -9,6 +9,27 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.0.0rc2`_
+============
+
+There is big incompatible change after -rc1 version.
+
+Removed
+-------
+* Remove SevenZipFile.read() and SevenZipFile.readall() (#620)
+  This confuse users to use as same as ZipFile method, but not the same.
+  Using this method can easily exhaust a machine memory.
+
+Added
+-----
+* Add ``factory`` parameter that takes ``WriterFactory`` object which provides
+  an object that implements ``Py7zIO`` interface. (#620)
+  This allow user to interact with Py7zr for large archives. (#620)
+
+Deprecated
+----------
+* deprecation for ``writed`` method
+
 Changed
 -------
 * Minimum required Python version to be Python 3.9 (#619)
@@ -77,7 +98,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0rc2...HEAD
+.. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
 .. _v1.0.0-rc1: https://github.com/miurahr/py7zr/compare/v0.22.0...v1.0.0-rc1
 .. _v0.22.0: https://github.com/miurahr/py7zr/compare/v0.21.1...v0.22.0
 .. _v0.21.1: https://github.com/miurahr/py7zr/compare/v0.21.0...v0.21.1

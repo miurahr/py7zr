@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2022 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2024 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 #
 # This library is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import BinaryIO, Optional, Union
+from typing import Optional, Union
 
 from py7zr import Bad7zFile
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
@@ -290,123 +290,6 @@ def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathl
         return os.readlink(path, dir_fd=dir_fd)
 
 
-class MemIO:
-    """pathlib.Path-like IO class to write memory(io.Bytes)"""
-
-    def __init__(self, buf: BinaryIO):
-        self._buf = buf
-
-    def write(self, data: bytes) -> int:
-        return self._buf.write(data)
-
-    def read(self, length: Optional[int] = None) -> bytes:
-        if length is not None:
-            return self._buf.read(length)
-        else:
-            return self._buf.read()
-
-    def close(self) -> None:
-        self._buf.seek(0)
-
-    def flush(self) -> None:
-        pass
-
-    def seek(self, position: int) -> None:
-        self._buf.seek(position)
-
-    def open(self, mode=None):
-        return self
-
-    @property
-    def parent(self):
-        return self
-
-    def mkdir(self, parents=None, exist_ok=False):
-        return None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-
-class NullIO:
-    """pathlib.Path-like IO class of /dev/null"""
-
-    def __init__(self):
-        pass
-
-    def write(self, data):
-        return len(data)
-
-    def read(self, length=None):
-        if length is not None:
-            return bytes(length)
-        else:
-            return b""
-
-    def close(self):
-        pass
-
-    def flush(self):
-        pass
-
-    def open(self, mode=None):
-        return self
-
-    @property
-    def parent(self):
-        return self
-
-    def mkdir(self):
-        return None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-
-class BufferOverflow(Exception):
-    pass
-
-
-class Buffer:
-    def __init__(self, size: int = 16):
-        self._buf = bytearray(size)
-        self._buflen = 0
-        self.view = memoryview(self._buf[0:0])
-
-    def add(self, data: Union[bytes, bytearray, memoryview]):
-        length = len(data)
-        self._buf[self._buflen :] = data
-        self._buflen += length
-        self.view = memoryview(self._buf[0 : self._buflen])
-
-    def reset(self) -> None:
-        self._buflen = 0
-        self.view = memoryview(self._buf[0:0])
-
-    def set(self, data: Union[bytes, bytearray, memoryview]) -> None:
-        length = len(data)
-        self._buf[0:] = data
-        self._buflen = length
-        self.view = memoryview(self._buf[0:length])
-
-    def get(self) -> bytearray:
-        val = self._buf[: self._buflen]
-        self.reset()
-        return val
-
-    def __len__(self) -> int:
-        return self._buflen
-
-    def __bytes__(self):
-        return bytes(self._buf[0 : self._buflen])
-
-
 def remove_relative_path_marker(path: str) -> str:
     """
     Removes './' from the beginning of a path-like string
@@ -428,7 +311,7 @@ def remove_trailing_slash(path: str) -> str:
     return path
 
 
-def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
+def canonical_path(target: pathlib.Path) -> pathlib.Path:
     """Return a canonical path of target argument."""
     stack: list[str] = []
     for p in target.parts:
@@ -442,10 +325,10 @@ def canonical_path(target: pathlib.PurePath) -> pathlib.PurePath:
             pass  # '/' + '../' -> '/'
         else:
             stack.pop()  # 'foo/boo/' + '..' -> 'foo/'
-    return pathlib.PurePath(*stack)
+    return pathlib.Path(*stack)
 
 
-def is_relative_to(my: pathlib.PurePath, *other) -> bool:
+def is_relative_to(my: pathlib.Path, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
     try:
         my.relative_to(canonical_path(*other))
@@ -480,7 +363,7 @@ def check_archive_path(arcname: str) -> bool:
     It should not be evil traversal attack path.
     Otherwise, returns True.
     """
-    if pathlib.PurePath(arcname).is_absolute():
+    if pathlib.Path(arcname).is_absolute():
         return False
     # test against dummy parent path
     if sys.platform == "win32":
