@@ -74,6 +74,7 @@ if sys.platform.startswith("win"):
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
 
+
 class ArchiveFile:
     """Represent each files metadata inside archive file.
     It holds file properties; filename, permissions, and type whether
@@ -331,7 +332,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         mode: str = "r",
         *,
         filters: Optional[list[dict[str, int]]] = None,
-        dereference=False,
+        dereference: bool = False,
         password: Optional[str] = None,
         header_encryption: bool = False,
         blocksize: Optional[int] = None,
@@ -711,7 +712,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path, arcname, dereference: bool = self.dereference):
+    def _writeall(self, path, arcname, dereference):
         try:
             if path.is_symlink() and not dereference:
                 self.write(path, arcname)
@@ -820,7 +821,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         del self.sig_header
 
     @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
+    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference: bool = False) -> dict[str, Any]:
         f: dict[str, Any] = {}
         f["origin"] = target
         if arcname is not None:
@@ -1020,7 +1021,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         *,
         callback: Optional[ExtractCallback] = None,
         factory: Optional[WriterFactory] = None,
-        enable_symlink: bool = True
+        enable_symlink: bool = True,
     ) -> None:
         """Extract all members from the archive to the current working
         directory and set owner, modification time and permissions on
@@ -1045,7 +1046,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._extract(path, targets, recursive=recursive, callback=callback, writer_factory=factory, enable_symlink=enable_symlink)
+        self._extract(
+            path, targets, recursive=recursive, callback=callback, writer_factory=factory, enable_symlink=enable_symlink
+        )
 
     def reporter(self, callback: ExtractCallback):
         while True:
@@ -1072,18 +1075,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = self.dereference):
+    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None):
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
         if not path.exists():
             raise ValueError("specified path does not exist.")
+        if dereference is None:
+            dereference = self.dereference
         if path.is_dir() or path.is_file():
             self._writeall(path, arcname, dereference)
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: bool = self.dereference):
+    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None):
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
@@ -1096,11 +1101,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             path = file
         folder = self.header.initialize()
+        if dereference is None:
+            dereference = self.dereference
         file_info = self._make_file_info(path, arcname, dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        self.worker.archive(self.fp, self.files, folder, deref=dereference)
+        self.worker.archive(self.fp, self.files, folder, dereference)
 
     def writef(self, bio: IO[Any], arcname: str):
         if not check_archive_path(arcname):
@@ -1131,7 +1138,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(file_info["emptystream"])
             self.files.append(file_info)
-            self.worker.archive(self.fp, self.files, folder, deref=False)
+            self.worker.archive(self.fp, self.files, folder, False)
         else:
             file_info = self._make_file_info_from_name(bio, size, arcname)
             self.header.files_info.files.append(file_info)
@@ -1585,7 +1592,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: BinaryIO, files, folder, deref=False):
+    def archive(self, fp: BinaryIO, files, folder, dereference):
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
@@ -1593,8 +1600,8 @@ class Worker:
             self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
             self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
-        elif (f.is_symlink and not deref) or not f.emptystream:
-            foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
+        elif (f.is_symlink and not dereference) or not f.emptystream:
+            foutsize, crc = self.write(fp, f, (f.is_symlink and not dereference), folder)
             self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
             self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
