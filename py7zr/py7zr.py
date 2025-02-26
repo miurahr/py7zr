@@ -1575,12 +1575,12 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: BinaryIO, f, folder):
+    def writestr(self, fp: BinaryIO, f: ArchiveFile, folder: Folder):
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
 
-    def flush_archive(self, fp, folder):
+    def flush_archive(self, fp: BinaryIO, folder: Folder):
         compressor = folder.get_compressor()
         foutsize = compressor.flush(fp)
         if len(self.files) > 0:
@@ -1596,7 +1596,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: BinaryIO, files, folder, dereference):
+    def archive(self, fp: BinaryIO, files: ArchiveFileList, folder: Folder, dereference: bool) -> None:
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
