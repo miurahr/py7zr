@@ -27,7 +27,9 @@ recursive-include docs *.svg
 recursive-include docs Makefile
 prune .github
 exclude utils/reviewdog_install.sh
+exclude utils/codacy-coverage-reporter.jar
 exclude .gitignore
 exclude .readthedocs.yml
+exclude .reviewdog.yml
 exclude codecov.yml
 exclude azure-pipelines.yml
