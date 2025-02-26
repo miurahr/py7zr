@@ -712,7 +712,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path: pathlib.Path, arcname: Optional[str], dereference: bool):
+    def _writeall(self, path: pathlib.Path, arcname: Optional[str], dereference: bool) -> None:
         try:
             if path.is_symlink() and not dereference:
                 self.write(path, arcname)
@@ -1075,7 +1075,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None) -> None:
+    def writeall(
+        self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None
+    ) -> None:
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
@@ -1088,7 +1090,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None) -> None:
+    def write(
+        self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None
+    ) -> None:
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
