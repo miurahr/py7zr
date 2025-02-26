@@ -386,7 +386,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
-            self.filename = getattr(file, "name", None)
+            self.filename = getattr(file, "name", None)  # type: ignore
             self.mode = mode  # noqa
         else:
             raise TypeError(f"invalid file: {type(file)}")
@@ -712,7 +712,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path, arcname, dereference):
+    def _writeall(self, path: pathlib.Path, arcname: Optional[str], dereference: bool):
         try:
             if path.is_symlink() and not dereference:
                 self.write(path, arcname)
@@ -723,7 +723,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     self.write(path, arcname)
                 for nm in sorted(os.listdir(str(path))):
                     arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self._writeall(path.joinpath(nm), arc, dereference=dereference)
+                    self._writeall(path.joinpath(nm), arc, dereference)
             else:
                 return  # pathlib ignores ELOOP and return False for is_*().
         except OSError as ose:
@@ -1075,7 +1075,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None):
+    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None) -> None:
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
@@ -1088,7 +1088,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None):
+    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None, dereference: Optional[bool] = None) -> None:
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
