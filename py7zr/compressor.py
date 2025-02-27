@@ -890,7 +890,7 @@ class SevenZipCompressor:
             },
         )
 
-    def compress(self, fd: BinaryIO, fp: IO, crc: int = 0) -> Tuple[int, int, int]:
+    def compress(self, fd: BinaryIO, fp: BinaryIO, crc: int = 0) -> Tuple[int, int, int]:
         data = fd.read(self._block_size)
         insize: int = len(data)
         foutsize: int = 0

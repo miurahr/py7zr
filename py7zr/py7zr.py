@@ -1562,12 +1562,12 @@ class Worker:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
-    def write(self, fp: BinaryIO, f, assym, folder: Folder) -> Tuple[int, int]:
+    def write(self, fp: BinaryIO, f: ArchiveFile, assym: bool, folder: Folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
         if assym:
             link_target: str = self._find_link_target(f.origin)
             tgt: bytes = link_target.encode("utf-8")
-            fd = io.BytesIO(tgt)
+            fd: BinaryIO = io.BytesIO(tgt)
             insize, foutsize, crc = compressor.compress(fd, fp)
             fd.close()
         else:
