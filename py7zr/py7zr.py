@@ -40,7 +40,7 @@ from collections.abc import Collection
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, Any, BinaryIO, Optional, Union
+from typing import IO, Any, BinaryIO, Optional, Tuple, Union
 
 import multivolumefile
 
@@ -1549,7 +1549,7 @@ class Worker:
             member = linkname
         return member
 
-    def _after_write(self, insize, foutsize, crc):
+    def _after_write(self, insize: int, foutsize: int, crc: int) -> Tuple[int, int]:
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
         if self.header.main_streams.substreamsinfo.unpacksizes is None:
@@ -1575,12 +1575,12 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: BinaryIO, f: ArchiveFile, folder: Folder):
+    def writestr(self, fp: BinaryIO, f: ArchiveFile, folder: Folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
 
-    def flush_archive(self, fp: BinaryIO, folder: Folder):
+    def flush_archive(self, fp: BinaryIO, folder: Folder) -> None:
         compressor = folder.get_compressor()
         foutsize = compressor.flush(fp)
         if len(self.files) > 0:

@@ -890,10 +890,10 @@ class SevenZipCompressor:
             },
         )
 
-    def compress(self, fd, fp, crc=0):
+    def compress(self, fd, fp, crc: int = 0):
         data = fd.read(self._block_size)
-        insize = len(data)
-        foutsize = 0
+        insize: int = len(data)
+        foutsize: int = 0
         while data:
             crc = calculate_crc32(data, crc)
             for i, compressor in enumerate(self.chain):
