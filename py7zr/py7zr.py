@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2024 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2025 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -1562,7 +1562,7 @@ class Worker:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
-    def write(self, fp: BinaryIO, f, assym, folder):
+    def write(self, fp: BinaryIO, f, assym, folder: Folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
         if assym:
             link_target: str = self._find_link_target(f.origin)
@@ -1577,7 +1577,10 @@ class Worker:
 
     def writestr(self, fp: BinaryIO, f: ArchiveFile, folder: Folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
-        insize, foutsize, crc = compressor.compress(f.data(), fp)
+        fd: Optional[BinaryIO] = f.data()
+        if fd is None:
+            return 0, 0
+        insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
     def flush_archive(self, fp: BinaryIO, folder: Folder) -> None:
