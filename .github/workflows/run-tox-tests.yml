@@ -87,12 +87,12 @@ jobs:
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
       - uses: actions/setup-java@v4
-        if: runner.os != 'Windows'
+        if: ( runner.os != 'Windows' ) && ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         with:
           distribution: 'temurin'
           java-version: '21'
       - name: Send coverage to codacy
-        if: runner.os != 'Windows'
+        if: ( runner.os != 'Windows' ) && ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         run: |
           java -jar utils/codacy-coverage-reporter.jar report -l Python -t ${PROJECT_TOKEN} --partial -r cobertura.xml
         env:
