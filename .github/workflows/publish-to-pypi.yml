@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     name: Build Python 🐍 distributions 📦
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
