@@ -12,6 +12,7 @@ import py7zr
 import py7zr.archiveinfo
 import py7zr.callbacks
 import py7zr.cli
+import py7zr.io
 import py7zr.properties
 
 from . import check_output, decode_all
@@ -28,10 +29,19 @@ def test_basic_initinfo():
 
 @pytest.mark.api
 def test_basic_exclusive_mode(tmp_path):
-    with py7zr.SevenZipFile(tmp_path.joinpath("test_x.7z"), mode="x") as archive:
-        archive.write(os.path.join(testdata_path, "test1.txt"), "test1.txt")
+    test1txt = pathlib.Path(testdata_path) / "test1.txt"
+    archivefile = tmp_path.joinpath("test_x.7z")
+
+    with py7zr.SevenZipFile(archivefile, mode="x") as archive:
+        archive.write(test1txt, "test1.txt")
+
+    with py7zr.SevenZipFile(archivefile) as archive:
+        factory = py7zr.io.BytesIOFactory(limit=test1txt.read_bytes().__sizeof__())
+        archive.extract(targets=["test1.txt"], factory=factory)
+        assert factory.products["test1.txt"].read() == test1txt.read_bytes()
+
     with pytest.raises(FileExistsError):
-        py7zr.SevenZipFile(tmp_path.joinpath("test_x.7z"), mode="x")
+        py7zr.SevenZipFile(archivefile, mode="x")
 
 
 @pytest.mark.api

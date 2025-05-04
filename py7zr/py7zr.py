@@ -1149,10 +1149,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
-        if "w" in self.mode:
-            self._write_flush()
-        if "a" in self.mode:
-            self._write_flush()
         if "r" in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
@@ -1160,6 +1156,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 if self.reporterd.is_alive():
                     raise InternalError("Progress report thread terminate error.")
                 self.reporterd = None
+        else:  # "w" | "x" | "a" in self.mode
+            self._write_flush()
+
         self._fpclose()
         self._var_release()
 
