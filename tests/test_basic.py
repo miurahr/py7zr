@@ -36,7 +36,8 @@ def test_basic_exclusive_mode(tmp_path):
         archive.write(test1txt, "test1.txt")
 
     with py7zr.SevenZipFile(archivefile) as archive:
-        factory = py7zr.io.BytesIOFactory(limit=test1txt.read_bytes().__sizeof__())
+        limit = len(test1txt.read_bytes())
+        factory = py7zr.io.BytesIOFactory(limit=limit)
         archive.extract(targets=["test1.txt"], factory=factory)
         assert factory.products["test1.txt"].read() == test1txt.read_bytes()
 
