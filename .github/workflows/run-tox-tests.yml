@@ -125,18 +125,18 @@ jobs:
 
   test_on_aarch64:
     name: Test on ${{ matrix.arch }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch: [aarch64]
-        distro: [ubuntu22.04]
+        distro: [ubuntu24.04]
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
         with:
           fetch-depth: 20
       - name: Build & run test
-        uses: uraimo/run-on-arch-action@v2
+        uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
