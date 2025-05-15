@@ -12,6 +12,12 @@ strategy:
     Python311:
       python.version: '3.11'
       TOXENV: py311
+    Python312:
+      python.version: '3.12'
+      TOXENV: py312
+    Python313:
+      python.version: '3.13'
+      TOXENV: py313
 
 steps:
 - task: UsePythonVersion@0

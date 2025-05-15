@@ -50,12 +50,12 @@ jobs:
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v2
         with:
-          file-url: "https://libarchive.org/downloads/libarchive-v3.5.3-win64.zip"
-          file-name: "libarchive-v3.5.3-win64.zip"
+          file-url: "https://libarchive.org/downloads/libarchive-3.7.9.zip"
+          file-name: "libarchive-3.7.9.zip"
       - name: Install libarchive(Windows)
         if: runner.os == 'Windows'
         run: |
-          $file = "libarchive-v3.5.3-win64.zip"
+          $file = "libarchive-3.7.9.zip"
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
           choco install graphviz
       - name: Install dependencies
