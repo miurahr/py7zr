@@ -133,7 +133,6 @@ html_theme_options = {
     'page_width': 'auto',
     'badge_branch': 'master',
     'donate_url': 'https://liberapay.com/miurahr',
-    'travis_button': True,
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
