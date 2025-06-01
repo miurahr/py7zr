@@ -73,6 +73,24 @@ if sys.platform.startswith("win"):
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
+# for win32 attributes
+FILE_ATTRIBUTE_ARCHIVE = 32
+FILE_ATTRIBUTE_COMPRESSED = 2048
+FILE_ATTRIBUTE_DEVICE = 64
+FILE_ATTRIBUTE_DIRECTORY = 16
+FILE_ATTRIBUTE_ENCRYPTED = 16384
+FILE_ATTRIBUTE_HIDDEN = 2
+FILE_ATTRIBUTE_INTEGRITY_STREAM = 32768
+FILE_ATTRIBUTE_NORMAL = 128
+FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = 8192
+FILE_ATTRIBUTE_NO_SCRUB_DATA = 131072
+FILE_ATTRIBUTE_OFFLINE = 4096
+FILE_ATTRIBUTE_READONLY = 1
+FILE_ATTRIBUTE_REPARSE_POINT = 1024
+FILE_ATTRIBUTE_SPARSE_FILE = 512
+FILE_ATTRIBUTE_SYSTEM = 4
+FILE_ATTRIBUTE_TEMPORARY = 256
+FILE_ATTRIBUTE_VIRTUAL = 65536
 
 class ArchiveFile:
     """Represent each files metadata inside archive file.
@@ -355,7 +373,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if isinstance(file, str):
             # No, it's a filename
             self._filePassed = False
-            self.filename = file
+            self.filename: Optional[str] = file
             modeDict = {
                 "r": "rb",
                 "w": "w+b",
@@ -813,38 +831,113 @@ class SevenZipFile(contextlib.AbstractContextManager):
         del self.header
         del self.sig_header
 
-    @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
+    def _make_win32_file_info(
+        self, target: pathlib.Path, arcname: Optional[str] = None, dereference=False
+    ) -> dict[str, Any]:
         f: dict[str, Any] = {}
         f["origin"] = target
         if arcname is not None:
             f["filename"] = pathlib.Path(arcname).as_posix()
         else:
             f["filename"] = target.as_posix()
-        if sys.platform == "win32":
-            fstat = target.lstat()
-            if target.is_symlink():
-                if dereference:
-                    fstat = target.stat()
-                    if stat.S_ISDIR(fstat.st_mode):
-                        f["emptystream"] = True
-                        f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-                    else:
-                        f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
-                        f["uncompressed"] = fstat.st_size
+        fstat = target.lstat()
+        if target.is_symlink() and sys.platform == "win32":
+            if dereference:
+                fstat = target.stat()
+                if stat.S_ISDIR(fstat.st_mode):
+                    f["emptystream"] = True
+                    f["attributes"] = self._get_win32_file_attribute(fstat)
                 else:
                     f["emptystream"] = False
-                    f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-                    # TODO: handle junctions
-                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
-            elif target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-            elif target.is_file():
+                    f["attributes"] = FILE_ATTRIBUTE_ARCHIVE  # noqa
+                    f["uncompressed"] = fstat.st_size
+            else:
                 f["emptystream"] = False
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
-                f["uncompressed"] = fstat.st_size
+                f["attributes"] = self._get_win32_file_attribute(fstat)
+                # TODO: handle junctions
+                # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
+        elif target.is_dir():
+            f["emptystream"] = True
+            f["attributes"] = self._get_win32_file_attribute(fstat)
+        elif target.is_file():
+            f["emptystream"] = False
+            f["attributes"] = FILE_ATTRIBUTE_ARCHIVE  # noqa
+            f["uncompressed"] = fstat.st_size
+        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
+        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
+        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
+        return f
+
+    def _get_win32_file_attribute(self, fstat: os.stat_result) -> int:
+        if sys.platform == "win32" and hasattr(fstat, "st_file_attributes"):
+            return fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK
+        return 0
+
+    def _make_unix_file_info(self, target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
+        f: dict[str, Any] = {}
+        f["origin"] = target
+        if arcname is not None:
+            f["filename"] = pathlib.Path(arcname).as_posix()
+        else:
+            f["filename"] = target.as_posix()
+        fstat = target.lstat()
+        if target.is_symlink():
+            if dereference:
+                fstat = target.stat()
+                if stat.S_ISDIR(fstat.st_mode):
+                    f["emptystream"] = True
+                    f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
+                    f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+                    f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
+                else:
+                    f["emptystream"] = False
+                    f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
+                    f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+            else:
+                f["emptystream"] = False
+                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE") | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT")
+                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
+                f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
+        elif target.is_dir():
+            f["emptystream"] = True
+            f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
+            f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
+            f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
+        elif target.is_file():
+            f["emptystream"] = False
+            f["uncompressed"] = fstat.st_size
+            f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
+            f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
+        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
+        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
+        return f
+
+    def _make_generic_file_info(
+        self, target: pathlib.Path, arcname: Optional[str] = None, dereference=False
+    ) -> dict[str, Any]:
+        f: dict[str, Any] = {}
+        f["origin"] = target
+        if arcname is not None:
+            f["filename"] = pathlib.Path(arcname).as_posix()
+        else:
+            f["filename"] = target.as_posix()
+        fstat = target.lstat()
+        if target.is_dir():
+            f["emptystream"] = True
+            f["attributes"] = FILE_ATTRIBUTE_DIRECTORY
+        elif target.is_file():
+            f["emptystream"] = False
+            f["uncompressed"] = fstat.st_size
+            f["attributes"] = FILE_ATTRIBUTE_ARCHIVE
+        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
+        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
+        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
+        return f
+
+    def _make_file_info(self, target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
+        if sys.platform == "win32":
+            return self._make_win32_file_info(target, arcname, dereference)
         elif (
             sys.platform == "darwin"
             or sys.platform.startswith("linux")
@@ -853,48 +946,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
             or sys.platform.startswith("sunos")
             or sys.platform == "aix"
         ):
-            fstat = target.lstat()
-            if target.is_symlink():
-                if dereference:
-                    fstat = target.stat()
-                    if stat.S_ISDIR(fstat.st_mode):
-                        f["emptystream"] = True
-                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
-                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                        f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-                    else:
-                        f["emptystream"] = False
-                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-                else:
-                    f["emptystream"] = False
-                    f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE") | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT")
-                    f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-                    f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-            elif target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
-                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-            elif target.is_file():
-                f["emptystream"] = False
-                f["uncompressed"] = fstat.st_size
-                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
+            return self._make_unix_file_info(target, arcname, dereference)
         else:
-            fstat = target.stat()
-            if target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY
-            elif target.is_file():
-                f["emptystream"] = False
-                f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE
-
-        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
-        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
-        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
-        return f
+            return self._make_generic_file_info(target, arcname, dereference)
 
     def _make_file_info_from_name(self, bio, size: int, arcname: str) -> dict[str, Any]:
         f: dict[str, Any] = {}
