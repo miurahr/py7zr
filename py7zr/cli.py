@@ -31,7 +31,7 @@ import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any, Optional
 
-import _lzma  # type: ignore
+import _lzma
 import multivolumefile
 import texttable  # type: ignore
 
