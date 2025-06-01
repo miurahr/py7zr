@@ -151,7 +151,7 @@ jobs:
             . /root/venv/bin/activate
             git config --global --add safe.directory ${GITHUB_WORKSPACE}
             python3 -c "import platform;print('Machine type:', platform.machine())"
-            python3 -m tox -e py310
+            python3 -m tox -e py312
             coveralls
           env: |
             PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
