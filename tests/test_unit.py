@@ -544,9 +544,8 @@ def test_write_signature_header():
 
 @pytest.mark.unit
 def test_make_file_info1():
-    file_info = py7zr.py7zr.SevenZipFile._make_file_info(
-        pathlib.Path(os.path.join(testdata_path, "src", "bra.txt")), "src/bra.txt"
-    )
+    sevenZipFile = py7zr.SevenZipFile(os.path.join(testdata_path, "test_1.7z"), "r")
+    file_info = sevenZipFile._make_file_info(pathlib.Path(os.path.join(testdata_path, "src", "bra.txt")), "src/bra.txt")
     assert file_info.get("filename") == "src/bra.txt"
     assert not file_info.get("emptystream")
     assert file_info.get("uncompressed") == 11
@@ -554,7 +553,8 @@ def test_make_file_info1():
 
 @pytest.mark.unit
 def test_make_file_info2():
-    file_info = py7zr.py7zr.SevenZipFile._make_file_info(pathlib.Path(testdata_path).joinpath("src"))
+    sevenZipFile = py7zr.SevenZipFile(os.path.join(testdata_path, "test_1.7z"), "r")
+    file_info = sevenZipFile._make_file_info(pathlib.Path(testdata_path).joinpath("src"))
     assert file_info.get("filename") == pathlib.Path(testdata_path).joinpath("src").as_posix()
     assert file_info.get("emptystream")
     flag = stat.FILE_ATTRIBUTE_DIRECTORY
