@@ -50,12 +50,12 @@ jobs:
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v2
         with:
-          file-url: "https://libarchive.org/downloads/libarchive-v3.5.3-win64.zip"
-          file-name: "libarchive-v3.5.3-win64.zip"
+          file-url: "https://libarchive.org/downloads/libarchive-3.7.9.zip"
+          file-name: "libarchive-3.7.9.zip"
       - name: Install libarchive(Windows)
         if: runner.os == 'Windows'
         run: |
-          $file = "libarchive-v3.5.3-win64.zip"
+          $file = "libarchive-3.7.9.zip"
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
           choco install graphviz
       - name: Install dependencies
@@ -87,12 +87,12 @@ jobs:
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
       - uses: actions/setup-java@v4
-        if: runner.os != 'Windows'
+        if: ( runner.os != 'Windows' ) && ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         with:
           distribution: 'temurin'
           java-version: '21'
       - name: Send coverage to codacy
-        if: runner.os != 'Windows'
+        if: ( runner.os != 'Windows' ) && ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         run: |
           java -jar utils/codacy-coverage-reporter.jar report -l Python -t ${PROJECT_TOKEN} --partial -r cobertura.xml
         env:
@@ -125,18 +125,18 @@ jobs:
 
   test_on_aarch64:
     name: Test on ${{ matrix.arch }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch: [aarch64]
-        distro: [ubuntu22.04]
+        distro: [ubuntu24.04]
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
         with:
           fetch-depth: 20
       - name: Build & run test
-        uses: uraimo/run-on-arch-action@v2
+        uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
@@ -173,10 +173,12 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-java@v4
+        if: ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         with:
           distribution: 'temurin'
           java-version: '21'
       - name: Send coverage to codacy
+        if: ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         run: |
           java -jar utils/codacy-coverage-reporter.jar final -t ${PROJECT_TOKEN}
         env:
