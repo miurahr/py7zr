@@ -26,33 +26,33 @@ class Callback(ABC):
     """Abstract base class for progress callbacks."""
 
     @abstractmethod
-    def report_start_preparation(self):
+    def report_start_preparation(self) -> None:
         """report a start of preparation event such as making list of files and looking into its properties."""
         pass  # noqa
 
     @abstractmethod
-    def report_start(self, processing_file_path, processing_bytes):
+    def report_start(self, processing_file_path: str, processing_bytes: str) -> None:
         """report a start event of specified archive file and its input bytes."""
         pass  # noqa
 
     @abstractmethod
-    def report_update(self, decompressed_bytes):
+    def report_update(self, decompressed_bytes: str) -> None:
         """report an event when large file is being extracted more than 1 second or when extraction is finished.
         receives a number of decompressed bytes since the last update."""
         pass  # noqa
 
     @abstractmethod
-    def report_end(self, processing_file_path, wrote_bytes):
+    def report_end(self, processing_file_path: str, wrote_bytes: str) -> None:
         """report an end event of specified archive file and its output bytes."""
         pass  # noqa
 
     @abstractmethod
-    def report_warning(self, message):
+    def report_warning(self, message: str) -> None:
         """report an warning event with its message"""
         pass  # noqa
 
     @abstractmethod
-    def report_postprocess(self):
+    def report_postprocess(self) -> None:
         """report a start of post processing event such as set file properties and permissions or creating symlinks."""
         pass  # noqa
 
