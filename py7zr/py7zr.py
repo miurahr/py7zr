@@ -332,7 +332,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def __init__(
         self,
-        file: Union[BinaryIO, str, pathlib.Path],
+        file: Union[IO[bytes], str, pathlib.Path],
         mode: str = "r",
         *,
         filters: Optional[list[dict[str, int]]] = None,
@@ -345,7 +345,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
             raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
-        self.fp: BinaryIO
+        self.fp: IO[bytes]
         self.mp = mp
         self.password_protected = password is not None
         if blocksize:
@@ -1215,7 +1215,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(file: Union[SupportsReadAndSeek, str, os.PathLike[str]]) -> bool:
+def is_7zfile(file: Union[SupportsReadAndSeek, IO[bytes], str, os.PathLike[str]]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
     The file argument may be a filename or file-like object too.
     """
@@ -1277,7 +1277,7 @@ class Worker:
         else:
             self.concurrent = Thread
 
-    def extract(self, fp: BinaryIO, path: Optional[pathlib.Path], parallel: bool, skip_notarget=True, q=None) -> None:
+    def extract(self, fp: IO[bytes], path: Optional[pathlib.Path], parallel: bool, skip_notarget=True, q=None) -> None:
         """Extract worker method to handle 7zip folder and decompress each files."""
         if hasattr(self.header, "main_streams") and self.header.main_streams is not None:
             src_end = self.src_start + self.header.main_streams.packinfo.packpositions[-1]
@@ -1350,7 +1350,7 @@ class Worker:
 
     def extract_single(
         self,
-        fp: Union[BinaryIO, str],
+        fp: Union[IO[bytes], str],
         files,
         path,
         src_start: int,
@@ -1378,7 +1378,7 @@ class Worker:
 
     def _extract_single(
         self,
-        fp: BinaryIO,
+        fp: IO[bytes],
         files,
         path,
         src_end: int,
@@ -1467,7 +1467,7 @@ class Worker:
 
     def decompress(
         self,
-        fp: BinaryIO,
+        fp: IO[bytes],
         folder,
         fq: IO[Any],
         size: int,
@@ -1550,7 +1550,7 @@ class Worker:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
-    def write(self, fp: BinaryIO, f, assym, folder):
+    def write(self, fp: IO[bytes], f, assym, folder):
         compressor = folder.get_compressor()
         if assym:
             link_target: str = self._find_link_target(f.origin)
@@ -1563,7 +1563,7 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: BinaryIO, f, folder):
+    def writestr(self, fp: IO[bytes], f, folder):
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
@@ -1584,7 +1584,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: BinaryIO, files, folder, deref=False):
+    def archive(self, fp: IO[bytes], files, folder, deref=False):
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
