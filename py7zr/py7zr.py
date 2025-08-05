@@ -40,7 +40,7 @@ from collections.abc import Collection
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, Any, BinaryIO, Optional, Union
+from typing import IO, Any, BinaryIO, Optional, Protocol, Union
 
 import multivolumefile
 
@@ -70,6 +70,11 @@ from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_de
 
 if sys.platform.startswith("win"):
     import _winapi
+
+class SupportsReadAndSeek(Protocol):
+    def read(self, n: int = -1) -> bytes: ...
+    def seek(self, offset: int, whence: int = 0) -> int: ...
+
 
 FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
 FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
@@ -774,10 +779,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header_encryption = False
 
     @staticmethod
-    def _check_7zfile(fp: Union[IO[bytes], io.BufferedReader, io.IOBase]) -> bool:
+    def _check_7zfile(fp: SupportsReadAndSeek) -> bool:
         try:
-            result = MAGIC_7Z == fp.read(len(MAGIC_7Z))[: len(MAGIC_7Z)]
-            fp.seek(-len(MAGIC_7Z), 1)
+            magic_len = len(MAGIC_7Z)
+            result = MAGIC_7Z == fp.read(magic_len)[:magic_len]
+            fp.seek(-magic_len, 1)
             return result
         except OSError:
             # A new empty file raises OSError
@@ -1209,27 +1215,29 @@ class SevenZipFile(contextlib.AbstractContextManager):
 # --------------------
 # exported functions
 # --------------------
-def is_7zfile(file: Union[IO[bytes], str, pathlib.Path]) -> bool:
+def is_7zfile(file: Union[SupportsReadAndSeek, IO[bytes], str, os.PathLike[str]]) -> bool:
     """Quickly see if a file is a 7Z file by checking the magic number.
     The file argument may be a filename or file-like object too.
     """
-    result = False
+    if hasattr(file, "read") and hasattr(file, "seek"):
+        return SevenZipFile._check_7zfile(file)  # type: ignore
+
     try:
-        if (isinstance(file, BinaryIO) or isinstance(file, io.BufferedReader) or isinstance(file, io.IOBase)) and hasattr(
-            file, "read"
-        ):
-            result = SevenZipFile._check_7zfile(file)
-        elif isinstance(file, str):
-            with open(file, "rb") as fp:
-                result = SevenZipFile._check_7zfile(fp)
-        elif isinstance(file, pathlib.Path) or isinstance(file, pathlib.PosixPath) or isinstance(file, pathlib.WindowsPath):
-            with file.open(mode="rb") as fp:  # noqa
-                result = SevenZipFile._check_7zfile(fp)
-        else:
-            raise TypeError(f"invalid type: file should be str, pathlib.Path or BinaryIO, but {type(file)}")
-    except OSError:
-        pass
-    return result
+        if isinstance(file, str):
+            with open(file, mode="rb") as fp:
+                return SevenZipFile._check_7zfile(fp)
+
+        if isinstance(file, os.PathLike):
+            with open(os.fspath(file), mode="rb") as fp:
+                return SevenZipFile._check_7zfile(fp)
+    except FileNotFoundError:
+        return False
+
+    msg = (
+        f"Invalid 'file' argument: Expected a path-like object "
+        f"or a binary file-like object; got {type(file).__name__}."
+    )
+    raise TypeError(msg)
 
 
 def unpack_7zarchive(archive, path, extra=None):
