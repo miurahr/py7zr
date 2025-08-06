@@ -281,6 +281,20 @@ def test_cli_extract(tmp_path):
     ]
     check_output(expected, tmp_path)
 
+@pytest.mark.cli
+def test_cli_extract_member(tmp_path):
+    arcfile = os.path.join(testdata_path, "test_1.7z")
+    cli = py7zr.cli.Cli()
+    cli.run(["x", arcfile, str(tmp_path.resolve()), "--files", "setup.cfg"])
+    expected = [
+        {
+            "filename": "setup.cfg",
+            "mode": 33188,
+            "mtime": 1552522033,
+            "digest": "ff77878e070c4ba52732b0c847b5a055a7c454731939c3217db4a7fb4a1e7240",
+        },
+    ]
+    check_output(expected, tmp_path)
 
 @pytest.mark.cli
 def test_cli_encrypted_extract(monkeypatch, tmp_path):
