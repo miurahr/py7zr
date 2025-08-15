@@ -41,7 +41,7 @@ Package               Purpose
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
-`zipfile-deflate64`_  DEFLATE64 decompression
+`inflate64`_          Enhanced deflate compression
 `pybcj`_              BCJ filters
 `multivolumefile`_    Multi-volume archive read/write
 `texttable`_          CLI formatter
