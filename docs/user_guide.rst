@@ -125,9 +125,11 @@ Command-line options
 
    List files in a 7z file.
 
-.. option:: x <7z file> [<output_dir>]
+.. option:: x <7z file> [<output_dir>] [--files <file1> ... <fileN>]
 
-   Extract 7z file into target directory.
+   Extract 7z file into target directory. If ``output_dir`` is specified,
+   py7zr will extract files into the specified directory.
+   Use ``--files`` to extract only the specified archive members. 
 
 .. option:: c <7z file> <base_dir>
 
