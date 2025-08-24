@@ -100,7 +100,7 @@ Homepage = "https://py7zr.readthedocs.io/"
 Documentation = "https://py7zr.readthedocs.io/en/stable/"
 "Bug Tracker" = "https://github.com/miurahr/py7zr/issues"
 Source = "https://github.com/miurahr/py7zr"
-Changelog = "https://py7zr.readthedocs.io/en/latest/changelog.html"
+Changelog = "https://py7zr.readthedocs.io/en/latest/Changelog.html"
 
 [build-system]
 requires = ["setuptools>=63", "build", "setuptools_scm[toml]>=7.0.5"]
