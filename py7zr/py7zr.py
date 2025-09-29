@@ -961,11 +961,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         Calling :meth:`getinfo()` for a name not currently contained in the archive will raise a :exc:`KeyError`."""
         # For interoperability with ZipFile
         name = remove_trailing_slash(name)
-        sevenzipinfo = next((member for member in self.list() if member.filename == name), None)
-        # ZipFile and TarFile raise KeyError if the named member is not found
-        # So for consistency, we'll also raise KeyError here
-        if sevenzipinfo is None:
-            raise KeyError(f"'{name}' not found in archive.")
+
+        try:
+            sevenzipinfo = next(
+                member for member in self.list() if member.filename == name
+            )
+        except StopIteration:
+            # ZipFile and TarFile raise KeyError if the named member is not found
+            # So for consistency, we'll also raise KeyError here
+            raise KeyError(f"'{name}' not found in archive.") from None
 
         return sevenzipinfo
 

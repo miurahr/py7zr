@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from py7zr import SevenZipFile
+from py7zr import FileInfo, SevenZipFile
 
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -12,6 +12,7 @@ def test_getinfo_file():
         member = archive.getinfo("test1.txt")
         assert member.filename == "test1.txt"
         assert member.is_directory is False
+        assert isinstance(member, FileInfo)
 
 
 def test_getinfo_dir():
@@ -19,6 +20,7 @@ def test_getinfo_dir():
         member = archive.getinfo("test")
         assert member.filename == "test"
         assert member.is_directory is True
+        assert isinstance(member, FileInfo)
 
 
 def test_getinfo_file_with_trailing_slash():
@@ -26,6 +28,7 @@ def test_getinfo_file_with_trailing_slash():
         member = archive.getinfo("test1.txt/")
         assert member.filename == "test1.txt"
         assert member.is_directory is False
+        assert isinstance(member, FileInfo)
 
 
 def test_getinfo_dir_with_trailing_slash():
@@ -33,6 +36,7 @@ def test_getinfo_dir_with_trailing_slash():
         member = archive.getinfo("test/")
         assert member.filename == "test"
         assert member.is_directory is True
+        assert isinstance(member, FileInfo)
 
 
 def test_getinfo_missing_member():
