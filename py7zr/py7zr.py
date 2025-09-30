@@ -957,18 +957,19 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return list(map(lambda x: x.filename, self.files))
 
     def getinfo(self, name: str) -> FileInfo:
-        """Return a FileInfo object with information about the archive member *name*.
-        Calling getinfo() for a name not currently contained in the archive will raise a KeyError."""
+        """Return a :class:`FileInfo` object with information about the archive member *name*.
+        Calling :meth:`getinfo()` for a name not currently contained in the archive will raise a :exc:`KeyError`."""
         # For interoperability with ZipFile
         name = remove_trailing_slash(name)
 
-        # https://more-itertools.readthedocs.io/en/stable/_modules/more_itertools/recipes.html#first_true
-        sevenzipinfo = next(filter(lambda member: member.filename == name, self.files), None)
-
-        # ZipFile and TarFile raise KeyError if the named member is not found
-        # So for consistency, we'll also raise KeyError here
-        if sevenzipinfo is None:
-            raise KeyError(f"'{name}' not found in archive.")
+        try:
+            sevenzipinfo = next(
+                member for member in self.list() if member.filename == name
+            )
+        except StopIteration:
+            # ZipFile and TarFile raise KeyError if the named member is not found
+            # So for consistency, we'll also raise KeyError here
+            raise KeyError(f"'{name}' not found in archive.") from None
 
         return sevenzipinfo
 
