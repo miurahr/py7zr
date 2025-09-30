@@ -96,9 +96,9 @@ class ArchiveFile:
         self._file_info = file_info
 
     def file_properties(self) -> dict[str, Any]:
-        """Return file properties as a hash object. Following keys are included: ‘readonly’, ‘is_directory’,
-        ‘posix_mode’, ‘archivable’, ‘emptystream’, ‘filename’, ‘creationtime’, ‘lastaccesstime’,
-        ‘lastwritetime’, ‘attributes’
+        """Return file properties as a hash object. Following keys are included: 'readonly', 'is_directory',
+        'posix_mode', 'archivable', 'emptystream', 'filename', 'creationtime', 'lastaccesstime',
+        'lastwritetime', 'attributes'
         """
         properties = self._file_info
         if properties is not None:
@@ -240,7 +240,7 @@ class ArchiveFile:
         return None
 
 
-class ArchiveFileList(collections.abc.Iterable):
+class ArchiveFileList(collections.abc.Iterable[ArchiveFile]):
     """Iterable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
@@ -257,7 +257,7 @@ class ArchiveFileList(collections.abc.Iterable):
     def __iter__(self) -> "ArchiveFileListIterator":
         return ArchiveFileListIterator(self)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> ArchiveFile:
         if index > len(self.files_list):
             raise IndexError
         if index < 0:
@@ -266,8 +266,8 @@ class ArchiveFileList(collections.abc.Iterable):
         return res
 
 
-class ArchiveFileListIterator(collections.abc.Iterator):
-    def __init__(self, archive_file_list):
+class ArchiveFileListIterator(collections.abc.Iterator[ArchiveFile]):
+    def __init__(self, archive_file_list: ArchiveFileList):
         self._archive_file_list = archive_file_list
         self._index = 0
 
@@ -344,7 +344,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ) -> None:
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
-            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+            raise ValueError("SevenZipFile requires mode 'r', 'w', 'x', or 'a'")
         self.fp: IO[bytes]
         self.mp = mp
         self.password_protected = password is not None
@@ -360,7 +360,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if isinstance(file, str):
             # No, it's a filename
             self._filePassed = False
-            self.filename = file
+            self.filename: str | None = file
             modeDict = {
                 "r": "rb",
                 "w": "w+b",
@@ -374,7 +374,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
             while True:
                 try:
-                    self.fp = open(file, filemode)  # type: ignore
+                    self.fp = open(file, filemode)
                 except OSError:
                     if filemode in modeDict:
                         filemode = modeDict[filemode]
@@ -435,13 +435,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _real_get_contents(self, password) -> None:
         if not self._check_7zfile(self.fp):
             raise Bad7zFile("not a 7z file")
-        self.sig_header = SignatureHeader.retrieve(self.fp)
+        self.sig_header = SignatureHeader.retrieve(self.fp)  # type: ignore[arg-type]
         self.afterheader: int = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile("invalid header data")
-        header = Header.retrieve(self.fp, buffer, self.afterheader, password)
+        header = Header.retrieve(self.fp, buffer, self.afterheader, password)  # type: ignore[arg-type]
         if header is None:
             return
         header.size += 32 + self.sig_header.nextheadersize
@@ -954,7 +954,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def namelist(self) -> list[str]:
         """Return a list of archive members by name."""
-        return list(map(lambda x: x.filename, self.files))
+        return list(x.filename for x in self.files)
 
     def getinfo(self, name: str) -> FileInfo:
         """Return a :class:`FileInfo` object with information about the archive member *name*.
@@ -1046,7 +1046,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             targets = [remove_trailing_slash(target) for target in targets]
         self._extract(path, targets, recursive=recursive, callback=callback, writer_factory=factory)
 
-    def reporter(self, callback: ExtractCallback):
+    def reporter(self, callback: ExtractCallback) -> None:
         while True:
             try:
                 item: Optional[tuple[str, str, str]] = self.q.get(timeout=1)
@@ -1071,7 +1071,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     pass
                 self.q.task_done()
 
-    def writeall(self, path: Union[pathlib.Path, str], arcname: Optional[str] = None):
+    def writeall(
+        self,
+        path: Union[pathlib.Path, str],
+        arcname: Optional[str] = None,
+    ) -> None:
         """Write files in target path into archive."""
         if isinstance(path, str):
             path = pathlib.Path(path)
@@ -1082,7 +1086,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("specified path is not a directory or a file")
 
-    def write(self, file: Union[pathlib.Path, str], arcname: Optional[str] = None):
+    def write(
+        self,
+        file: Union[pathlib.Path, str],
+        arcname: Optional[str] = None,
+    ) -> None:
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
@@ -1101,12 +1109,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.files.append(file_info)
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
-    def writef(self, bio: IO[Any], arcname: str):
+    def writef(self, bio: IO[Any], arcname: str) -> None:
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
         return self._writef(bio, arcname)
 
-    def _writef(self, bio: IO[Any], arcname: str):
+    def _writef(self, bio: IO[Any], arcname: str) -> None:
         if isinstance(bio, io.BytesIO):
             size = bio.getbuffer().nbytes
         elif isinstance(bio, io.TextIOBase):
@@ -1137,12 +1145,20 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header.files_info.emptyfiles.append(file_info["emptystream"])
             self.files.append(file_info)
 
-    def writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
+    def writestr(
+        self,
+        data: Union[str, bytes, bytearray, memoryview],
+        arcname: str,
+    ) -> None:
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
         return self._writestr(data, arcname)
 
-    def _writestr(self, data: Union[str, bytes, bytearray, memoryview], arcname: str):
+    def _writestr(
+        self,
+        data: Union[str, bytes, bytearray, memoryview],
+        arcname: str,
+    ) -> None:
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
         if isinstance(data, str):
@@ -1152,7 +1168,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             raise ValueError("Unsupported data type.")
 
-    def close(self):
+    def close(self) -> None:
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
