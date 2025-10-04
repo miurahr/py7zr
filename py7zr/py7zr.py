@@ -37,6 +37,7 @@ import stat
 import sys
 import time
 from collections.abc import Collection
+from dataclasses import dataclass
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
@@ -133,7 +134,7 @@ class ArchiveFile:
         return self._get_property("emptystream")
 
     @property
-    def uncompressed(self) -> list[int]:
+    def uncompressed(self) -> int:
         return self._get_property("uncompressed")
 
     @property
@@ -282,49 +283,29 @@ class ArchiveFileListIterator(collections.abc.Iterator[ArchiveFile]):
 # ------------------
 # Exported Classes
 # ------------------
+@dataclass
 class ArchiveInfo:
     """Hold archive information"""
 
-    def __init__(
-        self,
-        filename: str,
-        stat: os.stat_result,
-        header_size: int,
-        method_names: list[str],
-        solid: bool,
-        blocks: int,
-        uncompressed: list[int],
-    ):
-        self.stat = stat
-        self.filename = filename
-        self.size = stat.st_size
-        self.header_size = header_size
-        self.method_names = method_names
-        self.solid = solid
-        self.blocks = blocks
-        self.uncompressed = uncompressed
+    filename: str
+    stat: os.stat_result
+    header_size: int
+    method_names: list[str]
+    solid: bool
+    blocks: int
+    uncompressed: int
 
-
+@dataclass
 class FileInfo:
     """Hold archived file information."""
 
-    def __init__(
-        self,
-        filename,
-        compressed,
-        uncompressed,
-        archivable,
-        is_directory,
-        creationtime,
-        crc32,
-    ):
-        self.filename = filename
-        self.compressed = compressed
-        self.uncompressed = uncompressed
-        self.archivable = archivable
-        self.is_directory = is_directory
-        self.creationtime = creationtime
-        self.crc32 = crc32
+    filename: str
+    compressed: Optional[int]
+    uncompressed: int
+    archivable: bool
+    is_directory: bool
+    creationtime: Optional[datetime.datetime]
+    crc32: Optional[int]
 
 
 class SevenZipFile(contextlib.AbstractContextManager):
