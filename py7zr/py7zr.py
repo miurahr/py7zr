@@ -172,10 +172,6 @@ class ArchiveFile:
 
     @property
     def is_file(self) -> bool:
-        e = self._get_unix_extension()
-        if e is not None:
-            return stat.S_ISREG(e)
-
         return not (
             self.is_directory or self.is_symlink or self.is_junction or self.is_socket
         )
