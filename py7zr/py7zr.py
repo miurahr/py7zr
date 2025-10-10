@@ -163,15 +163,15 @@ class ArchiveFile:
     @property
     def is_directory(self) -> bool:
         """True if file is a directory, otherwise False."""
-        e = self._get_unix_extension()
-        if e is not None:
-            return stat.S_ISDIR(e)
         if hasattr(stat, "FILE_ATTRIBUTE_DIRECTORY"):
             return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_DIRECTORY"))
         return False
 
     @property
     def is_file(self) -> bool:
+        # Indicates whether this entry is a regular file,
+        # that is, it is not one of the special types this class can check for:
+        # directory, symlink, junction, or socket.
         return not (
             self.is_directory or self.is_symlink or self.is_junction or self.is_socket
         )
@@ -319,10 +319,13 @@ class FileInfo:
     crc32: Optional[int]
 
     def __post_init__(self) -> None:
+        # Prevent ambiguous file type states.
+        # A file can't simultaneously be a directory, a regular file, or a symlink,
+        # but it’s allowed to be none of these (e.g., a junction or a socket).
         flags = self.is_directory + self.is_file + self.is_symlink
-        if flags != 1:
+        if flags > 1:
             raise ValueError(
-                f"Exactly one of is_directory, is_file, or is_symlink must be True; "
+                f"At most one of is_directory, is_file, or is_symlink can be True; "
                 f"got is_directory={self.is_directory}, is_file={self.is_file}, is_symlink={self.is_symlink}"
             )
 
