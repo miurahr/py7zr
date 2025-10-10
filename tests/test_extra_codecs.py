@@ -87,7 +87,7 @@ def test_copy_decompressor():
 
 
 @pytest.mark.unit
-def test_pyzstd_decompressor_1():
+def test_zstd_decompressor_1():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
     compressed = (
@@ -102,7 +102,7 @@ def test_pyzstd_decompressor_1():
 
 
 @pytest.mark.unit
-def test_pyzstd_decompressor_2():
+def test_zstd_decompressor_2():
     plain_data = b"\x00*\x1a\t'd\x19\xb08s\xca\x8b\x13 \xaf:\x1b\x8d\x97\xf8|#M\xe9\xe1W\xd4\xe4\x97BB\xd2"
     plain_data += plain_data
     compressed_0 = b"\x28\xb5\x2f\xfd"
