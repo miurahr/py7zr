@@ -168,6 +168,15 @@ class ArchiveFile:
         return False
 
     @property
+    def is_file(self) -> bool:
+        # Indicates whether this entry is a regular file,
+        # that is, it is not one of the special types this class can check for:
+        # directory, symlink, junction, or socket.
+        return not (
+            self.is_directory or self.is_symlink or self.is_junction or self.is_socket
+        )
+
+    @property
     def readonly(self) -> bool:
         """True if file is readonly, otherwise False."""
         if hasattr(stat, "FILE_ATTRIBUTE_READONLY"):
@@ -304,8 +313,21 @@ class FileInfo:
     uncompressed: int
     archivable: bool
     is_directory: bool
+    is_file: bool
+    is_symlink: bool
     creationtime: Optional[datetime.datetime]
     crc32: Optional[int]
+
+    def __post_init__(self) -> None:
+        # Prevent ambiguous file type states.
+        # A file can't simultaneously be a directory, a regular file, or a symlink,
+        # but it’s allowed to be none of these (e.g., a junction or a socket).
+        flags = self.is_directory + self.is_file + self.is_symlink
+        if flags > 1:
+            raise ValueError(
+                f"At most one of is_directory, is_file, or is_symlink can be True; "
+                f"got is_directory={self.is_directory}, is_file={self.is_file}, is_symlink={self.is_symlink}"
+            )
 
 
 class SevenZipFile(contextlib.AbstractContextManager):
@@ -985,13 +1007,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 lastmodified = filetime_to_dt(f.lastwritetime)
             alist.append(
                 FileInfo(
-                    f.filename,
-                    f.compressed,
-                    f.uncompressed,
-                    f.archivable,
-                    f.is_directory,
-                    lastmodified,
-                    f.crc32,
+                    filename=f.filename,
+                    compressed=f.compressed,
+                    uncompressed=f.uncompressed,
+                    archivable=f.archivable,
+                    is_file=f.is_file,
+                    is_directory=f.is_directory,
+                    is_symlink=f.is_symlink,
+                    creationtime=lastmodified,
+                    crc32=f.crc32,
                 )
             )
         return alist

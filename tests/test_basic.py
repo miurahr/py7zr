@@ -337,7 +337,23 @@ def test_py7zr_list_values():
     assert file_list[1].uncompressed == 111
     assert file_list[2].uncompressed == 58
     assert file_list[3].uncompressed == 559
+
     assert file_list[0].is_directory is True
+    assert file_list[0].is_file is False
+    assert file_list[0].is_symlink is False
+
+    assert file_list[1].is_directory is False
+    assert file_list[1].is_file is True
+    assert file_list[1].is_symlink is False
+
+    assert file_list[2].is_directory is False
+    assert file_list[2].is_file is True
+    assert file_list[2].is_symlink is False
+
+    assert file_list[3].is_directory is False
+    assert file_list[3].is_file is True
+    assert file_list[3].is_symlink is False
+
     assert file_list[1].archivable is True
     assert file_list[2].archivable is True
     assert file_list[3].archivable is True
