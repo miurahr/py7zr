@@ -382,7 +382,8 @@ Here is a table of algorithms.
 +---+                      +------------+-----------------------------+
 |  6|                      | PPMd       | depend on pyppmd            |
 +---+                      +------------+-----------------------------+
-|  7|                      | ZStandard  | depend on pyzstd            |
+|  7|                      | ZStandard  | depend on backports.zstd    |
+|   |                      |            | for Python before 3.14      |
 +---+                      +------------+-----------------------------+
 |  8|                      | Brotli     | depend on brotli,brotliCFFI |
 +---+----------------------+------------+-----------------------------+
