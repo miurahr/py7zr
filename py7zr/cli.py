@@ -116,7 +116,7 @@ class Cli:
         extract_parser.set_defaults(func=self.run_extract)
         extract_parser.add_argument("arcfile", type=pathlib.Path, help="7z archive file")
         extract_parser.add_argument("odir", nargs="?", help="output directory")
-        extract_parser.add_argument('--files', nargs='+', help="List of archive members to extract")
+        extract_parser.add_argument("--files", nargs="+", help="List of archive members to extract")
         extract_parser.add_argument(
             "-P",
             "--password",

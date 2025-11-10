@@ -78,6 +78,7 @@ if TYPE_CHECKING:
 if sys.platform.startswith("win"):
     import _winapi
 
+
 class SupportsReadAndSeek(Protocol):
     def read(self, n: int = -1) -> bytes: ...
     def seek(self, offset: int, whence: int = 0) -> int: ...
@@ -196,9 +197,7 @@ class ArchiveFile:
         e = self._get_unix_extension()
         if e is not None:
             return stat.S_ISREG(e)
-        return not (
-            self.is_directory or self.is_symlink or self.is_junction or self.is_socket
-        )
+        return not (self.is_directory or self.is_symlink or self.is_junction or self.is_socket)
 
     @property
     def readonly(self) -> bool:
@@ -327,6 +326,7 @@ class ArchiveInfo:
     solid: bool
     blocks: int
     uncompressed: int
+
 
 @dataclass
 class FileInfo:
@@ -877,9 +877,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return f
 
     @staticmethod
-    def _make_file_info_from_name(
-        bio: IO[Any], size: int, arcname: str
-    ) -> FileInfoDict:
+    def _make_file_info_from_name(bio: IO[Any], size: int, arcname: str) -> FileInfoDict:
         return FileInfoDict(
             origin=None,
             data=bio,
@@ -943,9 +941,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         name = remove_trailing_slash(name)
 
         try:
-            sevenzipinfo = next(
-                member for member in self.list() if member.filename == name
-            )
+            sevenzipinfo = next(member for member in self.list() if member.filename == name)
         except StopIteration:
             # ZipFile and TarFile raise KeyError if the named member is not found
             # So for consistency, we'll also raise KeyError here
@@ -1233,8 +1229,7 @@ def is_7zfile(file: Union[SupportsReadAndSeek, IO[bytes], str, os.PathLike[str]]
         return False
 
     msg = (
-        f"Invalid 'file' argument: Expected a path-like object "
-        f"or a binary file-like object; got {type(file).__name__}."
+        f"Invalid 'file' argument: Expected a path-like object " f"or a binary file-like object; got {type(file).__name__}."
     )
     raise TypeError(msg)
 
