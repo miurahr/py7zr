@@ -115,6 +115,7 @@ class Cli:
         extract_parser.set_defaults(func=self.run_extract)
         extract_parser.add_argument("arcfile", type=pathlib.Path, help="7z archive file")
         extract_parser.add_argument("odir", nargs="?", help="output directory")
+        extract_parser.add_argument("--files", nargs="+", help="List of archive members to extract")
         extract_parser.add_argument(
             "-P",
             "--password",
@@ -352,10 +353,16 @@ class Cli:
             archive_info = a.archiveinfo()
             cb = CliExtractCallback(total_bytes=archive_info.uncompressed, ofd=sys.stderr)
         try:
-            if args.odir:
-                a.extractall(path=args.odir, callback=cb)
+            if args.files:
+                a.extract(
+                    path=args.odir,
+                    callback=cb,
+                    targets=args.files,
+                    # Allow to provide directories and extract all files in them.
+                    recursive=True,
+                )
             else:
-                a.extractall(callback=cb)
+                a.extractall(path=args.odir, callback=cb)
         except py7zr.exceptions.UnsupportedCompressionMethodError:
             print("Unsupported compression method is used in archive. ABORT.")
             return 1

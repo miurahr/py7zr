@@ -24,8 +24,9 @@ using standard 'pip' command as like follows;
     $ pip install py7zr
 
 The py7zr depends on several external libraries. You should install these libraries with py7zr.
-There are `PyCryptodomex`_, `PyZstd`_, `PyPPMd`_, `pybcj`_, `texttable`_, and `multivolumefile`_.
+There are `PyCryptodomex`_, `PyPPMd`_, `pybcj`_, `texttable`_, and `multivolumefile`_.
 There are also dependency whether `Brotli`_ or `BrotliCFFI`_ depends on your python flavour.
+The library `backports.zstd`_ is a dependency for Python before 3.14.
 These packages are automatically installed when installing with ``pip`` command.
 
 Dependencies
@@ -37,18 +38,18 @@ There are several dependencies to support algorithms and CLI expressions.
 Package               Purpose
 ===================== ===============================
 `PyCryptodomex`_      7zAES encryption
-`PyZstd`_             ZStandard compression
+`backports.zstd`      ZStandard compression for Python before 3.14
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
-`zipfile-deflate64`_  DEFLATE64 decompression
+`inflate64`_          Enhanced deflate compression
 `pybcj`_              BCJ filters
 `multivolumefile`_    Multi-volume archive read/write
 `texttable`_          CLI formatter
 ===================== ===============================
 
 .. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
-.. _`PyZstd` : https://pypi.org/project/pyzstd
+.. _`backports.zstd` : https://pypi.org/project/backports.zstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/Brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
@@ -125,9 +126,11 @@ Command-line options
 
    List files in a 7z file.
 
-.. option:: x <7z file> [<output_dir>]
+.. option:: x <7z file> [<output_dir>] [--files <file1> ... <fileN>]
 
-   Extract 7z file into target directory.
+   Extract 7z file into target directory. If ``output_dir`` is specified,
+   py7zr will extract files into the specified directory.
+   Use ``--files`` to extract only the specified archive members. 
 
 .. option:: c <7z file> <base_dir>
 

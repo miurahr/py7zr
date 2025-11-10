@@ -20,6 +20,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #
+from __future__ import annotations
+
 import ctypes
 import hashlib
 import os
@@ -30,10 +32,13 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from py7zr import Bad7zFile
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 # String used at the beginning of relative paths
 RELATIVE_PATH_MARKER = "./"
@@ -252,17 +257,17 @@ class ArchiveTimestamp(int):
         # FILETIME is 100-nanosecond intervals since 1601/01/01 (UTC)
         return (self / 10000000.0) + TIMESTAMP_ADJUST
 
-    def as_datetime(self):
+    def as_datetime(self) -> datetime:
         """Convert FILETIME to Python datetime object."""
         return datetime.fromtimestamp(self.totimestamp(), UTC())
 
-    @staticmethod
-    def from_datetime(val):
-        return ArchiveTimestamp((val - TIMESTAMP_ADJUST) * 10000000.0)
+    @classmethod
+    def from_datetime(cls, val: float | int) -> Self:
+        return cls((val - TIMESTAMP_ADJUST) * 10000000.0)
 
-    @staticmethod
-    def from_now():
-        return ArchiveTimestamp((_time.time() - TIMESTAMP_ADJUST) * 10000000.0)
+    @classmethod
+    def from_now(cls) -> Self:
+        return cls((_time.time() - TIMESTAMP_ADJUST) * 10000000.0)
 
 
 def islink(path: Union[str, pathlib.Path]) -> bool:

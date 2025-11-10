@@ -236,48 +236,60 @@ SevenZipFile Object
 
 .. code-block:: python
 
+   from typing import override, Union, Optional
+   from py7zr import Py7zIO, SevenZipFile, WriterFactory
+
    class MyIO(Py7zIO):
        def __init__(self, limit):
-           self.limit = limit
-           self.buf = None
-           self.empty = True
+           self._limit = limit
+           self._buffer = None
+           self._empty = True
 
-       def write(self, s: [bytes, bytearray]):
+       @override
+       def write(self, s: Union[bytes, bytearray]):
            """keep only bytes of limit"""
-           if self.empty:
-               self.buf = s[:self.limit]
-               self.empty = False
+           if self._empty:
+               self._buffer = s[:self._limit]
+               self._empty = False
 
-       def read(self, length: int = 0) -> bytes:
-           if self.empty:
-               return None
-           return self.buf[:length]
+       @override
+       def read(self, size: Optional[int] = None) -> bytes:
+           size = 0 if size is None else size
+           if self._empty:
+               return bytes()
+           return self._buffer[:size]
 
+       @override
        def seek(self, offset: int, whence: int = 0) -> int:
            return 0
 
+       @override
+       def flush(self) -> None:
+           pass
+
+       @override
        def size(self) -> int:
-           return len(self.buf)
+           return len(self._buffer)
 
 
    class MyFactory(WriterFactory):
-
-       def __init(self, size):
+       def __init__(self, size):
            self.size = size
            self.products = {}
 
-       def create(self, fname) -> Py7zIO:
+       @override
+       def create(self, filename: str) -> Py7zIO:
            product = MyIO(self.size)
-           self.products[fname] = product
+           self.products[filename] = product
            return product
 
 
    size = 10
    factory = MyFactory(size)
-   with SevenZipFile('archive.7z', 'r') as zip:
-       zip.extractall(factory=factory)
-   for fname in factory.products.keys():
-       print(f'{fname}: {factory.products[fname].read(size)}...')
+   with SevenZipFile('archive.7z', 'r') as archive:
+       archive.extractall(factory=factory)
+   for filename, fileobj in factory.products.items():
+       print(f'{filename}: {fileobj.read(size)}...')
 
 
 .. py:method:: SevenZipFile.list()
@@ -370,7 +382,8 @@ Here is a table of algorithms.
 +---+                      +------------+-----------------------------+
 |  6|                      | PPMd       | depend on pyppmd            |
 +---+                      +------------+-----------------------------+
-|  7|                      | ZStandard  | depend on pyzstd            |
+|  7|                      | ZStandard  | depend on backports.zstd    |
+|   |                      |            | for Python before 3.14      |
 +---+                      +------------+-----------------------------+
 |  8|                      | Brotli     | depend on brotli,brotliCFFI |
 +---+----------------------+------------+-----------------------------+

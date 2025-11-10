@@ -106,9 +106,9 @@ def test_compress_files_encoded_header(tmp_path):
         f["emptystream"] = expected[i]
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
     assert archive.header.files_info.files[3]["emptystream"] is False
-    expected_attributes = stat.FILE_ATTRIBUTE_ARCHIVE
+    expected_attributes = stat.FILE_ATTRIBUTE_ARCHIVE | 0x8000 | (stat.S_IFREG << 16)
     if os.name == "posix":
-        expected_attributes |= 0x8000 | (0o644 << 16)
+        expected_attributes |= 0o644 << 16
     assert archive.header.files_info.files[3]["attributes"] == expected_attributes
     assert archive.header.files_info.files[3]["maxsize"] == 441
     assert archive.header.files_info.files[3]["uncompressed"] == 559
@@ -233,9 +233,9 @@ def test_compress_files_1(tmp_path):
         f["emptystream"] = expected[i]
     assert archive.header.files_info.emptyfiles == [True, False, False, False]
     assert archive.header.files_info.files[3]["emptystream"] is False
-    expected_attributes = stat.FILE_ATTRIBUTE_ARCHIVE
+    expected_attributes = stat.FILE_ATTRIBUTE_ARCHIVE | 0x8000 | (stat.S_IFREG << 16)
     if os.name == "posix":
-        expected_attributes |= 0x8000 | (0o644 << 16)
+        expected_attributes |= 0o644 << 16
     assert archive.header.files_info.files[3]["attributes"] == expected_attributes
     assert archive.header.files_info.files[3]["maxsize"] == 441
     assert archive.header.files_info.files[3]["uncompressed"] == 559

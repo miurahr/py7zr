@@ -33,7 +33,6 @@ from typing import Any, BinaryIO, Optional, Tuple, Union
 import bcj
 import inflate64
 import pyppmd
-import pyzstd
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 
@@ -73,6 +72,11 @@ except ImportError:
         brotli = None
 brotli_major = 1
 brotli_minor = 0
+
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
 
 
 class ISevenZipCompressor(ABC):
@@ -523,7 +527,7 @@ class BrotliDecompressor(ISevenZipDecompressor):
 
 class ZstdCompressor(ISevenZipCompressor):
     def __init__(self, level: int):
-        self.compressor = pyzstd.ZstdCompressor(level)
+        self.compressor = zstd.ZstdCompressor(level)
 
     def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
         return self.compressor.compress(data)
@@ -536,9 +540,9 @@ class ZstdDecompressor(ISevenZipDecompressor):
     def __init__(self, properties: bytes, blocksize: int):
         if len(properties) not in [3, 5]:
             raise UnsupportedCompressionMethodError(properties, "Zstd takes 3 or 5 bytes properties.")
-        if (properties[0], properties[1], 0) > pyzstd.zstd_version_info:
+        if (properties[0], properties[1], 0) > zstd.zstd_version_info:
             raise UnsupportedCompressionMethodError(properties, "Zstd version of archive is higher than us.")
-        self.decompressor = pyzstd.ZstdDecompressor()
+        self.decompressor = zstd.ZstdDecompressor()
 
     def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
         return self.decompressor.decompress(data)
@@ -865,7 +869,7 @@ class SevenZipCompressor:
         elif SupportedMethods.need_property(filter_id):
             if filter_id == FILTER_ZSTD:
                 level = alt_filter.get("level", 3)
-                properties = struct.pack("BBBBB", pyzstd.zstd_version_info[0], pyzstd.zstd_version_info[1], level, 0, 0)
+                properties = struct.pack("BBBBB", zstd.zstd_version_info[0], zstd.zstd_version_info[1], level, 0, 0)
                 compressor = algorithm_class_map[filter_id][0](level=level)
             elif filter_id == FILTER_PPMD:
                 properties = PpmdCompressor.encode_filter_properties(alt_filter)
