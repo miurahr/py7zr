@@ -23,6 +23,8 @@
 #
 #
 """Read 7zip format archives."""
+from __future__ import annotations
+
 import collections.abc
 import contextlib
 import datetime
@@ -41,7 +43,7 @@ from dataclasses import dataclass
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, Any, BinaryIO, Optional, Protocol, Union
+from typing import IO, TYPE_CHECKING, Any, BinaryIO, Optional, Protocol, TypedDict, Union
 
 import multivolumefile
 
@@ -67,7 +69,11 @@ from py7zr.helpers import (
     remove_trailing_slash,
 )
 from py7zr.io import MemIO, NullIO, WriterFactory
+from py7zr.member import FILE_ATTRIBUTE_UNIX_EXTENSION, MemberType
 from py7zr.properties import DEFAULT_FILTERS, FILTER_DEFLATE64, MAGIC_7Z, get_default_blocksize, get_memory_limit
+
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
 
 if sys.platform.startswith("win"):
     import _winapi
@@ -77,8 +83,29 @@ class SupportsReadAndSeek(Protocol):
     def seek(self, offset: int, whence: int = 0) -> int: ...
 
 
-FILE_ATTRIBUTE_UNIX_EXTENSION = 0x8000
-FILE_ATTRIBUTE_WINDOWS_MASK = 0x07FFF
+class FileInfoDict(TypedDict):
+    """
+    File information dictionary structure for archive members.
+    Contains filesystem metadata, timestamps, and platform-specific attributes.
+    """
+
+    # Core fields (always present)
+    origin: pathlib.Path | None
+    filename: str
+    creationtime: ArchiveTimestamp
+    lastwritetime: ArchiveTimestamp
+    lastaccesstime: ArchiveTimestamp
+
+    # Optional fields
+    emptystream: NotRequired[bool]
+    attributes: NotRequired[int]
+    uncompressed: NotRequired[int]
+    data: NotRequired[IO[Any]]
+    readonly: NotRequired[bool]
+    posix_mode: NotRequired[int | None]
+    archivable: NotRequired[bool]
+    is_directory: NotRequired[bool]
+
 
 class ArchiveFile:
     """Represent each files metadata inside archive file.
@@ -92,11 +119,11 @@ class ArchiveFile:
     The class also hold an archive parameter where file is exist in
     archive file folder(container)."""
 
-    def __init__(self, id: int, file_info: dict[str, Any]) -> None:
+    def __init__(self, id: int, file_info: FileInfoDict) -> None:
         self.id = id
         self._file_info = file_info
 
-    def file_properties(self) -> dict[str, Any]:
+    def file_properties(self) -> FileInfoDict:
         """Return file properties as a hash object. Following keys are included: 'readonly', 'is_directory',
         'posix_mode', 'archivable', 'emptystream', 'filename', 'creationtime', 'lastaccesstime',
         'lastwritetime', 'attributes'
@@ -110,10 +137,7 @@ class ArchiveFile:
         return properties
 
     def _get_property(self, key: str) -> Any:
-        try:
-            return self._file_info[key]
-        except KeyError:
-            return None
+        return self._file_info.get(key)
 
     @property
     def origin(self) -> pathlib.Path:
@@ -166,6 +190,15 @@ class ArchiveFile:
         if hasattr(stat, "FILE_ATTRIBUTE_DIRECTORY"):
             return self._test_attribute(getattr(stat, "FILE_ATTRIBUTE_DIRECTORY"))
         return False
+
+    @property
+    def is_file(self) -> bool:
+        e = self._get_unix_extension()
+        if e is not None:
+            return stat.S_ISREG(e)
+        return not (
+            self.is_directory or self.is_symlink or self.is_junction or self.is_socket
+        )
 
     @property
     def readonly(self) -> bool:
@@ -245,11 +278,11 @@ class ArchiveFileList(collections.abc.Iterable[ArchiveFile]):
     """Iterable container of ArchiveFile."""
 
     def __init__(self, offset: int = 0):
-        self.files_list: list[dict] = []
+        self.files_list: list[FileInfoDict] = []
         self.index = 0
         self.offset = offset
 
-    def append(self, file_info: dict[str, Any]) -> None:
+    def append(self, file_info: FileInfoDict) -> None:
         self.files_list.append(file_info)
 
     def __len__(self) -> int:
@@ -304,8 +337,21 @@ class FileInfo:
     uncompressed: int
     archivable: bool
     is_directory: bool
+    is_file: bool
+    is_symlink: bool
     creationtime: Optional[datetime.datetime]
     crc32: Optional[int]
+
+    def __post_init__(self) -> None:
+        # Prevent ambiguous file type states.
+        # A file can't simultaneously be a directory, a regular file, or a symlink,
+        # but it’s allowed to be none of these (e.g., a junction or a socket).
+        flags = self.is_directory + self.is_file + self.is_symlink
+        if flags > 1:
+            raise ValueError(
+                f"At most one of is_directory, is_file, or is_symlink can be True; "
+                f"got is_directory={self.is_directory}, is_file={self.is_file}, is_symlink={self.is_symlink}"
+            )
 
 
 class SevenZipFile(contextlib.AbstractContextManager):
@@ -527,7 +573,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.reporterd.start()
         else:
             raise ValueError("Callback specified is not an instance of subclass of py7zr.callbacks.ExtractCallback class")
-        target_files: list[tuple[pathlib.Path, dict[str, Any]]] = []
+        target_files: list[tuple[pathlib.Path, FileInfoDict]] = []
         target_dirs: list[pathlib.Path] = []
         if path is not None:
             if isinstance(path, str):
@@ -801,101 +847,53 @@ class SevenZipFile(contextlib.AbstractContextManager):
         del self.sig_header
 
     @staticmethod
-    def _make_file_info(target: pathlib.Path, arcname: Optional[str] = None, dereference=False) -> dict[str, Any]:
-        f: dict[str, Any] = {}
-        f["origin"] = target
-        if arcname is not None:
-            f["filename"] = pathlib.Path(arcname).as_posix()
-        else:
-            f["filename"] = target.as_posix()
-        if sys.platform == "win32":
-            fstat = target.lstat()
-            if target.is_symlink():
-                if dereference:
-                    fstat = target.stat()
-                    if stat.S_ISDIR(fstat.st_mode):
-                        f["emptystream"] = True
-                        f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-                    else:
-                        f["emptystream"] = False
-                        f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
-                        f["uncompressed"] = fstat.st_size
-                else:
-                    f["emptystream"] = False
-                    f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-                    # TODO: handle junctions
-                    # f['attributes'] |= stat.FILE_ATTRIBUTE_REPARSE_POINT  # noqa
-            elif target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = fstat.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK  # noqa
-            elif target.is_file():
-                f["emptystream"] = False
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE  # noqa
-                f["uncompressed"] = fstat.st_size
-        elif (
-            sys.platform == "darwin"
-            or sys.platform.startswith("linux")
-            or sys.platform.startswith("freebsd")
-            or sys.platform.startswith("netbsd")
-            or sys.platform.startswith("sunos")
-            or sys.platform == "aix"
-        ):
-            fstat = target.lstat()
-            if target.is_symlink():
-                if dereference:
-                    fstat = target.stat()
-                    if stat.S_ISDIR(fstat.st_mode):
-                        f["emptystream"] = True
-                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
-                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                        f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-                    else:
-                        f["emptystream"] = False
-                        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-                        f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-                else:
-                    f["emptystream"] = False
-                    f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE") | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT")
-                    f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFLNK << 16)
-                    f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-            elif target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_DIRECTORY")
-                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IFDIR << 16)
-                f["attributes"] |= stat.S_IMODE(fstat.st_mode) << 16
-            elif target.is_file():
-                f["emptystream"] = False
-                f["uncompressed"] = fstat.st_size
-                f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-                f["attributes"] |= FILE_ATTRIBUTE_UNIX_EXTENSION | (stat.S_IMODE(fstat.st_mode) << 16)
-        else:
-            fstat = target.stat()
-            if target.is_dir():
-                f["emptystream"] = True
-                f["attributes"] = stat.FILE_ATTRIBUTE_DIRECTORY
-            elif target.is_file():
-                f["emptystream"] = False
-                f["uncompressed"] = fstat.st_size
-                f["attributes"] = stat.FILE_ATTRIBUTE_ARCHIVE
+    def _make_file_info(  # noqa
+        target: pathlib.Path, arcname: Optional[str] = None, dereference: bool = False
+    ) -> FileInfoDict:
+        origin = target
+        filename = pathlib.Path(arcname).as_posix() if arcname else target.as_posix()
+        target = target.resolve() if dereference else target
+        fstat = target.lstat()
+        f = FileInfoDict(
+            origin=origin,
+            filename=filename,
+            creationtime=ArchiveTimestamp.from_datetime(fstat.st_ctime),
+            lastwritetime=ArchiveTimestamp.from_datetime(fstat.st_mtime),
+            lastaccesstime=ArchiveTimestamp.from_datetime(fstat.st_atime),
+        )
 
-        f["creationtime"] = ArchiveTimestamp.from_datetime(fstat.st_ctime)
-        f["lastwritetime"] = ArchiveTimestamp.from_datetime(fstat.st_mtime)
-        f["lastaccesstime"] = ArchiveTimestamp.from_datetime(fstat.st_atime)
+        if target.is_symlink():
+            f["emptystream"] = False
+            f["attributes"] = MemberType.SYMLINK.attributes(fstat)
+            # TODO: handle junctions
+        elif target.is_dir():
+            f["emptystream"] = True
+            f["attributes"] = MemberType.DIRECTORY.attributes(fstat)
+        elif target.is_file():
+            f["emptystream"] = False
+            f["uncompressed"] = fstat.st_size
+            f["attributes"] = MemberType.FILE.attributes(fstat)
+
         return f
 
-    def _make_file_info_from_name(self, bio, size: int, arcname: str) -> dict[str, Any]:
-        f: dict[str, Any] = {}
-        f["origin"] = None
-        f["data"] = bio
-        f["filename"] = pathlib.Path(arcname).as_posix()
-        f["uncompressed"] = size
-        f["emptystream"] = False
-        f["attributes"] = getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-        f["creationtime"] = ArchiveTimestamp.from_now()
-        f["lastwritetime"] = ArchiveTimestamp.from_now()
-        return f
+    @staticmethod
+    def _make_file_info_from_name(
+        bio: IO[Any], size: int, arcname: str
+    ) -> FileInfoDict:
+        return FileInfoDict(
+            origin=None,
+            data=bio,
+            filename=pathlib.Path(arcname).as_posix(),
+            uncompressed=size,
+            emptystream=False,
+            attributes=MemberType.FILE.attributes(),
+            creationtime=ArchiveTimestamp.from_now(),
+            lastwritetime=ArchiveTimestamp.from_now(),
+            lastaccesstime=ArchiveTimestamp.from_now(),
+        )
 
-    def _sanitize_archive_arcname(self, arcname):
+    @staticmethod
+    def _sanitize_archive_arcname(arcname):
         if isinstance(arcname, str):
             path = arcname
         else:
@@ -914,7 +912,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise AbsolutePathError(arcname)
         return path
 
-    def _is_none_or_collection(self, t):
+    @staticmethod
+    def _is_none_or_collection(t):
         if t is None:
             return True
         if isinstance(t, str):
@@ -985,13 +984,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 lastmodified = filetime_to_dt(f.lastwritetime)
             alist.append(
                 FileInfo(
-                    f.filename,
-                    f.compressed,
-                    f.uncompressed,
-                    f.archivable,
-                    f.is_directory,
-                    lastmodified,
-                    f.crc32,
+                    filename=f.filename,
+                    compressed=f.compressed,
+                    uncompressed=f.uncompressed,
+                    archivable=f.archivable,
+                    is_file=f.is_file,
+                    is_directory=f.is_directory,
+                    is_symlink=f.is_symlink,
+                    creationtime=lastmodified,
+                    crc32=f.crc32,
                 )
             )
         return alist
