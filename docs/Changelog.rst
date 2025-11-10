@@ -9,8 +9,24 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
-`v1.0.0-rc2`_
-=============
+Changed
+-------
+- use stdlib for Zstandard support instead of pyzstd
+
+`v1.0.0rc3`_
+============
+
+Fixed
+-----
+- Adjust MANIFEST.in
+- Fix installation on python 3.13 by allowing pyppmd 1.2.0
+
+Changed
+-------
+- CI: update aarch64 tests on Ubuntu 24.04
+
+`v1.0.0rc2`_
+============
 
 There is big incompatible change after -rc1 version.
 
@@ -98,8 +114,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...HEAD
-.. _v1.0.0-rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0-rc2
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0rc3...HEAD
+.. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
+.. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
 .. _v1.0.0-rc1: https://github.com/miurahr/py7zr/compare/v0.22.0...v1.0.0-rc1
 .. _v0.22.0: https://github.com/miurahr/py7zr/compare/v0.21.1...v0.22.0
 .. _v0.21.1: https://github.com/miurahr/py7zr/compare/v0.21.0...v0.21.1
