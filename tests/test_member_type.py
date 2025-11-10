@@ -40,15 +40,10 @@ def test_member_type(type: MemberType, unix_file_type_bits: int, win32_file_attr
 
     if sys.platform == "win32":
         if type is MemberType.FILE:
-            assert attributes == (
-                stat.FILE_ATTRIBUTE_ARCHIVE | type.unix_extension_bits()
-            )
+            assert attributes == (stat.FILE_ATTRIBUTE_ARCHIVE | type.unix_extension_bits())
         else:
             assert attributes == (
-                mock_stat_result.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK
-                | type.unix_extension_bits()
+                mock_stat_result.st_file_attributes & FILE_ATTRIBUTE_WINDOWS_MASK | type.unix_extension_bits()
             )
     else:
-        assert attributes == win32_file_attributes | type.unix_extension_bits(
-            mock_stat_result  # type: ignore[arg-type]
-        )
+        assert attributes == win32_file_attributes | type.unix_extension_bits(mock_stat_result)  # type: ignore[arg-type]

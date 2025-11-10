@@ -39,8 +39,7 @@ class MemberType(enum.Enum):
         member2stat: dict[MemberType, int] = {
             MemberType.FILE: getattr(stat, "FILE_ATTRIBUTE_ARCHIVE"),
             MemberType.DIRECTORY: getattr(stat, "FILE_ATTRIBUTE_DIRECTORY"),
-            MemberType.SYMLINK: getattr(stat, "FILE_ATTRIBUTE_ARCHIVE")
-            | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT"),
+            MemberType.SYMLINK: getattr(stat, "FILE_ATTRIBUTE_ARCHIVE") | getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT"),
         }
         return member2stat[self]
 

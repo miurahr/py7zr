@@ -281,6 +281,7 @@ def test_cli_extract(tmp_path):
     ]
     check_output(expected, tmp_path)
 
+
 @pytest.mark.cli
 def test_cli_extract_member(tmp_path):
     arcfile = os.path.join(testdata_path, "test_1.7z")
@@ -295,6 +296,7 @@ def test_cli_extract_member(tmp_path):
         },
     ]
     check_output(expected, tmp_path)
+
 
 @pytest.mark.cli
 def test_cli_encrypted_extract(monkeypatch, tmp_path):
