@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
       "texttable",
       "pycryptodomex>=3.20.0",
-      'brotli>=1.1.0;platform_python_implementation=="CPython"',
+      'brotli>=1.2.0;platform_python_implementation=="CPython"',
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
       "pyzstd>=0.16.1",

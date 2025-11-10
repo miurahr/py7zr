@@ -518,7 +518,7 @@ class BrotliDecompressor(ISevenZipDecompressor):
                     data[:4], "Unauthorized and modified Brotli data (skipable frame) found."
                 )
             self._prefix_checked = True
-        return self._decompressor.process(data)
+        return self._decompressor.process(data, output_buffer_limit=max_length)
 
 
 class ZstdCompressor(ISevenZipCompressor):
