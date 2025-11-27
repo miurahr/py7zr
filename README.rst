@@ -390,7 +390,7 @@ There are several dependencies to support algorithms and CLI expressions.
 Package               Purpose
 ===================== ===============================
 `PyCryptodomex`_      7zAES encryption
-`PyZstd`_             ZStandard compression
+`backports.zstd`      ZStandard compression for Python before 3.14
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
@@ -402,7 +402,7 @@ Package               Purpose
 
 
 .. _`Pycryptodomex` : https://www.pycryptodome.org/en/latest/index.html
-.. _`PyZstd` : https://pypi.org/project/pyzstd
+.. _`backports.zstd` : https://pypi.org/project/backports.zstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
