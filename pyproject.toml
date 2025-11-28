@@ -31,9 +31,9 @@ dependencies = [
       'brotli>=1.1.0;platform_python_implementation=="CPython"',
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
-      "pyzstd>=0.16.1",
-      "pyppmd>=1.3.0",
-      "pybcj>=1.1.0",
+      "backports.zstd>=1.0.0;python_version<'3.14'",
+      "pyppmd>=1.3.1",
+      "pybcj>=1.0.6",
       "multivolumefile>=0.2.3",
       "inflate64>=1.0.4",
 ]
@@ -200,8 +200,6 @@ deps =
 [testenv:mypy]
 extras = check
 commands = mypy --html-report build/mypy py7zr
-deps =
-    pyzstd
 
 [testenv:check]
 extras = check

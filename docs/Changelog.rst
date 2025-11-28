@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Changed
+-------
+- use stdlib for Zstandard support instead of pyzstd
+
 `v1.0.0rc3`_
 ============
 
