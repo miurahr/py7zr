@@ -3,9 +3,6 @@ pool:
 
 strategy:
   matrix:
-    Python39:
-      python.version: '3.9'
-      TOXENV: py39
     Python310:
       python.version: '3.10'
       TOXENV: py310
@@ -18,6 +15,9 @@ strategy:
     Python313:
       python.version: '3.13'
       TOXENV: py313
+    Python314:
+      python.version: '3.14'
+      TOXENV: py314
 
 steps:
 - task: UsePythonVersion@0
