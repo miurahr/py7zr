@@ -32,10 +32,10 @@ dependencies = [
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
       "pyzstd>=0.16.1",
-      "pyppmd>=1.1.0,<1.3.0",
-      "pybcj>=1.0.0,<1.1.0",
+      "pyppmd>=1.3.0",
+      "pybcj>=1.1.0",
       "multivolumefile>=0.2.3",
-      "inflate64>=1.0.0,<1.1.0",
+      "inflate64>=1.0.4",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["readme", "version"]
