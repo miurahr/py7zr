@@ -15,11 +15,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -32,10 +32,10 @@ dependencies = [
       'brotlicffi>=1.1.0.0;platform_python_implementation=="PyPy"',
       'psutil;sys_platform!="cygwin"',
       "backports.zstd>=1.0.0;python_version<'3.14'",
-      "pyppmd>=1.1.0,<1.3.0",
-      "pybcj>=1.0.0,<1.1.0",
+      "pyppmd>=1.3.1",
+      "pybcj>=1.0.6",
       "multivolumefile>=0.2.3",
-      "inflate64>=1.0.0,<1.1.0",
+      "inflate64>=1.0.4",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
 dynamic = ["readme", "version"]
@@ -170,7 +170,7 @@ markers = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = mypy, check, pypy{39,310}, py{39,310,311,312,313}, py39d, docs, mprof, distcheck
+envlist = mypy, check, pypy310, py{310,311,312,313,314}, docs, mprof, distcheck
 
 [testenv]
 passenv =
@@ -196,13 +196,6 @@ commands =
 deps =
     memory_profiler
     matplotlib
-
-[testenv:py39d]
-extras = test, debug
-commands =
-    python3.9d -m pytest -v --no-cov -R : -k "extract_lzma_1 or extract_encrypted_2 or compress_simple_file_0 or encrypt_simple_file_0"
-deps =
-    pytest-leaks
 
 [testenv:mypy]
 extras = check
@@ -240,10 +233,10 @@ commands =
 
 [gh-actions]
 python =
-    3.9: py39
     3.10: py310
     3.11: py311
     3.12: py312
     3.13: py313
-    pypy-3.9: pypy39
+    3.14: py314
+    pypy-3.10: pypy310
 """

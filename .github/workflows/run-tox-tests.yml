@@ -16,31 +16,34 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-latest]
+        os: [ubuntu-22.04, windows-latest, ubuntu-24.04-arm, windows-11-arm]
         python-version: [
-            "3.9",
             "3.10",
             "3.11",
             "3.12",
             "3.13",
-            "pypy-3.9",
+            "3.14",
+            "pypy-3.10",
         ]
         include:
           - os: macos-latest
-            python-version: "3.11"
+            python-version: "3.13"
         exclude:
           - os: windows-latest
-            python-version: 'pypy-3.9'
+            python-version: 'pypy-3.10'
+          - os: windows-11-arm
+            python-version: 'pypy-3.10'
+          - os: windows-11-arm
+            python-version: '3.10'
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 20
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: x64
       - name: Install system library(linux)
         if: runner.os == 'linux'
         run: |
@@ -123,48 +126,10 @@ jobs:
         env:
           PYTEST_ADDOPTS: "--no-cov --run-slow -k extract_high_compression_rate"
 
-  test_arm64:
-    name: Test on ARM64 Ubuntu
-    runs-on: ubuntu-24.04-arm
-    strategy:
-      matrix:
-        python-version: ["3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 20
-      - name: Setup python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: arm64
-      - name: Install system library
-        run: |
-          sudo apt-get update -q -y
-          sudo apt-get install -q -y libarchive-dev graphviz
-      - name: Install dependencies
-        run: |
-          pip install -U pip tox wheel setuptools setuptools_scm[toml]
-          pip install tox-gh-actions coveralls coverage[toml]
-      - name: Test project with tox
-        run: |
-          tox
-          coverage xml -o cobertura.xml
-        env:
-          PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
-      - name: Send coverage to coveralls
-        run: |
-          coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_PARALLEL: true
-          COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-arm64
-
   finish:
     runs-on: ubuntu-latest
     name: finish parallel build
-    needs: [build, test_arm64]
+    needs: build
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
