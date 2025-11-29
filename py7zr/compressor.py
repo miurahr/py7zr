@@ -81,7 +81,7 @@ else:
 
 class ISevenZipCompressor(ABC):
     @abstractmethod
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         """
         Compress data (interface)
         :param data: input data
@@ -100,7 +100,7 @@ class ISevenZipCompressor(ABC):
 
 class ISevenZipDecompressor(ABC):
     @abstractmethod
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         """
         Decompress data (interface)
         :param data: input data
@@ -116,7 +116,7 @@ class AESCompressor(ISevenZipCompressor):
 
     AES_CBC_BLOCKSIZE = 16
 
-    def __init__(self, password: str, blocksize: Optional[int] = None) -> None:
+    def __init__(self, password: str, blocksize: int | None = None) -> None:
         self.cycles = 19  # as same as p7zip
         self.iv = get_random_bytes(16)
         self.salt = b""
@@ -185,7 +185,7 @@ class AESCompressor(ISevenZipCompressor):
 class AESDecompressor(ISevenZipDecompressor):
     """Decrypt data"""
 
-    def __init__(self, aes_properties: bytes, password: str, blocksize: Optional[int] = None) -> None:
+    def __init__(self, aes_properties: bytes, password: str, blocksize: int | None = None) -> None:
         firstbyte = aes_properties[0]
         numcyclespower = firstbyte & 0x3F
         if firstbyte & 0xC0 != 0:
@@ -211,7 +211,7 @@ class AESDecompressor(ISevenZipDecompressor):
         else:
             raise UnsupportedCompressionMethodError(firstbyte, "Wrong 7zAES properties")
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         currentlen = len(self.buf) + len(data)
         # when aligned to 16 bytes(expected)
         if len(data) > 0 and (currentlen & 0x0F) == 0:
@@ -259,7 +259,7 @@ class DeflateDecompressor(ISevenZipDecompressor):
         self.flushed = False
         self._decompressor = zlib.decompressobj(wbits=-15)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         if len(data) == 0:
             if self.flushed:
                 return b""
@@ -278,7 +278,7 @@ class Deflate64Compressor(ISevenZipCompressor):
             self._compressor = inflate64.Deflater()
             self._enabled = True
 
-    def compress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         if not self._enabled:
             raise UnsupportedCompressionMethodError(None, "deflate64 is disabled on pypy.")
         return self._compressor.deflate(data)
@@ -301,7 +301,7 @@ class Deflate64Decompressor(ISevenZipDecompressor):
             self._decompressor = inflate64.Inflater()
             self._enabled = True
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         if not self._enabled:
             raise UnsupportedCompressionMethodError(None, "deflate64 is disabled on pypy.")
         if len(data) == 0:
@@ -314,7 +314,7 @@ class Deflate64Decompressor(ISevenZipDecompressor):
 
 
 class CopyCompressor(ISevenZipCompressor):
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return bytes(data)
 
     def flush(self):
@@ -322,14 +322,14 @@ class CopyCompressor(ISevenZipCompressor):
 
 
 class CopyDecompressor(ISevenZipDecompressor):
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return bytes(data)
 
 
 class PpmdDecompressor(ISevenZipDecompressor):
     """Decompress PPMd compressed data"""
 
-    def __init__(self, properties: bytes, blocksize: Optional[int] = None):
+    def __init__(self, properties: bytes, blocksize: int | None = None):
         if not isinstance(properties, bytes):
             raise UnsupportedCompressionMethodError(properties, "Unknown type of properties is passed")
         if len(properties) == 5:
@@ -340,7 +340,7 @@ class PpmdDecompressor(ISevenZipDecompressor):
             raise UnsupportedCompressionMethodError(properties, "Unknown size of properties is passed")
         self.decoder = pyppmd.Ppmd7Decoder(order, mem)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length=-1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length=-1) -> bytes:
         if len(data) == 0 and self.decoder.needs_input:
             return self.decoder.decode(b"\0", max_length)
         return self.decoder.decode(data, max_length)
@@ -353,7 +353,7 @@ class PpmdCompressor(ISevenZipCompressor):
         order, mem = self._decode_property(properties)
         self.encoder = pyppmd.Ppmd7Encoder(order, mem)
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -364,7 +364,7 @@ class PpmdCompressor(ISevenZipCompressor):
         return order, mem
 
     @classmethod
-    def encode_filter_properties(cls, filter: dict[str, Union[str, int]]):
+    def encode_filter_properties(cls, filter: dict[str, str | int]):
         order = filter.get("order", 8)
         mem = filter.get("mem", 24)
         if isinstance(mem, str):
@@ -390,7 +390,7 @@ class BcjSparcDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
         self.decoder = bcj.SparcDecoder(size)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
 
 
@@ -398,7 +398,7 @@ class BcjSparcEncoder(ISevenZipCompressor):
     def __init__(self):
         self.encoder = bcj.SparcEncoder()
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -409,7 +409,7 @@ class BcjPpcDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
         self.decoder = bcj.PPCDecoder(size)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
 
 
@@ -417,7 +417,7 @@ class BcjPpcEncoder(ISevenZipCompressor):
     def __init__(self):
         self.encoder = bcj.PPCEncoder()
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -428,7 +428,7 @@ class BcjArmtDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
         self.decoder = bcj.ARMTDecoder(size)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
 
 
@@ -436,7 +436,7 @@ class BcjArmtEncoder(ISevenZipCompressor):
     def __init__(self):
         self.encoder = bcj.ARMTEncoder()
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -447,7 +447,7 @@ class BcjArmDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
         self.decoder = bcj.ARMDecoder(size)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
 
 
@@ -455,7 +455,7 @@ class BcjArmEncoder(ISevenZipCompressor):
     def __init__(self):
         self.encoder = bcj.ARMEncoder()
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -466,7 +466,7 @@ class BCJDecoder(ISevenZipDecompressor):
     def __init__(self, size: int):
         self.decoder = bcj.BCJDecoder(size)
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decoder.decode(data)
 
 
@@ -474,7 +474,7 @@ class BCJEncoder(ISevenZipCompressor):
     def __init__(self):
         self.encoder = bcj.BCJEncoder()
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.encoder.encode(data)
 
     def flush(self):
@@ -490,7 +490,7 @@ class BrotliCompressor(ISevenZipCompressor):
             )
         self._compressor = brotli.Compressor(quality=level)
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self._compressor.process(data)
 
     def flush(self) -> bytes:
@@ -514,7 +514,7 @@ class BrotliDecompressor(ISevenZipDecompressor):
         self._prefix_checked = False
         self._decompressor = brotli.Decompressor()
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1):
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1):
         if not self._prefix_checked:
             # check first 4bytes
             if data[:4] == b"\x50\x2a\x4d\x18":
@@ -529,7 +529,7 @@ class ZstdCompressor(ISevenZipCompressor):
     def __init__(self, level: int):
         self.compressor = zstd.ZstdCompressor(level)
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self.compressor.compress(data)
 
     def flush(self) -> bytes:
@@ -544,7 +544,7 @@ class ZstdDecompressor(ISevenZipDecompressor):
             raise UnsupportedCompressionMethodError(properties, "Zstd version of archive is higher than us.")
         self.decompressor = zstd.ZstdDecompressor()
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self.decompressor.decompress(data)
 
 
@@ -569,7 +569,7 @@ class LZMA1Compressor(ISevenZipCompressor):
     def __init__(self, filters):
         self._compressor = lzma.LZMACompressor(format=lzma.FORMAT_RAW, filters=filters)
 
-    def compress(self, data: Union[bytes, bytearray, memoryview]) -> bytes:
+    def compress(self, data: bytes | bytearray | memoryview) -> bytes:
         return self._compressor.compress(data)
 
     def flush(self) -> bytes:
@@ -581,7 +581,7 @@ class LZMA1Decompressor(ISevenZipDecompressor):
         self._decompressor = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
         self.unpacksize = unpacksize
 
-    def decompress(self, data: Union[bytes, bytearray, memoryview], max_length: int = -1) -> bytes:
+    def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self._decompressor.decompress(data, max_length)
 
 
@@ -594,9 +594,9 @@ class SevenZipDecompressor:
         coders: list[dict[str, Any]],
         packsize: int,
         unpacksizes: list[int],
-        crc: Optional[int],
-        password: Optional[str] = None,
-        blocksize: Optional[int] = None,
+        crc: int | None,
+        password: str | None = None,
+        blocksize: int | None = None,
     ) -> None:
         self.input_size = packsize
         self.unpacksizes = unpacksizes
@@ -635,7 +635,7 @@ class SevenZipDecompressor:
                 if target_compressor and has_bcj:
                     self.methods_map[bcj_index] = False
                     break
-        self.chain: list[Union[bz2.BZ2Decompressor, lzma.LZMADecompressor, ISevenZipDecompressor]] = []
+        self.chain: list[bz2.BZ2Decompressor | lzma.LZMADecompressor | ISevenZipDecompressor] = []
         self._unpacksizes: list[int] = []
         self.input_size = self.input_size
         shift = 0
@@ -805,7 +805,7 @@ class SevenZipCompressor:
         "_unpacksizes",
     ]
 
-    def __init__(self, filters=None, password=None, blocksize: Optional[int] = None):
+    def __init__(self, filters=None, password=None, blocksize: int | None = None):
         self.filters: list[dict[str, Any]] = []
         self.chain: list[ISevenZipCompressor] = []
         self.digest = 0
