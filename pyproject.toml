@@ -53,7 +53,6 @@ readme = {file = ["README.rst"]}
 py7zr = "py7zr.__main__:main"
 
 [project.optional-dependencies]
-test_compat = ["libarchive-c"]
 test = [
       "pytest",
       "pytest-benchmark",
@@ -125,7 +124,7 @@ exclude_lines = ["if __name__ == .__main__.:", "pragma: no-cover", "@abstract", 
 
 [tool.black]
 line-length = 125
-target-version = ['py39']
+target-version = ['py310']
 
 [tool.isort]
 known_first_party = ['py7zr']
@@ -167,76 +166,77 @@ markers = [
 ]
 
 [tool.tox]
+requires = ["tox>=4.19"]
+envlist = [
+    "mypy",
+    "check",
+    "pypy-3.10",
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+    "3.14",
+    "docs",
+    "mprof",
+    "distcheck"
+]
+isolated_build = true
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+passenv = [
+    "GITHUB_*",
+    "PYTEST_ADDOPTS",
+    "COVERALLS_*",
+    "LIBARCHIVE"
+]
+extras = ["test"]
+commands = [["python", "-m", "pytest", "-vv"]]
+
+[tool.tox.env.mprof]
+extras = ["test", "debug"]
+commands = [
+    ["mprof", "run", "--multiprocess", "pytest"],
+    ["mprof", "plot", "--output", "memory-profile.png"]
+]
+deps = ["memory_profiler", "matplotlib"]
+
+[tool.tox.env.mypy]
+extras = ["check"]
+commands = [["mypy", "--html-report", "build/mypy", "py7zr"]]
+
+[tool.tox.env.check]
+extras = ["check"]
+commands = [["check-manifest", "{toxinidir}"], ["flake8", "py7zr", "tests"]]
+
+[tool.tox.env.distcheck]
+extras = ["check"]
+commands = [["python", "-m", "build", "--sdist"], ["twine", "check", "dist/*"]]
+
+[tool.tox.env.clean]
+deps = ["coverage[toml]"]
+skip_install = true
+commands = [["coverage", "erase"]]
+
+[tool.tox.env.coveralls]
+deps = ["coveralls"]
+skip_install = true
+commands = [["coveralls", "[]"]]
+
+[tool.tox.env.docs]
+extras = ["docs"]
+commands = [
+    ["sphinx-build", "{posargs:-E}", "-b", "html", "docs", "build/docs"],
+    ["sphinx-build", "-b", "linkcheck", "docs", "build/docs"]
+]
+
 legacy_tox_ini = """
-[tox]
-isolated_build = True
-envlist = mypy, check, pypy310, py{310,311,312,313,314}, docs, mprof, distcheck
-
-[testenv]
-passenv =
-    GITHUB_*
-    PYTEST_ADDOPTS
-    COVERALLS_*
-    LIBARCHIVE
-extras = test
-commands =
-    python -m pytest -vv
-
-[testenv:py39]
-extras = test, test_compat
-
-[testenv:pypy39]
-extras = test, test_compat
-
-[testenv:mprof]
-extras = test, debug
-commands =
-    mprof run --multiprocess pytest
-    mprof plot --output memory-profile.png
-deps =
-    memory_profiler
-    matplotlib
-
-[testenv:mypy]
-extras = check
-commands = mypy --html-report build/mypy py7zr
-
-[testenv:check]
-extras = check
-commands =
-    check-manifest {toxinidir}
-    flake8 py7zr tests
-
-[testenv:distcheck]
-extras = check
-commands =
-    python -m build --sdist
-    twine check dist/*
-
-[testenv:clean]
-deps = coverage[toml]>=5.2
-skip_install = true
-commands = coverage erase
-
-[testenv:coveralls]
-deps =
-    coveralls
-skip_install = true
-commands =
-    coveralls []
-
-[testenv:docs]
-extras = docs
-commands =
-    sphinx-build {posargs:-E} -b html docs build/docs
-    sphinx-build -b linkcheck docs build/docs
-
 [gh-actions]
 python =
-    3.10: py310
-    3.11: py311
-    3.12: py312
-    3.13: py313
-    3.14: py314
-    pypy-3.10: pypy310
+    3.10: 3.10
+    3.11: 3.11
+    3.12: 3.12
+    3.13: 3.13
+    3.14: 3.14
+    pypy-3.10: pypy-310
 """
