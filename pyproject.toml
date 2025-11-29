@@ -1,6 +1,6 @@
 [project]
 name = "py7zr"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 description = "Pure python 7-zip library"
 license = {text = "LGPL-2.1-or-later"}
 authors = [
@@ -60,20 +60,20 @@ test = [
       "pytest-remotedata",
       "pytest-timeout",
       "py-cpuinfo",
-      "coverage[toml]>=5.2",
-      "coveralls>=2.1.1",
+      "coverage[toml]>=7.10.7",
+      "coveralls>=4.0.2",
       "requests",
       "pytest-httpserver",
 ]
 docs = [
-      "sphinx>=7.0.0",
+      "sphinx>=8.0.0",
       "sphinx-py3doc-enhanced-theme",
       "sphinx-a4doc",
       "docutils",
 ]
 check = [
-      "mypy>=1.10.0",
-      "mypy_extensions>=1.0.0",
+      "mypy>=1.17.0",
+      "mypy_extensions>=1.1.0",
       "lxml",
       "types-psutil",
       "check-manifest",
@@ -81,11 +81,11 @@ check = [
       "flake8-black>=0.3.6",
       "flake8-deprecated",
       "flake8-isort",
-      "isort>=5.13.2",
+      "isort>=7.0.0",
       "pygments",
       "readme-renderer",
       "twine",
-      "black>=24.8.0",
+      "black>=25.1.0",
       "pylint",
 ]
 debug = [
@@ -102,7 +102,7 @@ Source = "https://github.com/miurahr/py7zr"
 Changelog = "https://py7zr.readthedocs.io/en/latest/Changelog.html"
 
 [build-system]
-requires = ["setuptools>=63", "build", "setuptools_scm[toml]>=7.0.5"]
+requires = ["setuptools>=80", "build", "setuptools_scm[toml]>=9.2.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
