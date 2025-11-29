@@ -13,6 +13,17 @@ Changed
 -------
 - use stdlib for Zstandard support instead of pyzstd
 
+`v1.0.0`_
+=========
+
+- Celebrating the official 1.0.0 release!
+
+Changed
+-------
+- CI: check on Linux on ARM64 with GitHub hosted ARM64 runner.
+- Improve issue report template
+- Remove Travis-CI button from Documentation
+
 `v1.0.0rc3`_
 ============
 
