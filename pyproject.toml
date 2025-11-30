@@ -164,76 +164,74 @@ markers = [
 ]
 
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-isolated_build = True
-envlist = mypy, check, pypy311, py{310,311,312,313,314}, docs, mprof, distcheck
+requires = ["tox>=4.19"]
+isolated_build = true
+envlist = [
+    "mypy",
+    "check",
+    "pypy-3.11",
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+    "3.14",
+    "docs",
+    "mprof",
+    "distcheck",
+    "clean",
+]
 
-[testenv]
-passenv =
-    GITHUB_*
-    PYTEST_ADDOPTS
-    COVERALLS_*
-    LIBARCHIVE
-extras = test
-commands =
-    python -m pytest -vv
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+passenv = [
+    "GITHUB_*",
+    "PYTEST_ADDOPTS",
+    "COVERALLS_*",
+    "LIBARCHIVE"
+]
+extras = ["test"]
+commands = [["python", "-m", "pytest", "-vv"]]
 
-[testenv:py310]
-extras = test, test_compat
+[tool.tox.env.check]
+extras = ["check"]
+commands = [
+    ["check-manifest", "{toxinidir}"],
+    ["flake8", "pyzr", "tests"]
+]
 
-[testenv:pypy311]
-extras = test, test_compat
+[tool.tox.env.docs]
+extras = ["docs"]
+commands = [
+    ["sphinx-build", "{posargs:-E}", "-b", "html", "docs", "build/docs"],
+    ["sphinx-build", "-b", "linkcheck", "docs", "build/docs"]
+]
 
-[testenv:mprof]
-extras = test, debug
-commands =
-    mprof run --multiprocess pytest
-    mprof plot --output memory-profile.png
-deps =
-    memory_profiler
-    matplotlib
+[tool.tox.env.distcheck]
+extras = ["check"]
+commands = [
+    ["python", "-m", "build", "--sdist"],
+    ["twine", "check", "dist/*"]
+]
 
-[testenv:mypy]
-extras = check
-commands = mypy --html-report build/mypy py7zr
+[tool.tox.env.310]
+extras = ["test", "test_compat"]
 
-[testenv:check]
-extras = check
-commands =
-    check-manifest {toxinidir}
-    flake8 py7zr tests
+[tool.tox.env.311]
+extras = ["test", "test_compat"]
 
-[testenv:distcheck]
-extras = check
-commands =
-    python -m build --sdist
-    twine check dist/*
+[tool.tox.env.mprof]
+extras = ["test", "debug"]
+deps = ["memory_profiler", "matplotlib"]
+commands = [
+    ["mprof", "run", "--multiprocess", "pytest"],
+    ["mprof", "plot", "--output", "memory-profile.png"]
+]
 
-[testenv:clean]
-deps = coverage[toml]>=7.10.7
+[tool.tox.env.mypy]
+extras = ["check"]
+commands = [["mypy", "--html-report", "build/mypy", "py7zr"]]
+
+[tool.tox.env.clean]
+deps = ["coverage[toml]>=7.10.7"]
 skip_install = true
-commands = coverage erase
-
-[testenv:coveralls]
-deps =
-    coveralls
-skip_install = true
-commands =
-    coveralls []
-
-[testenv:docs]
-extras = docs
-commands =
-    sphinx-build {posargs:-E} -b html docs build/docs
-    sphinx-build -b linkcheck docs build/docs
-
-[gh-actions]
-python =
-    3.10: py310
-    3.11: py311
-    3.12: py312
-    3.13: py313
-    3.14: py314
-    pypy-3.11: pypy311
-"""
+commands = [["coverage", "erase"]]
