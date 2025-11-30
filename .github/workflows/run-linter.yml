@@ -46,6 +46,8 @@ jobs:
           python-version: '3.13'
       - name: Install dependencies
         run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y graphviz libcairo2-dev
           pip install -U pip tox wheel setuptools setuptools_scm[toml]
       - name: docs build and link check
         run: |
