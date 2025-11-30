@@ -2,13 +2,13 @@
 name = "py7zr"
 requires-python = ">=3.10"
 description = "Pure python 7-zip library"
-license = {text = "LGPL-2.1-or-later"}
+readme = "README.rst"
+license = "LGPL-2.1-or-later"
 authors = [
     {name = "Hiroshi Miura", email = "miurahr@linux.com"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX",
@@ -38,16 +38,13 @@ dependencies = [
       "inflate64>=1.0.4",
 ]
 keywords = ['compression', '7zip', 'lzma', 'zstandard', 'ppmd', 'lzma2', 'bcj', 'archive']
-dynamic = ["readme", "version"]
+dynamic = ["version"]
 
 [tool.setuptools]
 packages = ["py7zr"]
 
 [tool.setuptools.package-data]
 py7zr = ["py.typed"]
-
-[tool.setuptools.dynamic]
-readme = {file = ["README.rst"]}
 
 [project.scripts]
 py7zr = "py7zr.__main__:main"
@@ -102,13 +99,13 @@ Source = "https://github.com/miurahr/py7zr"
 Changelog = "https://py7zr.readthedocs.io/en/latest/Changelog.html"
 
 [build-system]
-requires = ["setuptools>=80", "build", "setuptools_scm[toml]>=9.2.0"]
+requires = ["setuptools>=80", "setuptools_scm[toml]>=9.2.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
-write_to = "py7zr/version.py"
-write_to_template = """
+version_file = "py7zr/version.py"
+version_file_template = """
 __version__ = \"{version}\"
 """
 tag_regex = "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
@@ -229,14 +226,3 @@ commands = [
     ["sphinx-build", "{posargs:-E}", "-b", "html", "docs", "build/docs"],
     ["sphinx-build", "-b", "linkcheck", "docs", "build/docs"]
 ]
-
-legacy_tox_ini = """
-[gh-actions]
-python =
-    3.10: 3.10
-    3.11: 3.11
-    3.12: 3.12
-    3.13: 3.13
-    3.14: 3.14
-    pypy-3.10: pypy-310
-"""
