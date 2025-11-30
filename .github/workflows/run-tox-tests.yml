@@ -27,6 +27,8 @@ jobs:
         ]
         include:
           - os: macos-latest
+            python-version: "pypy-3.11"
+          - os: macos-latest
             python-version: "3.13"
         exclude:
           - os: windows-11-arm
