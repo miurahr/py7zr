@@ -5,20 +5,19 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', 'pypy-3.9']
+        python-version: ['3.13', 'pypy-3.11']
     name: Benchmark on Python ${{ matrix.python-version }}
     env:
       ISSUE_NUMBER: 297
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: x64
       - name: Install dependencies
         run: |
           pip install -U pip

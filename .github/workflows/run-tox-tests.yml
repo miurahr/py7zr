@@ -23,21 +23,17 @@ jobs:
             "3.12",
             "3.13",
             "3.14",
-            "pypy-3.10",
+            "pypy-3.11",
         ]
         include:
           - os: macos-latest
             python-version: "3.13"
         exclude:
-          - os: windows-latest
-            python-version: 'pypy-3.10'
-          - os: windows-11-arm
-            python-version: 'pypy-3.10'
           - os: windows-11-arm
             python-version: '3.10'
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 20
       - name: Setup python
@@ -105,11 +101,11 @@ jobs:
     name: Test slow cases
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 20
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
           architecture: x64
