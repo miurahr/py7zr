@@ -88,12 +88,12 @@ if sys.platform == "win32":
             ("u", ReparseBufferField),
         ]
 
-    def is_reparse_point(path: Union[str, pathlib.Path]) -> bool:
+    def is_reparse_point(path: str | pathlib.Path) -> bool:
         GetFileAttributesW.argtypes = [LPCWSTR]
         GetFileAttributesW.restype = DWORD
         return _check_bit(GetFileAttributesW(str(path)), stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
-    def readlink(path: Union[str, pathlib.Path]) -> Union[str, pathlib.WindowsPath]:
+    def readlink(path: str | pathlib.Path) -> str | pathlib.WindowsPath:
         # FILE_FLAG_OPEN_REPARSE_POINT alone is not enough if 'path'
         # is a symbolic link to a directory or a NTFS junction.
         # We need to set FILE_FLAG_BACKUP_SEMANTICS as well.
