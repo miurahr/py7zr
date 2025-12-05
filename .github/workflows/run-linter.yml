@@ -23,7 +23,7 @@ jobs:
           python-version: '3.13'
       - name: Setup reviewdog
         run: |
-          /usr/bin/sh utils/reviewdog_install.sh -b ./bin/ v0.20.3
+          /usr/bin/sh utils/reviewdog_install.sh -b ./bin/ v0.21.0
       - name: Install dependencies
         run: |
           pip install -U pip tox wheel setuptools setuptools_scm[toml]
