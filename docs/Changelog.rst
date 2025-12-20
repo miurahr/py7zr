@@ -9,9 +9,33 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.1.0rc1`_
+============
+
+Security
+--------
+- Bump Brotli@1.2.0 and limit output memory size (#686)
+
+Added
+-----
+- Support Python 3.14
+
 Changed
 -------
-- use stdlib for Zstandard support instead of pyzstd
+- CI: update target Python versions, GitHub Actions configurations
+- dependency: pyppmd@1.3.0, pybcj@1.0.6, inflate64@1.0.4
+- Type hint syntax for Python 3.10 and later (#690)
+- Update tox configuration with TOML native (#689)
+- use stdlib for Zstandard support instead of pyzstd (#682)
+- fix(is_7zfile): accept any path-like instead of just pathlib.Path (#663)
+- Accept IO[bytes] instead of BinaryIO (#661)
+- Document: Fix WriterFactory example (#660)
+- getInfo() returns FileInfo object (#676)
+- make FileInfo and ArchiveInfo dataclasses (#678)
+
+Removed
+-------
+- Drop support for Python 3.9 (#691)
 
 `v1.0.0`_
 =========
@@ -125,7 +149,9 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0rc3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.0rc1...HEAD
+.. _v1.1.0rc1: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc1
+.. _v1.0.0: https://github.com/miurahr/py7zr/compare/v1.0.0-rc3...v1.0.0
 .. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
 .. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
 .. _v1.0.0-rc1: https://github.com/miurahr/py7zr/compare/v0.22.0...v1.0.0-rc1
