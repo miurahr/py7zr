@@ -25,11 +25,11 @@ from typing import Optional, Union
 class Py7zIO(ABC):
 
     @abstractmethod
-    def write(self, s: Union[bytes, bytearray]) -> int:
+    def write(self, s: bytes | bytearray) -> int:
         pass
 
     @abstractmethod
-    def read(self, size: Optional[int] = None) -> bytes:
+    def read(self, size: int | None = None) -> bytes:
         pass
 
     @abstractmethod
@@ -51,12 +51,12 @@ class HashIO(Py7zIO):
         self.hash = hashlib.sha256()
         self._size: int = 0
 
-    def write(self, s: Union[bytes, bytearray]) -> int:
+    def write(self, s: bytes | bytearray) -> int:
         self._size += len(s)
         self.hash.update(s)
         return len(s)
 
-    def read(self, length: Optional[int] = None) -> bytes:
+    def read(self, length: int | None = None) -> bytes:
         return self.hash.digest()
 
     def seek(self, offset: int, whence: int = 0) -> int:
@@ -75,13 +75,13 @@ class Py7zBytesIO(Py7zIO):
         self.limit = limit
         self._buffer = io.BytesIO()
 
-    def write(self, s: Union[bytes, bytearray]) -> int:
+    def write(self, s: bytes | bytearray) -> int:
         if self.size() < self.limit:
             return self._buffer.write(s)
         else:
             return 0
 
-    def read(self, size: Optional[int] = None) -> bytes:
+    def read(self, size: int | None = None) -> bytes:
         return self._buffer.read(size)
 
     def seek(self, offset: int, whence: int = 0) -> int:
@@ -142,7 +142,7 @@ class MemIO:
     """pathlib.Path-like IO class to write memory"""
 
     def __init__(self, fname: str, factory: WriterFactory):
-        self._buf: Optional[Py7zIO] = None
+        self._buf: Py7zIO | None = None
         self._closed = True
         self.fname = fname
         self.factory = factory
@@ -171,12 +171,12 @@ class MemIO:
         if self._buf is not None:
             self._buf.flush()
 
-    def write(self, s: Union[bytes, bytearray]) -> int:
+    def write(self, s: bytes | bytearray) -> int:
         if self._buf is None:
             return -1
         return self._buf.write(s)
 
-    def read(self, length: Optional[int] = None) -> bytes:
+    def read(self, length: int | None = None) -> bytes:
         if self._buf is None:
             return b""
         if length is not None:
@@ -268,7 +268,7 @@ class Buffer:
         self._buflen = 0
         self.view = memoryview(self._buf[0:0])
 
-    def add(self, data: Union[bytes, bytearray, memoryview]):
+    def add(self, data: bytes | bytearray | memoryview):
         length = len(data)
         self._buf[self._buflen :] = data
         self._buflen += length
@@ -278,7 +278,7 @@ class Buffer:
         self._buflen = 0
         self.view = memoryview(self._buf[0:0])
 
-    def set(self, data: Union[bytes, bytearray, memoryview]) -> None:
+    def set(self, data: bytes | bytearray | memoryview) -> None:
         length = len(data)
         self._buf[0:] = data
         self._buflen = length

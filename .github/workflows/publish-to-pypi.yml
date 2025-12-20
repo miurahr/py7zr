@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Python 3.13🐍
         uses: actions/setup-python@v6
         with:
@@ -30,7 +30,7 @@ jobs:
       - name: twine check
         run: python -m twine check dist/*
       - name: upload dist artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dists
           path: dist/
@@ -44,15 +44,15 @@ jobs:
       id-token: write
     steps:
       - name: download dist artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: dists
           path: dist/
       - name: Publish distribution 📦 to Test PyPI
         if: ${{ startsWith(github.event.ref, 'refs/heads/releases') }}
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # release/v1.12.4
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1.13.0
         with:
           repository-url: https://test.pypi.org/legacy/
       - name: Publish distribution 📦 to PyPI
         if: startsWith(github.event.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # release/v1.12.4
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # release/v1.13.0
