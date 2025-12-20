@@ -9,8 +9,21 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
-`v1.1.0rc1`_
+`v1.1.0rc2`_
 ============
+
+Changed
+-------
+- CI: update workflows (#695,#696,#697,#698,#692)
+- Update tox configuration with TOML native (#689)
+- Type hint syntax for Python 3.10 and later (#690)
+
+Document
+--------
+- README: Minimum & Recommended Python/PyPY versions (#700)
+
+v1.1.0rc1
+=========
 
 Security
 --------
@@ -24,8 +37,6 @@ Changed
 -------
 - CI: update target Python versions, GitHub Actions configurations
 - dependency: pyppmd@1.3.0, pybcj@1.0.6, inflate64@1.0.4
-- Type hint syntax for Python 3.10 and later (#690)
-- Update tox configuration with TOML native (#689)
 - use stdlib for Zstandard support instead of pyzstd (#682)
 - fix(is_7zfile): accept any path-like instead of just pathlib.Path (#663)
 - Accept IO[bytes] instead of BinaryIO (#661)
@@ -150,7 +161,7 @@ Changed
 
 .. History links
 .. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.0rc1...HEAD
-.. _v1.1.0rc1: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc1
+.. _v1.1.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc2
 .. _v1.0.0: https://github.com/miurahr/py7zr/compare/v1.0.0-rc3...v1.0.0
 .. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
 .. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
