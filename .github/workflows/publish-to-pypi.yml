@@ -24,7 +24,7 @@ jobs:
       - name: Ensure nearest tag is present
         id: expandFetchDepth
         run: |
-          while ! git rev-list --tags --abbrev=0 >/dev/null 2>&1; do
+          while ! git describe --tags --abbrev=0 >/dev/null 2>&1; do
             CUR_DEPTH=$(git rev-list --count HEAD)
             NEW_DEPTH=$(( CUR_DEPTH * 2 ))
             if [ "$NEW_DEPTH" -gt 512 ]; then
