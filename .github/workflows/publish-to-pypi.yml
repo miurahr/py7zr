@@ -24,12 +24,17 @@ jobs:
       - name: Ensure nearest tag is present
         id: expandFetchDepth
         run: |
-          while ! git rev-list --tags --max-count=1 | grep -q .; do
+          while ! git rev-list --tags --abbrev=0 >/dev/null 2>&1; do
             CUR_DEPTH=$(git rev-list --count HEAD)
             NEW_DEPTH=$(( CUR_DEPTH * 2 ))
-            if [ "$NEW_DEPTH" -gt 256 ]; then
-              echo "Unable to find nearest tag within 256 commits"
-              exit 1
+            if [ "$NEW_DEPTH" -gt 512 ]; then
+              echo "Reachable tag not found within 512 commits. Attempting unshallow fetch..."
+              git fetch --unshallow --tags origin "$GITHUB_REF" || true
+              if ! git describe --tags --abbrev=0 >/dev/null 2>&1; then
+                echo "Error: No tags found in the history of this branch."
+                exit 1
+              fi
+              break
             fi
             echo "Fetching additional $NEW_DEPTH commits ..."
             git fetch --depth=$NEW_DEPTH --tags origin "$GITHUB_REF"
