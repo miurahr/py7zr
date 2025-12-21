@@ -91,7 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: py-${{ matrix.python-version }}-${{ matrix.os }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: ( runner.os != 'Windows' ) && ( github.event_name == 'push' ) && ( github.ref == 'refs/heads/master' )
         with:
           distribution: 'temurin'
