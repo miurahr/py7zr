@@ -9,14 +9,14 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
-`v1.1.0rc3`_
+`v1.1.0rc4`_
 ============
 
 - CI: Ensure nearest tag is fetched in `publish-to-pypi` workflow
 - Streamlined pypi source package by pruning docs, tests and utils
 
-`v1.1.0rc2`_
-============
+v1.1.0rc2
+=========
 
 Changed
 -------
@@ -166,9 +166,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.0rc3...HEAD
-.. _v1.1.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc3
-.. _v1.1.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc2
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.0rc4...HEAD
+.. _v1.1.0rc4: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0rc4
 .. _v1.0.0: https://github.com/miurahr/py7zr/compare/v1.0.0-rc3...v1.0.0
 .. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
 .. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
