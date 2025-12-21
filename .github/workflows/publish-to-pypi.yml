@@ -19,7 +19,23 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v6
         with:
+          fetch-depth: 2
           fetch-tags: true
+      - name: Ensure nearest tag is present
+        id: expandFetchDepth
+        run: |
+          while ! git rev-list --tags --max-count=1 | grep -q .; do
+            CUR_DEPTH=$(git rev-list --count HEAD)
+            NEW_DEPTH=$(( CUR_DEPTH * 2 ))
+            if [ "$NEW_DEPTH" -gt 256 ]; then
+              echo "Unable to find nearest tag within 256 commits"
+              exit 1
+            fi
+            echo "Fetching additional $NEW_DEPTH commits ..."
+            git fetch --depth=$NEW_DEPTH --tags origin "$GITHUB_REF"
+          done
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "Nearest tag found: $LATEST_TAG"
       - name: Set up Python 3.13🐍
         uses: actions/setup-python@v6
         with:
