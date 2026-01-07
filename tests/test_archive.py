@@ -30,6 +30,37 @@ def check_bit(val, mask):
 
 
 @pytest.mark.basic
+def test_writeall_tempdir(tmp_path):
+    source = tmp_path / "source"
+    target = tmp_path / "target.7z"
+    dest = tmp_path / "extract"
+    source.mkdir()
+    dest.mkdir()
+    test_file = source / "test.txt"
+    test_file.write_text("hello")
+    # TemporaryDirectory usually has 0o700 permissions
+    with SevenZipFile(target, "w") as szf:
+        szf.writeall(source, "foo")
+
+    with SevenZipFile(target, "r") as szf:
+        szf.extractall(path=dest)
+
+    extracted_dir = dest / "foo"
+    extracted_file = extracted_dir / "test.txt"
+    assert extracted_dir.is_dir()
+    assert extracted_file.is_file()
+    assert extracted_file.read_text() == "hello"
+    # Check permissions if on posix
+    if os.name == "posix":
+        # It should have at least read permission for owner
+        assert (extracted_file.stat().st_mode & stat.S_IRUSR) != 0
+        assert (extracted_file.stat().st_mode & stat.S_IWUSR) != 0
+        assert (extracted_dir.stat().st_mode & stat.S_IRUSR) != 0
+        assert (extracted_dir.stat().st_mode & stat.S_IWUSR) != 0
+        assert (extracted_dir.stat().st_mode & stat.S_IXUSR) != 0
+
+
+@pytest.mark.basic
 def test_compress_single_encoded_header(capsys, tmp_path):
     target = tmp_path.joinpath("target.7z")
     archive = py7zr.SevenZipFile(target, "w")
