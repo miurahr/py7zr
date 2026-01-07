@@ -65,7 +65,11 @@ class MemberType(enum.Enum):
             # There are cases where we might not have the stat_result,
             # like a file generated in memory. In this case, we synthesize
             # a sensible default by combining basic Windows and Unix attributes.
-            return self.win32_file_attributes | self.unix_extension_bits() | (FILE_ATTRIBUTE_UNIX_DEFAULT << FILE_ATTRIBUTE_UNIX_SHIFT)
+            return (
+                self.win32_file_attributes
+                | self.unix_extension_bits()
+                | (FILE_ATTRIBUTE_UNIX_DEFAULT << FILE_ATTRIBUTE_UNIX_SHIFT)
+            )
 
         if sys.platform == "win32":
             # NOTE: We set Unix extensions bits on Windows so things behave the same
