@@ -4,7 +4,13 @@ from typing import NamedTuple
 
 import pytest
 
-from py7zr.member import FILE_ATTRIBUTE_UNIX_EXTENSION, FILE_ATTRIBUTE_UNIX_SHIFT, FILE_ATTRIBUTE_WINDOWS_MASK, MemberType
+from py7zr.member import (
+    FILE_ATTRIBUTE_UNIX_EXTENSION,
+    FILE_ATTRIBUTE_UNIX_SHIFT,
+    FILE_ATTRIBUTE_WINDOWS_MASK,
+    MemberType,
+    FILE_ATTRIBUTE_UNIX_DEFAULT,
+)
 
 
 class MockStatResult(NamedTuple):
@@ -35,7 +41,9 @@ def test_member_type(type: MemberType, unix_file_type_bits: int, win32_file_attr
         | (stat.S_IMODE(mock_stat_result.st_mode) << FILE_ATTRIBUTE_UNIX_SHIFT)
     )
 
-    assert type.attributes() == win32_file_attributes | type.unix_extension_bits()
+    assert type.attributes() == win32_file_attributes | type.unix_extension_bits() | (
+        FILE_ATTRIBUTE_UNIX_DEFAULT << FILE_ATTRIBUTE_UNIX_SHIFT
+    )
     attributes = type.attributes(mock_stat_result)  # type: ignore[arg-type]
 
     if sys.platform == "win32":
