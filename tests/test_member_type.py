@@ -41,9 +41,7 @@ def test_member_type(type: MemberType, unix_file_type_bits: int, win32_file_attr
         | (stat.S_IMODE(mock_stat_result.st_mode) << FILE_ATTRIBUTE_UNIX_SHIFT)
     )
 
-    assert type.attributes() == win32_file_attributes | type.unix_extension_bits() | (
-        FILE_ATTRIBUTE_UNIX_DEFAULT << FILE_ATTRIBUTE_UNIX_SHIFT
-    )
+    assert type.attributes() == win32_file_attributes | type.unix_extension_bits()
     attributes = type.attributes(mock_stat_result)  # type: ignore[arg-type]
 
     if sys.platform == "win32":
