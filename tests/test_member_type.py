@@ -4,12 +4,7 @@ from typing import NamedTuple
 
 import pytest
 
-from py7zr.member import (
-    FILE_ATTRIBUTE_UNIX_EXTENSION,
-    FILE_ATTRIBUTE_UNIX_SHIFT,
-    FILE_ATTRIBUTE_WINDOWS_MASK,
-    MemberType,
-)
+from py7zr.member import FILE_ATTRIBUTE_UNIX_EXTENSION, FILE_ATTRIBUTE_UNIX_SHIFT, FILE_ATTRIBUTE_WINDOWS_MASK, MemberType
 
 
 class MockStatResult(NamedTuple):
