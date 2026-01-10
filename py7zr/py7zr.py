@@ -847,9 +847,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         del self.sig_header
 
     @staticmethod
-    def _make_file_info(  # noqa
-        target: pathlib.Path, arcname: str | None = None, dereference: bool = False
-    ) -> FileInfoDict:
+    def _make_file_info(target: pathlib.Path, arcname: str | None = None, dereference: bool = False) -> FileInfoDict:
         origin = target
         filename = pathlib.Path(arcname).as_posix() if arcname else target.as_posix()
         target = target.resolve() if dereference else target

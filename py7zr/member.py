@@ -11,6 +11,7 @@ FILE_ATTRIBUTE_UNIX_EXTENSION: Final = 0x8000
 # From bit 0 to 15 are as same as Windows attributes.
 # Bit 16 to 31 is used for storing unix attributes.
 FILE_ATTRIBUTE_UNIX_SHIFT: Final = 16
+FILE_ATTRIBUTE_UNIX_DEFAULT: Final = 0o600
 FILE_ATTRIBUTE_WINDOWS_MASK: Final = 0xFFFF
 
 
@@ -50,7 +51,8 @@ class MemberType(enum.Enum):
         if fstat is not None:
             return base | (stat.S_IMODE(fstat.st_mode) << FILE_ATTRIBUTE_UNIX_SHIFT)
 
-        return base
+        # Use default permissions when no stat result is available
+        return base | (FILE_ATTRIBUTE_UNIX_DEFAULT << FILE_ATTRIBUTE_UNIX_SHIFT)
 
     def attributes(self, fstat: os.stat_result | None = None, /) -> int:
         """
