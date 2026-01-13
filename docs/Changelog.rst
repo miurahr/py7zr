@@ -9,6 +9,17 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.1.1`_
+=========
+
+Fixed
+-----
+- fix: default unix file attributes with proper permissions (#705)
+
+Changed
+-------
+- test: Bump dependency libarchive@3.8.5
+
 `v1.1.0`_
 =========
 
@@ -173,7 +184,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.0...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.1...HEAD
+.. _v1.1.1: https://github.com/miurahr/py7zr/compare/v1.1.0..v1.1.1
 .. _v1.1.0: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0
 .. _v1.0.0: https://github.com/miurahr/py7zr/compare/v1.0.0-rc3...v1.0.0
 .. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
