@@ -9,9 +9,79 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.1.1`_
+=========
+
+Fixed
+-----
+- fix: default unix file attributes with proper permissions (#705)
+
 Changed
 -------
-- use stdlib for Zstandard support instead of pyzstd
+- test: Bump dependency libarchive@3.8.5
+
+`v1.1.0`_
+=========
+
+- Same as v1.1.0rc4
+
+v1.1.0rc4
+=========
+
+Changed
+-------
+- CI: Ensure nearest tag is fetched in `publish-to-pypi` workflow
+- Streamlined pypi source package by pruning docs, tests and utils
+
+v1.1.0rc2
+=========
+
+Changed
+-------
+- CI: update workflows (#695,#696,#697,#698,#692)
+- Update tox configuration with TOML native (#689)
+- Type hint syntax for Python 3.10 and later (#690)
+
+Document
+--------
+- README: Minimum & Recommended Python/PyPY versions (#700)
+
+v1.1.0rc1
+=========
+
+Security
+--------
+- Bump Brotli@1.2.0 and limit output memory size (#686)
+
+Added
+-----
+- Support Python 3.14
+
+Changed
+-------
+- CI: update target Python versions, GitHub Actions configurations
+- dependency: pyppmd@1.3.0, pybcj@1.0.6, inflate64@1.0.4
+- use stdlib for Zstandard support instead of pyzstd (#682)
+- fix(is_7zfile): accept any path-like instead of just pathlib.Path (#663)
+- Accept IO[bytes] instead of BinaryIO (#661)
+- Document: Fix WriterFactory example (#660)
+- getInfo() returns FileInfo object (#676)
+- make FileInfo and ArchiveInfo dataclasses (#678)
+
+Removed
+-------
+- Drop support for Python 3.9 (#691)
+
+`v1.0.0`_
+=========
+
+- Celebrating the official 1.0.0 release!
+
+Changed
+-------
+- CI: check on Linux on ARM64 with GitHub hosted ARM64 runner.
+- Improve issue report template
+- Remove Travis-CI button from Documentation
 
 `v1.0.0rc3`_
 ============
@@ -114,7 +184,10 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.0.0rc3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.1...HEAD
+.. _v1.1.1: https://github.com/miurahr/py7zr/compare/v1.1.0..v1.1.1
+.. _v1.1.0: https://github.com/miurahr/py7zr/compare/v1.0.0..v1.1.0
+.. _v1.0.0: https://github.com/miurahr/py7zr/compare/v1.0.0-rc3...v1.0.0
 .. _v1.0.0rc3: https://github.com/miurahr/py7zr/compare/v1.0.0-rc2...v1.0.0rc3
 .. _v1.0.0rc2: https://github.com/miurahr/py7zr/compare/v1.0.0-rc1...v1.0.0rc2
 .. _v1.0.0-rc1: https://github.com/miurahr/py7zr/compare/v0.22.0...v1.0.0-rc1

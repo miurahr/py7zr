@@ -32,7 +32,7 @@ import sys
 import time as _time
 import zlib
 from datetime import datetime, timedelta, timezone, tzinfo
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from py7zr import Bad7zFile
 from py7zr.win32compat import is_windows_native_python, is_windows_unc_path
@@ -247,7 +247,7 @@ class ArchiveTimestamp(int):
     """Windows FILETIME timestamp."""
 
     def __repr__(self):
-        return "%s(%d)" % (type(self).__name__, self)
+        return f"{type(self).__name__}({self})"
 
     def __index__(self):
         return self.__int__()
@@ -270,7 +270,7 @@ class ArchiveTimestamp(int):
         return cls((_time.time() - TIMESTAMP_ADJUST) * 10000000.0)
 
 
-def islink(path: Union[str, pathlib.Path]) -> bool:
+def islink(path: str | pathlib.Path) -> bool:
     """
     Cross-platform islink implementation.
     Support Windows NT symbolic links and reparse points.
@@ -278,7 +278,7 @@ def islink(path: Union[str, pathlib.Path]) -> bool:
     return os.path.islink(path)
 
 
-def readlink(path: Union[str, pathlib.Path], *, dir_fd=None) -> Union[str, pathlib.Path]:
+def readlink(path: str | pathlib.Path, *, dir_fd=None) -> str | pathlib.Path:
     """
     Cross-platform compat implementation of os.readlink and Path.readlink().
     Support Windows NT symbolic links and reparse points.
@@ -342,7 +342,7 @@ def is_relative_to(my: pathlib.Path, *other) -> bool:
     return True
 
 
-def get_sanitized_output_path(fname: str, path: Optional[pathlib.Path]) -> pathlib.Path:
+def get_sanitized_output_path(fname: str, path: pathlib.Path | None) -> pathlib.Path:
     """
     check f.filename has invalid directory traversals
     When condition is not satisfied, raise Bad7zFile
