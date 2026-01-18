@@ -118,7 +118,6 @@ def test_zip_slip_via_symlink(tmp_path):
     outside_dir = tmp_path / "outside"
     outside_dir.mkdir()
 
-
     # Create the symlink on disk to simulate it being created during extraction
     link_path = extract_dir / "link"
     link_path.symlink_to(outside_dir)
