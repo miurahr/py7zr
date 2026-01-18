@@ -10,7 +10,6 @@ py7zr -- a 7z library on python
    SECURITY
    api
    contribution
-   CODE_OF_CONDUCT
    archive_format
    authors
    glossary

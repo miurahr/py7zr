@@ -147,10 +147,6 @@ Developer guide
 
 * `Contribution guidelines(html)`_  for this project.
 
-* `Code of conduct`_ for this project.
-
-* `Code of conduct(html)`_ for this project.
-
 * `7z file specification`_ that py7zr stand on.
 
 
@@ -163,10 +159,6 @@ Developer guide
 .. _`Contribution guidelines(html)` : https://py7zr.readthedocs.io/en/latest/contribution.html
 
 .. _`Contribution guidelines` : docs/contribution.rst
-
-.. _`Code  of conduct` : docs/CODE_OF_CONDUCT.rst
-
-.. _`Code  of conduct(html)` : https://py7zr.readthedocs.io/en/latest/CODE_OF_CONDUCT.html
 
 .. _`7z file specification` : https://py7zr.readthedocs.io/en/latest/archive_format.html
 

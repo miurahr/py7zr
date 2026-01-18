@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Removed
+-------
+- Remove Code of Conduct from repository.
+
 `v1.1.1`_
 =========
 
