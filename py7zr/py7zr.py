@@ -43,7 +43,7 @@ from dataclasses import dataclass
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, TypedDict, Tuple
+from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, Tuple, TypedDict
 
 import multivolumefile
 
