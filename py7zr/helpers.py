@@ -336,8 +336,9 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
 def is_relative_to(my: pathlib.Path, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
     try:
-        my.relative_to(canonical_path(*other))
-    except ValueError:
+        # resolve symlinks to catch Zip-Slip style vulnerability
+        my.resolve(strict=False).relative_to(canonical_path(*other).resolve(strict=False))
+    except (ValueError, RuntimeError):
         return False
     return True
 
@@ -378,12 +379,14 @@ def check_archive_path(arcname: str) -> bool:
     return is_path_valid(path.joinpath(arcname), path)
 
 
-def is_path_valid(target: pathlib.Path, parent: pathlib.Path) -> bool:
+def is_path_valid(target: pathlib.Path, parent: pathlib.Path | None) -> bool:
     """
     Check if target path is valid against parent path.
     It returns False when target path has '..' and point out of parent path.
     Otherwise, returns True.
     """
+    if parent is None:
+        parent = pathlib.Path.cwd()
     if parent.is_absolute():
         return is_relative_to(canonical_path(target), parent)
     else:
