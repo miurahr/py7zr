@@ -1407,6 +1407,8 @@ class Worker:
                 self._check(fp, just_check, src_end)
                 just_check = []
                 if not isinstance(fileish, MemIO):
+                    if not is_path_valid(fileish, path):
+                        raise Bad7zFile(f"Specified path is bad: {fileish}")
                     fileish.parent.mkdir(parents=True, exist_ok=True)
                 if not f.emptystream:
                     if f.is_junction and not isinstance(fileish, MemIO) and sys.platform == "win32":

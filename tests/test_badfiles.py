@@ -10,7 +10,7 @@ import pytest
 
 from py7zr import SevenZipFile
 from py7zr.exceptions import Bad7zFile
-from py7zr.helpers import check_archive_path, get_sanitized_output_path
+from py7zr.helpers import check_archive_path, get_sanitized_output_path, is_path_valid
 from py7zr.properties import FILTER_LZMA2, PRESET_DEFAULT
 
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
@@ -104,3 +104,26 @@ def test_write_compressed_archive(tmp_path):
         tmp_path / "tools_qtcreator-linux-qt.tools.qtcreator.7z", "r"
     ) as archive:  # fmt: skip
         archive.extractall(path=target_path)
+
+
+@pytest.mark.misc
+def test_zip_slip_via_symlink(tmp_path):
+    # This test simulates a Zip-Slip attack where a symlink is used to point outside the extraction directory.
+    # Archive structure:
+    # 1. link -> ../outside
+    # 2. link/evil.txt (regular file)
+
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+
+
+    # Create the symlink on disk to simulate it being created during extraction
+    link_path = extract_dir / "link"
+    link_path.symlink_to(outside_dir)
+
+    # Now check a file that would be written through this link
+    evil_file = extract_dir / "link" / "evil.txt"
+
+    assert is_path_valid(evil_file, extract_dir) is False
