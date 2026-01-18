@@ -28,7 +28,7 @@ import sys
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, BinaryIO, Tuple, Union
+from typing import Any, BinaryIO, IO, Tuple, Union
 
 import bcj
 import inflate64
