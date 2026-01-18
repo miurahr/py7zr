@@ -14,8 +14,6 @@ select from below
 
 ## What does this PR change?
 
-- .
-- .
-- .
+
 
 ## Other information
