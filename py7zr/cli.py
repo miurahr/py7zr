@@ -31,7 +31,6 @@ import sys
 from lzma import CHECK_CRC64, CHECK_SHA256, is_check_supported
 from typing import Any
 
-import _lzma  # type: ignore
 import multivolumefile
 import texttable  # type: ignore
 
@@ -348,8 +347,6 @@ class Cli:
             else:
                 print("The archive is corrupted, or password is wrong. ABORT.")
             return 1
-        except _lzma.LZMAError:
-            return 1
 
         cb: ExtractCallback | None = None
         if verbose:
@@ -380,8 +377,6 @@ class Cli:
                 print("The archive is corrupted. ABORT.")
             else:
                 print("The archive is corrupted, or password is wrong. ABORT.")
-            return 1
-        except _lzma.LZMAError:
             return 1
         else:
             return 0
