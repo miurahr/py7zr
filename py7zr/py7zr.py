@@ -43,7 +43,7 @@ from dataclasses import dataclass
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, TypedDict
+from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, TypedDict, Tuple
 
 import multivolumefile
 
@@ -1079,7 +1079,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         file: pathlib.Path | str,
         arcname: str | None = None,
-        dereferece: bool | None = None,
+        dereference: bool | None = None,
     ) -> None:
         """Write single target file into archive."""
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
@@ -1578,7 +1578,7 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: IO[bytes], f: ArchiveFile, folder: Folder) -> Tuple[int, int]:
+    def writestr(self, fp: BinaryIO, f: ArchiveFile, folder: Folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
         fd: BinaryIO | None = f.data()
         if fd is None:
