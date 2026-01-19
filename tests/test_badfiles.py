@@ -108,21 +108,49 @@ def test_write_compressed_archive(tmp_path):
 
 @pytest.mark.misc
 def test_zip_slip_via_symlink(tmp_path):
-    # This test simulates a Zip-Slip attack where a symlink is used to point outside the extraction directory.
-    # Archive structure:
-    # 1. link -> ../outside
-    # 2. link/evil.txt (regular file)
-
-    extract_dir = tmp_path / "extract"
-    extract_dir.mkdir()
+    # 1. Create the ACTUAL file outside the extraction directory
     outside_dir = tmp_path / "outside"
     outside_dir.mkdir()
+    real_file = outside_dir / "evil.txt"
+    real_file.write_text("malicious content")  # The file MUST exist
 
-    # Create the symlink on disk to simulate it being created during extraction
-    link_path = extract_dir / "link"
-    link_path.symlink_to(outside_dir)
+    # 2. Setup the extraction directory
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
 
-    # Now check a file that would be written through this link
-    evil_file = extract_dir / "link" / "evil.txt"
+    # 3. Create the symlink ladder
+    # To point to 'outside/evil.txt' from 'extract/link',
+    # we need to go up from 'extract' and into 'outside'
+
+    # link1 -> ".." (moves from extract/dir1 to extract/)
+    evil_link1 = extract_dir / "dir1"
+    # this is inside the extraction directory
+    assert is_path_valid(evil_link1 / "..", extract_dir) is True
+    evil_link1.symlink_to("..")
+
+    # link2 -> "dir1/outside"
+    # Because dir1 is "..", this resolves to extract/../outside/
+    evil_link2 = extract_dir / "dir2"
+    # this should be detected as outside the extraction directory
+    assert is_path_valid(evil_link2 / "../dir1/outside", extract_dir) is False
+    assert is_path_valid(extract_dir / "dir1/outside", extract_dir) is False
+    evil_link2.symlink_to("dir1/outside")
+
+    # The entry point for the "attack"
+    attack_path = extract_dir / "attack_link"
+    assert is_path_valid(attack_path, extract_dir) is True
+    attack_path.symlink_to("dir2")
+
+    # 4. Construct the path through the ladder
+    evil_file = attack_path / "evil.txt"
+
+    # This should now pass because:
+    # attack_link (dir2) -> dir1/outside -> ../outside -> extract/../outside/evil.txt
+    assert evil_file.resolve().is_file()
+    assert real_file.read_text() == evil_file.read_text()
+
+    # This should False because the real path is outside the extraction directory
 
     assert is_path_valid(evil_file, extract_dir) is False
+    assert is_path_valid(evil_link1, extract_dir) is False
+    assert is_path_valid(evil_link2, extract_dir) is False
