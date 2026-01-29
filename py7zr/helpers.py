@@ -315,10 +315,10 @@ def remove_trailing_slash(path: str) -> str:
         return path[:-1]
     return path
 
-
 def canonical_path(target: pathlib.Path) -> pathlib.Path:
     """Return a canonical path of target argument."""
     stack: list[str] = []
+    anchor = target.anchor  # preserves POSIX '/' and Windows 'C:\\' or UNC share
     for p in target.parts:
         if p != ".." or len(stack) == 0:
             stack.append(p)
@@ -326,6 +326,8 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
         # treat '..'
         if stack[-1] == "..":
             stack.append(p)  # '../' + '../' -> '../../'
+        elif anchor and stack[-1] == anchor:
+            pass  # don't walk above the anchor/drive/share
         elif stack[-1] == "/":
             pass  # '/' + '../' -> '/'
         else:
