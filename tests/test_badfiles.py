@@ -125,7 +125,7 @@ def test_zip_slip_via_symlink(tmp_path):
     # link1 -> ".." (moves from extract/dir1 to extract/)
     evil_link1 = extract_dir / "dir1"
     # this is inside the extraction directory
-    assert is_path_valid(evil_link1 / "..", extract_dir) is True
+    assert is_path_valid(evil_link1 / "..", extract_dir) is False
     evil_link1.symlink_to("..")
 
     # link2 -> "dir1/outside"
@@ -154,3 +154,77 @@ def test_zip_slip_via_symlink(tmp_path):
     assert is_path_valid(evil_file, extract_dir) is False
     assert is_path_valid(evil_link1, extract_dir) is False
     assert is_path_valid(evil_link2, extract_dir) is False
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.misc
+def test_extract_rejects_preexisting_symlink_in_destination(tmp_path):
+    """
+    Attack surface: destination directory contains a symlink created by an attacker.
+    Even a normal-looking member path must not be allowed to escape via that symlink.
+    """
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    escaped = outside_dir / "evil.txt"
+    assert not escaped.exists()
+
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+
+    # Attacker plants: extract/subdir -> ../outside
+    (extract_dir / "subdir").symlink_to(outside_dir)
+
+    target = tmp_path / "target.7z"
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+
+    with SevenZipFile(target, "w", filters=my_filters) as archive:
+        archive.writestr(b"owned\n", "subdir/evil.txt")
+
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=extract_dir)
+
+    assert not escaped.exists()
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.misc
+def test_extract_rejects_symlink_then_file_escape_in_archive(tmp_path):
+    """
+    Attack surface: symlink entry is extracted first, then a normal file path traverses through it.
+    This is the classic 'symlink zip-slip' pattern.
+    """
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    escaped = outside_dir / "evil.txt"
+    assert not escaped.exists()
+
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+
+    # Build a source tree that contains a symlink that *would* escape if followed.
+    # src/dir1 -> ".." so src/dir1/outside resolves to src/../outside at extraction time.
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "dir1").symlink_to("..")
+
+    target = tmp_path / "target.7z"
+    with SevenZipFile(target, "w", filters=my_filters, dereference=False) as archive:
+        # 1) store the symlink entry in the archive
+        archive.writeall(source_dir, arcname="src")
+        # 2) add a regular file entry whose *name* goes through the symlink on extraction
+        archive.writestr(b"malicious content", "src/dir1/outside/evil.txt")
+
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=extract_dir)
+
+    assert not escaped.exists()

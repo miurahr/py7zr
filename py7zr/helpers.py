@@ -336,9 +336,15 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
 
 def is_relative_to(my: pathlib.Path, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
+    base = canonical_path(*other)
     try:
         # resolve symlinks to catch Zip-Slip style vulnerability
-        my.resolve(strict=False).relative_to(canonical_path(*other).resolve(strict=False))
+        my_resolved = my.resolve(strict=False)
+        base_resolved = base.resolve(strict=False)
+        if my_resolved == base_resolved:
+            # don't allow paths to be equal to base
+            return False
+        my_resolved.relative_to(base_resolved)
     except (ValueError, RuntimeError):
         return False
     return True
@@ -383,15 +389,18 @@ def check_archive_path(arcname: str) -> bool:
 def is_path_valid(target: pathlib.Path, parent: pathlib.Path | None) -> bool:
     """
     Check if target path is valid against parent path.
-    It returns False when target path has '..' and point out of parent path.
+    It returns False when resolved target path has '..', or point out of a parent path.
     Otherwise, returns True.
     """
     if parent is None:
         parent = pathlib.Path.cwd()
+    cpath = canonical_path(target)
+    if ".." in cpath.parts:
+        return False
     if parent.is_absolute():
-        return is_relative_to(canonical_path(target), parent)
+        return is_relative_to(cpath, parent)
     else:
-        return is_relative_to(canonical_path(target), pathlib.Path.cwd().joinpath(parent))
+        return is_relative_to(cpath, pathlib.Path.cwd().joinpath(parent))
 
 
 def check_win32_file_namespace(pathname: pathlib.Path) -> pathlib.Path:
