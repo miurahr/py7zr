@@ -329,8 +329,6 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
             stack.append(p)  # '../' + '../' -> '../../'
         elif anchor and stack[-1] == anchor:
             pass  # don't walk above the anchor/drive/share
-        elif stack[-1] == "/":
-            pass  # '/' + '../' -> '/'
         else:
             stack.pop()  # 'foo/boo/' + '..' -> 'foo/'
     return pathlib.Path(*stack)
