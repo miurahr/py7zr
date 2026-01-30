@@ -315,6 +315,7 @@ def remove_trailing_slash(path: str) -> str:
         return path[:-1]
     return path
 
+
 def canonical_path(target: pathlib.Path) -> pathlib.Path:
     """Return a canonical path of target argument."""
     stack: list[str] = []
