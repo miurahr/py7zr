@@ -102,6 +102,12 @@ def test_canonical_path():
     path = pathlib.Path("/../../etc")
     assert py7zr.helpers.canonical_path(path) == pathlib.Path("/etc")
 
+    path = pathlib.Path("/..")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("/")
+
+    path = pathlib.Path("../../")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("../..")
+
     if sys.platform.startswith("win"):
         path = pathlib.Path("C:/foo/../bar")
         assert py7zr.helpers.canonical_path(path) == pathlib.Path("C:/bar")
