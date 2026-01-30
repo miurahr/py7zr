@@ -90,3 +90,27 @@ def test_junction_readlink(tmp_path):
     assert py7zr.win32compat.is_reparse_point(junction)
     assert py7zr.win32compat.readlink(junction) == pathlib.WindowsPath(PATH_PREFIX + str(target.resolve()))
     assert py7zr.helpers.readlink(junction) == pathlib.WindowsPath(PATH_PREFIX + str(target.resolve()))
+
+
+def test_canonical_path():
+    path = pathlib.Path("a/b/../c")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("a/c")
+
+    path = pathlib.Path("../a/..")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("..")
+
+    path = pathlib.Path("/../../etc")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("/etc")
+
+    path = pathlib.Path("/..")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("/")
+
+    path = pathlib.Path("../../")
+    assert py7zr.helpers.canonical_path(path) == pathlib.Path("../..")
+
+    if sys.platform.startswith("win"):
+        path = pathlib.Path("C:/foo/../bar")
+        assert py7zr.helpers.canonical_path(path) == pathlib.Path("C:/bar")
+
+        path = pathlib.Path(r"\\server\share\dir\..\file")
+        assert py7zr.helpers.canonical_path(path) == pathlib.Path(r"\\server\share\file")
