@@ -161,6 +161,99 @@ def test_zip_slip_via_symlink(tmp_path):
     reason="Administrator rights is required to make symlink on windows",
 )
 @pytest.mark.misc
+def test_extract_rejects_nested_symlink_ladder(tmp_path):
+    """
+    Test a more complex symlink ladder to ensure nested resolution is handled.
+    ladder: attack -> link2 -> link1/outside -> ../outside
+    """
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    (outside_dir / "evil.txt").write_text("malicious")
+
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "dir1").symlink_to("..")
+    (source_dir / "dir2").symlink_to("dir1/outside")
+    (source_dir / "attack").symlink_to("dir2")
+
+    target = tmp_path / "ladder.7z"
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+    with SevenZipFile(target, "w", filters=my_filters, dereference=False) as archive:
+        archive.writeall(source_dir, arcname="")
+        archive.writestr(b"malicious content", "attack/evil.txt")
+
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=extract_dir)
+
+
+@pytest.mark.misc
+def test_canonical_path_edge_cases():
+    from py7zr.helpers import canonical_path
+    import pathlib
+
+    assert canonical_path(pathlib.Path("a/b/../c")) == pathlib.Path("a/c")
+    assert canonical_path(pathlib.Path("a/./b")) == pathlib.Path("a/b")
+    assert canonical_path(pathlib.Path("/../../etc/passwd")) == pathlib.Path("/etc/passwd")
+    assert canonical_path(pathlib.Path("..")) == pathlib.Path("..")
+    assert canonical_path(pathlib.Path("a/..")) == pathlib.Path(".")
+
+
+@pytest.mark.misc
+def test_is_path_valid_with_absolute_symlink(tmp_path):
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+
+    # symlink to absolute path
+    abs_link = extract_dir / "abs_link"
+    if sys.platform == "win32":
+        target = "C:\\Windows\\System32\\drivers\\etc\\hosts"
+    else:
+        target = "/etc/passwd"
+
+    # is_path_valid should catch it if we try to use it
+    assert is_path_valid(pathlib.Path(target), extract_dir) is False
+
+    # Also check a relative path that resolves to absolute path via pre-existing symlink
+    abs_link.symlink_to(pathlib.Path(target).parent)
+    # extract_dir/abs_link/passwd -> /etc/passwd
+    assert is_path_valid(abs_link / "passwd", extract_dir) is False
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.misc
+def test_extract_rejects_symlink_to_base_itself(tmp_path):
+    extract_dir = tmp_path / "extract"
+    extract_dir.mkdir()
+
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "link_to_base").symlink_to(".")
+    (source_dir / "subdir").mkdir()
+    (source_dir / "subdir" / "link_to_base").symlink_to("..")
+
+    target = tmp_path / "symlink_base.7z"
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+    with SevenZipFile(target, "w", filters=my_filters, dereference=False) as archive:
+        archive.writeall(source_dir, arcname="")
+
+    with SevenZipFile(target, "r") as archive:
+        # Some might be allowed if they point INSIDE, but pointing TO the base
+        # is currently rejected by py7zr (my_resolved == base_resolved check).
+        with pytest.raises(Bad7zFile):
+            archive.extractall(path=extract_dir)
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.misc
 def test_extract_rejects_preexisting_symlink_in_destination(tmp_path):
     """
     Attack surface: destination directory contains a symlink created by an attacker.
