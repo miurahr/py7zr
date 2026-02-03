@@ -20,7 +20,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Setup reviewdog
         run: |
           /usr/bin/sh utils/reviewdog_install.sh -b ./bin/ v0.21.0
@@ -43,7 +43,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - name: Install dependencies
         run: |
           sudo apt-get update -q -y
