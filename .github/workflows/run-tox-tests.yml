@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-latest, ubuntu-24.04-arm, windows-11-arm]
+        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm, windows-11-arm]
         python-version: [
             "3.10",
             "3.11",
@@ -111,7 +111,7 @@ jobs:
 
   test_slow_tests:
     name: Test slow cases
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
