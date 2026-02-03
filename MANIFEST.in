@@ -1,6 +1,7 @@
 include README.rst
 include pyproject.toml
 include LICENSE
+include *.txt
 include py7zr/py.typed
 recursive-include py7zr *.py
 prune docs
