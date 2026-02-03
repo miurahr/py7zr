@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+
 from __future__ import annotations
 
 import collections.abc
@@ -504,7 +505,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (maxsize, compressed, uncompressed, packsize, solid) = self._get_fileinfo_sizes(
+                maxsize, compressed, uncompressed, packsize, solid = self._get_fileinfo_sizes(
                     pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams
                 )
                 pstat.input += 1
@@ -727,7 +728,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _write_header(self):
         """Write header and update signature header."""
-        (header_pos, header_len, header_crc) = self.header.write(
+        header_pos, header_len, header_crc = self.header.write(
             self.fp,
             self.afterheader,
             encoded=self.encoded_header_mode,
