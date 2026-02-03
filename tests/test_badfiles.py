@@ -16,13 +16,13 @@ from py7zr.properties import FILTER_LZMA2, PRESET_DEFAULT
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_check_archive_path():
     bad_path = "../../.../../../../../../tmp/evil.sh"
     assert not check_archive_path(bad_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_get_sanitized_output_path_1(tmp_path):
     bad_path = "../../.../../../../../../tmp/evil.sh"
     with pytest.raises(Bad7zFile):
@@ -36,7 +36,7 @@ def test_get_sanitized_output_path_2(tmp_path):
     assert expected == get_sanitized_output_path(good_path, tmp_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_path_traversal_attack(tmp_path):
     my_filters = [
         {"id": FILTER_LZMA2, "preset": PRESET_DEFAULT},
@@ -81,6 +81,7 @@ def test_extract_symlink_attack(tmp_path):
             archive.extractall(path=target_dir)
 
 
+@pytest.mark.misc
 def test_write_compressed_archive(tmp_path):
     @dataclass
     class Contents:
@@ -106,8 +107,13 @@ def test_write_compressed_archive(tmp_path):
         archive.extractall(path=target_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_zip_slip_via_symlink(tmp_path):
+    """
+    Test the extraction of a malicious archive that contains a symlink pointing
+    outside the extraction directory, ensuring that the extraction process
+    correctly identifies and blocks such attempts.
+    """
     # 1. Create the ACTUAL file outside the extraction directory
     outside_dir = tmp_path / "outside"
     outside_dir.mkdir()
@@ -160,7 +166,7 @@ def test_zip_slip_via_symlink(tmp_path):
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_nested_symlink_ladder(tmp_path):
     """
     Test a more complex symlink ladder to ensure nested resolution is handled.
@@ -189,20 +195,12 @@ def test_extract_rejects_nested_symlink_ladder(tmp_path):
             archive.extractall(path=extract_dir)
 
 
-@pytest.mark.misc
-def test_canonical_path_edge_cases():
-    from py7zr.helpers import canonical_path
-    import pathlib
-
-    assert canonical_path(pathlib.Path("a/b/../c")) == pathlib.Path("a/c")
-    assert canonical_path(pathlib.Path("a/./b")) == pathlib.Path("a/b")
-    assert canonical_path(pathlib.Path("/../../etc/passwd")) == pathlib.Path("/etc/passwd")
-    assert canonical_path(pathlib.Path("..")) == pathlib.Path("..")
-    assert canonical_path(pathlib.Path("a/..")) == pathlib.Path(".")
-
-
-@pytest.mark.misc
+@pytest.mark.security
 def test_is_path_valid_with_absolute_symlink(tmp_path):
+    """
+    This test verifies the "is_path_valid" function's ability to handle
+     scenarios involving absolute symbolic links and their resolution to absolute paths.
+    """
     extract_dir = tmp_path / "extract"
     extract_dir.mkdir()
 
@@ -226,8 +224,11 @@ def test_is_path_valid_with_absolute_symlink(tmp_path):
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_symlink_to_base_itself(tmp_path):
+    """
+    Test that extraction rejects symlinks that point to the base directory itself.
+    """
     extract_dir = tmp_path / "extract"
     extract_dir.mkdir()
 
@@ -253,7 +254,7 @@ def test_extract_rejects_symlink_to_base_itself(tmp_path):
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_preexisting_symlink_in_destination(tmp_path):
     """
     Attack surface: destination directory contains a symlink created by an attacker.
@@ -287,7 +288,7 @@ def test_extract_rejects_preexisting_symlink_in_destination(tmp_path):
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_symlink_then_file_escape_in_archive(tmp_path):
     """
     Attack surface: symlink entry is extracted first, then a normal file path traverses through it.
@@ -327,7 +328,7 @@ def test_extract_rejects_symlink_then_file_escape_in_archive(tmp_path):
     sys.platform != "win32",
     reason="Windows UNC path test only applicable on Windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_windows_unc_path(tmp_path):
     """
     Attack surface: Windows UNC path (\\\\server\\share\\file).
@@ -342,7 +343,7 @@ def test_extract_rejects_windows_unc_path(tmp_path):
             archive.extractall(path=tmp_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_backslash_path_traversal(tmp_path):
     """
     Attack surface: Path traversal using backslashes (Windows-style).
@@ -357,7 +358,7 @@ def test_extract_rejects_backslash_path_traversal(tmp_path):
             archive.extractall(path=tmp_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_mixed_separators(tmp_path):
     """
     Attack surface: Mixed forward and backward slashes.
@@ -372,7 +373,7 @@ def test_extract_rejects_mixed_separators(tmp_path):
             archive.extractall(path=tmp_path)
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_extremely_long_path(tmp_path):
     """
     Attack surface: Extremely long path that might cause buffer overflow or DoS.
@@ -394,7 +395,7 @@ def test_extract_rejects_extremely_long_path(tmp_path):
         pass  # Expected - OS limits exceeded
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_special_device_names_windows(tmp_path):
     """
     Attack surface: Windows special device names (CON, PRN, AUX, NUL, COM1, LPT1).
@@ -416,7 +417,7 @@ def test_extract_rejects_special_device_names_windows(tmp_path):
         pass  # Expected on Windows
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_dot_and_dotdot_only_paths(tmp_path):
     """
     Attack surface: Paths consisting only of . or ..
@@ -438,7 +439,7 @@ def test_extract_rejects_dot_and_dotdot_only_paths(tmp_path):
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_symlink_race_condition(tmp_path):
     """
     Attack surface: TOCTOU (Time-of-check-time-of-use) via symlink created between files.
@@ -473,7 +474,7 @@ def test_extract_rejects_symlink_race_condition(tmp_path):
     assert (extract_dir / "safe_dir" / "file1.txt").exists()
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_handles_unicode_normalization_attack(tmp_path):
     """
     Attack surface: Unicode normalization attacks (e.g., different representations of same character).
@@ -496,33 +497,49 @@ def test_extract_handles_unicode_normalization_attack(tmp_path):
     # Should extract successfully - just testing handling
 
 
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_handles_trailing_dots_and_spaces(tmp_path):
     """
     Attack surface: Windows strips trailing dots and spaces, could lead to unexpected overwrites.
+    Tests that archives with filenames containing trailing dots/spaces are handled gracefully.
     """
     my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
     target = tmp_path / "target.7z"
 
-    with SevenZipFile(target, "w", filters=my_filters) as archive:
-        archive._writestr(b"data1", "file.txt")
-        archive._writestr(b"data2", "file.txt.")
-        archive._writestr(b"data3", "file.txt ")
-        archive._writestr(b"data4", "file.txt...")
+    # Define test cases: legitimate file followed by variants with trailing characters
+    test_files = [
+        ("file.txt", b"data1"),  # Legitimate baseline
+        ("file.txt.", b"data2"),  # Trailing dot
+        ("file.txt ", b"data3"),  # Trailing space
+        ("file.txt...", b"data4"),  # Multiple trailing dots
+    ]
 
-    # Should handle gracefully
-    try:
-        with SevenZipFile(target, "r") as archive:
-            archive.extractall(path=tmp_path)
-    except (Bad7zFile, OSError):
-        pass  # May fail on Windows due to invalid filename
+    with SevenZipFile(target, "w", filters=my_filters) as archive:
+        for filename, content in test_files:
+            archive._writestr(content, filename)
+
+    # Platform-specific expectations:
+    # - Windows: Should reject (OSError) due to trailing dots/spaces being invalid
+    # - Other platforms: May accept or reject depending on filesystem
+    with SevenZipFile(target, "r") as archive:
+        if sys.platform == "win32":
+            # Windows strips trailing dots/spaces, leading to potential overwrites
+            # Extraction should fail to prevent security issues
+            with pytest.raises(OSError):
+                archive.extractall(path=tmp_path)
+        else:
+            # Non-Windows platforms may handle these gracefully
+            try:
+                archive.extractall(path=tmp_path)
+            except OSError:
+                pass  # Acceptable if filesystem rejects these names
 
 
 @pytest.mark.skipif(
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",
 )
-@pytest.mark.misc
+@pytest.mark.security
 def test_extract_rejects_symlink_to_archive_itself(tmp_path):
     """
     Attack surface: Symlink pointing to the archive file itself (zip bomb variant).
@@ -545,39 +562,5 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
 
     # Extract should handle symlinks safely
     with SevenZipFile(target, "r") as archive:
-        try:
+        with pytest.raises(Bad7zFile):
             archive.extractall(path=extract_dir)
-        except Bad7zFile:
-            pass  # Expected if symlink validation catches it
-
-
-@pytest.mark.misc
-def test_canonical_path_with_windows_drive_letters():
-    """Test canonical_path correctly handles Windows drive letters."""
-    from py7zr.helpers import canonical_path
-    import pathlib
-
-    if sys.platform == "win32":
-        assert canonical_path(pathlib.Path("C:/foo/../bar")) == pathlib.Path("C:/bar")
-        assert canonical_path(pathlib.Path("C:/../../etc")) == pathlib.Path("C:/etc")
-        # Can't escape above drive letter
-        assert canonical_path(pathlib.Path("D:/foo/../../..")) == pathlib.Path("D:/")
-
-
-@pytest.mark.misc
-def test_check_archive_path_comprehensive():
-    """Comprehensive tests for check_archive_path function."""
-    # Valid paths
-    assert check_archive_path("file.txt") is True
-    assert check_archive_path("dir/file.txt") is True
-    assert check_archive_path("a/b/c/file.txt") is True
-
-    # Invalid paths - absolute
-    assert check_archive_path("/etc/passwd") is False
-    if sys.platform == "win32":
-        assert check_archive_path("C:\\\\Windows\\\\System32\\\\file.txt") is False
-
-    # Invalid paths - traversal
-    assert check_archive_path("../file.txt") is False
-    assert check_archive_path("dir/../../file.txt") is False
-    assert check_archive_path("../../../etc/passwd") is False

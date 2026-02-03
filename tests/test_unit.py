@@ -810,3 +810,49 @@ def test_remove_relative_path_marker_ignore_marker():
     file_path = f"/path/with/ignored/marker{py7zr.helpers.RELATIVE_PATH_MARKER}"
     # The marker isn't removed if it isn't at the beginning
     assert py7zr.helpers.remove_relative_path_marker(file_path) == file_path
+
+
+@pytest.mark.unit
+def test_canonical_path_edge_cases():
+    """
+    Test the canonical_path function with various edge cases to ensure it handles
+    path normalization correctly.
+    """
+    assert py7zr.helpers.canonical_path(pathlib.Path("a/b/../c")) == pathlib.Path("a/c")
+    assert py7zr.helpers.canonical_path(pathlib.Path("a/./b")) == pathlib.Path("a/b")
+    assert py7zr.helpers.canonical_path(pathlib.Path("/../../etc/passwd")) == pathlib.Path("/etc/passwd")
+    assert py7zr.helpers.canonical_path(pathlib.Path("..")) == pathlib.Path("..")
+    assert py7zr.helpers.canonical_path(pathlib.Path("a/..")) == pathlib.Path(".")
+
+
+@pytest.mark.unit
+def test_canonical_path_with_windows_drive_letters():
+    """
+    Test canonical_path correctly handles Windows drive letters.
+    """
+    if sys.platform == "win32":
+        assert py7zr.helpers.canonical_path(pathlib.Path("C:/foo/../bar")) == pathlib.Path("C:/bar")
+        assert py7zr.helpers.canonical_path(pathlib.Path("C:/../../etc")) == pathlib.Path("C:/etc")
+        # Can't escape above drive letter
+        assert py7zr.helpers.canonical_path(pathlib.Path("D:/foo/../../..")) == pathlib.Path("D:/")
+
+
+@pytest.mark.unit
+def test_check_archive_path_comprehensive():
+    """
+    Comprehensive tests for check_archive_path function.
+    """
+    # Valid paths
+    assert py7zr.helpers.check_archive_path("file.txt") is True
+    assert py7zr.helpers.check_archive_path("dir/file.txt") is True
+    assert py7zr.helpers.check_archive_path("a/b/c/file.txt") is True
+
+    # Invalid paths - absolute
+    assert py7zr.helpers.check_archive_path("/etc/passwd") is False
+    if sys.platform == "win32":
+        assert py7zr.helpers.check_archive_path("C:\\\\Windows\\\\System32\\\\file.txt") is False
+
+    # Invalid paths - traversal
+    assert py7zr.helpers.check_archive_path("../file.txt") is False
+    assert py7zr.helpers.check_archive_path("dir/../../file.txt") is False
+    assert py7zr.helpers.check_archive_path("../../../etc/passwd") is False

@@ -160,6 +160,7 @@ markers = [
     "benchmark: mark a test as a benchmarking.",
     "misc: misc tests",
     "slow: mark a slow tests",
+    "security: mark a test as a vulnerability regression test",
 ]
 
 [tool.tox]
