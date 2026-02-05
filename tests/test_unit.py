@@ -810,3 +810,11 @@ def test_remove_relative_path_marker_ignore_marker():
     file_path = f"/path/with/ignored/marker{py7zr.helpers.RELATIVE_PATH_MARKER}"
     # The marker isn't removed if it isn't at the beginning
     assert py7zr.helpers.remove_relative_path_marker(file_path) == file_path
+
+
+@pytest.mark.unit
+def test_check_is_relative_to_detect_drive_letter_absolute_path(tmp_path):
+    """
+    Test is_relative_to function correctly detects absolute paths on Windows.
+    """
+    assert py7zr.helpers.is_relative_to(pathlib.Path("C:\\Windows\\System32\\evil.dll"), tmp_path) is False

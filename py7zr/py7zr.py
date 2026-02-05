@@ -1091,6 +1091,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return self._writef(bio, arcname)
 
     def _writef(self, bio: IO[Any], arcname: str) -> None:
+        # Check for null byte injection - 7z uses null-terminated strings in headers
+        if "\\x00" in arcname:
+            raise ValueError(f"Filename contains null byte: {arcname}")
         if isinstance(bio, io.BytesIO):
             size = bio.getbuffer().nbytes
         elif isinstance(bio, io.TextIOBase):

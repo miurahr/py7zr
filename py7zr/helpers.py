@@ -28,6 +28,7 @@ import os
 import pathlib
 import platform
 import posixpath
+import re
 import sys
 import time as _time
 import zlib
@@ -349,6 +350,11 @@ def get_sanitized_output_path(fname: str, path: pathlib.Path | None) -> pathlib.
     check f.filename has invalid directory traversals
     When condition is not satisfied, raise Bad7zFile
     """
+    # Check for Windows drive letter (e.g., C:\, D:\)
+    # This is a security risk even on non-Windows systems
+    if re.match(r"^[A-Za-z]:", fname):
+        raise Bad7zFile(f"Specified path is bad: {fname}")
+
     if fname.startswith("/"):
         fname = fname.lstrip("/")
 
