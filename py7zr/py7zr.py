@@ -23,6 +23,7 @@
 #
 #
 """Read 7zip format archives."""
+
 from __future__ import annotations
 
 import collections.abc
@@ -504,7 +505,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             if not file_info["emptystream"] and folders is not None:
                 folder = folders[pstat.folder]
                 numinstreams = max([coder.get("numinstreams", 1) for coder in folder.coders])
-                (maxsize, compressed, uncompressed, packsize, solid) = self._get_fileinfo_sizes(
+                maxsize, compressed, uncompressed, packsize, solid = self._get_fileinfo_sizes(
                     pstat, subinfo, packinfo, folder, packsizes, unpacksizes, file_in_solid, numinstreams
                 )
                 pstat.input += 1
@@ -727,7 +728,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     def _write_header(self):
         """Write header and update signature header."""
-        (header_pos, header_len, header_crc) = self.header.write(
+        header_pos, header_len, header_crc = self.header.write(
             self.fp,
             self.afterheader,
             encoded=self.encoded_header_mode,
@@ -780,15 +781,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
     ):
         if pstat.input == 0:
             folder.solid = subinfo.num_unpackstreams_folders[pstat.folder] > 1
-        maxsize = (folder.solid and packinfo.packsizes[pstat.stream]) or None
-        uncompressed = unpacksizes[pstat.outstreams]
+        maxsize: int | None = (folder.solid and packinfo.packsizes[pstat.stream]) or None
+        uncompressed: int = unpacksizes[pstat.outstreams]
         if file_in_solid > 0:
-            compressed = None
+            compressed: int | None = None
         elif pstat.stream < len(packsizes):  # file is compressed
             compressed = packsizes[pstat.stream]
         else:  # file is not compressed
             compressed = uncompressed
-        packsize = packsizes[pstat.stream : pstat.stream + numinstreams]
+        packsize: int = packsizes[pstat.stream : pstat.stream + numinstreams]
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def set_encoded_header_mode(self, mode: bool) -> None:
