@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2023 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2025 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -28,7 +28,7 @@ import sys
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, BinaryIO, IO, Tuple, Union
 
 import bcj
 import inflate64
@@ -894,10 +894,10 @@ class SevenZipCompressor:
             },
         )
 
-    def compress(self, fd, fp, crc=0):
+    def compress(self, fd: IO[bytes], fp: BinaryIO, crc: int = 0) -> Tuple[int, int, int]:
         data = fd.read(self._block_size)
-        insize = len(data)
-        foutsize = 0
+        insize: int = len(data)
+        foutsize: int = 0
         while data:
             crc = calculate_crc32(data, crc)
             for i, compressor in enumerate(self.chain):
