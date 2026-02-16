@@ -217,8 +217,7 @@ def read_utf16(file: BinaryIO) -> str:
 
 def write_utf16(file: BinaryIO | WriteWithCrc, val: str):
     """write a utf-16 string to file"""
-    for c in val:
-        file.write(c.encode("utf-16LE"))
+    file.write(val.encode("utf-16LE"))
     file.write(b"\x00\x00")
 
 
