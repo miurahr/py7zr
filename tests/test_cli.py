@@ -173,9 +173,7 @@ Blocks = 1
 total 4 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-""".format(
-        arcfile, arcfile
-    )
+""".format(arcfile, arcfile)
     expected += "{} D....            0            0  scripts\n".format(ltime2(2019, 3, 14, 0, 10, 8))
     expected += "{} ....A          111          441  scripts/py7zr\n".format(ltime2(2019, 3, 14, 0, 10, 8))
     expected += "{} ....A           58               setup.cfg\n".format(ltime2(2019, 3, 14, 0, 7, 13))
@@ -201,9 +199,7 @@ Solid = -
 Blocks = 1
 
 Everything is Ok
-""".format(
-        arcfile, arcfile
-    )
+""".format(arcfile, arcfile)
     cli = py7zr.cli.Cli()
     cli.run(["t", arcfile])
     out, err = capsys.readouterr()
@@ -245,9 +241,7 @@ Codecs and hashes:
 040109     DEFLATE64
 06f10701       7zAES
 {}
-""".format(
-        expected_checks
-    )
+""".format(expected_checks)
     cli = py7zr.cli.Cli()
     cli.run(["i"])
     out, err = capsys.readouterr()
@@ -495,9 +489,7 @@ Blocks = 2
 total 19 files and directories in solid archive
    Date      Time    Attr         Size   Compressed  Name
 ------------------- ----- ------------ ------------  ------------------------
-""".format(
-        basefile, basefile
-    )
+""".format(basefile, basefile)
     expected += "{} D....            0            0  mingw64\n".format(ltime2(2017, 1, 23, 6, 2, 46))
     expected += "{} D....            0            0  mingw64/bin\n".format(ltime2(2020, 6, 7, 2, 45, 18))
     expected += "{} D....            0            0  mingw64/include\n".format(ltime2(2020, 6, 7, 2, 45, 18))
@@ -544,9 +536,7 @@ Solid = +
 Blocks = 1
 
 The archive is encrypted but password is not given. FAILED.
-""".format(
-        arcfile, arcfile
-    )
+""".format(arcfile, arcfile)
     cli = py7zr.cli.Cli()
     cli.run(["t", arcfile])
     out, err = capsys.readouterr()

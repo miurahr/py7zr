@@ -856,3 +856,11 @@ def test_check_archive_path_comprehensive():
     assert py7zr.helpers.check_archive_path("../file.txt") is False
     assert py7zr.helpers.check_archive_path("dir/../../file.txt") is False
     assert py7zr.helpers.check_archive_path("../../../etc/passwd") is False
+
+
+@pytest.mark.unit    
+def test_check_is_relative_to_detect_drive_letter_absolute_path(tmp_path):
+    """
+    Test is_relative_to function correctly detects absolute paths on Windows.
+    """
+    assert py7zr.helpers.is_relative_to(pathlib.Path("C:\\Windows\\System32\\evil.dll"), tmp_path) is False

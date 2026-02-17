@@ -366,7 +366,22 @@ def test_extract_rejects_mixed_separators(tmp_path):
     my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
     target = tmp_path / "target.7z"
     with SevenZipFile(target, "w", filters=my_filters) as archive:
-        archive._writestr(b"malicious", "subdir/..\\\\../..\\\\tmp/evil.sh")
+        archive._writestr(b"malicious", "subdir/..\\\\../..\\\\tmp/evil.sh"
+
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=tmp_path)
+
+                          
+@pytest.mark.misc
+def test_extract_rejects_windows_drive_letter_escape(tmp_path):
+    """
+    Attack surface: Windows absolute path with a drive letter.
+    """
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+    target = tmp_path / "target.7z"
+    with SevenZipFile(target, "w", filters=my_filters) as archive:
+        archive._writestr(b"malicious", "C:\\Windows\\System32\\evil.dll")
 
     with pytest.raises(Bad7zFile):
         with SevenZipFile(target, "r") as archive:
@@ -564,3 +579,15 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
     with SevenZipFile(target, "r") as archive:
         with pytest.raises(Bad7zFile):
             archive.extractall(path=extract_dir)
+
+                          
+@pytest.mark.misc
+def test_extract_rejects_null_byte_in_path(tmp_path):
+    """
+    Attack surface: Null byte injection in filename to bypass extension checks.
+    """
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+    target = tmp_path / "target.7z"
+    with pytest.raises(ValueError):
+        with SevenZipFile(target, "w", filters=my_filters) as archive:
+            archive.writestr(b"malicious", "evil.txt\\x00.png")
