@@ -26,7 +26,6 @@ import io
 import operator
 import os
 import struct
-from binascii import unhexlify
 from functools import reduce
 from io import BytesIO
 from operator import and_, or_
@@ -177,7 +176,7 @@ def write_uint64(file: BinaryIO | WriteWithCrc, value: int):
 def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> list[bool]:
     if checkall:
         all_defined = file.read(1)
-        if all_defined != unhexlify("00"):
+        if all_defined != b"\x00":
             return [True] * count
     result = []
     b = 0
@@ -209,7 +208,7 @@ def read_utf16(file: BinaryIO) -> str:
     nul = False
     for i in range(MAX_LENGTH):
         ch = file.read(2)
-        if ch == unhexlify("0000"):
+        if ch == b"\x00\x00":
             nul = True
             break
     size = (i + 1) * 2
