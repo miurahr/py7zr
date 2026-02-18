@@ -517,12 +517,15 @@ def test_extract_handles_unicode_normalization_attack(tmp_path):
 
     with SevenZipFile(target, "w", filters=my_filters) as archive:
         archive.writestr(b"nfc", nfc_name)
-        # In a real attack, this would be different bytes but same visual appearance
+        archive.writestr(b"nfd", nfd_name)
 
     with SevenZipFile(target, "r") as archive:
         archive.extractall(path=tmp_path)
 
-    # Should extract successfully - just testing handling
+    # Verify that at least one of the normalized filenames exists
+    nfd_escaped = nfd_name + "_0"
+    assert (tmp_path / nfc_name).exists()
+    assert (tmp_path / nfd_escaped).exists()
 
 
 @pytest.mark.security
