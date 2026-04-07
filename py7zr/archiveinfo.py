@@ -29,6 +29,7 @@ import struct
 from binascii import unhexlify
 from functools import reduce
 from io import BytesIO
+from itertools import accumulate
 from operator import and_, or_
 from struct import pack, unpack
 from typing import Any, BinaryIO, Optional, Union
@@ -39,6 +40,7 @@ from py7zr.helpers import ArchiveTimestamp, calculate_crc32
 from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, PROPERTY
 
 MAX_LENGTH = 65536
+MAX_NUMSTREAMS = 65536
 P7ZIP_MAJOR_VERSION = b"\x00"
 P7ZIP_MINOR_VERSION = b"\x04"
 
@@ -254,6 +256,8 @@ class PackInfo:
     def _read(self, file: BinaryIO):
         self.packpos = read_uint64(file)
         self.numstreams = read_uint64(file)
+        if self.numstreams > MAX_NUMSTREAMS:
+            raise Bad7zFile("numstreams value %d exceeds limit %d" % (self.numstreams, MAX_NUMSTREAMS))
         pid = file.read(1)
         if pid == PROPERTY.SIZE:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
@@ -267,7 +271,7 @@ class PackInfo:
                 pid = file.read(1)
         if pid != PROPERTY.END:
             raise Bad7zFile("end id expected but %s found" % repr(pid))  # pragma: no-cover  # noqa
-        self.packpositions: list[int] = [sum(self.packsizes[:i]) for i in range(self.numstreams + 1)]
+        self.packpositions: list[int] = list(accumulate(self.packsizes, initial=0))
         self.enable_digests = len(self.crcs) > 0
         return self
 
