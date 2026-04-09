@@ -61,8 +61,9 @@ jobs:
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v2
         with:
-          file-url: "https://libarchive.org/downloads/libarchive-3.8.6.zip"
+          file-url: "https://github.com/libarchive/libarchive/releases/download/v3.8.6/libarchive-3.8.6.zip"
           file-name: "libarchive-3.8.6.zip"
+          sha256: "0f23c15932a7eecde4308a5a6727811203a8c2030cae49a964eef2364c7437fa"
       - name: Install libarchive(Windows)
         if: runner.os == 'Windows'
         run: |
