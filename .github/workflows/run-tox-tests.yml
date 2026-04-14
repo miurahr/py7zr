@@ -61,13 +61,13 @@ jobs:
         if: runner.os == 'Windows'
         uses: carlosperate/download-file-action@v2
         with:
-          file-url: "https://github.com/libarchive/libarchive/releases/download/v3.8.6/libarchive-3.8.6.zip"
-          file-name: "libarchive-3.8.6.zip"
-          sha256: "0f23c15932a7eecde4308a5a6727811203a8c2030cae49a964eef2364c7437fa"
+          file-url: "https://github.com/libarchive/libarchive/releases/download/v3.8.7/libarchive-3.8.7.zip"
+          file-name: "libarchive-3.8.7.zip"
+          sha256: "606fbbe2d18b31288470be62212244723c4ef16c53d586f3a72b56c75e91c823"
       - name: Install libarchive(Windows)
         if: runner.os == 'Windows'
         run: |
-          $file = "libarchive-3.8.6.zip"
+          $file = "libarchive-3.8.7.zip"
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
           choco install graphviz
       - name: Install dependencies
