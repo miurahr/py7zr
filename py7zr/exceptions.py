@@ -80,6 +80,12 @@ class PasswordRequired(Exception):
     pass
 
 
+class DecompressionBombError(ArchiveError):
+    """Exception raised when decompressed size exceeds the configured limit."""
+
+    pass
+
+
 class AbsolutePathError(Exception):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
