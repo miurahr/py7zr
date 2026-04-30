@@ -44,6 +44,14 @@ class Py7zIO(ABC):
     def size(self) -> int:
         pass
 
+    def close(self) -> None:
+        """Called by py7zr when decompression of an individual archive
+        member completes. Override to release per-file resources or to
+        process the just-decompressed payload before py7zr moves on to
+        the next file. Default implementation is a no-op for backward
+        compatibility with subclasses written before this hook existed."""
+        return None
+
 
 class HashIO(Py7zIO):
     def __init__(self, filename):
@@ -188,6 +196,7 @@ class MemIO:
         self._closed = True
         if self._buf is not None:
             self._buf.seek(0)
+            self._buf.close()
 
     def seek(self, offset: int, whence: int = 0) -> int:
         if self._buf is None:
@@ -211,7 +220,7 @@ class MemIO:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        self.close()
 
 
 class NullIO(Py7zIO):
