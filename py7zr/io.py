@@ -220,7 +220,12 @@ class MemIO:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        if exc_type is None:
+            self.close()
+        else:
+            # extraction failed (e.g. CRC or decompression error); do not
+            # signal completion through Py7zIO.close()
+            self._closed = True
 
 
 class NullIO(Py7zIO):

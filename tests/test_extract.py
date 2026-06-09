@@ -560,6 +560,48 @@ def test_py7zr_extract_corrupted(tmp_path):
 
 
 @pytest.mark.files
+def test_py7zio_close_not_called_on_crc_error():
+    """Py7zIO.close() must not fire for a member that failed its CRC check."""
+    import io as _io
+
+    closed = []
+
+    class CountingIO(py7zr.io.Py7zIO):
+        def __init__(self, fname):
+            self.fname = fname
+            self._buf = _io.BytesIO()
+
+        def write(self, s):
+            return self._buf.write(s)
+
+        def read(self, size=None):
+            return self._buf.read(size)
+
+        def seek(self, offset, whence=0):
+            return self._buf.seek(offset, whence)
+
+        def flush(self):
+            return None
+
+        def size(self):
+            return self._buf.getbuffer().nbytes
+
+        def close(self):
+            closed.append(self.fname)
+
+    class CountingFactory(py7zr.io.WriterFactory):
+        def create(self, filename):
+            return CountingIO(filename)
+
+    archive = py7zr.SevenZipFile(str(testdata_path.joinpath("crc_corrupted.7z")), "r")
+    with pytest.raises(CrcError):
+        archive.extractall(factory=CountingFactory())
+    archive.close()
+
+    assert closed == []
+
+
+@pytest.mark.files
 def test_extract_lzma2delta(tmp_path):
     with py7zr.SevenZipFile(testdata_path.joinpath("lzma2delta_1.7z").open("rb")) as archive:
         archive.extractall(path=tmp_path)
