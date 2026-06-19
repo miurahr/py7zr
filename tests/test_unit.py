@@ -9,6 +9,7 @@ import pathlib
 import stat
 import struct
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -17,7 +18,7 @@ import py7zr.compressor
 import py7zr.helpers
 import py7zr.io
 import py7zr.properties
-from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION
+from py7zr.py7zr import FILE_ATTRIBUTE_UNIX_EXTENSION, Worker
 
 testdata_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -125,6 +126,45 @@ def test_py7zr_unpack_info():
     unpack_info.write(buffer)
     actual = buffer.getvalue()
     assert actual == b"\x07\x0b\x01\x00\x01#\x03\x01\x01\x05]\x00\x10\x00\x00\x0c\x22\x00"
+
+
+@pytest.mark.unit
+def test_worker_limits_parallel_extract_tasks(monkeypatch, tmp_path):
+    class FakeTask:
+        active = 0
+        max_active = 0
+
+        def __init__(self, target, args):
+            self.target = target
+            self.args = args
+
+        def start(self):
+            type(self).active += 1
+            type(self).max_active = max(type(self).max_active, type(self).active)
+
+        def join(self):
+            type(self).active -= 1
+
+    files = [SimpleNamespace(id=i, emptystream=False) for i in range(5)]
+    folders = [SimpleNamespace(files=[file]) for file in files]
+    header = SimpleNamespace(
+        main_streams=SimpleNamespace(
+            packinfo=SimpleNamespace(packpositions=list(range(len(files) + 1))),
+            unpackinfo=SimpleNamespace(numfolders=len(folders), folders=folders),
+        )
+    )
+    source = tmp_path / "archive.7z"
+    source.write_bytes(b"")
+
+    worker = Worker(files, 0, header)
+    worker.concurrent = FakeTask
+    worker.target_filepath.update((file.id, tmp_path / str(file.id)) for file in files)
+    monkeypatch.setattr(py7zr.py7zr.os, "cpu_count", lambda: 2)
+
+    with source.open("rb") as fp:
+        worker.extract(fp, tmp_path, parallel=True)
+
+    assert FakeTask.max_active == 2
 
 
 @pytest.mark.unit

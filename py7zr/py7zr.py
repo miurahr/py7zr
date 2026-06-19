@@ -1324,6 +1324,7 @@ class Worker:
                     self.extract_single(open(filename, "rb"), empty_files, path, 0, 0, q)
                     concurrent_tasks = []
                     exc_q: queue.Queue = queue.Queue()
+                    max_workers = max(1, os.cpu_count() or 1)
                     for i in range(numfolders):
                         if skip_notarget:
                             if not any([self.target_filepath.get(f.id, None) for f in folders[i].files]):
@@ -1343,6 +1344,8 @@ class Worker:
                         )
                         p.start()
                         concurrent_tasks.append(p)
+                        if len(concurrent_tasks) >= max_workers:
+                            concurrent_tasks.pop(0).join()
                     for p in concurrent_tasks:
                         p.join()
                     if exc_q.empty():
