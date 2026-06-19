@@ -91,7 +91,11 @@ class Py7zBytesIO(Py7zIO):
         return self._buffer.flush()
 
     def size(self) -> int:
-        return self._buffer.getbuffer().nbytes
+        current_pos = self._buffer.tell()
+        self._buffer.seek(0, io.SEEK_END)
+        size = self._buffer.tell()
+        self._buffer.seek(current_pos)
+        return size
 
 
 class WriterFactory(ABC):
