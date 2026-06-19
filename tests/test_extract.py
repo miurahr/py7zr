@@ -107,6 +107,52 @@ def test_github_14_mem(tmp_path):
 
 
 @pytest.mark.files
+def test_py7zio_close_called_per_file():
+    """py7zr should invoke Py7zIO.close() once after each member is fully written.
+
+    Regression guard for #699: custom Py7zIO subclasses need a per-file
+    completion signal so they can flush/process the just-decompressed payload
+    before the next file starts.
+    """
+    import io as _io
+
+    closed = []
+
+    class CountingIO(py7zr.io.Py7zIO):
+        def __init__(self, fname):
+            self.fname = fname
+            self._buf = _io.BytesIO()
+
+        def write(self, s):
+            return self._buf.write(s)
+
+        def read(self, size=None):
+            return self._buf.read(size)
+
+        def seek(self, offset, whence=0):
+            return self._buf.seek(offset, whence)
+
+        def flush(self):
+            return None
+
+        def size(self):
+            return self._buf.getbuffer().nbytes
+
+        def close(self):
+            closed.append(self.fname)
+
+    class CountingFactory(py7zr.io.WriterFactory):
+        def create(self, filename):
+            return CountingIO(filename)
+
+    archive = py7zr.SevenZipFile(testdata_path.joinpath("github_14.7z").open(mode="rb"))
+    archive.extractall(factory=CountingFactory())
+    archive.close()
+
+    assert closed == ["github_14"]
+
+
+@pytest.mark.files
 def _test_umlaut_archive(filename: str, target: pathlib.Path, return_dict: bool):
     archive = py7zr.SevenZipFile(testdata_path.joinpath(filename).open(mode="rb"))
     if not return_dict:
@@ -519,6 +565,48 @@ def test_py7zr_extract_corrupted(tmp_path):
         archive = py7zr.SevenZipFile(str(testdata_path.joinpath("crc_corrupted.7z")), "r")
         archive.extract(path=tmp_path)
         archive.close()
+
+
+@pytest.mark.files
+def test_py7zio_close_not_called_on_crc_error():
+    """Py7zIO.close() must not fire for a member that failed its CRC check."""
+    import io as _io
+
+    closed = []
+
+    class CountingIO(py7zr.io.Py7zIO):
+        def __init__(self, fname):
+            self.fname = fname
+            self._buf = _io.BytesIO()
+
+        def write(self, s):
+            return self._buf.write(s)
+
+        def read(self, size=None):
+            return self._buf.read(size)
+
+        def seek(self, offset, whence=0):
+            return self._buf.seek(offset, whence)
+
+        def flush(self):
+            return None
+
+        def size(self):
+            return self._buf.getbuffer().nbytes
+
+        def close(self):
+            closed.append(self.fname)
+
+    class CountingFactory(py7zr.io.WriterFactory):
+        def create(self, filename):
+            return CountingIO(filename)
+
+    archive = py7zr.SevenZipFile(str(testdata_path.joinpath("crc_corrupted.7z")), "r")
+    with pytest.raises(CrcError):
+        archive.extractall(factory=CountingFactory())
+    archive.close()
+
+    assert closed == []
 
 
 @pytest.mark.files
