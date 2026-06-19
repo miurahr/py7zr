@@ -670,12 +670,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # set file properties
         for outfilename, properties in target_files:
             # mtime
-            lastmodified = None
-            try:
-                lastmodified = ArchiveTimestamp(properties["lastwritetime"]).totimestamp()
-            except KeyError:
-                pass
-            if lastmodified is not None:
+            lastwritetime = properties.get("lastwritetime")
+            if lastwritetime is not None:
+                lastmodified = ArchiveTimestamp(lastwritetime).totimestamp()
                 os.utime(str(outfilename), times=(lastmodified, lastmodified))
             if os.name == "posix":
                 st_mode = properties["posix_mode"]
