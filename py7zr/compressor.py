@@ -822,6 +822,8 @@ class SevenZipCompressor:
         if len(self.filters) > 4:
             raise UnsupportedCompressionMethodError(filters, f"Maximum cascade of filters is 4 but got {len(self.filters)}.")
         self.methods_map = [SupportedMethods.is_native_filter(filter) for filter in self.filters]
+        if password is None and SupportedMethods.needs_password_for_filters(self.filters):
+            raise PasswordRequired(self.filters, "Password is required for writing encrypted archive.")
         self.coders: list[dict[str, Any]] = []
         if all(self.methods_map) and SupportedMethods.is_compressor(self.filters[-1]):  # all native
             self._set_native_compressors_coders(self.filters)
@@ -1170,6 +1172,13 @@ class SupportedMethods:
             if filter_id is None:
                 continue
             if SupportedMethods.is_crypto_id(filter_id):
+                return True
+        return False
+
+    @classmethod
+    def needs_password_for_filters(cls, filters) -> bool:
+        for filter_spec in filters:
+            if SupportedMethods.is_crypto_id(filter_spec["id"]):
                 return True
         return False
 
