@@ -74,6 +74,14 @@ def test_solid_mem(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_file_without_lastwritetime(tmp_path):
+    with py7zr.SevenZipFile(testdata_path.joinpath("test_1.7z").open(mode="rb")) as archive:
+        archive.files[1].file_properties()["lastwritetime"] = None
+        archive.extractall(path=tmp_path)
+    assert tmp_path.joinpath("scripts/py7zr").is_file()
+
+
+@pytest.mark.files
 def test_empty():
     # decompress empty archive
     archive = py7zr.SevenZipFile(testdata_path.joinpath("empty.7z").open(mode="rb"))
