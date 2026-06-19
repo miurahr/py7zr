@@ -17,7 +17,11 @@ Contributors, listed alphabetically, are:
 * c.foster -- Default exceptions to include the exception type
 * chigusa -- Fix UTF-16 path parsing for extraction (#391)
 * @DoNCK -- Fix extraction of hidden dot files(#448)
+* DUAC_PAUD -- Security report and the fix(CVE-2026-55195)
 * François Freitag -- Improve shutil interface support (#583, #584)
+* @gaoflow -- Handle lastwritetime better (#735)
+* @HughLewis20 -- Security report (CVE-2026-23879)
+* @0xHunSec -- Security report and the fix(CVE-2026-55206)
 * Jasper Lievisse Adriaanse -- Update document
 * Joachim Bauch -- pylzma originator
 * John King -- Fix 64bit os detection (#580)
@@ -32,7 +36,9 @@ Contributors, listed alphabetically, are:
 * @padremayi -- Fix crash on wrong creation time in archive (#275)
 * @Ravencentric -- Fix "a" mode, support Python 3.13, modernize codes, and improve CI (#604, #619)
 * @royopa -- Fix typo (#108)
+* Sai Asish Y -- Improve Py7zIO (#732)
 * Sergei -- Update report_update() (#558)
 * T. Yamada -- Deflate64 decompression (#399)
 * Vlad Firoiu -- Speed-up extraction when number of files is very large(#555)
+* @xavier2k6 -- CI/CD, tests improvements (#730,#731)
 * @Zoynels -- BytesIO dictionary API (#111, #119) (removed in v1.0.0-rc2)

@@ -9,6 +9,31 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Security
+--------
+
+- CVE-2026-23879: Arbitrary File Write Vulnerability in py7zr (high severity)
+    - Harden check of path traversal and enhance test cases to reproduce many attack scenarios.
+- CVE-2026-55206: O(n^2) algorithmic complexity DoS in PackInfo._read() in py7zr
+    - Enforced variation of the parameter with a limit and optimized calculation algorithm to prevent excessive CPU consumption.
+- CVE-2026-55195: py7zr <= 1.1.2: Decompression bomb (zip bomb) denial of service via unchecked extraction size
+    - Added check of extraction size and introduced `max_extract_size` as constructor parameter to guard against excessive decompression.
+
+Notes:
+- Fixed three security vulnerabilities in the py7zr library.
+- Improvements made include path traversal hardening, optimization of CPU-intensive algorithms, and protection against zip bombs.
+
+Fixed
+-----
+- BufferError when calling Py7zBytesIO.size() (#736,#737)
+- fix: extractall() raises TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType' (#734,#735)
+
+Changed
+-------
+- feat(io): add Py7zIO.close() lifecycle hook called once per extracted file (#699,#732)
+- test: Bump dependency libarchive@3.8.7
+- ci: bump numerous actions with SHA256 hash and newer versions (#729,#730)
+
 `v1.1.2`_
 =========
 
