@@ -55,6 +55,7 @@ from py7zr.exceptions import (
     AbsolutePathError,
     Bad7zFile,
     CrcError,
+    DecompressionBombError,
     DecompressionError,
     InternalError,
     UnsupportedCompressionMethodError,
@@ -369,6 +370,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         header_encryption: bool = False,
         blocksize: int | None = None,
         mp: bool = False,
+        max_extract_size: int | None = None,
     ) -> None:
         # check invalid mode.
         if mode not in ("r", "w", "x", "a"):
@@ -376,6 +378,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.fp: IO[bytes]
         self.mp = mp
         self.password_protected = password is not None
+        self.max_extract_size = max_extract_size
         if blocksize:
             self._block_size = blocksize
         else:
@@ -649,6 +652,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 else:
                     raise DecompressionError(f"Directory {target_dir} making fails on unknown condition.")
 
+        self.worker.max_extract_size = self.max_extract_size
         if callback is not None:
             self.worker.extract(
                 self.fp,
@@ -1265,6 +1269,8 @@ class Worker:
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files) - 1
+        self.max_extract_size: int | None = None
+        self._total_extracted: int = 0
         if mp:
             self.concurrent: type[Thread] | type[Process] = Process
         else:
@@ -1501,6 +1507,13 @@ class Worker:
         while out_remaining > 0:
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
+                if self.max_extract_size is not None:
+                    self._total_extracted += len(tmp)
+                    if self._total_extracted > self.max_extract_size:
+                        raise DecompressionBombError(
+                            f"Extraction aborted: decompressed size {self._total_extracted} "
+                            f"exceeds limit of {self.max_extract_size} bytes"
+                        )
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
