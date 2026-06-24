@@ -819,6 +819,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             return False
 
     def _get_method_names(self) -> list[str]:
+        if self.header.main_streams is None:
+            return []
         try:
             return get_methods_names([folder.coders for folder in self.header.main_streams.unpackinfo.folders])
         except KeyError:
@@ -835,6 +837,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return digest
 
     def _is_solid(self):
+        if self.header.main_streams is None:
+            return False
         for f in self.header.main_streams.substreamsinfo.num_unpackstreams_folders:
             if f > 1:
                 return True
@@ -950,7 +954,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return sevenzipinfo
 
     def archiveinfo(self) -> ArchiveInfo:
-        total_uncompressed = functools.reduce(lambda x, y: x + y, [f.uncompressed for f in self.files])
+        uncompressed_list = [f.uncompressed for f in self.files]
+        total_uncompressed = functools.reduce(lambda x, y: x + y, uncompressed_list, 0)
         if isinstance(self.fp, multivolumefile.MultiVolume):
             fname = self.fp.name
             fstat = self.fp.stat()
@@ -958,13 +963,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
             fname = self.filename
             assert fname is not None
             fstat = os.stat(fname)
+        blocks = len(self.header.main_streams.unpackinfo.folders) if self.header.main_streams is not None else 0
         return ArchiveInfo(
             fname,
             fstat,
             self.header.size,
             self._get_method_names(),
             self._is_solid(),
-            len(self.header.main_streams.unpackinfo.folders),
+            blocks,
             total_uncompressed,
         )
 

@@ -135,3 +135,14 @@ def test_list_filename_encryption(tmp_path):
     with py7zr.SevenZipFile(os.path.join(testdata_path, "filename_encryption.7z"), "r", password="hello") as ar:
         file_list = ar.list()
         assert file_list[0].filename == "New Text Document.TXT"
+
+
+@pytest.mark.files
+def test_archiveinfo_empty_archive():
+    """archiveinfo() must not crash on an empty archive (main_streams is None)."""
+    with py7zr.SevenZipFile(os.path.join(testdata_path, "empty.7z"), "r") as ar:
+        ai = ar.archiveinfo()
+        assert ai.method_names == []
+        assert ai.solid is False
+        assert ai.blocks == 0
+        assert ai.uncompressed == 0
