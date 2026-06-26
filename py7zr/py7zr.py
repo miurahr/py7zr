@@ -839,7 +839,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
     def _is_solid(self):
         if self.header.main_streams is None:
             return False
-        for f in self.header.main_streams.substreamsinfo.num_unpackstreams_folders:
+        substreamsinfo = self.header.main_streams.substreamsinfo
+        if substreamsinfo is None:
+            return False
+        for f in substreamsinfo.num_unpackstreams_folders:
             if f > 1:
                 return True
         return False

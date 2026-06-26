@@ -1,5 +1,6 @@
 import os
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -146,3 +147,10 @@ def test_archiveinfo_empty_archive():
         assert ai.solid is False
         assert ai.blocks == 0
         assert ai.uncompressed == 0
+
+
+def test_is_solid_without_substreamsinfo():
+    ar = py7zr.SevenZipFile.__new__(py7zr.SevenZipFile)
+    ar.header = SimpleNamespace(main_streams=SimpleNamespace(substreamsinfo=None))
+
+    assert ar._is_solid() is False
