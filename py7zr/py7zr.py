@@ -58,6 +58,7 @@ from py7zr.exceptions import (
     DecompressionBombError,
     DecompressionError,
     InternalError,
+    PasswordRequired,
     UnsupportedCompressionMethodError,
 )
 from py7zr.helpers import (
@@ -698,6 +699,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             for f in filters:
                 if f["id"] == FILTER_DEFLATE64:
                     raise UnsupportedCompressionMethodError(filters, "Compression with deflate64 is not supported.")
+        if password is None and SupportedMethods.needs_password_for_filters(filters):
+            raise PasswordRequired(filters, "Password is required for writing encrypted archive.")
         self.header.filters = filters
         self.header.password = password
         if self.header.main_streams is not None:
@@ -712,6 +715,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
             filters = DEFAULT_FILTERS.ENCRYPTED_ARCHIVE_FILTER
         elif filters is None:
             filters = DEFAULT_FILTERS.ARCHIVE_FILTER
+        if password is None and SupportedMethods.needs_password_for_filters(filters):
+            raise PasswordRequired(filters, "Password is required for writing encrypted archive.")
         self.files = ArchiveFileList()
         self.sig_header = SignatureHeader()
         self.sig_header._write_skeleton(self.fp)
