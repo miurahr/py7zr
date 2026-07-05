@@ -339,10 +339,10 @@ def clean_windows_extended_length_path_indicator(path: pathlib.Path) -> pathlib.
     if isinstance(path, pathlib.WindowsPath):
         path_str = str(path)
         if path_str.startswith("\\\\?\\UNC\\"):
-            print(f"cleaning windows extended length path indicator from: {path}")
+            #print(f"cleaning windows extended length path indicator from: {path}")
             return pathlib.Path("\\\\" + path_str.removeprefix("\\\\?\\UNC\\"))
         if path_str.startswith("\\\\?\\"):
-            print(f"cleaning windows extended length path indicator from: {path}")
+            #print(f"cleaning windows extended length path indicator from: {path}")
             return pathlib.Path(path_str.removeprefix("\\\\?\\"))
     return path
 
