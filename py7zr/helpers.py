@@ -336,12 +336,14 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
 
 
 def clean_windows_extended_length_path_indicator(path: pathlib.Path) -> pathlib.Path:
-    extended_length_path_re = r"^\\\\\?\\"
     if isinstance(path, pathlib.WindowsPath):
-        clean_path = pathlib.Path(re.sub(extended_length_path_re, "", str(path)))
-        if clean_path != path:
-            print(f"cleaned windows extended length path indicator: {path} -> {clean_path}")
-        return clean_path
+        path_str = str(path)
+        if path_str.startswith("\\\\?\\UNC\\"):
+            print(f"cleaning windows extended length path indicator from: {path}")
+            return pathlib.Path("\\\\" + path_str.removeprefix("\\\\?\\UNC\\"))
+        if path_str.startswith("\\\\?\\"):
+            print(f"cleaning windows extended length path indicator from: {path}")
+            return pathlib.Path(path_str.removeprefix("\\\\?\\"))
     return path
 
 
