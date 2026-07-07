@@ -1450,7 +1450,6 @@ class Worker:
                     else:
                         with fileish.open(mode="wb") as obfp:
                             crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end, q)
-                            obfp.seek(0)
                             if f.crc32 is not None and crc32 != f.crc32:
                                 raise CrcError(crc32, f.crc32, f.filename)
                 else:
