@@ -284,10 +284,11 @@ def readlink(path: str | pathlib.Path, *, dir_fd=None) -> str | pathlib.Path:
     if not os.path.exists(str(path)):
         raise OSError(22, "Invalid argument", path)
 
-    if isinstance(path, pathlib.Path) and dir_fd is None:
-        return path.readlink()
-    else:
-        return os.readlink(path, dir_fd=dir_fd)
+    if isinstance(path, pathlib.Path):
+        if dir_fd is None:
+            return path.readlink()
+        return pathlib.Path(os.readlink(path, dir_fd=dir_fd))
+    return os.readlink(path, dir_fd=dir_fd)
 
 
 def remove_relative_path_marker(path: str) -> str:

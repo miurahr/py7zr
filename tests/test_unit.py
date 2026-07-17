@@ -732,6 +732,7 @@ def test_helpers_readlink_dirfd(tmp_path):
     target = pathlib.Path("../parent/original.txt")
     slink.symlink_to(target, False)
     dirfd = os.open(str(origin.parent), os.O_RDONLY | os.O_DIRECTORY)
+    assert py7zr.helpers.readlink(str(slink), dir_fd=dirfd) == str(target)
     assert py7zr.helpers.readlink(slink, dir_fd=dirfd) == target
     os.close(dirfd)
 
