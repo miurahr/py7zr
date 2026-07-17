@@ -1040,9 +1040,9 @@ def test_append_files_2(tmp_path):
 def test_append_empty_files(tmp_path):
     tmp_path.joinpath("src").mkdir()
     tmp_path.joinpath("tgt").mkdir()
-    with tmp_path.joinpath("src").joinpath("1.txt").open(mode="w") as w:
+    with tmp_path.joinpath("src").joinpath("1.txt").open(mode="w") as _:
         pass
-    with tmp_path.joinpath("src").joinpath("2.txt").open(mode="w") as w:
+    with tmp_path.joinpath("src").joinpath("2.txt").open(mode="w") as _:
         pass
     target = tmp_path.joinpath("target.7z")
     os.chdir(str(tmp_path.joinpath("src")))

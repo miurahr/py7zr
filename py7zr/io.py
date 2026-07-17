@@ -19,7 +19,6 @@
 import hashlib
 import io
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 
 class Py7zIO(ABC):

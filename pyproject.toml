@@ -71,14 +71,10 @@ docs = [
 check = [
       "mypy>=1.17.0",
       "mypy_extensions>=1.1.0",
+      "ruff>=0.6.0",
       "lxml",
       "types-psutil",
       "check-manifest",
-      "flake8<8",
-      "flake8-black>=0.3.6",
-      "flake8-deprecated",
-      "flake8-isort",
-      "isort>=7.0.0",
       "pygments",
       "readme-renderer",
       "twine",
@@ -123,15 +119,20 @@ exclude_lines = ["if __name__ == .__main__.:", "pragma: no-cover", "@abstract", 
 line-length = 125
 target-version = ['py310']
 
-[tool.isort]
-known_first_party = ['py7zr']
-known_third_party = ["docutils", "flake8", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-line_length = 125
+[tool.ruff]
+line-length = 125
+target-version = "py310"
+extend-exclude = ["docs/conf.py", "build", "dist", "tmp", "venv"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, PYI: flake8-pyi
+select = ["E", "W", "F", "I", "PYI"]
+# E203: whitespace before ':' (conflicts with black slice formatting)
+ignore = ["E203"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["py7zr"]
+known-third-party = ["docutils", "flake8", "pytest", "pytz", "setuptools", "sphinx", "yaml"]
 
 [tool.mypy]
 warn_redundant_casts = true
@@ -205,7 +206,10 @@ commands = [["mypy", "--html-report", "build/mypy", "py7zr"]]
 
 [tool.tox.env.check]
 extras = ["check"]
-commands = [["check-manifest", "{toxinidir}"], ["flake8", "py7zr", "tests"]]
+commands = [
+    ["check-manifest", "{toxinidir}"],
+    ["ruff", "check", "py7zr", "tests"]
+]
 
 [tool.tox.env.distcheck]
 extras = ["check"]

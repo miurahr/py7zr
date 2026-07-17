@@ -1,11 +1,11 @@
 import base64
+import lzma
 import os
 import pathlib
 import re
 import shutil
 from io import BytesIO
 
-import _lzma
 import pytest
 
 import py7zr
@@ -164,7 +164,7 @@ def test_digests_crc_corrupted():
 @pytest.mark.basic
 def test_digests_data_corrupted():
     arcfile = os.path.join(testdata_path, "data_corrupted.7z")
-    with pytest.raises(_lzma.LZMAError):
+    with pytest.raises(lzma.LZMAError):
         with py7zr.SevenZipFile(arcfile) as archive:
             archive.testzip()
     assert archive.fp.closed

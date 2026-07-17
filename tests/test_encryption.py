@@ -92,6 +92,13 @@ def test_extract_encrypted_6(tmp_path):
 
 
 @pytest.mark.files
+def test_encrypt_crypto_filter_requires_password(tmp_path):
+    filters = [{"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
+    with pytest.raises(PasswordRequired, match="Password is required"):
+        py7zr.SevenZipFile(tmp_path.joinpath("target.7z"), "w", password=None, filters=filters)
+
+
+@pytest.mark.files
 def test_encrypt_file_0(tmp_path):
     filters = [{"id": py7zr.FILTER_LZMA}, {"id": py7zr.FILTER_CRYPTO_AES256_SHA256}]
     tmp_path.joinpath("src").mkdir()
