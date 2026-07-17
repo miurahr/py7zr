@@ -698,8 +698,8 @@ def test_calculate_key2(password: str, cycle: int, salt: bytes, expected: bytes)
         ),
     ],
 )
-def test_calculate_key3(password: str, cycle: int, salt: bytes, expected: bytes):
-    key = py7zr.helpers._calculate_key3(password.encode("utf-16LE"), cycle, salt, "sha256")
+def test_calculate_key(password: str, cycle: int, salt: bytes, expected: bytes):
+    key = py7zr.helpers.calculate_key(password.encode("utf-16LE"), cycle, salt, "sha256")
     assert key == expected
 
 
@@ -713,13 +713,11 @@ def test_calculate_key2_nohash():
         py7zr.helpers._calculate_key2("secret".encode("utf-16LE"), 16, b"", "sha123")
 
 
-def test_calculate_key3_nohash():
+def test_calculate_key_nohash():
     with pytest.raises(ValueError):
-        py7zr.helpers._calculate_key3("secret".encode("utf-16LE"), 16, b"", "sha123")
+        py7zr.helpers.calculate_key("secret".encode("utf-16LE"), 16, b"", "sha123")
 
 
-@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7")
-@pytest.mark.skipif(sys.version_info > (3, 7), reason="requires python3.7")
 @pytest.mark.skipif(
     sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
     reason="Administrator rights is required to make symlink on windows",

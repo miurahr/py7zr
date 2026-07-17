@@ -31,7 +31,7 @@ from io import BytesIO
 from itertools import accumulate
 from operator import and_, or_
 from struct import pack, unpack
-from typing import Any, BinaryIO, Optional, Union
+from typing import Any, BinaryIO
 
 from py7zr.compressor import SevenZipCompressor, SevenZipDecompressor
 from py7zr.exceptions import Bad7zFile
@@ -119,9 +119,9 @@ def read_uint64(file: BinaryIO) -> int:
     ]
     mask = 0x80
     vlen = 8
-    for v, l in blen:
+    for v, length in blen:
         if b <= v:
-            vlen = l
+            vlen = length
             break
         mask >>= 1
     if vlen == 0:

@@ -112,7 +112,7 @@ def _calculate_key2(password: bytes, cycles: int, salt: bytes, digest: str):
     return key
 
 
-def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
+def calculate_key(password: bytes, cycles: int, salt: bytes, digest: str) -> bytes:
     """Calculate 7zip AES encryption key.
     Concat values in order to reduce number of calls of Hash.update()."""
     assert cycles <= 0x3F
@@ -149,12 +149,6 @@ def _calculate_key3(password: bytes, cycles: int, salt: bytes, digest: str) -> b
         key = m.digest()[:32]
 
     return key
-
-
-if platform.python_implementation() == "PyPy" or sys.version_info > (3, 6):
-    calculate_key = _calculate_key3
-else:
-    calculate_key = _calculate_key2  # it is faster when CPython 3.6.x
 
 
 def filetime_to_dt(ft):
@@ -263,7 +257,7 @@ class ArchiveTimestamp(int):
         return datetime.fromtimestamp(self.totimestamp(), UTC())
 
     @classmethod
-    def from_datetime(cls, val: float | int) -> Self:
+    def from_datetime(cls, val: float) -> Self:
         return cls((val - TIMESTAMP_ADJUST) * 10000000.0)
 
     @classmethod
