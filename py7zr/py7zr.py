@@ -1286,7 +1286,7 @@ class Worker:
         self.max_extract_size: int | None = None
         self._total_extracted: int = 0
         if mp:
-            self.concurrent: type[Thread] | type[Process] = Process
+            self.concurrent: type[Thread | Process] = Process
         else:
             self.concurrent = Thread
 

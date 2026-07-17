@@ -4,7 +4,6 @@ import platform
 import stat
 import sys
 from logging import getLogger
-from typing import Union
 
 if sys.platform == "win32":
     import ctypes
