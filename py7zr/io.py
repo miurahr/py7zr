@@ -198,7 +198,12 @@ class MemIO:
     def close(self) -> None:
         self._closed = True
         if self._buf is not None:
-            self._buf.seek(0)
+            # The rewind exists so that seekable factory products (e.g.
+            # BytesIOFactory) can be read back after extraction.  A non-seekable
+            # destination (such as zipfile.ZipFile.open, see issue #703) cannot
+            # be rewound and must not be asked to.
+            if getattr(self._buf, "seekable", lambda: True)():
+                self._buf.seek(0)
             self._buf.close()
 
     def seek(self, offset: int, whence: int = 0) -> int:

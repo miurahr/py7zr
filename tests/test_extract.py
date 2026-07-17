@@ -2,6 +2,7 @@ import asyncio
 import binascii
 import ctypes
 import hashlib
+import io
 import os
 import pathlib
 import shutil
@@ -150,6 +151,61 @@ def test_py7zio_close_called_per_file():
     archive.close()
 
     assert closed == ["github_14"]
+
+
+@pytest.mark.files
+def test_extract_factory_non_seekable():
+    """extract(factory=...) must work when the factory returns non-seekable handles.
+
+    Regression test for issue #703: py7zr rewound the destination handle after
+    decompression (and again on close), which raised io.UnsupportedOperation for
+    non-seekable destinations such as the handle returned by zipfile.ZipFile.open.
+    """
+
+    class NonSeekableIO(py7zr.io.Py7zIO):
+        def __init__(self, filename):
+            self.filename = filename
+            self._buf = io.BytesIO()
+            self.was_closed = False
+
+        def write(self, s: bytes | bytearray) -> int:
+            return self._buf.write(s)
+
+        def read(self, size: int | None = None) -> bytes:
+            return self._buf.read(size)
+
+        def seek(self, offset: int, whence: int = 0) -> int:
+            raise io.UnsupportedOperation("non-seekable handle")
+
+        def seekable(self) -> bool:
+            return False
+
+        def flush(self) -> None:
+            pass
+
+        def size(self) -> int:
+            return self._buf.getbuffer().nbytes
+
+        def close(self) -> None:
+            self.was_closed = True
+
+    class NonSeekableFactory(py7zr.io.WriterFactory):
+        def __init__(self):
+            self.products: dict[str, NonSeekableIO] = {}
+
+        def create(self, filename: str) -> py7zr.io.Py7zIO:
+            handle = NonSeekableIO(filename)
+            self.products[filename] = handle
+            return handle
+
+    factory = NonSeekableFactory()
+    with py7zr.SevenZipFile(testdata_path.joinpath("github_14.7z").open(mode="rb")) as archive:
+        archive.extractall(factory=factory)  # must not raise io.UnsupportedOperation
+
+    # the decompressed bytes were written and the handle was closed cleanly
+    assert "github_14" in factory.products
+    assert factory.products["github_14"].size() > 0
+    assert factory.products["github_14"].was_closed is True
 
 
 @pytest.mark.files
