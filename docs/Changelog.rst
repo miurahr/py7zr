@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Fixed
+-----
+- Raise ``Bad7zFile`` instead of a raw ``struct.error`` when a file starts with
+  the 7z magic but is truncated inside the signature header.
+
 `v1.1.3`_
 =========
 

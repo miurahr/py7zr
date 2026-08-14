@@ -595,3 +595,21 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
     with SevenZipFile(target, "r") as archive:
         with pytest.raises(Bad7zFile):
             archive.extractall(path=extract_dir)
+
+
+@pytest.mark.misc
+def test_truncated_signature_header():
+    """A file with the 7z magic but a signature header cut short used to raise
+    a raw struct.error from unpack() instead of Bad7zFile."""
+    import io
+
+    buf = io.BytesIO()
+    with SevenZipFile(buf, "w") as archive:
+        archive.writestr(b"hello world" * 10, "a.txt")
+    good = buf.getvalue()
+
+    # The signature header is 32 bytes; anything shorter than that but past the
+    # magic must be reported as a bad archive, not crash.
+    for length in range(len(b"7z\xbc\xaf\x27\x1c"), 32):
+        with pytest.raises(Bad7zFile):
+            SevenZipFile(io.BytesIO(good[:length]))

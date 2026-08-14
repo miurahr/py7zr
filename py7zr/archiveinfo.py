@@ -1117,14 +1117,22 @@ class SignatureHeader:
         file.seek(len(MAGIC_7Z), 0)
         major_version = file.read(1)
         minor_version = file.read(1)
+        if len(major_version) != 1 or len(minor_version) != 1:
+            raise Bad7zFile("truncated 7z signature header")
         self.version = (major_version, minor_version)
-        self.startheadercrc, _ = read_uint32(file)
-        self.nextheaderofs, data = read_real_uint64(file)
-        crc = calculate_crc32(data)
-        self.nextheadersize, data = read_real_uint64(file)
-        crc = calculate_crc32(data, crc)
-        self.nextheadercrc, data = read_uint32(file)
-        crc = calculate_crc32(data, crc)
+        try:
+            self.startheadercrc, _ = read_uint32(file)
+            self.nextheaderofs, data = read_real_uint64(file)
+            crc = calculate_crc32(data)
+            self.nextheadersize, data = read_real_uint64(file)
+            crc = calculate_crc32(data, crc)
+            self.nextheadercrc, data = read_uint32(file)
+            crc = calculate_crc32(data, crc)
+        except struct.error:
+            # A file that starts with the 7z magic but is cut off inside the
+            # 32-byte signature header would otherwise surface a raw
+            # struct.error from unpack() on the short buffer.
+            raise Bad7zFile("truncated 7z signature header")
         if crc != self.startheadercrc:
             raise Bad7zFile("invalid header data")
 
