@@ -595,3 +595,23 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
     with SevenZipFile(target, "r") as archive:
         with pytest.raises(Bad7zFile):
             archive.extractall(path=extract_dir)
+
+
+@pytest.mark.misc
+def test_corrupt_encoded_header():
+    """A 7z whose LZMA-compressed (encoded) header is corrupt used to raise a
+    raw _lzma.LZMAError from decompress() instead of Bad7zFile."""
+    import io
+
+    buf = io.BytesIO()
+    with SevenZipFile(buf, "w") as archive:
+        archive.writestr(b"hello world" * 20, "a.txt")
+        archive.writestr(b"second file" * 10, "b.txt")
+    raw = bytearray(buf.getvalue())
+
+    # Byte 70 falls inside the LZMA stream of the encoded header for this
+    # archive; flipping it makes the header fail to decompress.
+    raw[70] ^= 0xFF
+
+    with pytest.raises(Bad7zFile):
+        SevenZipFile(io.BytesIO(bytes(raw)))

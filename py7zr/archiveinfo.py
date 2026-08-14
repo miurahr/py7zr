@@ -23,6 +23,7 @@
 #
 import functools
 import io
+import lzma
 import operator
 import os
 import struct
@@ -956,9 +957,14 @@ class Header:
             decompressor = folder.get_decompressor(compressed_size)
             remaining = uncompressed_size
             folder_data = bytearray()
-            while remaining > 0:
-                folder_data += decompressor.decompress(fp, max_length=remaining)
-                remaining = uncompressed_size - len(folder_data)
+            try:
+                while remaining > 0:
+                    folder_data += decompressor.decompress(fp, max_length=remaining)
+                    remaining = uncompressed_size - len(folder_data)
+            except lzma.LZMAError as e:
+                # a corrupt LZMA-compressed header would otherwise surface a raw
+                # _lzma.LZMAError instead of Bad7zFile
+                raise Bad7zFile("invalid header data") from e
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:
