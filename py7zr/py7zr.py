@@ -438,12 +438,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif mode == "x":
                 self._prepare_write(filters, password)
             elif mode == "a":
-                try:
-                    # Append if it's an existing 7zip file
+                if self._check_7zfile(self.fp):
+                    # An existing (possibly corrupt) 7z file: read it and
+                    # append. A corrupt archive raises here rather than being
+                    # silently overwritten.
                     self._real_get_contents(password)
                     self._prepare_append(filters, password)
-                except Bad7zFile:
-                    # Not an existing 7zip file, write instead
+                else:
+                    # Not a 7z file (empty or wrong magic): write a fresh one.
                     self._prepare_write(filters, password)
             else:
                 raise ValueError("Mode must be 'r', 'w', 'x', or 'a'")  # never come here
