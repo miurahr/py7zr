@@ -613,3 +613,26 @@ def test_truncated_signature_header():
     for length in range(len(b"7z\xbc\xaf\x27\x1c"), 32):
         with pytest.raises(Bad7zFile):
             SevenZipFile(io.BytesIO(good[:length]))
+
+
+@pytest.mark.misc
+def test_append_to_truncated_archive_does_not_overwrite():
+    """Opening a corrupt (truncated) 7z file in append mode must raise rather
+    than fall through to write mode, which would overwrite the file."""
+    import io
+
+    buf = io.BytesIO()
+    with SevenZipFile(buf, "w") as archive:
+        archive.writestr(b"hello world" * 10, "a.txt")
+    good = buf.getvalue()
+
+    with TemporaryDirectory() as tmpdir:
+        target = pathlib.Path(tmpdir) / "truncated.7z"
+        target.write_bytes(good[:20])  # 7z magic, but signature header cut short
+        before = target.read_bytes()
+
+        with pytest.raises(Bad7zFile):
+            SevenZipFile(target, "a")
+
+        # the corrupt archive must be left untouched, not overwritten
+        assert target.read_bytes() == before
