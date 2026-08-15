@@ -599,19 +599,50 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
 
 @pytest.mark.misc
 def test_corrupt_encoded_header():
-    """A 7z whose LZMA-compressed (encoded) header is corrupt used to raise a
-    raw _lzma.LZMAError from decompress() instead of Bad7zFile."""
+    """A 7z whose encoded (LZMA-compressed) header fails to decompress used to
+    raise a raw _lzma.LZMAError from decompress() instead of Bad7zFile.
+
+    The header is stored as its own packed stream, which is not covered by the
+    next-header CRC, so a corrupt byte there reaches the decompressor rather
+    than being rejected by the CRC check first. The archive below (a two-file
+    archive with a flipped byte in that packed stream) is such a case.
+    """
+    import base64
     import io
 
-    buf = io.BytesIO()
-    with SevenZipFile(buf, "w") as archive:
-        archive.writestr(b"hello world" * 20, "a.txt")
-        archive.writestr(b"second file" * 10, "b.txt")
-    raw = bytearray(buf.getvalue())
-
-    # Byte 70 falls inside the LZMA stream of the encoded header for this
-    # archive; flipping it makes the header fail to decompress.
-    raw[70] ^= 0xFF
+    data = base64.b64decode(
+        "N3q8ryccAARIANnVjwAAAAAAAAAUAAAAAAAAAFwtAqvgAUkAHl0ANBlJ7o3pF4k6M2A"
+        "J7byGi4w8k4sWR6TmTFz14gAAAOAAdABhXQAAgTMHrg/QaX28nzkQnG37alxGyIwjZUQ"
+        "u7Nuz3dc2K1q40w4yOIlKxupctz5yNgVmVw9hhPURTbzqi0UhufdbJB3BHpjOJTPBw1"
+        "pKXZfN0pbZeOknfAfLFZhxO5UhAPIADxcGJgEJaQAHCwEAASEhARgMdQAA"
+    )
 
     with pytest.raises(Bad7zFile):
-        SevenZipFile(io.BytesIO(bytes(raw)))
+        SevenZipFile(io.BytesIO(data))
+
+
+@pytest.mark.misc
+def test_append_to_corrupt_archive_does_not_overwrite():
+    """Opening a corrupt 7z file in append mode must raise rather than fall
+    through to write mode, which would overwrite the file."""
+    import base64
+    import io
+
+    # An archive with a corrupt encoded header (same as test_corrupt_encoded_header).
+    data = base64.b64decode(
+        "N3q8ryccAARIANnVjwAAAAAAAAAUAAAAAAAAAFwtAqvgAUkAHl0ANBlJ7o3pF4k6M2A"
+        "J7byGi4w8k4sWR6TmTFz14gAAAOAAdABhXQAAgTMHrg/QaX28nzkQnG37alxGyIwjZUQ"
+        "u7Nuz3dc2K1q40w4yOIlKxupctz5yNgVmVw9hhPURTbzqi0UhufdbJB3BHpjOJTPBw1"
+        "pKXZfN0pbZeOknfAfLFZhxO5UhAPIADxcGJgEJaQAHCwEAASEhARgMdQAA"
+    )
+    assert data[:6] == bytes.fromhex("377abcaf271c")  # sanity: valid 7z magic
+
+    with TemporaryDirectory() as tmpdir:
+        target = pathlib.Path(tmpdir) / "corrupt.7z"
+        target.write_bytes(data)
+        before = target.read_bytes()
+
+        with pytest.raises(Bad7zFile):
+            SevenZipFile(target, "a")
+
+        assert target.read_bytes() == before
