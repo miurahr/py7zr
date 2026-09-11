@@ -330,6 +330,18 @@ def canonical_path(target: pathlib.Path) -> pathlib.Path:
     return pathlib.Path(*stack)
 
 
+def clean_windows_extended_length_path_indicator(path: pathlib.Path) -> pathlib.Path:
+    if isinstance(path, pathlib.WindowsPath):
+        path_str = str(path)
+        if path_str.startswith("\\\\?\\UNC\\"):
+            #print(f"cleaning windows extended length path indicator from: {path}")
+            return pathlib.Path("\\\\" + path_str.removeprefix("\\\\?\\UNC\\"))
+        if path_str.startswith("\\\\?\\"):
+            #print(f"cleaning windows extended length path indicator from: {path}")
+            return pathlib.Path(path_str.removeprefix("\\\\?\\"))
+    return path
+
+
 def is_relative_to(my: pathlib.Path, *other) -> bool:
     """Return True when path is relative to other path, otherwise False."""
     base = canonical_path(*other)
@@ -337,6 +349,8 @@ def is_relative_to(my: pathlib.Path, *other) -> bool:
         # resolve symlinks to catch Zip-Slip style vulnerability
         my_resolved = my.resolve(strict=False)
         base_resolved = base.resolve(strict=False)
+        my_resolved = clean_windows_extended_length_path_indicator(my_resolved)
+        base_resolved = clean_windows_extended_length_path_indicator(base_resolved)
         if my_resolved == base_resolved:
             # don't allow paths to be equal to base
             return False
