@@ -1,5 +1,6 @@
 # Security protection test cases
 import ctypes
+import io
 import os
 import pathlib
 import sys
@@ -34,6 +35,16 @@ def test_get_sanitized_output_path_2(tmp_path):
     good_path = "good.sh"
     expected = tmp_path.joinpath(good_path)
     assert expected == get_sanitized_output_path(good_path, tmp_path)
+
+
+@pytest.mark.misc
+def test_truncated_signature_header():
+    # a file with the 7z magic but a signature header truncated before its
+    # uint32/uint64 fields used to raise a bare struct.error instead of Bad7zFile
+    magic = b"7z\xbc\xaf\x27\x1c\x00\x04"
+    for data in (magic, magic + b"\x00" * 10):
+        with pytest.raises(Bad7zFile):
+            SevenZipFile(io.BytesIO(data), "r")
 
 
 @pytest.mark.security
