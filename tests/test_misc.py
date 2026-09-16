@@ -2,14 +2,12 @@ import ctypes
 import io
 import os
 import pathlib
-import resource
 import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
 
 import multivolumefile
-import psutil
 import pytest
 
 import py7zr
@@ -124,9 +122,11 @@ def test_callback_not_concrete_class():
 @pytest.mark.parametrize("scarce", [0, int(256e6), int(1e9)])
 def test_chunk_size_stays_usable_when_the_rlimit_is_low(tmp_path, monkeypatch, scarce):
     """The RLIMIT_DATA branch: a low limit must not turn the chunk size into a non-size."""
+    import resource
+
     monkeypatch.setattr(resource, "getrlimit", lambda _: (scarce, -1))
     with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
-            z.extractall(path=tmp_path)
+        z.extractall(path=tmp_path)
 
 
 @pytest.mark.misc
@@ -134,10 +134,14 @@ def test_chunk_size_stays_usable_when_the_rlimit_is_low(tmp_path, monkeypatch, s
 @pytest.mark.parametrize("scarce", [0, int(256e6), int(1e9)])
 def test_chunk_size_stays_usable_when_free_memory_is_low(tmp_path, monkeypatch, scarce):
     """The psutil branch, reached only when RLIMIT_DATA is unlimited -- so pin that down too."""
+    import resource
+
+    import psutil
+
     monkeypatch.setattr(resource, "getrlimit", lambda _: (-1, -1))
     monkeypatch.setattr(psutil, "virtual_memory", lambda: type("vm", (), {"available": scarce}))
     with py7zr.SevenZipFile(testdata_path.joinpath("solid.7z").open(mode="rb")) as z:
-            z.extractall(path=tmp_path)
+        z.extractall(path=tmp_path)
 
 
 @pytest.mark.api
