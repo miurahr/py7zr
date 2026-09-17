@@ -1266,6 +1266,10 @@ def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, lo
     Function for registering with shutil.register_archive_format().
     """
     target_name = f"{base_name}.7z"
+    if dry_run:
+        if logger is not None:
+            logger.debug("py7zr: creating '%s' from '%s'", target_name, base_dir)
+        return target_name
     with SevenZipFile(target_name, mode="w") as archive:
         archive.writeall(path=base_dir)
     return target_name

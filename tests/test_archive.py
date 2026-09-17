@@ -342,6 +342,24 @@ def test_register_archive_format(tmp_path):
 
 
 @pytest.mark.api
+def test_register_archive_format_dry_run(tmp_path):
+    # shutil.make_archive() documents that "If dry_run is true, no archive is
+    # created, but the operations that would be executed are logged", and its
+    # own zip/tar archivers honor that. pack_7zarchive() must do the same
+    # instead of writing the archive anyway.
+    tmp_path.joinpath("src").mkdir()
+    py7zr.unpack_7zarchive(os.path.join(testdata_path, "test_1.7z"), path=tmp_path.joinpath("src"))
+    #
+    shutil.register_archive_format("7zip", pack_7zarchive, description="7zip archive")
+    target = tmp_path.joinpath("target")
+    result = shutil.make_archive(str(target), "7zip", str(tmp_path.joinpath("src")), dry_run=True)
+    # the reported would-be filename is still returned...
+    assert result == str(target) + ".7z"
+    # ...but nothing is actually written to disk.
+    assert not os.path.exists(result)
+
+
+@pytest.mark.api
 def test_compress_with_simple_filter(tmp_path):
     my_filters = [
         {"id": py7zr.FILTER_LZMA2, "preset": py7zr.PRESET_DEFAULT},
