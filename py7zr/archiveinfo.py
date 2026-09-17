@@ -85,6 +85,8 @@ def write_byte(file: BinaryIO | WriteWithCrc, data):
 def read_real_uint64(file: BinaryIO) -> tuple[int, bytes]:
     """read 8 bytes, return unpacked value as a little endian unsigned long long, and raw data."""
     res = file.read(8)
+    if len(res) != 8:
+        raise Bad7zFile("truncated archive: expected 8 bytes for a uint64")
     a = unpack("<Q", res)[0]
     return a, res
 
@@ -92,6 +94,8 @@ def read_real_uint64(file: BinaryIO) -> tuple[int, bytes]:
 def read_uint32(file: BinaryIO) -> tuple[int, bytes]:
     """read 4 bytes, return unpacked value as a little endian unsigned long, and raw data."""
     res = file.read(4)
+    if len(res) != 4:
+        raise Bad7zFile("truncated archive: expected 4 bytes for a uint32")
     a = unpack("<L", res)[0]
     return a, res
 
