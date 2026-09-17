@@ -21,6 +21,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 import binascii
+import contextlib
 import lzma
 import platform
 import sys
@@ -95,15 +96,13 @@ def get_memory_limit():
 
         import psutil
 
-        try:
+        minimum_memory_limit = int(1e6)
+        reserved_memory = int(256e6)
+        with contextlib.suppress(AttributeError):
             soft, _ = resource.getrlimit(resource.RLIMIT_DATA)
-            if soft == -1:
-                avmem = psutil.virtual_memory().available
-                return min(default_limit, (avmem - int(256e6)) >> 2)
-            else:
-                return min(default_limit, (soft - int(256e6)) >> 2)
-        except AttributeError:
-            pass
+            usable_memory = psutil.virtual_memory().available if soft == -1 else soft
+            return max(minimum_memory_limit, min(default_limit, (usable_memory - reserved_memory) >> 2))
+
     # fall back to default
     return default_limit
 
