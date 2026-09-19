@@ -804,14 +804,14 @@ class FilesInfo:
         return obj
 
     def _read(self, fp: BinaryIO):
-        numfiles = read_uint64(fp)
+        numfiles = check_count(fp, read_uint64(fp), "numfiles", hard_max=MAX_NUMFILES)
         self.files = [{"emptystream": False} for _ in range(numfiles)]
         numemptystreams = 0
         while True:
             prop = fp.read(1)
             if prop == PROPERTY.END:
                 break
-            size = read_uint64(fp)
+            size = check_count(fp, read_uint64(fp), "property size")
             if prop == PROPERTY.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
