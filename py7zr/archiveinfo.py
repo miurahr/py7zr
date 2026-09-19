@@ -1026,14 +1026,20 @@ class Header:
             raise TypeError(f"Unknown field: {repr(pid)}")  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
+        if not streams.packinfo.packsizes or not streams.unpackinfo.folders:
+            raise Bad7zFile("encoded header without packed stream")
         buffer2 = io.BytesIO()
         src_start = self._start_pos
+        decoded_size = 0
         for folder in streams.unpackinfo.folders:
             uncompressed = folder.unpacksizes
             if not isinstance(uncompressed, (list, tuple)):
                 uncompressed = [uncompressed] * len(folder.coders)
             compressed_size = streams.packinfo.packsizes[0]
             uncompressed_size = uncompressed[-1]
+            decoded_size += uncompressed_size
+            if uncompressed_size < 0 or decoded_size > MAX_HEADER_SIZE:
+                raise Bad7zFile("decoded header size exceeds limit %d" % MAX_HEADER_SIZE)
             folder.password = password
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
@@ -1041,8 +1047,14 @@ class Header:
             remaining = uncompressed_size
             folder_data = bytearray()
             while remaining > 0:
+                # Once the packed stream is exhausted the decompressor keeps
+                # returning b"" forever, so bail out instead of spinning when an
+                # iteration makes no progress at either end.
+                before = (len(folder_data), decompressor.consumed)
                 folder_data += decompressor.decompress(fp, max_length=remaining)
                 remaining = uncompressed_size - len(folder_data)
+                if (len(folder_data), decompressor.consumed) == before:
+                    raise Bad7zFile("truncated or corrupted encoded header")
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:
