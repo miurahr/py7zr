@@ -40,6 +40,17 @@ from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, PROPERTY
 
 MAX_LENGTH = 65536
 MAX_NUMSTREAMS = 65536
+# Absolute caps on counts read from the archive header.  These back up the
+# relative "must fit in the bytes that remain" rule in check_count(); they
+# matter where a single entry costs far more memory than the header bytes
+# that declare it.
+MAX_NUMFILES = 1 << 23  # 7-Zip allows 1 << 28, but py7zr spends a ~200 byte dict per entry
+MAX_NUMFOLDERS = 1 << 20
+MAX_SUBSTREAMS = 1 << 23  # summed over every folder
+MAX_CODERS = 64  # 7-Zip's k_Scan_NumCoders_MAX
+MAX_CODER_STREAMS = 64  # 7-Zip's k_Scan_NumCodersStreams_in_Folder_MAX
+MAX_CODER_PROPERTIES = 1 << 20
+MAX_HEADER_SIZE = 1 << 28  # decoded size of an encoded header
 P7ZIP_MAJOR_VERSION = b"\x00"
 P7ZIP_MINOR_VERSION = b"\x04"
 
@@ -59,7 +70,49 @@ class WriteWithCrc(io.RawIOBase):
         return self._fp.tell()
 
 
+def _remaining(file: BinaryIO) -> int | None:
+    """Return the number of bytes between the current position and the end of file.
+
+    Return None when that cannot be determined, in which case callers fall back
+    to their absolute limit alone.
+    """
+    try:
+        if not file.seekable():
+            return None
+        pos = file.tell()
+        end = file.seek(0, os.SEEK_END)
+        file.seek(pos, os.SEEK_SET)
+    except (AttributeError, OSError, ValueError):  # pragma: no-cover
+        return None
+    return end - pos if end > pos else 0
+
+
+def check_count(
+    file: BinaryIO,
+    count: int,
+    what: str,
+    bits_per_entry: int = 8,
+    hard_max: int | None = None,
+) -> int:
+    """Reject a count read from the header before it is used to allocate.
+
+    ``bits_per_entry`` is the smallest number of bits an entry can occupy in
+    ``file``: 1 for a bit vector, 8 for a vector of UINT64 or bytes, 32 for
+    CRCs.  A count that the remaining input cannot possibly back is refused, so
+    a handful of header bytes can no longer ask for an arbitrarily large list.
+    """
+    if count < 0:
+        raise Bad7zFile("%s value %d is negative" % (what, count))
+    if hard_max is not None and count > hard_max:
+        raise Bad7zFile("%s value %d exceeds limit %d" % (what, count, hard_max))
+    remaining = _remaining(file)
+    if remaining is not None and count > (remaining * 8) // bits_per_entry:
+        raise Bad7zFile("%s value %d exceeds %d bytes remaining in archive header" % (what, count, remaining))
+    return count
+
+
 def read_crcs(file: BinaryIO, count: int) -> list[int]:
+    check_count(file, count, "number of CRCs", bits_per_entry=32)
     data = file.read(4 * count)
     return [unpack("<L", data[i * 4 : i * 4 + 4])[0] for i in range(count)]
 
