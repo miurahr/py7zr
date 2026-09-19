@@ -568,12 +568,16 @@ class UnpackInfo:
         self.numfolders = read_uint64(file)
         self.folders = []
         external = read_byte(file)
+        # The check belongs inside each branch, after the seek: in the external
+        # case the folders live elsewhere in the stream.
         if external == 0x00:
+            check_count(file, self.numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
         else:  # pragma: no-cover  # there is no live example
             datastreamidx = read_uint64(file)
             current_pos = file.tell()
             file.seek(datastreamidx, 0)
+            check_count(file, self.numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
             file.seek(current_pos, 0)
         self._retrieve_coders_info(file)
@@ -642,9 +646,18 @@ class SubstreamsInfo:
         return obj
 
     def _read(self, file: BinaryIO, numfolders: int, folders: list[Folder]):
+        check_count(file, numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
         pid = file.read(1)
         if pid == PROPERTY.NUM_UNPACK_STREAM:
-            self.num_unpackstreams_folders = [read_uint64(file) for _ in range(numfolders)]
+            # Check the running total, not each entry: the sum is what sizes the
+            # digest vectors below, and folders * remaining would be quadratic.
+            self.num_unpackstreams_folders = []
+            total_unpackstreams = 0
+            for _ in range(numfolders):
+                num_unpackstreams = read_uint64(file)
+                total_unpackstreams += num_unpackstreams
+                check_count(file, total_unpackstreams, "total number of unpack streams", hard_max=MAX_SUBSTREAMS)
+                self.num_unpackstreams_folders.append(num_unpackstreams)
             pid = file.read(1)
         else:
             self.num_unpackstreams_folders = [1] * numfolders
