@@ -233,6 +233,11 @@ def write_uint64(file: BinaryIO | WriteWithCrc, value: int):
 
 
 def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> list[bool]:
+    # A bit vector spends one *bit* per entry, so the bound has to be counted in
+    # bits.  This is defence in depth only: with checkall the all-defined byte
+    # returns a count-sized list without reading any further, so the real bound
+    # is the one applied to count where it was read.
+    check_count(file, count, "boolean vector length", bits_per_entry=1)
     if checkall:
         all_defined = file.read(1)
         if all_defined != b"\x00":
