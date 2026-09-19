@@ -323,6 +323,7 @@ class PackInfo:
         self.numstreams = read_uint64(file)
         if self.numstreams > MAX_NUMSTREAMS:
             raise Bad7zFile("numstreams value %d exceeds limit %d" % (self.numstreams, MAX_NUMSTREAMS))
+        check_count(file, self.numstreams, "numstreams")
         pid = file.read(1)
         if pid == PROPERTY.SIZE:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
@@ -421,7 +422,9 @@ class Folder:
         return obj
 
     def _read(self, file: BinaryIO) -> None:
-        num_coders = read_uint64(file)
+        num_coders = check_count(file, read_uint64(file), "num_coders", hard_max=MAX_CODERS)
+        if num_coders == 0:
+            raise Bad7zFile("folder without coder")
         totalin = 0
         totalout = 0
         for _ in range(num_coders):
@@ -434,15 +437,19 @@ class Folder:
             else:
                 c = {"method": b"\x00"}
             if iscomplex:
-                c["numinstreams"] = read_uint64(file)
-                c["numoutstreams"] = read_uint64(file)
+                c["numinstreams"] = check_count(file, read_uint64(file), "numinstreams", hard_max=MAX_CODER_STREAMS)
+                c["numoutstreams"] = check_count(file, read_uint64(file), "numoutstreams", hard_max=MAX_CODER_STREAMS)
             else:
                 c["numinstreams"] = 1
                 c["numoutstreams"] = 1
             totalin += c["numinstreams"]
             totalout += c["numoutstreams"]
+            # Bound the running totals too: num_bindpairs below is derived from
+            # totalout and drives both a loop and the quadratic scan at the end.
+            if totalin > MAX_CODER_STREAMS or totalout > MAX_CODER_STREAMS:
+                raise Bad7zFile("folder declares more than %d streams" % MAX_CODER_STREAMS)
             if hasattributes:
-                proplen = read_uint64(file)
+                proplen = check_count(file, read_uint64(file), "coder property length", hard_max=MAX_CODER_PROPERTIES)
                 c["properties"] = file.read(proplen)
             else:
                 c["properties"] = None
@@ -456,6 +463,8 @@ class Folder:
                 )
             )
         num_packedstreams = totalin - num_bindpairs
+        if num_packedstreams < 1:
+            raise Bad7zFile("folder declares %d packed streams" % num_packedstreams)
         if num_packedstreams == 1:
             for i in range(totalin):
                 if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
