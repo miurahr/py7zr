@@ -123,7 +123,10 @@ def write_crcs(file: BinaryIO | WriteWithCrc, crcs):
 
 
 def read_byte(file: BinaryIO) -> int:
-    return ord(file.read(1))
+    res = file.read(1)
+    if len(res) != 1:
+        raise Bad7zFile("truncated archive: expected 1 byte")
+    return res[0]
 
 
 def write_bytes(file: BinaryIO | WriteWithCrc, data: bytes):
@@ -161,7 +164,7 @@ def write_uint32(file: BinaryIO | WriteWithCrc, value):
 
 def read_uint64(file: BinaryIO) -> int:
     """read UINT64, definition show in write_uint64()"""
-    b = ord(file.read(1))
+    b = read_byte(file)
     if b == 255:
         return read_real_uint64(file)[0]
     blen = [
@@ -184,6 +187,8 @@ def read_uint64(file: BinaryIO) -> int:
     if vlen == 0:
         return b & (mask - 1)
     val = file.read(vlen)
+    if len(val) != vlen:
+        raise Bad7zFile("truncated archive: expected %d bytes for a uint64" % vlen)
     value = int.from_bytes(val, byteorder="little")
     highpart = b & (mask - 1)
     return value + (highpart << (vlen * 8))
@@ -272,6 +277,10 @@ def read_utf16(file: BinaryIO) -> str:
     nul = False
     for i in range(MAX_LENGTH):
         ch = file.read(2)
+        if len(ch) < 2:
+            # without this the loop runs to MAX_LENGTH on a truncated name and
+            # then seeks back past the start of the buffer
+            raise Bad7zFile("truncated archive: unterminated utf-16 string")
         if ch == b"\x00\x00":
             nul = True
             break
