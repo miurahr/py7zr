@@ -9,6 +9,20 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Security
+--------
+
+- Arbitrary file write above the extraction directory via a symlink chain (incomplete fix of CVE-2026-23879)
+    - ``canonical_path()`` cancelled ``..`` lexically before any symlink was resolved, so ``link/..``
+      was treated as the directory holding ``link`` instead of the parent of its target. A chain of
+      symlink members extracted from the same archive could therefore redirect a later write an
+      archive-chosen number of levels above the extraction directory, while the member name still
+      reduced to something apparently inside it.
+    - Containment is now decided on the real path: symlink components are followed first and ``..``
+      is normalized only afterwards. This also covers symlink targets, which may legitimately
+      contain ``..`` and so cannot be rejected by name.
+    - Archive member names containing a ``..`` component are now rejected outright.
+
 `v1.1.3`_
 =========
 
