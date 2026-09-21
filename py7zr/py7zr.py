@@ -1525,6 +1525,7 @@ class Worker:
         previous_update_at = time.time()
         decompressed_bytes = 0
         while out_remaining > 0:
+            src_pos = fp.tell()
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
                 if self.max_extract_size is not None:
@@ -1537,6 +1538,8 @@ class Worker:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
+            elif fp.tell() == src_pos:
+                raise Bad7zFile("decompression failed to make progress before reaching declared size")
             if q is not None:
                 time_delta = time.time() - previous_update_at
                 decompressed_bytes += len(tmp)
