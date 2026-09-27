@@ -1524,8 +1524,15 @@ class Worker:
         decompressor = folder.get_decompressor(compressed_size)
         previous_update_at = time.time()
         decompressed_bytes = 0
+        stalled = False
         while out_remaining > 0:
+            pos = fp.tell()
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
+            # no output and no input twice in a row: stream ended early (e.g. wrong password)
+            progressed = len(tmp) > 0 or fp.tell() != pos
+            if stalled and not progressed:
+                raise DecompressionError("Compressed data ended before the expected size")
+            stalled = not progressed
             if len(tmp) > 0:
                 if self.max_extract_size is not None:
                     self._total_extracted += len(tmp)
