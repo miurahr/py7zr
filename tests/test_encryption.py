@@ -1,9 +1,11 @@
 import ctypes
+import io
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
+from unittest import mock
 
 import pytest
 
@@ -56,6 +58,29 @@ def test_extract_header_encrypted_no_password(tmp_path):
 def test_extract_header_encrypted_no_password_2(tmp_path):
     with pytest.raises(PasswordRequired):
         with py7zr.SevenZipFile(testdata_path.joinpath("encrypted_4.7z").open(mode="rb"), password=None) as archive:
+            archive.extractall(path=tmp_path)
+
+
+@pytest.mark.timeout(10)
+def test_extract_wrong_password_raises_instead_of_hanging(tmp_path):
+    # A fixed IV makes the ciphertext, and so what a wrong key decrypts it
+    # to, reproducible. See https://github.com/miurahr/py7zr/issues/752 .
+    iv = bytes.fromhex("6c8c50e8bb8d9ea0296dbe3916714635")
+    members = [
+        ("notes.txt", b"File Password Remover fixture.\n" * 20),
+        ("data/values.csv", b"a,b,c\n1,2,3\n" * 40),
+        ("data/blob.bin", bytes(range(256)) * 16),
+    ]
+
+    buf = io.BytesIO()
+    with mock.patch.object(py7zr.compressor, "get_random_bytes", lambda n: iv[:n]):
+        with py7zr.SevenZipFile(buf, "w", password="correct horse battery staple") as archive:
+            for name, data in members:
+                archive.writef(io.BytesIO(data), name)
+    buf.seek(0)
+
+    with py7zr.SevenZipFile(buf, "r", password="not the password") as archive:
+        with pytest.raises(py7zr.Bad7zFile):
             archive.extractall(path=tmp_path)
 
 
