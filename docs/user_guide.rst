@@ -224,6 +224,7 @@ as a virtual single file, (ex. multivolumefile library)
 
 .. code-block:: python
 
+    import os
     import py7zr
     filenames = ['example.7z.0001', 'example.7z.0002']
     with open('result.7z', 'ab') as outfile:  # append in binary mode
@@ -251,7 +252,7 @@ following code will extract multi-volume archive.
     import multivolumefile
     import py7zr
     with multivolumefile.open('example.7z', mode='rb') as target_archive:
-        with SevenZipFile(target_archive, 'r') as archive:
+        with py7zr.SevenZipFile(target_archive, 'r') as archive:
             archive.extractall()
 
 
@@ -265,11 +266,12 @@ following example do it for you.
 .. code-block:: python
 
     import multivolumefile
+    import pathlib
     import py7zr
 
     target = pathlib.Path('/target/directory/')
-    with multivolumefile.open('example.7z', mode='wb', volume_size=10240) as target_archive:
-        with SevenZipFile(target_archive, 'w') as archive:
+    with multivolumefile.open('example.7z', mode='wb', volume=10240) as target_archive:
+        with py7zr.SevenZipFile(target_archive, 'w') as archive:
             archive.writeall(target, 'target')
 
 
