@@ -1524,9 +1524,11 @@ class Worker:
         decompressor = folder.get_decompressor(compressed_size)
         previous_update_at = time.time()
         decompressed_bytes = 0
+        no_progress_count = 0
         while out_remaining > 0:
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
+                no_progress_count = 0
                 if self.max_extract_size is not None:
                     self._total_extracted += len(tmp)
                     if self._total_extracted > self.max_extract_size:
@@ -1537,6 +1539,10 @@ class Worker:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
+            else:
+                no_progress_count += 1
+                if no_progress_count >= 3:
+                    raise Bad7zFile("Decompression made no progress: wrong password or corrupted archive.")
             if q is not None:
                 time_delta = time.time() - previous_update_at
                 decompressed_bytes += len(tmp)
