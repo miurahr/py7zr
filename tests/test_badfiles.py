@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 import pytest
 
 from py7zr import SevenZipFile
-from py7zr.exceptions import Bad7zFile
+from py7zr.exceptions import Bad7zFile, DecompressionError
 from py7zr.helpers import check_archive_path, get_sanitized_output_path, is_path_valid
 from py7zr.properties import FILTER_LZMA2, PRESET_DEFAULT
 
@@ -45,6 +45,20 @@ def test_truncated_signature_header():
     for data in (magic, magic + b"\x00" * 10):
         with pytest.raises(Bad7zFile):
             SevenZipFile(io.BytesIO(data), "r")
+
+
+@pytest.mark.misc
+@pytest.mark.timeout(30)
+def test_wrong_password_does_not_hang(tmp_path):
+    # the wrong key decrypts to an LZMA stream that runs out of input
+    # before the declared size; extraction used to loop forever (#536)
+    path = os.path.join(testdata_path, "wrong_password_stall.7z")
+    with SevenZipFile(path, password="wrong") as archive:
+        with pytest.raises(DecompressionError):
+            archive.extractall(path=tmp_path)
+    with SevenZipFile(path, password="secret") as archive:
+        archive.extractall(path=tmp_path)
+    assert tmp_path.joinpath("a.bin").read_bytes() == b"py7zr " * 40 + bytes(range(256))
 
 
 @pytest.mark.security
