@@ -40,6 +40,17 @@ from py7zr.properties import DEFAULT_FILTERS, MAGIC_7Z, PROPERTY
 
 MAX_LENGTH = 65536
 MAX_NUMSTREAMS = 65536
+# Absolute caps on counts read from the archive header.  These back up the
+# relative "must fit in the bytes that remain" rule in check_count(); they
+# matter where a single entry costs far more memory than the header bytes
+# that declare it.
+MAX_NUMFILES = 1 << 23  # 7-Zip allows 1 << 28, but py7zr spends a ~200 byte dict per entry
+MAX_NUMFOLDERS = 1 << 20
+MAX_SUBSTREAMS = 1 << 23  # summed over every folder
+MAX_CODERS = 64  # 7-Zip's k_Scan_NumCoders_MAX
+MAX_CODER_STREAMS = 64  # 7-Zip's k_Scan_NumCodersStreams_in_Folder_MAX
+MAX_CODER_PROPERTIES = 1 << 20
+MAX_HEADER_SIZE = 1 << 28  # decoded size of an encoded header
 P7ZIP_MAJOR_VERSION = b"\x00"
 P7ZIP_MINOR_VERSION = b"\x04"
 
@@ -59,7 +70,49 @@ class WriteWithCrc(io.RawIOBase):
         return self._fp.tell()
 
 
+def _remaining(file: BinaryIO) -> int | None:
+    """Return the number of bytes between the current position and the end of file.
+
+    Return None when that cannot be determined, in which case callers fall back
+    to their absolute limit alone.
+    """
+    try:
+        if not file.seekable():
+            return None
+        pos = file.tell()
+        end = file.seek(0, os.SEEK_END)
+        file.seek(pos, os.SEEK_SET)
+    except (AttributeError, OSError, ValueError):  # pragma: no-cover
+        return None
+    return end - pos if end > pos else 0
+
+
+def check_count(
+    file: BinaryIO,
+    count: int,
+    what: str,
+    bits_per_entry: int = 8,
+    hard_max: int | None = None,
+) -> int:
+    """Reject a count read from the header before it is used to allocate.
+
+    ``bits_per_entry`` is the smallest number of bits an entry can occupy in
+    ``file``: 1 for a bit vector, 8 for a vector of UINT64 or bytes, 32 for
+    CRCs.  A count that the remaining input cannot possibly back is refused, so
+    a handful of header bytes can no longer ask for an arbitrarily large list.
+    """
+    if count < 0:
+        raise Bad7zFile("%s value %d is negative" % (what, count))
+    if hard_max is not None and count > hard_max:
+        raise Bad7zFile("%s value %d exceeds limit %d" % (what, count, hard_max))
+    remaining = _remaining(file)
+    if remaining is not None and count > (remaining * 8) // bits_per_entry:
+        raise Bad7zFile("%s value %d exceeds %d bytes remaining in archive header" % (what, count, remaining))
+    return count
+
+
 def read_crcs(file: BinaryIO, count: int) -> list[int]:
+    check_count(file, count, "number of CRCs", bits_per_entry=32)
     data = file.read(4 * count)
     return [unpack("<L", data[i * 4 : i * 4 + 4])[0] for i in range(count)]
 
@@ -70,7 +123,10 @@ def write_crcs(file: BinaryIO | WriteWithCrc, crcs):
 
 
 def read_byte(file: BinaryIO) -> int:
-    return ord(file.read(1))
+    res = file.read(1)
+    if len(res) != 1:
+        raise Bad7zFile("truncated archive: expected 1 byte")
+    return res[0]
 
 
 def write_bytes(file: BinaryIO | WriteWithCrc, data: bytes):
@@ -108,7 +164,7 @@ def write_uint32(file: BinaryIO | WriteWithCrc, value):
 
 def read_uint64(file: BinaryIO) -> int:
     """read UINT64, definition show in write_uint64()"""
-    b = ord(file.read(1))
+    b = read_byte(file)
     if b == 255:
         return read_real_uint64(file)[0]
     blen = [
@@ -131,6 +187,8 @@ def read_uint64(file: BinaryIO) -> int:
     if vlen == 0:
         return b & (mask - 1)
     val = file.read(vlen)
+    if len(val) != vlen:
+        raise Bad7zFile("truncated archive: expected %d bytes for a uint64" % vlen)
     value = int.from_bytes(val, byteorder="little")
     highpart = b & (mask - 1)
     return value + (highpart << (vlen * 8))
@@ -180,6 +238,11 @@ def write_uint64(file: BinaryIO | WriteWithCrc, value: int):
 
 
 def read_boolean(file: BinaryIO, count: int, checkall: bool = False) -> list[bool]:
+    # A bit vector spends one *bit* per entry, so the bound has to be counted in
+    # bits.  This is defence in depth only: with checkall the all-defined byte
+    # returns a count-sized list without reading any further, so the real bound
+    # is the one applied to count where it was read.
+    check_count(file, count, "boolean vector length", bits_per_entry=1)
     if checkall:
         all_defined = file.read(1)
         if all_defined != b"\x00":
@@ -214,6 +277,10 @@ def read_utf16(file: BinaryIO) -> str:
     nul = False
     for i in range(MAX_LENGTH):
         ch = file.read(2)
+        if len(ch) < 2:
+            # without this the loop runs to MAX_LENGTH on a truncated name and
+            # then seeks back past the start of the buffer
+            raise Bad7zFile("truncated archive: unterminated utf-16 string")
         if ch == b"\x00\x00":
             nul = True
             break
@@ -265,6 +332,7 @@ class PackInfo:
         self.numstreams = read_uint64(file)
         if self.numstreams > MAX_NUMSTREAMS:
             raise Bad7zFile("numstreams value %d exceeds limit %d" % (self.numstreams, MAX_NUMSTREAMS))
+        check_count(file, self.numstreams, "numstreams")
         pid = file.read(1)
         if pid == PROPERTY.SIZE:
             self.packsizes = [read_uint64(file) for _ in range(self.numstreams)]
@@ -363,7 +431,9 @@ class Folder:
         return obj
 
     def _read(self, file: BinaryIO) -> None:
-        num_coders = read_uint64(file)
+        num_coders = check_count(file, read_uint64(file), "num_coders", hard_max=MAX_CODERS)
+        if num_coders == 0:
+            raise Bad7zFile("folder without coder")
         totalin = 0
         totalout = 0
         for _ in range(num_coders):
@@ -376,15 +446,19 @@ class Folder:
             else:
                 c = {"method": b"\x00"}
             if iscomplex:
-                c["numinstreams"] = read_uint64(file)
-                c["numoutstreams"] = read_uint64(file)
+                c["numinstreams"] = check_count(file, read_uint64(file), "numinstreams", hard_max=MAX_CODER_STREAMS)
+                c["numoutstreams"] = check_count(file, read_uint64(file), "numoutstreams", hard_max=MAX_CODER_STREAMS)
             else:
                 c["numinstreams"] = 1
                 c["numoutstreams"] = 1
             totalin += c["numinstreams"]
             totalout += c["numoutstreams"]
+            # Bound the running totals too: num_bindpairs below is derived from
+            # totalout and drives both a loop and the quadratic scan at the end.
+            if totalin > MAX_CODER_STREAMS or totalout > MAX_CODER_STREAMS:
+                raise Bad7zFile("folder declares more than %d streams" % MAX_CODER_STREAMS)
             if hasattributes:
-                proplen = read_uint64(file)
+                proplen = check_count(file, read_uint64(file), "coder property length", hard_max=MAX_CODER_PROPERTIES)
                 c["properties"] = file.read(proplen)
             else:
                 c["properties"] = None
@@ -398,6 +472,8 @@ class Folder:
                 )
             )
         num_packedstreams = totalin - num_bindpairs
+        if num_packedstreams < 1:
+            raise Bad7zFile("folder declares %d packed streams" % num_packedstreams)
         if num_packedstreams == 1:
             for i in range(totalin):
                 if self._find_in_bin_pair(i) < 0:  # there is no in_bin_pair
@@ -501,12 +577,16 @@ class UnpackInfo:
         self.numfolders = read_uint64(file)
         self.folders = []
         external = read_byte(file)
+        # The check belongs inside each branch, after the seek: in the external
+        # case the folders live elsewhere in the stream.
         if external == 0x00:
+            check_count(file, self.numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
         else:  # pragma: no-cover  # there is no live example
             datastreamidx = read_uint64(file)
             current_pos = file.tell()
             file.seek(datastreamidx, 0)
+            check_count(file, self.numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
             self.folders = [Folder.retrieve(file) for _ in range(self.numfolders)]
             file.seek(current_pos, 0)
         self._retrieve_coders_info(file)
@@ -575,9 +655,18 @@ class SubstreamsInfo:
         return obj
 
     def _read(self, file: BinaryIO, numfolders: int, folders: list[Folder]):
+        check_count(file, numfolders, "numfolders", hard_max=MAX_NUMFOLDERS)
         pid = file.read(1)
         if pid == PROPERTY.NUM_UNPACK_STREAM:
-            self.num_unpackstreams_folders = [read_uint64(file) for _ in range(numfolders)]
+            # Check the running total, not each entry: the sum is what sizes the
+            # digest vectors below, and folders * remaining would be quadratic.
+            self.num_unpackstreams_folders = []
+            total_unpackstreams = 0
+            for _ in range(numfolders):
+                num_unpackstreams = read_uint64(file)
+                total_unpackstreams += num_unpackstreams
+                check_count(file, total_unpackstreams, "total number of unpack streams", hard_max=MAX_SUBSTREAMS)
+                self.num_unpackstreams_folders.append(num_unpackstreams)
             pid = file.read(1)
         else:
             self.num_unpackstreams_folders = [1] * numfolders
@@ -724,14 +813,14 @@ class FilesInfo:
         return obj
 
     def _read(self, fp: BinaryIO):
-        numfiles = read_uint64(fp)
+        numfiles = check_count(fp, read_uint64(fp), "numfiles", hard_max=MAX_NUMFILES)
         self.files = [{"emptystream": False} for _ in range(numfiles)]
         numemptystreams = 0
         while True:
             prop = fp.read(1)
             if prop == PROPERTY.END:
                 break
-            size = read_uint64(fp)
+            size = check_count(fp, read_uint64(fp), "property size")
             if prop == PROPERTY.DUMMY:
                 # Added by newer versions of 7z to adjust padding.
                 fp.seek(size, os.SEEK_CUR)
@@ -946,14 +1035,20 @@ class Header:
             raise TypeError(f"Unknown field: {repr(pid)}")  # pragma: no-cover
         # get from encoded header
         streams = HeaderStreamsInfo.retrieve(buffer)
+        if not streams.packinfo.packsizes or not streams.unpackinfo.folders:
+            raise Bad7zFile("encoded header without packed stream")
         buffer2 = io.BytesIO()
         src_start = self._start_pos
+        decoded_size = 0
         for folder in streams.unpackinfo.folders:
             uncompressed = folder.unpacksizes
             if not isinstance(uncompressed, (list, tuple)):
                 uncompressed = [uncompressed] * len(folder.coders)
             compressed_size = streams.packinfo.packsizes[0]
             uncompressed_size = uncompressed[-1]
+            decoded_size += uncompressed_size
+            if uncompressed_size < 0 or decoded_size > MAX_HEADER_SIZE:
+                raise Bad7zFile("decoded header size exceeds limit %d" % MAX_HEADER_SIZE)
             folder.password = password
             src_start += streams.packinfo.packpos
             fp.seek(src_start, 0)
@@ -961,8 +1056,14 @@ class Header:
             remaining = uncompressed_size
             folder_data = bytearray()
             while remaining > 0:
+                # Once the packed stream is exhausted the decompressor keeps
+                # returning b"" forever, so bail out instead of spinning when an
+                # iteration makes no progress at either end.
+                before = (len(folder_data), decompressor.consumed)
                 folder_data += decompressor.decompress(fp, max_length=remaining)
                 remaining = uncompressed_size - len(folder_data)
+                if (len(folder_data), decompressor.consumed) == before:
+                    raise Bad7zFile("truncated or corrupted encoded header")
             self.size += compressed_size
             src_start += compressed_size
             if folder.digestdefined:

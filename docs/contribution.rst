@@ -80,6 +80,102 @@ guidelines
 * It also use MyPy static type check enforcement.
 
 
+Security tests
+==============
+
+Every vulnerability fix should come with a regression test that fails before the fix
+and passes after it. Mark it with ``@pytest.mark.security``, which is registered in
+``pyproject.toml`` as "mark a test as a vulnerability regression test"::
+
+    pytest -m security
+
+The marker is the only thing that reliably identifies a security test. CI runs the whole
+suite with no marker selection, so the marker is for humans and for ad-hoc runs, not for
+gating. Choosing the right file therefore does not affect whether a test runs -- it
+affects whether the next person can find it.
+
+Where to put a security test
+----------------------------
+
+Security tests are split by **threat model**, one file per attacker goal:
+
+``tests/test_badfiles.py``
+    Hostile archive *content* that escapes the extraction directory: path traversal,
+    zip-slip, symlink ladders, Windows device names and drive letters. These mostly
+    drive ``SevenZipFile.extractall()`` against a temporary directory and assert that
+    nothing is written outside it.
+
+``tests/test_badheaders.py``
+    Hostile archive *header metadata* that attacks the parser itself: unbacked counts
+    that drive huge allocations, truncated fields, and decode loops that never
+    terminate. These run entirely in memory and assert ``Bad7zFile``.
+
+The distinction is what the attacker is trying to achieve, not which function is called.
+If a new class of attack fits neither file, add a third file rather than stretching one
+of these.
+
+Why split by threat model
+-------------------------
+
+Two other groupings were considered and rejected:
+
+*Split by test level* -- parser-internal tests next to the other unit tests in
+``tests/test_unit.py``, whole-archive tests in a separate file. Rejected because
+``tests/test_badfiles.py`` already contains both levels: ``test_check_archive_path``
+calls a helper predicate directly, while ``test_extract_path_traversal_attack`` goes
+through the public API. Test level is not the line the suite already draws, and
+following it would scatter a single advisory's tests across two files.
+
+*One file for everything marked* ``security`` -- rejected because extraction escapes and
+parser exhaustion share nothing but the marker. They have different fixtures, different
+assertions and different reviewers' interests, and merging them produces a long file
+with no internal logic. The marker already provides the cross-cutting view
+(``pytest -m security``), so the files are free to be organised by subject, which is how
+the rest of the suite is organised.
+
+How the tests are written
+-------------------------
+
+Fixtures are built **in memory from raw bytes**, not committed as binary ``.7z`` files.
+A malformed archive is usually a few dozen bytes, and a literal byte string documents
+precisely which field is hostile in a way an opaque binary fixture cannot. It also keeps
+a deliberately malicious file out of the source tree, where virus scanners and
+downstream packagers may object to it.
+
+``tests/test_badheaders.py`` tests each fix at two levels, and both matter:
+
+* **Parser level** -- a hand-built ``io.BytesIO`` passed straight to an
+  ``py7zr.archiveinfo`` class, for example
+  ``FilesInfo.retrieve(io.BytesIO(HUGE_UINT64 + b"\x00"))``. This pins the exact
+  structure that is rejected, with no surrounding archive to obscure it.
+
+* **Whole file level** -- a complete archive through ``SevenZipFile(...)``, built with
+  the module's ``_craft_archive()`` helper, which fixes up the signature header CRC so
+  the parser actually reaches the code under test. This proves the guard is reachable by
+  a real attacker; a parser-level test alone does not.
+
+Two helpers in that module are worth reusing: ``HUGE_UINT64`` is the nine-byte encoding
+of ``2**64-1``, the cheapest way to request an enormous allocation, and
+``_craft_archive(nextheader, packed)`` wraps a crafted next header in a valid signature
+header. Promote either to ``tests/__init__.py`` if a second file needs it, alongside the
+existing shared helpers there.
+
+A test for a non-terminating loop should carry ``@pytest.mark.timeout(60)``. The timeout
+*is* the assertion -- without the fix the test never returns.
+
+Confirming the test fails first
+-------------------------------
+
+Step 3 of the checklist above applies with one practical caveat. An allocation bomb run
+against unpatched code may consume all available memory before it fails, so cap the
+address space when checking that the test is meaningful::
+
+    (ulimit -v 2000000; pytest tests/test_badheaders.py -m security)
+
+Unpatched, the test should fail with ``MemoryError`` or time out; patched, it passes with
+``Bad7zFile``. A security test that passes against unpatched code is testing nothing.
+
+
 Profiling
 =========
 

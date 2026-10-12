@@ -470,6 +470,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header = SignatureHeader.retrieve(self.fp)  # type: ignore[arg-type]
         self.afterheader: int = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
+        # read() pre-allocates what it is asked for, so refuse a declared header
+        # size that the file cannot hold before reading rather than after.
+        header_start = self.fp.tell()
+        file_size = self.fp.seek(0, os.SEEK_END)
+        self.fp.seek(header_start, os.SEEK_SET)
+        if self.sig_header.nextheadersize > file_size - header_start:
+            raise Bad7zFile("next header size %d exceeds the archive size" % self.sig_header.nextheadersize)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile("invalid header data")
