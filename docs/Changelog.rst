@@ -9,19 +9,76 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+`v1.1.4`_
+=========
+
 Security
 --------
+- Fix arbitrary file write above the extraction directory via a symlink
+  chain (incomplete fix of CVE-2026-23879, GHSA-jwx8-hv8g-gjjq).
+  - ``canonical_path()`` cancelled ``..`` lexically before any symlink was
+    resolved, so ``link/..`` was treated as the directory holding ``link``
+    instead of the parent of its target. A chain of symlink members
+    extracted from the same archive could therefore redirect a later write
+    an archive-chosen number of levels above the extraction directory,
+    while the member name still reduced to something apparently inside it.
+  - Containment is now decided on the real path: symlink components are
+    followed first and ``..`` is normalized only afterwards. This also
+    covers symlink targets, which may legitimately contain ``..`` and so
+    cannot be rejected by name.
+  - Archive member names containing a ``..`` component are now rejected
+    outright.
+- Fix memory exhaustion when opening a crafted archive header (GHSA-6pr6-cqpq-x889).
+- Fix extraction hang on a crafted COPY stream (GHSA-v999-q5cj-95jg).
 
-- Arbitrary file write above the extraction directory via a symlink chain (incomplete fix of CVE-2026-23879)
-    - ``canonical_path()`` cancelled ``..`` lexically before any symlink was resolved, so ``link/..``
-      was treated as the directory holding ``link`` instead of the parent of its target. A chain of
-      symlink members extracted from the same archive could therefore redirect a later write an
-      archive-chosen number of levels above the extraction directory, while the member name still
-      reduced to something apparently inside it.
-    - Containment is now decided on the real path: symlink components are followed first and ``..``
-      is normalized only afterwards. This also covers symlink targets, which may legitimately
-      contain ``..`` and so cannot be rejected by name.
-    - Archive member names containing a ``..`` component are now rejected outright.
+Users are encouraged to upgrade. Details will be published in the
+corresponding security advisories.
+
+Fixed
+-----
+
+* Raise ``PasswordRequired`` when an archive is opened in write or append
+  mode with a crypto filter (e.g. ``FILTER_CRYPTO_AES256_SHA256``) but no
+  password, instead of failing later with an ``AttributeError``. The check
+  also covers direct use of ``SevenZipCompressor``. (#723, #739)
+* Limit concurrent extraction workers for non-solid archives to
+  ``os.cpu_count()``, instead of starting one thread or process per
+  folder. When the limit is reached, the oldest task is joined before a
+  new one starts. (#630, #740)
+* Fix ``AttributeError`` in ``archiveinfo()`` for archives with no
+  compressed content, such as an empty archive or one containing only
+  empty files or directories. ``_get_method_names()``, ``_is_solid()``
+  and ``archiveinfo()`` now handle ``header.main_streams`` being
+  ``None``. (#665, #741)
+* Fix intermittent false negatives in the relative-path check on Windows.
+  ``Path.resolve()`` may or may not return the extended-length prefix
+  (``\\?\``), and when only one of the compared paths had it, the
+  ``relative_to`` check always failed. The prefix is now stripped before
+  comparison. (#714, #743)
+* Fix ``io.UnsupportedOperation`` in ``extract()`` and ``extractall()``
+  when a ``WriterFactory`` returns a non-seekable handle, such as one
+  from ``zipfile.ZipFile.open``. The unnecessary ``seek(0)`` after
+  decompression is removed, and ``MemIO.close()`` now rewinds only
+  seekable handles, so behaviour with seekable destinations such as
+  ``BytesIOFactory`` is unchanged. (#703, #744)
+* Raise ``Bad7zFile`` instead of ``struct.error`` when a header is
+  truncated in the middle of an integer field. ``read_real_uint64()``
+  and ``read_uint32()`` now check the length of the data read before
+  unpacking it. (#749)
+* Honor ``dry_run`` in ``pack_7zarchive()``. When registered with
+  ``shutil.register_archive_format()``, ``shutil.make_archive(...,
+  dry_run=True)`` now returns the target filename without writing the
+  archive, consistent with the standard library's zip and tar
+  archivers. (#413, #750)
+* Fix ``CrcError`` during extraction when available memory drops below
+  256 MiB, for example under many parallel extractions. The buffer size
+  calculated from available memory could become negative; it now has a
+  minimum of 1 MiB. (#751, #629)
+
+Changed
+-------
+
+* CI: Bump ``libarchive`` to 3.8.8.
 
 `v1.1.3`_
 =========
@@ -241,7 +298,8 @@ Changed
 
 
 .. History links
-.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.3...HEAD
+.. _Unreleased: https://github.com/miurahr/py7zr/compare/v1.1.4...HEAD
+.. _v1.1.4: https://github.com/miurahr/py7zr/compare/v1.1.3..v1.1.4
 .. _v1.1.3: https://github.com/miurahr/py7zr/compare/v1.1.2..v1.1.3
 .. _v1.1.2: https://github.com/miurahr/py7zr/compare/v1.1.1..v1.1.2
 .. _v1.1.1: https://github.com/miurahr/py7zr/compare/v1.1.0..v1.1.1
