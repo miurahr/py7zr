@@ -1038,7 +1038,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         factory: WriterFactory | None = None,
     ) -> None:
         if not self._is_none_or_collection(targets):
-            raise TypeError("Wrong argument type given.")
+            raise TypeError(
+                "targets must be a list or set of file names, or None; "
+                "for a single file, use ['filename']"
+            )
         # For interoperability with ZipFile, we strip any trailing slashes
         # This also matches the behavior of TarFile
         if targets is not None:

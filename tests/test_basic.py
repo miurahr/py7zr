@@ -401,3 +401,26 @@ def test_read_collection_argument():
     with pytest.raises(TypeError):
         with py7zr.SevenZipFile(BytesIO(data), password="boom") as arc:
             arc.extract(targets="bar.txt")  # str -> bad
+
+
+@pytest.mark.basic
+@pytest.mark.parametrize("targets", ["test1.txt", ("test1.txt",), 1])
+@pytest.mark.parametrize("use_factory", [False, True])
+def test_extract_invalid_targets_message(tmp_path, targets, use_factory):
+    data = BytesIO()
+    expected = b"file contents"
+    with py7zr.SevenZipFile(data, "w") as archive:
+        archive.writestr(expected, "test1.txt")
+    data.seek(0)
+    factory = py7zr.io.BytesIOFactory(1024) if use_factory else None
+    path = None if use_factory else tmp_path
+    with py7zr.SevenZipFile(data) as archive:
+        with pytest.raises(TypeError, match="targets must be a list or set of file names, or None") as exc:
+            archive.extract(path=path, targets=targets, factory=factory)
+        assert "for a single file, use ['filename']" in str(exc.value)
+        # Invalid arguments must not consume the archive before a corrected call.
+        archive.extract(path=path, targets=["test1.txt"], factory=factory)
+    if factory is not None:
+        assert factory.get("test1.txt").read() == expected
+    else:
+        assert tmp_path.joinpath("test1.txt").read_bytes() == expected
