@@ -885,7 +885,7 @@ class FilesInfo:
         defined = read_boolean(fp, len(self.files), checkall=True)
         # NOTE: the "external" flag is currently ignored, should be 0x00
         external = fp.read(1)
-        assert external == 0x00
+        assert external == b"\x00"
         for i, f in enumerate(self.files):
             f["startpos"] = read_real_uint64(fp)[0] if defined[i] else None
 
