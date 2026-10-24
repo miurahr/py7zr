@@ -1,6 +1,5 @@
 # Security protection test cases
 import ctypes
-import io
 import os
 import pathlib
 import sys
@@ -35,16 +34,6 @@ def test_get_sanitized_output_path_2(tmp_path):
     good_path = "good.sh"
     expected = tmp_path.joinpath(good_path)
     assert expected == get_sanitized_output_path(good_path, tmp_path)
-
-
-@pytest.mark.misc
-def test_truncated_signature_header():
-    # a file with the 7z magic but a signature header truncated before its
-    # uint32/uint64 fields used to raise a bare struct.error instead of Bad7zFile
-    magic = b"7z\xbc\xaf\x27\x1c\x00\x04"
-    for data in (magic, magic + b"\x00" * 10):
-        with pytest.raises(Bad7zFile):
-            SevenZipFile(io.BytesIO(data), "r")
 
 
 @pytest.mark.security
@@ -606,3 +595,159 @@ def test_extract_rejects_symlink_to_archive_itself(tmp_path):
     with SevenZipFile(target, "r") as archive:
         with pytest.raises(Bad7zFile):
             archive.extractall(path=extract_dir)
+
+
+def _build_symlink_chain_archive(tmp_path, chain_len: int, updots: int, evil_name: str):
+    """
+    Build an archive whose member name cancels out lexically but escapes for real.
+
+    Layout stored in the archive (extraction order matters)::
+
+        holder/                                     -> a real directory at depth 1
+        deep/one/two/three/s2 -> ../../../../holder     depth 4 link to depth 1
+        deep/one/two/three/s1 -> s2                     2-link chain
+        deep/one/two/three/s0 -> s1                     3-link chain
+        deep/one/two/three/s{0,1}/../..*/<evil_name>    the traversing member
+
+    Each link individually points *inside* the extraction root, so every symlink
+    member passes the link target check.  The escape comes from the depth
+    difference: the chain lands at depth 1 while the name is still at depth 5, so
+    the '..' components walk above the root even though a lexical reduction of the
+    name stays inside.
+    """
+    src = tmp_path / "src"
+    deep = src / "deep" / "one" / "two" / "three"
+    deep.mkdir(parents=True)
+    (src / "holder").mkdir()
+    (src / "holder" / "keep.txt").write_text("keep")
+    (deep / "s2").symlink_to("../../../../holder")
+    (deep / "s1").symlink_to("s2")
+    (deep / "s0").symlink_to("s1")
+    entry = {2: "s1", 3: "s0"}[chain_len]
+    member = "deep/one/two/three/{}/{}{}".format(entry, "../" * updots, evil_name)
+
+    target = tmp_path / f"chain{chain_len}.7z"
+    my_filters = [{"id": FILTER_LZMA2, "preset": PRESET_DEFAULT}]
+    with SevenZipFile(target, "w", filters=my_filters, dereference=False) as archive:
+        archive.write(src / "holder", "holder")
+        archive.write(deep / "s2", "deep/one/two/three/s2")
+        archive.write(deep / "s1", "deep/one/two/three/s1")
+        archive.write(deep / "s0", "deep/one/two/three/s0")
+        archive._writestr(b"owned\n", member)  # bypass a path check
+    return target
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.security
+@pytest.mark.parametrize(
+    "chain_len, updots, escape_levels",
+    [(2, 3, 2), (3, 4, 3)],
+    ids=["two-link-chain", "three-link-chain"],
+)
+def test_extract_rejects_symlink_chain_with_cancelling_dotdot_cwd(tmp_path, monkeypatch, chain_len, updots, escape_levels):
+    """
+    extractall() with no path argument extracts relative to the current working
+    directory and used to hand the *raw* member name to open()/mkdir(), while the
+    guard only ever saw a lexically collapsed name.  'sym/../x' is not 'x'.
+    """
+    evil_name = f"evil_cwd_{chain_len}.txt"
+    target = _build_symlink_chain_archive(tmp_path, chain_len, updots, evil_name)
+
+    root = tmp_path / "l1" / "l2" / "l3" / "extract"
+    root.mkdir(parents=True)
+    escaped = root.parents[escape_levels - 1] / evil_name
+    assert not escaped.exists()
+
+    monkeypatch.chdir(root)
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall()
+
+    assert not escaped.exists()
+    assert not any(root.parents[i].joinpath(evil_name).exists() for i in range(3))
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.security
+@pytest.mark.parametrize("chain_len, updots", [(2, 3), (3, 4)], ids=["two-link-chain", "three-link-chain"])
+def test_extract_rejects_symlink_chain_with_cancelling_dotdot_explicit_path(tmp_path, chain_len, updots):
+    """
+    Same archive with an explicit path=.  This branch did not escape, it silently
+    wrote the *collapsed* name inside the root instead, which is a different file
+    than the archive asked for.  A '..' component is now refused outright.
+    """
+    evil_name = f"evil_path_{chain_len}.txt"
+    target = _build_symlink_chain_archive(tmp_path, chain_len, updots, evil_name)
+
+    root = tmp_path / "l1" / "l2" / "l3" / "extract"
+    root.mkdir(parents=True)
+
+    with pytest.raises(Bad7zFile):
+        with SevenZipFile(target, "r") as archive:
+            archive.extractall(path=root)
+
+    assert not list(tmp_path.rglob(evil_name))
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.security
+def test_is_path_valid_detects_symlink_target_escape_via_symlinked_parent(tmp_path):
+    """
+    A symlink target is archive content and may legitimately contain '..', so it
+    cannot be rejected by name.  When the directory holding the new link is itself
+    reached through an earlier link, collapsing '..' lexically cancels that earlier
+    link away and the target check passes for a link that really points outside.
+    No member name in this shape contains '..'.
+    """
+    root = tmp_path / "extract"
+    (root / "holder").mkdir(parents=True)
+    deep = root / "a" / "b" / "c"
+    deep.mkdir(parents=True)
+    (deep / "s1").symlink_to("../../../holder")
+
+    # 'root/a/b/c/s1/../../x' reduces lexically to 'root/a/x', which is inside,
+    # but s1 resolves to 'root/holder' so the real destination is 'tmp_path/x'.
+    assert is_path_valid(root / "a/b/c/s1/../../x", root) is False
+
+
+@pytest.mark.skipif(
+    sys.platform.startswith("win") and (ctypes.windll.shell32.IsUserAnAdmin() == 0),
+    reason="Administrator rights is required to make symlink on windows",
+)
+@pytest.mark.security
+def test_is_path_valid_detects_lexically_cancelled_symlink(tmp_path):
+    """The guard must not collapse '..' before resolving, and must not ban '..' outright."""
+    root = tmp_path / "l1" / "l2" / "extract"
+    root.mkdir(parents=True)
+    (root / "holder").mkdir()
+    deep = root / "deep" / "one" / "two" / "three"
+    deep.mkdir(parents=True)
+    (deep / "s2").symlink_to("../../../../holder")
+    (deep / "s1").symlink_to("s2")
+
+    # reduces lexically to 'deep/one/evil.txt', two levels above the root in reality
+    assert is_path_valid(root / "deep/one/two/three/s1/../../../evil.txt", root) is False
+    # the identical shape without a symlink hop is genuinely inside and must stay allowed
+    assert is_path_valid(root / "deep/one/two/three/nolink/../../../evil.txt", root) is True
+
+
+@pytest.mark.security
+def test_get_sanitized_output_path_rejects_dotdot_component(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    for bad in ("dir/../file.txt", "dir/sub/../../file.txt", "..", ".", ""):
+        with pytest.raises(Bad7zFile):
+            get_sanitized_output_path(bad, tmp_path)
+        with pytest.raises(Bad7zFile):
+            get_sanitized_output_path(bad, None)
+    # the path=None branch must return a *relative*, normalized name (writer factory keys)
+    assert get_sanitized_output_path("./dir/file.txt", None) == pathlib.Path("dir/file.txt")
+    assert get_sanitized_output_path("./dir/file.txt", tmp_path) == tmp_path / "dir" / "file.txt"

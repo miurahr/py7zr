@@ -470,6 +470,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header = SignatureHeader.retrieve(self.fp)  # type: ignore[arg-type]
         self.afterheader: int = self.fp.tell()
         self.fp.seek(self.sig_header.nextheaderofs, os.SEEK_CUR)
+        # read() pre-allocates what it is asked for, so refuse a declared header
+        # size that the file cannot hold before reading rather than after.
+        header_start = self.fp.tell()
+        file_size = self.fp.seek(0, os.SEEK_END)
+        self.fp.seek(header_start, os.SEEK_SET)
+        if self.sig_header.nextheadersize > file_size - header_start:
+            raise Bad7zFile("next header size %d exceeds the archive size" % self.sig_header.nextheadersize)
         buffer = io.BytesIO(self.fp.read(self.sig_header.nextheadersize))
         if self.sig_header.nextheadercrc != calculate_crc32(buffer.getvalue()):
             raise Bad7zFile("invalid header data")
@@ -1524,11 +1531,10 @@ class Worker:
         decompressor = folder.get_decompressor(compressed_size)
         previous_update_at = time.time()
         decompressed_bytes = 0
-        no_progress_count = 0
         while out_remaining > 0:
+            src_pos = fp.tell()
             tmp = decompressor.decompress(fp, min(out_remaining, max_block_size))
             if len(tmp) > 0:
-                no_progress_count = 0
                 if self.max_extract_size is not None:
                     self._total_extracted += len(tmp)
                     if self._total_extracted > self.max_extract_size:
@@ -1539,10 +1545,8 @@ class Worker:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
-            else:
-                no_progress_count += 1
-                if no_progress_count >= 3:
-                    raise Bad7zFile("Decompression made no progress: wrong password or corrupted archive.")
+            elif fp.tell() == src_pos:
+                raise Bad7zFile("decompression failed to make progress before reaching declared size")
             if q is not None:
                 time_delta = time.time() - previous_update_at
                 decompressed_bytes += len(tmp)
