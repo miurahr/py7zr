@@ -1056,21 +1056,24 @@ class Header:
             remaining = uncompressed_size
             folder_data = bytearray()
             while remaining > 0:
-                # Once the packed stream is exhausted the decompressor keeps
+                # Once the packed stream is exhausted, the decompressor keeps
                 # returning b"" forever, so bail out instead of spinning when an
                 # iteration makes no progress at either end.
-                before = (len(folder_data), decompressor.consumed)
-                folder_data += decompressor.decompress(fp, max_length=remaining)
-                remaining = uncompressed_size - len(folder_data)
-                if (len(folder_data), decompressor.consumed) == before:
+                before = decompressor.consumed
+                decompressed = decompressor.decompress(fp, max_length=remaining)
+                if decompressed:
+                    folder_data += decompressed
+                    remaining -= len(decompressed)
+                elif decompressor.consumed == before:
                     raise Bad7zFile("truncated or corrupted encoded header")
             self.size += compressed_size
             src_start += compressed_size
+            folder_bytes = bytes(folder_data)
             if folder.digestdefined:
                 streams.packinfo.enable_digests = True
-                if folder.crc != calculate_crc32(folder_data):
+                if folder.crc != calculate_crc32(folder_bytes):
                     raise Bad7zFile("invalid block data")
-            buffer2.write(folder_data)
+            buffer2.write(folder_bytes)
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
         if pid != PROPERTY.HEADER:
