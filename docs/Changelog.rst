@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Changed
+-------
+- Switch the 7zAES crypto dependency from ``pycryptodomex`` (``Cryptodome``
+  namespace) to ``pycryptodome`` (``Crypto`` namespace). Upstream stopped
+  regular releases of ``pycryptodomex`` at 3.x with pycryptodome 4.0, and
+  it lacks wheels for PyPy 3.11 on Windows.
+
 `v1.1.4`_
 =========
 

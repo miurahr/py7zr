@@ -7,7 +7,7 @@ import zipfile
 import zlib
 
 import pytest
-from Cryptodome.Cipher import AES
+from Crypto.Cipher import AES
 
 import py7zr
 import py7zr.compressor
