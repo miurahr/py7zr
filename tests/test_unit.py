@@ -290,6 +290,17 @@ def test_py7zr_files_info_start_pos():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("external", [b"\x01", b"\xff", b""])
+def test_py7zr_files_info_start_pos_invalid_external(external):
+    payload = b"\x01" + external
+    if external:
+        payload += struct.pack("<Q", 42)
+    header_data = io.BytesIO(b"\x01\x18" + bytes([len(payload)]) + payload + b"\x00")
+    with pytest.raises(py7zr.Bad7zFile, match="Invalid StartPos external flag"):
+        py7zr.archiveinfo.FilesInfo.retrieve(header_data)
+
+
+@pytest.mark.unit
 def test_py7zr_files_info_start_pos_partially_defined():
     # The bitmap defines files 0 and 2; file 1 has no uint64 in the payload.
     header_data = io.BytesIO(b"\x03\x18\x13\x00\xa0\x00" + struct.pack("<QQ", 42, 2**64 - 1) + b"\x00")
