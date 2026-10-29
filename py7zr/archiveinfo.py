@@ -1068,12 +1068,11 @@ class Header:
                     raise Bad7zFile("truncated or corrupted encoded header")
             self.size += compressed_size
             src_start += compressed_size
-            folder_bytes = bytes(folder_data)
             if folder.digestdefined:
                 streams.packinfo.enable_digests = True
-                if folder.crc != calculate_crc32(folder_bytes):
+                if folder.crc != calculate_crc32(folder_data):
                     raise Bad7zFile("invalid block data")
-            buffer2.write(folder_bytes)
+            buffer2.write(folder_data)
         buffer2.seek(0, 0)
         pid = buffer2.read(1)
         if pid != PROPERTY.HEADER:
