@@ -281,6 +281,56 @@ def test_py7zr_files_info_2():
 
 
 @pytest.mark.unit
+def test_py7zr_files_info_start_pos():
+    # One file, StartPos property, all defined, inline data, value, end.
+    header_data = io.BytesIO(b"\x01\x18\x0a\x01\x00" + struct.pack("<Q", 42) + b"\x00")
+    files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
+    assert len(files_info.files) == 1
+    assert files_info.files[0]["startpos"] == 42
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("external", [b"\x01", b"\xff", b""])
+def test_py7zr_files_info_start_pos_invalid_external(external):
+    payload = b"\x01" + external
+    if external:
+        payload += struct.pack("<Q", 42)
+    header_data = io.BytesIO(b"\x01\x18" + bytes([len(payload)]) + payload + b"\x00")
+    with pytest.raises(py7zr.Bad7zFile, match="Invalid StartPos external flag"):
+        py7zr.archiveinfo.FilesInfo.retrieve(header_data)
+
+
+@pytest.mark.unit
+def test_py7zr_files_info_start_pos_partially_defined():
+    # The bitmap defines files 0 and 2; file 1 has no uint64 in the payload.
+    header_data = io.BytesIO(b"\x03\x18\x13\x00\xa0\x00" + struct.pack("<QQ", 42, 2**64 - 1) + b"\x00")
+    files_info = py7zr.archiveinfo.FilesInfo.retrieve(header_data)
+    assert [file["startpos"] for file in files_info.files] == [42, None, 2**64 - 1]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("start_pos_first", [True, False])
+def test_py7zr_files_info_start_pos_with_times(start_pos_first):
+    start_pos = b"\x18\x0a\x01\x00" + struct.pack("<Q", 42)
+    times = (
+        b"\x12\x0a\x01\x00"
+        + struct.pack("<Q", 132000000000000000)
+        + b"\x13\x0a\x01\x00"
+        + struct.pack("<Q", 133000000000000000)
+        + b"\x14\x0a\x01\x00"
+        + struct.pack("<Q", 134000000000000000)
+    )
+    properties = start_pos + times if start_pos_first else times + start_pos
+    files_info = py7zr.archiveinfo.FilesInfo.retrieve(io.BytesIO(b"\x01" + properties + b"\x00"))
+    assert len(files_info.files) == 1
+    file = files_info.files[0]
+    assert file["startpos"] == 42
+    assert file["creationtime"] == 132000000000000000
+    assert file["lastaccesstime"] == 133000000000000000
+    assert file["lastwritetime"] == 134000000000000000
+
+
+@pytest.mark.unit
 def test_lzma_lzma2_compressor():
     filters = [{"id": 33, "dict_size": 16777216}]
     assert lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters) is not None
