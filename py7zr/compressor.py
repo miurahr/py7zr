@@ -33,8 +33,8 @@ from typing import Any, Optional, Union
 import bcj
 import inflate64
 import pyppmd
-from Cryptodome.Cipher import AES
-from Cryptodome.Random import get_random_bytes
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, calculate_key

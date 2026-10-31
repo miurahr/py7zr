@@ -392,7 +392,7 @@ Here is a table of algorithms.
 +---+                      +------------+-----------------------------+
 | 10|                      | Delta      |                             |
 +---+----------------------+------------+-----------------------------+
-| 11| - Encryption         | 7zAES      | depend on pycryptodomex     |
+| 11| - Encryption         | 7zAES      | depend on pycryptodome      |
 |   | - Decryption         |            |                             |
 +---+----------------------+------------+-----------------------------+
 | 12| - Unsupported        | BCJ2       |                             |
