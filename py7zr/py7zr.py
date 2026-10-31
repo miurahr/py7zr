@@ -1291,8 +1291,8 @@ class Worker:
         self.target_filepath: dict[int, MemIO | pathlib.Path | None] = {}
         self.files = files
         main_streams = getattr(header, "main_streams", None)
-        packpos = main_streams.packinfo.packpos if main_streams is not None else 0
-        self.src_start = src_start + packpos
+        packinfo = getattr(main_streams, "packinfo", None)
+        self.src_start = src_start + getattr(packinfo, "packpos", 0)
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files) - 1
