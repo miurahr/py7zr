@@ -187,12 +187,14 @@ SevenZipFile Object
    Extract specified pathspec archived files to current working directory.
    'path' specifies a different directory to extract to.
 
-   'targets' is a COLLECTION of archived file names to be extracted.
+   'targets' is a list or set of archived file names to be extracted, or
+   ``None`` to extract all files. For a single file, pass a one-element list,
+   such as ``targets=['filename']``, rather than a string.
    py7zr looks for files and directories as same as specified in element
    of 'targets'.
 
-   When the method gets a ``str`` object or another object other than collection
-   such as LIST or SET, it will raise :exc:`TypeError`.
+   Passing a string, tuple, or another object other than a list, set, or
+   ``None`` as ``targets`` raises :exc:`TypeError`.
 
    Once extract() called, the ``SevenZipFile`` object become exhausted,
    and an EOF state.
