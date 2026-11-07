@@ -64,6 +64,29 @@ class ExtractCallback(Callback):
 
 
 class ArchiveCallback(Callback):
-    """Abstract base class for progress callbacks."""
+    """Progress callbacks for ``write``, ``writeall``, ``writef`` and ``writestr``.
+
+    Methods run synchronously in the calling thread. Each write call reports
+    preparation once, then start/update/end events for each member, followed
+    by postprocess once on success. Byte counts are decimal strings, as in
+    :class:`ExtractCallback`.
+
+    ``report_start`` receives the archive member name and its input size.
+    Directories have size zero; stored symlinks use the UTF-8 encoded link
+    target's size. ``report_update`` receives input bytes processed since the
+    previous update, approximately once per second and at the end of each
+    member. Empty members receive a zero-byte update.
+
+    ``report_end`` receives compressed bytes emitted while writing the member.
+    Solid compression can buffer output across members, so this is not the
+    member's final compressed size. It excludes compressor flushing and archive
+    headers, which are written on close. ``report_postprocess`` marks the end
+    of this write call, not completion of the archive. No callback is retained
+    or called by ``close``.
+
+    Callback exceptions propagate to the caller and stop the write operation.
+    An interrupted write may leave an incomplete archive; discard that archive.
+    Callbacks should not modify the archive or input while it is being written.
+    """
 
     pass
