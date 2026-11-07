@@ -385,7 +385,12 @@ Compression progress
 All four write methods accept a keyword-only *callback* argument. Subclass
 ``py7zr.callbacks.ArchiveCallback`` and implement its six methods. Callbacks
 run synchronously in the calling thread; their exceptions stop the operation
-and propagate to the caller. Discard an archive after an interrupted write.
+and propagate to the caller. An error while processing a member, including
+its start/update/end callbacks, makes later write calls raise ``RuntimeError``.
+``close()`` then releases resources without finalizing the incomplete archive;
+discard that archive. Errors in argument validation or preparation leave the
+archive writable. A postprocess error occurs after members are complete and
+also allows further writing.
 Do not modify the archive or input from a callback.
 
 Each call reports preparation, then start/update/end events for each member,

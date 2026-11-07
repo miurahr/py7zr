@@ -458,7 +458,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        if exc_type is not None and self.worker._archive_failed:
+            # Closing a failed output must not replace the original write error.
+            with contextlib.suppress(Exception):
+                self.close()
+        else:
+            self.close()
 
     def _fpclose(self) -> None:
         if not self._filePassed:
@@ -1106,8 +1111,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if callback is not None:
             callback.report_postprocess()
 
-    @staticmethod
-    def _prepare_archive_callback(callback: ArchiveCallback | None) -> None:
+    def _prepare_archive_callback(self, callback: ArchiveCallback | None) -> None:
+        if self.worker._archive_failed:
+            raise RuntimeError("Cannot write to this archive because a previous write failed.")
         if callback is not None:
             if not isinstance(callback, ArchiveCallback):
                 raise ValueError(
@@ -1205,6 +1211,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
+        if self.worker._archive_failed:
+            # Compressor state and member metadata may be incomplete. Release
+            # resources without trying to finalize an invalid archive.
+            try:
+                self._fpclose()
+            finally:
+                self._var_release()
+            return
         if "r" in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
@@ -1325,6 +1339,7 @@ class Worker:
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files) - 1
+        self._archive_failed = False
         self.max_extract_size: int | None = None
         self._total_extracted: int = 0
         if mp:
@@ -1667,24 +1682,30 @@ class Worker:
 
     def archive(self, fp: IO[bytes], files, folder, deref=False, callback: ArchiveCallback | None = None):
         """Run archive task for specified 7zip folder."""
-        f = files[self.current_file_index]
-        foutsize = 0
-        if f.has_strdata():
-            foutsize, crc = self.writestr(fp, f, folder, callback)
-            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
-            self.header.files_info.files[self.current_file_index]["digest"] = crc
-            self.last_file_index = self.current_file_index
-        elif (f.is_symlink and not deref) or not f.emptystream:
-            foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder, callback)
-            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
-            self.header.files_info.files[self.current_file_index]["digest"] = crc
-            self.last_file_index = self.current_file_index
-        elif callback is not None:
-            callback.report_start(f.filename, "0")
-            callback.report_update("0")
-        self.current_file_index += 1
-        if callback is not None:
-            callback.report_end(f.filename, str(foutsize))
+        if self._archive_failed:
+            raise RuntimeError("Cannot write to this archive because a previous write failed.")
+        try:
+            f = files[self.current_file_index]
+            foutsize = 0
+            if f.has_strdata():
+                foutsize, crc = self.writestr(fp, f, folder, callback)
+                self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+                self.header.files_info.files[self.current_file_index]["digest"] = crc
+                self.last_file_index = self.current_file_index
+            elif (f.is_symlink and not deref) or not f.emptystream:
+                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder, callback)
+                self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+                self.header.files_info.files[self.current_file_index]["digest"] = crc
+                self.last_file_index = self.current_file_index
+            elif callback is not None:
+                callback.report_start(f.filename, "0")
+                callback.report_update("0")
+            self.current_file_index += 1
+            if callback is not None:
+                callback.report_end(f.filename, str(foutsize))
+        except BaseException:
+            self._archive_failed = True
+            raise
 
     def register_filelike(self, id: int, fileish: MemIO | pathlib.Path | None) -> None:
         """register file-ish to worker."""

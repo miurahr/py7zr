@@ -332,6 +332,155 @@ def test_archive_callback_output_error():
     assert not any(e[0] in ("update", "end", "postprocess") for e in callback.events)
 
 
+@pytest.mark.parametrize("failure", ["start", "update", "end", "source", "output"])
+@pytest.mark.parametrize("method", ["write", "writeall", "writef", "writestr"])
+def test_failed_archive_rejects_further_writes(tmp_path, failure, method):
+    error = OSError(errno.EIO, "original write failure")
+
+    class FailingCallback(RecordingCallback):
+        def record(self, *event):
+            super().record(*event)
+            if event[0] == failure:
+                raise error
+
+    class BrokenInput(io.BytesIO):
+        def read(self, size=-1):
+            if self.tell():
+                raise error
+            return super().read(4)
+
+    class BrokenOutput(io.BytesIO):
+        fail = False
+
+        def write(self, data):
+            if self.fail:
+                raise error
+            return super().write(data)
+
+    target = BrokenOutput()
+    archive = py7zr.SevenZipFile(target, "w", filters=[{"id": py7zr.FILTER_COPY}])
+    source = tmp_path / "retry"
+    source.write_bytes(b"later input")
+    try:
+        with pytest.raises(OSError) as caught:
+            if failure == "source":
+                archive.writef(BrokenInput(b"failed input"), "first")
+            elif failure == "output":
+                target.fail = True
+                archive.writestr(b"failed input", "first")
+            else:
+                archive.writestr(b"failed input", "first", callback=FailingCallback())
+        assert caught.value is error
+        before_data = target.getvalue()
+        before_names = archive.getnames()
+        before_index = archive.worker.current_file_index
+        before_headers = [dict(f) for f in archive.header.files_info.files]
+        callback = RecordingCallback()
+        with pytest.raises(RuntimeError, match="previous write failed"):
+            write_member(archive, method, source, b"later input", callback)
+        assert callback.events == []
+        assert archive.getnames() == before_names
+        assert archive.worker.current_file_index == before_index
+        assert archive.header.files_info.files == before_headers
+        assert target.getvalue() == before_data
+    finally:
+        archive.close()
+    assert target.getvalue() == before_data  # Failed output is not finalized on close.
+
+
+@pytest.mark.parametrize("stage", ["start", "update", "end"])
+def test_archive_callback_cancellation_prevents_retry(stage):
+    class Cancelled(BaseException):
+        pass
+
+    error = Cancelled()
+
+    class CancelCallback(RecordingCallback):
+        def record(self, *event):
+            if event[0] == stage:
+                raise error
+
+    with py7zr.SevenZipFile(io.BytesIO(), "w") as archive:
+        with pytest.raises(Cancelled) as caught:
+            archive.writestr(b"data", "first", callback=CancelCallback())
+        assert caught.value is error
+        with pytest.raises(RuntimeError, match="previous write failed"):
+            archive.writestr(b"retry", "second")
+
+
+@pytest.mark.parametrize("failure", ["callback_type", "preparation", "input_type", "unopened_memio", "postprocess"])
+def test_archive_errors_before_or_after_member_allow_retry(failure):
+    error = RuntimeError("callback failure")
+
+    class FailingCallback(RecordingCallback):
+        def record(self, *event):
+            if event[0] == failure:
+                raise error
+
+    target = io.BytesIO()
+    with py7zr.SevenZipFile(target, "w") as archive:
+        if failure == "callback_type":
+            with pytest.raises(ValueError):
+                archive.writestr(b"invalid", "first", callback=object())
+        elif failure == "input_type":
+            with pytest.raises(ValueError):
+                archive.writef(io.StringIO("invalid"), "first")
+        elif failure == "unopened_memio":
+            with pytest.raises(ValueError):
+                archive.writef(MemIO("input", BytesIOFactory(limit=100)), "first")
+        else:
+            with pytest.raises(RuntimeError) as caught:
+                archive.writestr(b"complete", "first", callback=FailingCallback())
+            assert caught.value is error
+        archive.writestr(b"retry", "second")
+    expected = {"second": b"retry"}
+    if failure == "postprocess":
+        expected["first"] = b"complete"
+    assert read_members(target) == expected
+
+
+def test_failed_archive_close_preserves_original_exception(tmp_path, monkeypatch):
+    error = RuntimeError("callback failure")
+    cleanup_error = OSError(errno.EIO, "close failure")
+
+    class FailingCallback(RecordingCallback):
+        def report_start(self, name, size):
+            raise error
+
+    archive = py7zr.SevenZipFile(tmp_path / "broken.7z", "w")
+    original_close = archive._fpclose
+
+    def failing_close():
+        original_close()
+        raise cleanup_error
+
+    monkeypatch.setattr(archive, "_fpclose", failing_close)
+    with pytest.raises(RuntimeError) as caught:
+        with archive:
+            archive.writestr(b"payload", "first", callback=FailingCallback())
+    assert caught.value is error
+    assert archive.fp.closed
+    assert not hasattr(archive, "worker")
+
+
+def test_unrelated_context_error_does_not_suppress_close_failure(tmp_path, monkeypatch):
+    cleanup_error = OSError(errno.EIO, "close failure")
+    archive = py7zr.SevenZipFile(tmp_path / "archive.7z", "w")
+    original_close = archive._fpclose
+
+    def failing_close():
+        original_close()
+        raise cleanup_error
+
+    monkeypatch.setattr(archive, "_fpclose", failing_close)
+    with pytest.raises(OSError) as caught:
+        with archive:
+            archive.writestr(b"complete", "first")
+            raise RuntimeError("unrelated with-block failure")
+    assert caught.value is cleanup_error
+    assert archive.fp.closed
+
+
 @pytest.mark.skipif(os.name == "nt", reason="symlink payload semantics are tested on Unix")
 @pytest.mark.parametrize("dereference", [False, True])
 def test_archive_callback_symlink(tmp_path, dereference):

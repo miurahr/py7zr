@@ -85,7 +85,11 @@ class ArchiveCallback(Callback):
     or called by ``close``.
 
     Callback exceptions propagate to the caller and stop the write operation.
-    An interrupted write may leave an incomplete archive; discard that archive.
+    An exception while processing a member, including its start/update/end
+    callbacks, leaves the archive incomplete: further writes raise RuntimeError
+    and close only releases resources. Discard that archive. Errors during
+    argument validation or preparation do not disable writing; a postprocess
+    exception also leaves the completed members usable.
     Callbacks should not modify the archive or input while it is being written.
     """
 
