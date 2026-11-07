@@ -317,15 +317,18 @@ SevenZipFile Object
     When the archive don't have a CRC record, it return ``None``.
 
 
-.. py:method:: SevenZipFile.write(filename, arcname=None)
+.. py:method:: SevenZipFile.write(filename, arcname=None, *, callback=None)
 
    Write the file named *filename* to the archive, giving it the archive name
    *arcname* (by default, this will be the same as *filename*, but without a drive
    letter and with leading path separators removed).
    The archive must be open with mode ``'w'``
 
+   Pass an instance of :class:`py7zr.callbacks.ArchiveCallback` as *callback*
+   to receive compression progress. See :ref:`archive-progress`.
 
-.. py:method:: SevenZipFile.writeall(filename, arcname=None)
+
+.. py:method:: SevenZipFile.writeall(filename, arcname=None, *, callback=None)
 
    Write the directory and its sub items recursively into the archive, giving
    the archive name *arcname* (by default, this will be the same as *filename*,
@@ -334,6 +337,27 @@ SevenZipFile Object
    If you want to store directories and files, putting *arcname* is good idea.
    When filename is 'C:/a/b/c' and arcname is 'c', with a file exist as 'C:/a/b/c/d.txt',
    then archive listed as ['c', 'c/d.txt'], the former as directory.
+
+   The optional *callback* receives progress for every member, with one
+   preparation and postprocess event for the whole call.
+
+
+.. py:method:: SevenZipFile.writef(bio, arcname, *, callback=None)
+
+   Write a binary file object to *arcname*, starting at its current position.
+   The input is not closed. The optional *callback* receives progress for
+   the remaining input bytes.
+
+   ``py7zr.io.MemIO`` inputs must be opened and support seeking to report
+   their current position. An unopened ``MemIO`` raises ``ValueError`` before
+   any member is added.
+
+
+.. py:method:: SevenZipFile.writestr(data, arcname, *, callback=None)
+
+   Write a string, bytes, bytearray or memoryview to *arcname*. Strings are
+   encoded as UTF-8. The optional *callback* receives progress in bytes after
+   encoding.
 
 
 .. py:method:: SevenZipFile.set_encrypted_header(mode)
@@ -351,6 +375,44 @@ SevenZipFile Object
 .. py:attribute:: SevenZipFile.filename
 
    Name of the SEVEN ZIP file.
+
+
+.. _archive-progress:
+
+Compression progress
+~~~~~~~~~~~~~~~~~~~~
+
+All four write methods accept a keyword-only *callback* argument. Subclass
+``py7zr.callbacks.ArchiveCallback`` and implement its six methods. Callbacks
+run synchronously in the calling thread; their exceptions stop the operation
+and propagate to the caller. An error while processing a member, including
+its start/update/end callbacks, makes later write calls raise ``RuntimeError``.
+``close()`` then releases resources without finalizing the incomplete archive;
+discard that archive. Errors in argument validation or preparation leave the
+archive writable. A postprocess error occurs after members are complete and
+also allows further writing.
+Do not modify the archive or input from a callback.
+
+Each call reports preparation, then start/update/end events for each member,
+then postprocess on success. ``writeall`` reports one preparation/postprocess
+pair for the entire directory tree. Names use the member's archive path and
+all byte counts are decimal strings:
+
+* ``report_start(name, size)`` gives the uncompressed input size. Directories
+  have size zero. A stored symlink's input is its UTF-8 encoded link target.
+* ``report_update(size)`` gives input bytes processed since the previous
+  update, approximately once per second and at member completion. Empty
+  members receive a zero-byte update. Sum these increments to show progress.
+* ``report_end(name, size)`` gives compressed bytes emitted while processing
+  that member. Solid compression may buffer output across members, so this
+  is not the final compressed size of the member.
+
+``report_postprocess()`` marks successful completion of the write call.
+The compressor still needs to flush buffered data and write archive headers
+when the archive is closed; reaching 100 percent input progress does not
+mean the archive is ready to read. ``close()`` does not retain or invoke the
+callback. ``report_warning(message)`` is part of the common callback interface
+and is not currently emitted during archiving.
 
 
 Compression Methods

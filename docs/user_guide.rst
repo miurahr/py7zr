@@ -201,6 +201,49 @@ Here is a simple example to make 7-zip archive.
         archive.writeall("target/")
 
 
+Display compression progress
+----------------------------
+
+Pass an ``ArchiveCallback`` instance to a write method to receive progress
+while a large file is being compressed. This example prints the percentage
+of input bytes processed for each file:
+
+.. code-block:: python
+
+    import py7zr
+    from py7zr.callbacks import ArchiveCallback
+
+    class Progress(ArchiveCallback):
+        def report_start_preparation(self):
+            pass
+
+        def report_start(self, processing_file_path, processing_bytes):
+            self.name = processing_file_path
+            self.total = int(processing_bytes)
+            self.processed = 0
+
+        def report_update(self, decompressed_bytes):
+            self.processed += int(decompressed_bytes)
+            percent = 100 * self.processed / self.total if self.total else 100
+            print(f"{self.name}: {percent:.0f}%")
+
+        def report_end(self, processing_file_path, wrote_bytes):
+            pass
+
+        def report_postprocess(self):
+            pass
+
+        def report_warning(self, message):
+            print(message)
+
+    with py7zr.SevenZipFile("Archive.7z", "w") as archive:
+        archive.writeall("target/", "target", callback=Progress())
+
+The same callback works with ``write``, ``writef`` and ``writestr``.
+The percentage measures input processing; leaving the ``with`` block finishes
+the archive. See :ref:`archive-progress` for event ordering and byte-count details.
+
+
 Append files to archive
 -----------------------
 

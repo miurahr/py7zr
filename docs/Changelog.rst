@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Added
+-----
+- Add optional ``ArchiveCallback`` progress reporting to ``write``, ``writeall``,
+  ``writef`` and ``writestr``, including incremental input-byte updates. (#512)
+
 Changed
 -------
 - Switch the 7zAES crypto dependency from ``pycryptodomex`` (``Cryptodome``
