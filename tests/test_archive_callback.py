@@ -10,7 +10,7 @@ import pytest
 import py7zr
 import py7zr.compressor
 from py7zr.callbacks import ArchiveCallback
-from py7zr.io import BytesIOFactory
+from py7zr.io import BytesIOFactory, MemIO
 
 
 class RecordingCallback(ArchiveCallback):
@@ -95,6 +95,46 @@ def test_archive_callback_stream_position(stream_type, offset):
     assert sum(int(e[1]) for e in callback.events if e[0] == "update") == len(expected)
     assert not stream.closed
     assert read_members(target) == {"stream": expected}
+
+
+@pytest.mark.parametrize("use_callback", [False, True])
+@pytest.mark.parametrize("offset", [0, 3, 15, 20])
+def test_archive_callback_memio_position(use_callback, offset):
+    data = b"stream contents"
+    source = MemIO("input", BytesIOFactory(limit=100))
+    source.open()
+    source.write(data)
+    source.seek(offset)
+    callback = RecordingCallback()
+    kwargs = {"callback": callback} if use_callback else {}
+    target = io.BytesIO()
+    expected = data[offset:]
+    try:
+        with py7zr.SevenZipFile(target, "w") as archive:
+            archive.writef(source, "stream", **kwargs)
+            assert archive.files[0].uncompressed == len(expected)
+        assert not source.closed
+        if use_callback:
+            assert callback.events[1] == ("start", "stream", str(len(expected)))
+            assert sum(int(e[1]) for e in callback.events if e[0] == "update") == len(expected)
+        assert read_members(target) == {"stream": expected}
+    finally:
+        source.close()
+
+
+@pytest.mark.parametrize("use_callback", [False, True])
+def test_archive_callback_rejects_unopened_memio(use_callback):
+    source = MemIO("input", BytesIOFactory(limit=100))
+    callback = RecordingCallback()
+    kwargs = {"callback": callback} if use_callback else {}
+    with py7zr.SevenZipFile(io.BytesIO(), "w") as archive:
+        before = archive.fp.tell()
+        with pytest.raises(ValueError, match="MemIO.*open"):
+            archive.writef(source, "stream", **kwargs)
+        assert archive.fp.tell() == before
+        assert archive.getnames() == []
+    assert callback.events == ([("preparation",)] if use_callback else [])
+    assert source.closed
 
 
 @pytest.mark.parametrize("data", ["你好, archive", bytearray(b"abc"), memoryview(b"def")])

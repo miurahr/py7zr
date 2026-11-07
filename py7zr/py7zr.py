@@ -1160,20 +1160,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
             size = max(0, last - current)
         elif isinstance(bio, MemIO):
             size = bio.__sizeof__()
+            if size < 0:
+                raise ValueError("MemIO must be opened before it can be archived.")
+            size = max(0, size - bio.seek(0, os.SEEK_CUR))
         else:
             raise ValueError("Wrong argument passed for argument bio.")
-        if size >= 0:
-            folder = self.header.initialize()
-            file_info = self._make_file_info_from_name(bio, size, arcname)
-            self.header.files_info.files.append(file_info)
-            self.header.files_info.emptyfiles.append(file_info["emptystream"])
-            self.files.append(file_info)
-            self.worker.archive(self.fp, self.files, folder, deref=False, callback=callback)
-        else:
-            file_info = self._make_file_info_from_name(bio, size, arcname)
-            self.header.files_info.files.append(file_info)
-            self.header.files_info.emptyfiles.append(file_info["emptystream"])
-            self.files.append(file_info)
+        folder = self.header.initialize()
+        file_info = self._make_file_info_from_name(bio, size, arcname)
+        self.header.files_info.files.append(file_info)
+        self.header.files_info.emptyfiles.append(file_info["emptystream"])
+        self.files.append(file_info)
+        self.worker.archive(self.fp, self.files, folder, deref=False, callback=callback)
 
     def writestr(
         self,

@@ -348,12 +348,33 @@ SevenZipFile Object
    The input is not closed. The optional *callback* receives progress for
    the remaining input bytes.
 
+   ``py7zr.io.MemIO`` inputs must be opened and support seeking to report
+   their current position. An unopened ``MemIO`` raises ``ValueError`` before
+   any member is added.
+
 
 .. py:method:: SevenZipFile.writestr(data, arcname, *, callback=None)
 
    Write a string, bytes, bytearray or memoryview to *arcname*. Strings are
    encoded as UTF-8. The optional *callback* receives progress in bytes after
    encoding.
+
+
+.. py:method:: SevenZipFile.set_encrypted_header(mode)
+
+   Set header encryption mode. When encrypt header, set mode to `True`, otherwise `False`.
+   Default is `False`.
+
+
+.. py:method:: SevenZipFile.set_encoded_header_mode(mode)
+
+   Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
+   Default is `True`.
+
+
+.. py:attribute:: SevenZipFile.filename
+
+   Name of the SEVEN ZIP file.
 
 
 .. _archive-progress:
@@ -387,23 +408,6 @@ when the archive is closed; reaching 100 percent input progress does not
 mean the archive is ready to read. ``close()`` does not retain or invoke the
 callback. ``report_warning(message)`` is part of the common callback interface
 and is not currently emitted during archiving.
-
-
-.. py:method:: SevenZipFile.set_encrypted_header(mode)
-
-   Set header encryption mode. When encrypt header, set mode to `True`, otherwise `False`.
-   Default is `False`.
-
-
-.. py:method:: SevenZipFile.set_encoded_header_mode(mode)
-
-   Set header encode mode. When encode header data, set mode to `True`, otherwise `False`.
-   Default is `True`.
-
-
-.. py:attribute:: SevenZipFile.filename
-
-   Name of the SEVEN ZIP file.
 
 
 Compression Methods
