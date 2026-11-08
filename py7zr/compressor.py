@@ -649,6 +649,7 @@ class SevenZipDecompressor:
         self._unused = bytearray()
         self._buf = bytearray()
         self._pos = 0
+        self.chain_progressed = True
         # ---
         if all(self.methods_map):
             decompressor = self._get_lzma_decompressor(coders, unpacksizes[-1])
@@ -673,14 +674,30 @@ class SevenZipDecompressor:
             raise UnsupportedCompressionMethodError(coders, "Combination order of methods is not supported.")
 
     def _decompress(self, data, max_length: int):
+        progressed = False
         for i, decompressor in enumerate(self.chain):
             if self._unpacked[i] < self._unpacksizes[i]:
-                data = decompressor.decompress(data, max_length)
+                # Never ask a stage for more than its declared remaining
+                # output: earlier filters (e.g. BCJ) may hold back a partial
+                # unit, so the final remaining size can exceed what this
+                # stage's stream still holds (#762).
+                stage_limit = self._unpacksizes[i] - self._unpacked[i]
+                if max_length < 0 or stage_limit < max_length:
+                    limit = stage_limit
+                else:
+                    limit = max_length
+                data = decompressor.decompress(data, limit)
                 self._unpacked[i] += len(data)
+                if len(data) > 0:
+                    progressed = True
             elif len(data) == 0:
                 data = b""
             else:
                 raise EOFError
+        # A round can emit nothing downstream (e.g. a BCJ filter buffering
+        # a partial unit) while an earlier stage still made progress from
+        # its internal buffers (#762).
+        self.chain_progressed = progressed
         return data
 
     def _read_data(self, fp):
