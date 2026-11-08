@@ -29,6 +29,11 @@ with the filename and the link target instead of ``create``. Your custom class c
 and return True. When ``create_symlink`` returns False, which is the default behavior of
 ``WriterFactory``, the link target is written through ``create`` as ordinary file data.
 
+The link target passed to ``create_symlink`` is untrusted archive content. Unlike extraction to a
+filesystem path, the factory path performs no containment validation on it, so a factory that
+recreates links on a file system must validate each target against its own destination root,
+accounting for existing symbolic links, before creating the link.
+
 Example to extract into network storage
 ---------------------------------------
 
