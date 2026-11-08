@@ -309,9 +309,11 @@ def test_extract_symlink_mem():
 def test_extract_symlink_factory_callback():
     """A writer factory can detect and handle symlink members (issue #664)."""
     seen: dict = {}
+    created: set = set()
 
     class SymlinkFactory(py7zr.io.WriterFactory):
         def create(self, filename: str) -> py7zr.io.Py7zIO:
+            created.add(filename)
             return py7zr.io.NullIO()
 
         def create_symlink(self, filename: str, target: str) -> bool:
@@ -326,6 +328,8 @@ def test_extract_symlink_factory_callback():
         "lib/libabc.so.1.2": "libabc.so.1.2.3",
         "lib64": "lib",
     }
+    # A symlink handled by create_symlink must not also reach create().
+    assert created.isdisjoint(seen)
 
 
 @pytest.mark.files
