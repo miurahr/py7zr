@@ -1545,7 +1545,7 @@ class Worker:
                 out_remaining -= len(tmp)
                 fq.write(tmp)
                 crc32 = calculate_crc32(tmp, crc32)
-            elif fp.tell() == src_pos:
+            elif fp.tell() == src_pos and not decompressor.chain_progressed:
                 raise Bad7zFile("decompression failed to make progress before reaching declared size")
             if q is not None:
                 time_delta = time.time() - previous_update_at
