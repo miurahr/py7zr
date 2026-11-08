@@ -32,7 +32,10 @@ and return True. When ``create_symlink`` returns False, which is the default beh
 The link target passed to ``create_symlink`` is untrusted archive content. Unlike extraction to a
 filesystem path, the factory path performs no containment validation on it, so a factory that
 recreates links on a file system must validate each target against its own destination root,
-accounting for existing symbolic links, before creating the link.
+accounting for existing symbolic links, before creating the link. Links created earlier in the
+same extraction can also change how a later target resolves, so such a factory should enforce
+containment on every filesystem write, or defer link creation until all links in the archive
+are known.
 
 Example to extract into network storage
 ---------------------------------------
