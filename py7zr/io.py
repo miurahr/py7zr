@@ -122,6 +122,12 @@ class WriterFactory(ABC):
         data should be written. Return False to extract the link target as
         ordinary file data through create(). The default implementation
         returns False to keep the backward compatible behavior.
+
+        The ``target`` is untrusted archive content: unlike extraction to a
+        filesystem path, the factory path performs no containment validation
+        on it. A factory that recreates links on a file system must validate
+        each target against its own destination root, accounting for existing
+        symbolic links, before creating the link.
         """
         return False
 
