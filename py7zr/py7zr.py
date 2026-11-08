@@ -1472,6 +1472,29 @@ class Worker:
                                 fileish.symlink_to(sym_target)
                             else:
                                 raise Bad7zFile("Symlink point out of target directory.")
+                    elif f.is_symlink and isinstance(fileish, MemIO):
+                        # symbolic link with a writer factory: decode the link
+                        # target and offer it to the factory (issue #664)
+                        with io.BytesIO() as omfp:
+                            crc32 = self.decompress(fp, f.folder, omfp, f.uncompressed, f.compressed, src_end, q)
+                            if f.crc32 is not None and crc32 != f.crc32:
+                                raise CrcError(crc32, f.crc32, f.filename)
+                            omfp.seek(0)
+                            link_target = omfp.read()
+                        try:
+                            decoded_target: str | None = link_target.decode("utf-8")
+                        except UnicodeDecodeError:
+                            # Foreign archive with a non-UTF-8 link target: keep
+                            # the legacy raw-byte behavior, do not offer it to
+                            # the factory hook.
+                            decoded_target = None
+                        if decoded_target is None:
+                            handled = False
+                        else:
+                            handled = fileish.factory.create_symlink(fileish.fname, decoded_target)
+                        if not handled:
+                            with fileish.open(mode="wb") as obfp:
+                                obfp.write(link_target)
                     else:
                         with fileish.open(mode="wb") as obfp:
                             crc32 = self.decompress(fp, f.folder, obfp, f.uncompressed, f.compressed, src_end, q)
