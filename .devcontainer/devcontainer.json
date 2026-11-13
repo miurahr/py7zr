@@ -1,0 +1,31 @@
+// GitHub Codespaces / Dev Containers configuration for py7zr
+{
+  "name": "py7zr",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14-bookworm",
+  "hostRequirements": { "cpus": 2 },
+  "containerEnv": {
+    "UV_LINK_MODE": "copy"
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      }
+    }
+    // Optional: let this codespace clone and push to the C-extension repos,
+    // so that cross-repo changes can be tested together (see post-create.sh).
+    // ,"codespaces": {
+    //   "repositories": {
+    //     "miurahr/pyppmd": { "permissions": { "contents": "write" } },
+    //     "miurahr/pybcj":  { "permissions": { "contents": "write" } }
+    //   }
+    // }
+  }
+}
