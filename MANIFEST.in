@@ -8,6 +8,7 @@ prune docs
 prune tests
 prune utils
 prune .github
+prune .devcontainer
 exclude *.svg
 exclude .flake8
 exclude .gitignore
