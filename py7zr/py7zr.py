@@ -49,7 +49,7 @@ from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, TypedDict
 import multivolumefile
 
 from py7zr.archiveinfo import Folder, Header, SignatureHeader
-from py7zr.callbacks import ExtractCallback
+from py7zr.callbacks import ArchiveCallback, ExtractCallback
 from py7zr.compressor import SupportedMethods, get_methods_names
 from py7zr.exceptions import (
     AbsolutePathError,
@@ -458,7 +458,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        if exc_type is not None and self.worker._archive_failed:
+            # Closing a failed output must not replace the original write error.
+            with contextlib.suppress(Exception):
+                self.close()
+        else:
+            self.close()
 
     def _fpclose(self) -> None:
         if not self._filePassed:
@@ -751,18 +756,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path, arcname):
+    def _writeall(self, path, arcname, callback=None):
         try:
-            if path.is_symlink() and not self.dereference:
-                self.write(path, arcname)
-            elif path.is_file():
-                self.write(path, arcname)
+            if (path.is_symlink() and not self.dereference) or path.is_file():
+                write_path = True
+                children = []
             elif path.is_dir():
-                if not path.samefile("."):
-                    self.write(path, arcname)
-                for nm in sorted(os.listdir(str(path))):
-                    arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self._writeall(path.joinpath(nm), arc)
+                write_path = not path.samefile(".")
+                children = sorted(os.listdir(str(path)))
             else:
                 return  # pathlib ignores ELOOP and return False for is_*().
         except OSError as ose:
@@ -772,6 +773,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 return  # ignore ENOENT which is happened when a case of ELOOP on windows.
             else:
                 raise
+        # Only traversal errors above may indicate a symlink loop. In particular,
+        # an OSError from a callback or from writing the archive must propagate.
+        if write_path:
+            self._write(path, arcname, callback)
+        for nm in children:
+            arc = os.path.join(arcname, nm) if arcname is not None else None
+            self._writeall(path.joinpath(nm), arc, callback)
 
     class ParseStatus:
         def __init__(self, src_pos=0):
@@ -1074,6 +1082,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         path: pathlib.Path | str,
         arcname: str | None = None,
+        *,
+        callback: ArchiveCallback | None = None,
     ) -> None:
         """Write files in target path into archive."""
         if isinstance(path, str):
@@ -1081,7 +1091,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         if not path.exists():
             raise ValueError("specified path does not exist.")
         if path.is_dir() or path.is_file():
-            self._writeall(path, arcname)
+            self._prepare_archive_callback(callback)
+            self._writeall(path, arcname, callback)
+            if callback is not None:
+                callback.report_postprocess()
         else:
             raise ValueError("specified path is not a directory or a file")
 
@@ -1089,8 +1102,26 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         file: pathlib.Path | str,
         arcname: str | None = None,
+        *,
+        callback: ArchiveCallback | None = None,
     ) -> None:
         """Write single target file into archive."""
+        self._prepare_archive_callback(callback)
+        self._write(file, arcname, callback)
+        if callback is not None:
+            callback.report_postprocess()
+
+    def _prepare_archive_callback(self, callback: ArchiveCallback | None) -> None:
+        if self.worker._archive_failed:
+            raise RuntimeError("Cannot write to this archive because a previous write failed.")
+        if callback is not None:
+            if not isinstance(callback, ArchiveCallback):
+                raise ValueError(
+                    "Callback specified is not an instance of subclass of py7zr.callbacks.ArchiveCallback class"
+                )
+            callback.report_start_preparation()
+
+    def _write(self, file: pathlib.Path | str, arcname: str | None, callback: ArchiveCallback | None) -> None:
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
         if arcname is None:
@@ -1106,19 +1137,22 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
+        self.worker.archive(self.fp, self.files, folder, deref=self.dereference, callback=callback)
 
-    def writef(self, bio: IO[Any], arcname: str) -> None:
+    def writef(self, bio: IO[Any], arcname: str, *, callback: ArchiveCallback | None = None) -> None:
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
-        return self._writef(bio, arcname)
+        self._prepare_archive_callback(callback)
+        self._writef(bio, arcname, callback)
+        if callback is not None:
+            callback.report_postprocess()
 
-    def _writef(self, bio: IO[Any], arcname: str) -> None:
+    def _writef(self, bio: IO[Any], arcname: str, callback: ArchiveCallback | None = None) -> None:
         # Check for null byte injection - 7z uses null-terminated strings in headers
         if "\\x00" in arcname:
             raise ValueError(f"Filename contains null byte: {arcname}")
         if isinstance(bio, io.BytesIO):
-            size = bio.getbuffer().nbytes
+            size = max(0, bio.getbuffer().nbytes - bio.tell())
         elif isinstance(bio, io.TextIOBase):
             # First check whether is it Text?
             raise ValueError("Unsupported file object type: please open file with Binary mode.")
@@ -1129,44 +1163,47 @@ class SevenZipFile(contextlib.AbstractContextManager):
             bio.seek(0, os.SEEK_END)
             last = bio.tell()
             bio.seek(current, os.SEEK_SET)
-            size = last - current
+            size = max(0, last - current)
         elif isinstance(bio, MemIO):
             size = bio.__sizeof__()
+            if size < 0:
+                raise ValueError("MemIO must be opened before it can be archived.")
+            size = max(0, size - bio.seek(0, os.SEEK_CUR))
         else:
             raise ValueError("Wrong argument passed for argument bio.")
-        if size >= 0:
-            folder = self.header.initialize()
-            file_info = self._make_file_info_from_name(bio, size, arcname)
-            self.header.files_info.files.append(file_info)
-            self.header.files_info.emptyfiles.append(file_info["emptystream"])
-            self.files.append(file_info)
-            self.worker.archive(self.fp, self.files, folder, deref=False)
-        else:
-            file_info = self._make_file_info_from_name(bio, size, arcname)
-            self.header.files_info.files.append(file_info)
-            self.header.files_info.emptyfiles.append(file_info["emptystream"])
-            self.files.append(file_info)
+        folder = self.header.initialize()
+        file_info = self._make_file_info_from_name(bio, size, arcname)
+        self.header.files_info.files.append(file_info)
+        self.header.files_info.emptyfiles.append(file_info["emptystream"])
+        self.files.append(file_info)
+        self.worker.archive(self.fp, self.files, folder, deref=False, callback=callback)
 
     def writestr(
         self,
         data: str | bytes | bytearray | memoryview,
         arcname: str,
+        *,
+        callback: ArchiveCallback | None = None,
     ) -> None:
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
-        return self._writestr(data, arcname)
+        self._prepare_archive_callback(callback)
+        self._writestr(data, arcname, callback)
+        if callback is not None:
+            callback.report_postprocess()
 
     def _writestr(
         self,
         data: str | bytes | bytearray | memoryview,
         arcname: str,
+        callback: ArchiveCallback | None = None,
     ) -> None:
         if not isinstance(arcname, str):
             raise ValueError("Unsupported arcname")
         if isinstance(data, str):
-            self._writef(io.BytesIO(data.encode("UTF-8")), arcname)
+            self._writef(io.BytesIO(data.encode("UTF-8")), arcname, callback)
         elif isinstance(data, bytes) or isinstance(data, bytearray) or isinstance(data, memoryview):
-            self._writef(io.BytesIO(bytes(data)), arcname)
+            self._writef(io.BytesIO(bytes(data)), arcname, callback)
         else:
             raise ValueError("Unsupported data type.")
 
@@ -1174,6 +1211,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         """Flush all the data into archive and close it.
         When close py7zr start reading target and writing actual archive file.
         """
+        if self.worker._archive_failed:
+            # Compressor state and member metadata may be incomplete. Release
+            # resources without trying to finalize an invalid archive.
+            try:
+                self._fpclose()
+            finally:
+                self._var_release()
+            return
         if "r" in self.mode:
             if self.reporterd is not None:
                 self.q.put_nowait(None)
@@ -1294,6 +1339,7 @@ class Worker:
         self.header = header
         self.current_file_index = len(self.files)
         self.last_file_index = len(self.files) - 1
+        self._archive_failed = False
         self.max_extract_size: int | None = None
         self._total_extracted: int = 0
         if mp:
@@ -1595,22 +1641,27 @@ class Worker:
             self.header.main_streams.substreamsinfo.num_unpackstreams_folders[-1] += 1
         return foutsize, crc
 
-    def write(self, fp: IO[bytes], f, assym, folder):
+    def write(self, fp: IO[bytes], f, assym, folder, callback=None):
         compressor = folder.get_compressor()
         if assym:
             link_target: str = self._find_link_target(f.origin)
             tgt: bytes = link_target.encode("utf-8")
-            fd = io.BytesIO(tgt)
-            insize, foutsize, crc = compressor.compress(fd, fp)
-            fd.close()
+            with io.BytesIO(tgt) as fd:
+                if callback is not None:
+                    callback.report_start(f.filename, str(len(tgt)))
+                insize, foutsize, crc = compressor.compress(fd, fp, callback=callback)
         else:
             with f.origin.open(mode="rb") as fd:
-                insize, foutsize, crc = compressor.compress(fd, fp)
+                if callback is not None:
+                    callback.report_start(f.filename, str(f.uncompressed))
+                insize, foutsize, crc = compressor.compress(fd, fp, callback=callback)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: IO[bytes], f, folder):
+    def writestr(self, fp: IO[bytes], f, folder, callback=None):
         compressor = folder.get_compressor()
-        insize, foutsize, crc = compressor.compress(f.data(), fp)
+        if callback is not None:
+            callback.report_start(f.filename, str(f.uncompressed))
+        insize, foutsize, crc = compressor.compress(f.data(), fp, callback=callback)
         return self._after_write(insize, foutsize, crc)
 
     def flush_archive(self, fp, folder):
@@ -1629,20 +1680,32 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: IO[bytes], files, folder, deref=False):
+    def archive(self, fp: IO[bytes], files, folder, deref=False, callback: ArchiveCallback | None = None):
         """Run archive task for specified 7zip folder."""
-        f = files[self.current_file_index]
-        if f.has_strdata():
-            foutsize, crc = self.writestr(fp, f, folder)
-            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
-            self.header.files_info.files[self.current_file_index]["digest"] = crc
-            self.last_file_index = self.current_file_index
-        elif (f.is_symlink and not deref) or not f.emptystream:
-            foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
-            self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
-            self.header.files_info.files[self.current_file_index]["digest"] = crc
-            self.last_file_index = self.current_file_index
-        self.current_file_index += 1
+        if self._archive_failed:
+            raise RuntimeError("Cannot write to this archive because a previous write failed.")
+        try:
+            f = files[self.current_file_index]
+            foutsize = 0
+            if f.has_strdata():
+                foutsize, crc = self.writestr(fp, f, folder, callback)
+                self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+                self.header.files_info.files[self.current_file_index]["digest"] = crc
+                self.last_file_index = self.current_file_index
+            elif (f.is_symlink and not deref) or not f.emptystream:
+                foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder, callback)
+                self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
+                self.header.files_info.files[self.current_file_index]["digest"] = crc
+                self.last_file_index = self.current_file_index
+            elif callback is not None:
+                callback.report_start(f.filename, "0")
+                callback.report_update("0")
+            self.current_file_index += 1
+            if callback is not None:
+                callback.report_end(f.filename, str(foutsize))
+        except BaseException:
+            self._archive_failed = True
+            raise
 
     def register_filelike(self, id: int, fileish: MemIO | pathlib.Path | None) -> None:
         """register file-ish to worker."""

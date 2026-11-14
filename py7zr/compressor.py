@@ -25,6 +25,7 @@ import bz2
 import lzma
 import struct
 import sys
+import time
 import zlib
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -36,6 +37,7 @@ import pyppmd
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
+from py7zr.callbacks import ArchiveCallback
 from py7zr.exceptions import PasswordRequired, UnsupportedCompressionMethodError
 from py7zr.helpers import calculate_crc32, calculate_key
 from py7zr.io import Buffer
@@ -900,11 +902,15 @@ class SevenZipCompressor:
             },
         )
 
-    def compress(self, fd, fp, crc=0):
+    def compress(self, fd, fp, crc=0, *, callback: ArchiveCallback | None = None):
+        previous_update_at = time.monotonic() if callback is not None else 0.0
+        processed_bytes = 0
         data = fd.read(self._block_size)
         insize = len(data)
         foutsize = 0
         while data:
+            if callback is not None:
+                processed_bytes += len(data)
             crc = calculate_crc32(data, crc)
             for i, compressor in enumerate(self.chain):
                 self._unpacksizes[i] += len(data)
@@ -913,8 +919,16 @@ class SevenZipCompressor:
             self.digest = calculate_crc32(data, self.digest)
             foutsize += len(data)
             fp.write(data)
+            if callback is not None:
+                now = time.monotonic()
+                if now - previous_update_at >= 1:
+                    callback.report_update(str(processed_bytes))
+                    previous_update_at = now
+                    processed_bytes = 0
             data = fd.read(self._block_size)
             insize += len(data)
+        if callback is not None and (processed_bytes or insize == 0):
+            callback.report_update(str(processed_bytes))
         return insize, foutsize, crc
 
     def flush(self, fp):
