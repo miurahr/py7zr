@@ -293,3 +293,53 @@ def test_decompress_deflate64(tmp_path):
         m1 = hashlib.sha256()
         m1.update(tmp_path.joinpath("src").joinpath(target).open("rb").read())
         assert m0.digest() == m1.digest(), "Fails digest for %s" % target
+
+
+@pytest.mark.basic
+@pytest.mark.parametrize(
+    "bcj_filter,sizes",
+    [
+        (py7zr.FILTER_X86, [1, 100]),
+        (py7zr.FILTER_ARM, [3, 100]),
+        (py7zr.FILTER_ARMTHUMB, [7, 100]),
+        (py7zr.FILTER_POWERPC, [50, 50]),
+        (py7zr.FILTER_SPARC, [50, 50]),
+        (py7zr.FILTER_X86, [50, 50]),
+        (py7zr.FILTER_X86, [1000, 2000, 500]),
+    ],
+)
+def test_roundtrip_bcj_ppmd(tmp_path, bcj_filter, sizes):
+    # BCJ + PPMd chains must not over-ask the PPMd decoder: the BCJ stage
+    # holds back a partial unit, so the final stage may legitimately
+    # produce fewer bytes than the archive's remaining output suggests.
+    # See https://github.com/miurahr/py7zr/issues/762
+    my_filters = [{"id": py7zr.FILTER_PPMD, "order": 6, "mem": 24}]
+    my_filters.insert(0, {"id": bcj_filter})
+    expected = {}
+    target = tmp_path.joinpath("target.7z")
+    with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
+        for i, n in enumerate(sizes):
+            payload = bytes((j * 131 + 7 + i) % 251 for j in range(n))
+            expected[f"m{i}.bin"] = payload
+            archive.writestr(payload, f"m{i}.bin")
+    with py7zr.SevenZipFile(target, "r") as archive:
+        archive.extractall(path=tmp_path.joinpath("out"))
+    for name, payload in expected.items():
+        assert tmp_path.joinpath("out", name).read_bytes() == payload
+
+
+@pytest.mark.basic
+def test_roundtrip_ppmd_control(tmp_path):
+    # Control without a BCJ stage: must pass before and after the fix.
+    my_filters = [{"id": py7zr.FILTER_PPMD, "order": 6, "mem": 24}]
+    expected = {}
+    target = tmp_path.joinpath("target.7z")
+    with py7zr.SevenZipFile(target, "w", filters=my_filters) as archive:
+        for i, n in enumerate([1, 100]):
+            payload = bytes((j * 131 + 7 + i) % 251 for j in range(n))
+            expected[f"m{i}.bin"] = payload
+            archive.writestr(payload, f"m{i}.bin")
+    with py7zr.SevenZipFile(target, "r") as archive:
+        archive.extractall(path=tmp_path.joinpath("out"))
+    for name, payload in expected.items():
+        assert tmp_path.joinpath("out", name).read_bytes() == payload
