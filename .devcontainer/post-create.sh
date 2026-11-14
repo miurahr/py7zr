@@ -38,7 +38,7 @@ for spec in "$PY_GIL:.venv" "$PY_FT:.venv-ft"; do
     done
   fi
   uv pip install --python "$venv/bin/python" -e ".[test]" \
-    || uv pip install --python "$venv/bin/python" -e . pytest
+    || uv pip install --python "$venv/bin/python" -e . pytest py-cpuinfo
   uv pip install --python "$venv/bin/python" pytest-run-parallel
 done
 
