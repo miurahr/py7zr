@@ -23,6 +23,20 @@ Note: Because the py7zr may run in multi-threaded, your custom class should be t
 
 The py7zr provide the way to stream content without buffering all the archive content in a memory.
 
+When an archive member is a symbolic link, the py7zr calls ``create_symlink`` method of the factory
+with the filename and the link target instead of ``create``. Your custom class can override
+``create_symlink`` to handle symbolic links, for example to recreate them on a file system,
+and return True. When ``create_symlink`` returns False, which is the default behavior of
+``WriterFactory``, the link target is written through ``create`` as ordinary file data.
+
+The link target passed to ``create_symlink`` is untrusted archive content. Unlike extraction to a
+filesystem path, the factory path performs no containment validation on it, so a factory that
+recreates links on a file system must validate each target against its own destination root,
+accounting for existing symbolic links, before creating the link. Links created earlier in the
+same extraction can also change how a later target resolves, so such a factory should enforce
+containment on every filesystem write, or defer link creation until all links in the archive
+are known.
+
 Example to extract into network storage
 ---------------------------------------
 

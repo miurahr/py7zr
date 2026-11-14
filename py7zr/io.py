@@ -112,6 +112,28 @@ class WriterFactory(ABC):
         """request writer which compatible with BinaryIO, such as BytesIO object."""
         pass
 
+    def create_symlink(self, filename: str, target: str) -> bool:
+        """Handle a symbolic link archive member.
+
+        This is called instead of create() when the extracted member is a
+        symbolic link. The ``target`` argument is the link target stored in
+        the archive. Return True when the link has been handled by the
+        factory, for example by recreating it on a file system, and no file
+        data should be written. Return False to extract the link target as
+        ordinary file data through create(). The default implementation
+        returns False to keep the backward compatible behavior.
+
+        The ``target`` is untrusted archive content: unlike extraction to a
+        filesystem path, the factory path performs no containment validation
+        on it. A factory that recreates links on a file system must validate
+        each target against its own destination root, accounting for existing
+        symbolic links, before creating the link. Links created earlier in
+        the same extraction can also change how a later target resolves, so
+        such a factory should enforce containment on every filesystem write,
+        or defer link creation until all links in the archive are known.
+        """
+        return False
+
 
 class HashIOFactory(WriterFactory):
     def __init__(self):

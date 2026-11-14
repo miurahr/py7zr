@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zlib
 from datetime import datetime
 
 import pytest
@@ -302,6 +303,68 @@ def test_extract_symlink(tmp_path):
 def test_extract_symlink_mem():
     with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
         archive.extractall(factory=py7zr.io.NullIOFactory())
+
+
+@pytest.mark.files
+def test_extract_symlink_factory_callback():
+    """A writer factory can detect and handle symlink members (issue #664)."""
+    seen: dict = {}
+    created: set = set()
+
+    class SymlinkFactory(py7zr.io.WriterFactory):
+        def create(self, filename: str) -> py7zr.io.Py7zIO:
+            created.add(filename)
+            return py7zr.io.NullIO()
+
+        def create_symlink(self, filename: str, target: str) -> bool:
+            seen[filename] = target
+            return True
+
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+        archive.extractall(factory=SymlinkFactory())
+    assert seen == {
+        "lib/libabc.so": "libabc.so.1",
+        "lib/libabc.so.1": "libabc.so.1.2",
+        "lib/libabc.so.1.2": "libabc.so.1.2.3",
+        "lib64": "lib",
+    }
+    # A symlink handled by create_symlink must not also reach create().
+    assert created.isdisjoint(seen)
+
+
+@pytest.mark.files
+def test_extract_symlink_factory_default_fallback():
+    """Factories without create_symlink keep the legacy behavior (issue #664)."""
+    factory = py7zr.io.BytesIOFactory(limit=1 << 16)
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+        archive.extractall(factory=factory)
+    assert factory.get("lib/libabc.so").read() == b"libabc.so.1"
+    assert factory.get("lib/libabc.so.1").read() == b"libabc.so.1.2"
+    assert factory.get("lib/libabc.so.1.2").read() == b"libabc.so.1.2.3"
+    assert factory.get("lib64").read() == b"lib"
+
+
+@pytest.mark.files
+def test_extract_symlink_factory_non_utf8_fallback(monkeypatch):
+    """A foreign archive whose symlink target is not valid UTF-8 keeps the
+    legacy raw-byte behavior instead of raising UnicodeDecodeError (issue #664).
+    py7zr cannot author such an archive itself, so the foreign bytes are fed
+    through the real extraction branch via a patched decompress."""
+    bad_target = b"\xff\xfeBADTARGET"
+    bad_crc = zlib.crc32(bad_target)
+
+    def fake_decompress(self, fp, folder, ofp, *args, **kwargs):
+        ofp.write(bad_target)
+        return bad_crc
+
+    monkeypatch.setattr(py7zr.py7zr.Worker, "decompress", fake_decompress)
+    factory = py7zr.io.BytesIOFactory(limit=1 << 16)
+    with py7zr.SevenZipFile(testdata_path.joinpath("symlink.7z").open(mode="rb")) as archive:
+        for f in archive.files:
+            f._file_info["digest"] = bad_crc  # keep the real CRC gate consistent with the foreign bytes
+        archive.extractall(factory=factory)
+    assert factory.get("lib/libabc.so").read() == bad_target
+    assert factory.get("lib64").read() == bad_target
 
 
 @pytest.mark.files
