@@ -320,7 +320,23 @@ class ArchiveFileListIterator(collections.abc.Iterator[ArchiveFile]):
 # ------------------
 @dataclass
 class ArchiveInfo:
-    """Hold archive information"""
+    """Hold archive metadata returned by the ``archiveinfo()`` method.
+
+    This dataclass contains summary information about a 7z archive,
+    including file paths, compression methods, block counts, and sizes.
+
+    :ivar filename: The filename of the 7z archive, or ``None`` when the
+        archive is opened from a file-like object.
+    :ivar stat: The ``os.stat_result`` of the archive file, or ``None``
+        when the archive is opened from a file-like object.
+    :ivar header_size: The total size of the archive headers in bytes.
+    :ivar method_names: A list of compression method names used in the
+        archive. Unsupported methods are marked with an asterisk (``*``).
+    :ivar solid: ``True`` if the archive uses solid compression.
+    :ivar blocks: The number of compression blocks in the archive.
+    :ivar uncompressed: The total uncompressed size of all files in the
+        archive in bytes.
+    """
 
     filename: str
     stat: os.stat_result
@@ -358,7 +374,82 @@ class FileInfo:
 
 
 class SevenZipFile(contextlib.AbstractContextManager):
-    """The SevenZipFile Class provides an interface to 7z archives."""
+    """Provide an interface to 7z archives for reading, writing, and extracting.
+
+    SevenZipFile supports four operation modes: read ('r'), write ('w'),
+    exclusive create ('x'), and append ('a'). It implements the context
+    manager protocol so that archives are properly closed after use.
+
+    :param file: Path to the archive file or a file-like object.
+    :param mode: Operation mode: 'r' for reading, 'w' for writing,
+        'x' for exclusive creation, 'a' for appending.
+    :param filters: Compression filter chain configuration. When ``None``,
+        default filters are used automatically.
+    :param dereference: When ``True``, follow symbolic links and store
+        the link target content instead of the link itself.
+    :param password: Password for encrypted archives. Required when
+        reading an encrypted archive or when writing with encryption filters.
+    :param header_encryption: When ``True``, encrypt the archive header
+        to hide file names and sizes.
+    :param blocksize: Internal read block size in bytes. When ``None``,
+        a default size is used.
+    :param mp: When ``True``, use multiprocessing for parallel extraction
+        on non-encrypted archives.
+    :param max_extract_size: Upper bound on the total extracted data size
+        in bytes. When the limit is exceeded, extraction stops with an error.
+
+    **Attributes**
+
+    The following instance attributes are available after construction:
+
+    :ivar fp: The underlying file object for the archive.
+    :ivar mode: The current operation mode ('r', 'w', 'x', or 'a').
+    :ivar filename: The path of the archive file, or ``None`` when a
+        file-like object was passed.
+    :ivar files: An ``ArchiveFileList`` containing the archive members.
+    :ivar header: The parsed ``Header`` object describing the archive
+        structure, or ``None`` for an empty archive.
+    :ivar sig_header: The ``SignatureHeader`` object with magic number,
+        version, and CRC information.
+    :ivar afterheader: File position immediately after the signature header.
+    :ivar pack_data_start: File position where pack data begins, calculated
+        as ``afterheader + packpos``. Used for all pack data positioning.
+    :ivar password_protected: ``True`` when the archive contains encrypted
+        content.
+    :ivar mp: ``True`` when multiprocessing extraction is enabled.
+    :ivar dereference: ``True`` when symbolic links are followed.
+    :ivar max_extract_size: Maximum allowed extracted data size in bytes.
+    :ivar encoded_header_mode: ``True`` when the header is stored in
+        compressed form.
+    :ivar header_encryption: ``True`` when the header is encrypted.
+
+    **Pack data positioning**
+
+    The 7z format defines ``PackPos`` in the Pack Information section as
+    an offset from the end of the signature header to the start of pack
+    data. The pack data start position is calculated once when reading
+    the archive header and stored as ``pack_data_start``:
+
+    * When ``header.main_streams`` exists, it equals
+      ``afterheader + packpos``.
+    * When ``header.main_streams`` is ``None`` (e.g., empty archives),
+      it equals ``afterheader``.
+
+    This value is used consistently for Worker creation, file pointer
+    positioning in ``reset()``, ``test()``, and ``testzip()``, and
+    source position tracking. For newly created archives, ``packpos``
+    is always 0, so ``pack_data_start`` equals ``afterheader``.
+
+    **Limitations**
+
+    * Deflate64 compression is not supported for writing archives.
+    * Socket files stored in archives are not extracted.
+    * When duplicate file names exist in an archive, later entries
+      overwrite earlier ones.
+    * Multiprocessing extraction is disabled for password-protected
+      archives and when a file-like object is passed instead of a path.
+    * Appending to a non-7z file falls back to creating a new archive.
+    """
 
     def __init__(
         self,

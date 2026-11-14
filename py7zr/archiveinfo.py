@@ -56,7 +56,17 @@ P7ZIP_MINOR_VERSION = b"\x04"
 
 
 class WriteWithCrc(io.RawIOBase):
-    """Thin wrapper for file object to calculate crc32 when write called."""
+    """Thin wrapper around a binary file that calculates CRC-32 on every write.
+
+    Used when writing archive sections to compute the CRC of the header data
+    before the final header CRC is written. Extends :class:`io.RawIOBase` and
+    delegates all I/O operations to the underlying file while accumulating
+    the CRC-32 digest.
+
+    :ivar _fp: The underlying binary file object.
+    :ivar digest: The running CRC-32 digest value, initialized to 0 and
+        updated on each write.
+    """
 
     def __init__(self, fp: BinaryIO):
         self._fp = fp
@@ -303,7 +313,26 @@ def bits_to_bytes(bit_length: int) -> int:
 
 
 class PackInfo:
-    """information about packed streams"""
+    """Information about packed streams in a 7z archive.
+
+    Represents the Pack Information section (id ``0x06``) of the 7z format,
+    which describes the packed data streams including their positions, sizes,
+    and CRCs. The ``packpos`` field indicates the offset from the end of the
+    signature header to the start of the packed streams.
+
+    :ivar packpos: Offset from the end of the signature header to the start
+        of packed streams. Default is 0, meaning pack data starts immediately
+        after the signature header.
+    :ivar numstreams: Number of pack streams in the archive.
+    :ivar packsizes: List of packed sizes for each stream in bytes.
+    :ivar packpositions: Cumulative positions derived from ``packsizes``, used
+        for random access within the pack data.
+    :ivar crcs: List of CRC-32 values for each pack stream.
+    :ivar digestdefined: List of booleans indicating whether a CRC is defined
+        for each pack stream.
+    :ivar enable_digests: ``True`` if any CRC digests are present for
+        verification during extraction.
+    """
 
     __slots__ = [
         "packpos",
@@ -371,10 +400,14 @@ class PackInfo:
 
 
 class Bond:
-    """Represent bindings between two methods.
-    bonds[i] = (incoder, outstream)
-    means
-    methods[i].stream[outstream] output data go to method[incoder].stream[0]
+    """Represent a binding between two coders in a folder.
+
+    A bond connects the output stream of one coder to the input stream of
+    another, forming a compression pipeline. For example, in a LZMA2+BCJ
+    filter chain, the BCJ output is bonded to the LZMA2 input.
+
+    :ivar incoder: Index of the coder that receives the bonded input.
+    :ivar outcoder: Index of the coder whose output is bonded.
     """
 
     def __init__(self, incoder, outcoder):
@@ -383,12 +416,33 @@ class Bond:
 
 
 class Folder:
-    """a "Folder" represents a stream of compressed data.
-    coders: list of coder
-    num_coders: length of coders
-    coder: hash list
-    keys of coders:  method, numinstreams, numoutstreams, properties
-    unpacksizes: uncompressed sizes of outstreams
+    """A folder represents a collection of coders processing compressed data.
+
+    In the 7z format, a folder is a logical grouping of one or more coders
+    (compression methods) that form a pipeline. Each folder contains the
+    coder definitions, binding pairs between coders, unpack sizes, and
+    optional CRC verification data.
+
+    :ivar unpacksizes: List of uncompressed sizes for each output stream
+        of each coder in the folder.
+    :ivar coders: List of coder dictionaries, each containing ``method``,
+        ``numinstreams``, ``numoutstreams``, and optional ``properties``.
+    :ivar bindpairs: List of :class:`Bond` objects connecting coder outputs
+        to coder inputs within the folder.
+    :ivar packed_indices: List of indices for packed streams when there are
+        multiple external packed streams.
+    :ivar solid: ``True`` if the folder contains multiple files (solid
+        compression).
+    :ivar digestdefined: ``True`` if a CRC digest is defined for the folder.
+    :ivar crc: CRC-32 value for the folder's unpacked data, or ``None`` if
+        no CRC is stored.
+    :ivar decompressor: The :class:`SevenZipDecompressor` instance for
+        reading this folder, lazily created.
+    :ivar compressor: The :class:`SevenZipCompressor` instance for writing
+        this folder, set during preparation.
+    :ivar files: Reference to the files contained in this folder.
+    :ivar password: Password for encrypted folders, or ``None`` if not
+        encrypted.
     """
 
     __slots__ = [
@@ -555,7 +609,18 @@ class Folder:
 
 
 class UnpackInfo:
-    """combines multiple folders"""
+    """Information about unpacking multiple folders in a 7z archive.
+
+    Represents the Unpack Information section (id ``0x04``) of the 7z format,
+    which contains the folder definitions and coder unpack sizes. Each folder
+    describes a compression pipeline with one or more coders.
+
+    :ivar numfolders: Number of folders in the archive.
+    :ivar folders: List of :class:`Folder` objects, each representing a
+        compressed data stream with its coders and bindings.
+    :ivar datastreamidx: Index for external folder data (rarely used; most
+        archives store folder data inline).
+    """
 
     __slots__ = ["numfolders", "folders", "datastreamidx"]
 
@@ -633,7 +698,22 @@ class UnpackInfo:
 
 
 class SubstreamsInfo:
-    """defines the substreams of a folder"""
+    """Information about substreams within folders.
+
+    Represents the Substreams Information section (id ``0x09``) of the 7z
+    format. When a folder contains multiple files (solid compression), this
+    section defines how the folder's output is divided into individual file
+    substreams, including their unpack sizes and CRCs.
+
+    :ivar digests: List of CRC-32 values for each substream.
+    :ivar digestsdefined: List of booleans indicating whether a CRC is
+        defined for each substream.
+    :ivar unpacksizes: List of unpacked sizes for each substream, or ``None``
+        if all substreams have equal sizes.
+    :ivar num_unpackstreams_folders: List of substream counts per folder.
+        A value of 1 means the folder contains a single file; a value greater
+        than 1 means the folder is solid.
+    """
 
     __slots__ = [
         "digests",
@@ -736,7 +816,20 @@ class SubstreamsInfo:
 
 
 class StreamsInfo:
-    """information about compressed streams"""
+    """Top-level information about all compressed streams in a 7z archive.
+
+    Represents the Main Streams Information section (id ``0x08``) of the 7z
+    format. It combines pack information, unpack information, and substream
+    information into a single structure that describes the complete data
+    layout of the archive.
+
+    :ivar packinfo: :class:`PackInfo` describing packed stream sizes, positions,
+        and CRCs, or ``None`` if the archive is empty.
+    :ivar unpackinfo: :class:`UnpackInfo` describing folder definitions and
+        coder pipelines, or ``None`` if the archive is empty.
+    :ivar substreamsinfo: :class:`SubstreamsInfo` describing how folders are
+        divided into individual file substreams, or ``None`` if not present.
+    """
 
     __slots__ = ["packinfo", "unpackinfo", "substreamsinfo"]
 
@@ -779,8 +872,16 @@ class StreamsInfo:
 
 
 class HeaderStreamsInfo(StreamsInfo):
-    """
-    Header version of StreamsInfo
+    """StreamsInfo variant used for encoding the archive header itself.
+
+    When the archive header is compressed or encrypted, it is treated as a
+    separate packed stream. This class extends :class:`StreamsInfo` to write
+    the encoded header format (id ``0x02``) with its own pack and unpack
+    information.
+
+    The header is always stored in a single folder with one coder, and the
+    ``packpos`` is calculated as the offset from the signature header end
+    to the encoded header data.
     """
 
     def __init__(self):
@@ -797,7 +898,20 @@ class HeaderStreamsInfo(StreamsInfo):
 
 
 class FilesInfo:
-    """holds file properties"""
+    """File properties stored in the 7z archive header.
+
+    Represents the Files Information section (id ``0x07``) of the 7z format.
+    Contains metadata for every file and directory in the archive, including
+    names, timestamps, attributes, and empty file flags.
+
+    :ivar files: List of file property dictionaries. Each dictionary contains
+        keys such as ``filename``, ``attributes``, ``lastwritetime``,
+        ``emptystream``, and optionally ``startpos``.
+    :ivar emptyfiles: List of booleans indicating whether each empty stream
+        is an empty file (as opposed to an empty directory).
+    :ivar antifiles: List of booleans for anti-files (used in archive
+        diff/update operations), or ``None`` if not present.
+    """
 
     __slots__ = ["files", "emptyfiles", "antifiles"]
 
@@ -997,7 +1111,26 @@ class FilesInfo:
 
 
 class Header:
-    """the archive header"""
+    """The main archive header containing all metadata for a 7z archive.
+
+    The header is the central structure that ties together the streams
+    information, file properties, and encoding/encryption settings. It can
+    be stored raw or encoded (compressed and/or encrypted) within the archive.
+
+    :ivar solid: ``True`` if the archive uses solid compression.
+    :ivar main_streams: :class:`StreamsInfo` describing all packed and unpacked
+        streams, or ``None`` for an empty archive.
+    :ivar files_info: :class:`FilesInfo` containing file metadata, or ``None``
+        for an empty archive.
+    :ivar size: Total size of the header data in bytes, including the
+        signature header and encoded header database.
+    :ivar _start_pos: Byte offset where the header data begins in the file.
+    :ivar password: Password for header encryption, or ``None`` if not
+        encrypted.
+    :ivar _initialized: ``True`` if the header has been initialized for
+        writing via :meth:`initialize`.
+    :ivar filters: Compression filter configuration for header encoding.
+    """
 
     __slot__ = ["solid", "main_streams", "files_info", "size", "_start_pos", "_initialized", "filters"]
 
@@ -1195,7 +1328,22 @@ class Header:
 
 
 class SignatureHeader:
-    """The SignatureHeader class hold information of a signature header of archive."""
+    """The signature header at the beginning of every 7z archive.
+
+    The signature header is a fixed 32-byte structure that identifies the
+    file as a valid 7z archive and provides the location and integrity of
+    the header database. It is the first section read when opening an archive.
+
+    :ivar version: Tuple of major and minor version bytes. Currently
+        ``(b'\\x00', b'\\x04')`` for 7z format version 0.4.
+    :ivar startheadercrc: CRC-32 of the next header offset, size, and CRC
+        fields, used to verify the signature header integrity.
+    :ivar nextheaderofs: Offset from the end of the signature header to the
+        start of the header database.
+    :ivar nextheadersize: Size of the next header data in bytes.
+    :ivar nextheadercrc: CRC-32 of the next header data, used to verify
+        the header database integrity.
+    """
 
     __slots__ = [
         "version",

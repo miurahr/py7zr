@@ -270,14 +270,9 @@ Here is a callback interface class. ExtractCallback class is a concrete class us
 Classes details
 ================
 
-Here is a detailed interface documentation for implementer.
-
-ArchiveFile Objects
--------------------
-
-.. automodule:: py7zr.py7zr
-   :members:
-
+Here is a detailed interface documentation for internal implementation classes.
+The public-facing ``SevenZipFile`` API is documented in the API documentation (api.rst).
+These sections cover internal classes used by contributors working on the library core.
 
 archiveinfo module
 ------------------
