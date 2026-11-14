@@ -883,9 +883,10 @@ class FilesInfo:
 
     def _read_start_pos(self, fp: BinaryIO) -> None:
         defined = read_boolean(fp, len(self.files), checkall=True)
-        # NOTE: the "external" flag is currently ignored, should be 0x00
+        # External StartPos data is not supported.
         external = fp.read(1)
-        assert external == 0x00
+        if external != b"\x00":
+            raise Bad7zFile("Invalid StartPos external flag")
         for i, f in enumerate(self.files):
             f["startpos"] = read_real_uint64(fp)[0] if defined[i] else None
 
