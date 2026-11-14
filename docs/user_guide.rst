@@ -281,7 +281,7 @@ Compression Methods
 'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
 It also supports BZip2 and Deflate that are implemented in Python core libraries,
 and ZStandard, PPMd and Brotli with third party libraries.
-Deflate64 can be decompressed but not compressed, and BCJ2 is not supported.
+Deflate64 is supported with `inflate64`_ except on PyPy, and BCJ2 is not supported.
 
 .. _`lzma module`: https://docs.python.org/3/library/lzma.html
 .. _`liblzma`: https://tukaani.org/xz/
@@ -307,16 +307,17 @@ Here is a table of algorithms.
 |   |                      |            | for Python before 3.14      |
 +---+                      +------------+-----------------------------+
 |  8|                      | Brotli     | depend on brotli,brotliCFFI |
++---+                      +------------+-----------------------------+
+|  9|                      | Deflate64  | depend on inflate64,        |
+|   |                      |            | not on PyPy                 |
 +---+----------------------+------------+-----------------------------+
-|  9| - Filter             | BCJ        |(X86, ARM, PPC, ARMT, SPARC, |
+| 10| - Filter             | BCJ        |(X86, ARM, PPC, ARMT, SPARC, |
 |   |                      |            | IA64)  depend on pybcj      |
 +---+                      +------------+-----------------------------+
-| 10|                      | Delta      |                             |
+| 11|                      | Delta      |                             |
 +---+----------------------+------------+-----------------------------+
-| 11| - Encryption         | 7zAES      | depend on pycryptodome      |
+| 12| - Encryption         | 7zAES      | depend on pycryptodome      |
 |   | - Decryption         |            |                             |
-+---+----------------------+------------+-----------------------------+
-| 12| - Decompression only | Deflate64  | depend on inflate64         |
 +---+----------------------+------------+-----------------------------+
 | 13| - Unsupported        | BCJ2       |                             |
 +---+----------------------+------------+-----------------------------+
@@ -363,6 +364,12 @@ BZip2
 
 Deflate
     ``[{'id': FILTER_DEFLATE}]``
+
+Deflate64
+    ``[{'id': FILTER_DEFLATE64}]``
+
+    ``FILTER_DEFLATE64`` is not exported from the ``py7zr`` package; import it with
+    ``from py7zr.properties import FILTER_DEFLATE64``.
 
 ZStandard
     ``[{'id': FILTER_ZSTD, 'level': 3}]``

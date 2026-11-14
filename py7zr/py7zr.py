@@ -467,7 +467,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     **Limitations**
 
-    * Deflate64 compression is not supported for writing archives.
+    * Deflate64 is not available on PyPy.
     * Socket files stored in archives are not extracted.
     * When duplicate file names exist in an archive, the first member
       keeps its original name and subsequent duplicates receive
