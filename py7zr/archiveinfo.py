@@ -436,9 +436,9 @@ class Folder:
     :ivar digestdefined: ``True`` if a CRC digest is defined for the folder.
     :ivar crc: CRC-32 value for the folder's unpacked data, or ``None`` if
         no CRC is stored.
-    :ivar decompressor: The :class:`SevenZipDecompressor` instance for
+    :ivar decompressor: The :class:`~py7zr.compressor.SevenZipDecompressor` instance for
         reading this folder, lazily created.
-    :ivar compressor: The :class:`SevenZipCompressor` instance for writing
+    :ivar compressor: The :class:`~py7zr.compressor.SevenZipCompressor` instance for writing
         this folder, set during preparation.
     :ivar files: Reference to the files contained in this folder.
     :ivar password: Password for encrypted folders, or ``None`` if not
@@ -1128,7 +1128,7 @@ class Header:
     :ivar password: Password for header encryption, or ``None`` if not
         encrypted.
     :ivar _initialized: ``True`` if the header has been initialized for
-        writing via :meth:`initialize`.
+        writing via ``initialize()``.
     :ivar filters: Compression filter configuration for header encoding.
     """
 

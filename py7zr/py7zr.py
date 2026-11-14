@@ -116,9 +116,10 @@ class ArchiveFile:
     It holds file properties; filename, permissions, and type whether
     it is directory, link or normal file.
 
-    Instances of the :class:`ArchiveFile` class are returned by iterating :attr:`files_list` of
+    Instances of the :class:`ArchiveFile` class are returned by iterating the ``files`` attribute of
     :class:`SevenZipFile` objects.
-    Each object stores information about a single member of the 7z archive. Most of users use :meth:`extractall()`.
+    Each object stores information about a single member of the 7z archive.
+    Most users use :meth:`py7zr.SevenZipFile.extractall` instead.
 
     The class also hold an archive parameter where file is exist in
     archive file folder(container)."""
@@ -349,7 +350,29 @@ class ArchiveInfo:
 
 @dataclass
 class FileInfo:
-    """Hold archived file information."""
+    """Hold information about one archive member.
+
+    Instances are returned by :meth:`SevenZipFile.list` and
+    :meth:`SevenZipFile.getinfo`.
+
+    :ivar filename: The member name in the archive, using ``/`` as separator.
+    :ivar compressed: The compressed size in bytes, or ``None`` when the member
+        shares a solid block with other members and its own compressed size
+        is not known.
+    :ivar uncompressed: The uncompressed size in bytes.
+    :ivar archivable: ``True`` when the archive attribute bit is set.
+    :ivar is_directory: ``True`` when the member is a directory.
+    :ivar is_file: ``True`` when the member is a regular file.
+    :ivar is_symlink: ``True`` when the member is a symbolic link.
+    :ivar creationtime: The member's **last write (modification) time** as a
+        :class:`datetime.datetime`, or ``None`` when no timestamp is stored.
+        The field name is kept for backward compatibility.
+    :ivar crc32: The CRC32 checksum of the uncompressed data, or ``None``.
+
+    At most one of ``is_directory``, ``is_file`` and ``is_symlink`` is
+    ``True``; all are ``False`` for special members such as junctions or
+    sockets.
+    """
 
     filename: str
     compressed: int | None
@@ -400,7 +423,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     **Attributes**
 
-    The following instance attributes are available after construction:
+    The following instance attributes are available after construction.
+    Only ``filename``, ``mode`` and ``files`` are part of the stable public
+    API; the others reflect implementation details and may change.
 
     :ivar fp: The underlying file object for the archive.
     :ivar mode: The current operation mode ('r', 'w', 'x', or 'a').
@@ -898,6 +923,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return maxsize, compressed, uncompressed, packsize, folder.solid
 
     def set_encoded_header_mode(self, mode: bool) -> None:
+        """Select whether the header is written in compressed (encoded) form.
+
+        Only meaningful in write modes and must be called before
+        :meth:`close`. Encoded headers are enabled by default.
+
+        :param mode: ``True`` to compress the header. ``False`` stores a plain
+            header and also disables header encryption.
+        """
         if mode:
             self.encoded_header_mode = True
         else:
@@ -905,6 +938,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header_encryption = False
 
     def set_encrypted_header(self, mode: bool) -> None:
+        """Select whether the header is encrypted, hiding member names and sizes.
+
+        Only meaningful in write modes with a password, and must be called
+        before :meth:`close`. Equivalent to the ``header_encryption``
+        constructor argument.
+
+        :param mode: ``True`` to encrypt the header. This also enables the
+            encoded header mode.
+        """
         if mode:
             self.encoded_header_mode = True
             self.header_encryption = True
@@ -1036,18 +1078,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
     # --------------------------------------------------------------------------
     # The public methods which SevenZipFile provides:
     def getnames(self) -> list[str]:
-        """Return the members of the archive as a list of their names. It has
-        the same order as the list returned by getmembers().
+        """Return the names of the archive members, in archive order.
+
+        Alias of :meth:`namelist`, for compatibility with :mod:`tarfile`.
         """
         return self.namelist()
 
     def namelist(self) -> list[str]:
-        """Return a list of archive members by name."""
+        """Return the names of the archive members, in archive order.
+
+        Same as :meth:`getnames`, for compatibility with :mod:`zipfile`.
+        """
         return list(x.filename for x in self.files)
 
     def getinfo(self, name: str) -> FileInfo:
-        """Return a :class:`FileInfo` object with information about the archive member *name*.
-        Calling :meth:`getinfo()` for a name not currently contained in the archive will raise a :exc:`KeyError`."""
+        """Return a :class:`FileInfo` object describing the archive member *name*.
+
+        A trailing slash in *name* is ignored, as in :mod:`zipfile`.
+
+        :param name: The member name.
+        :raises KeyError: If the archive has no member called *name*.
+        """
         # For interoperability with ZipFile
         name = remove_trailing_slash(name)
 
@@ -1061,6 +1112,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return sevenzipinfo
 
     def archiveinfo(self) -> ArchiveInfo:
+        """Return summary information about the whole archive.
+
+        The archive must have been opened from a file path or a
+        multi-volume file object, because the result includes
+        :func:`os.stat` information.
+
+        :return: An :class:`ArchiveInfo` object.
+        """
         uncompressed_list = [f.uncompressed for f in self.files]
         total_uncompressed = functools.reduce(lambda x, y: x + y, uncompressed_list, 0)
         if isinstance(self.fp, multivolumefile.MultiVolume):
@@ -1082,10 +1141,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
         )
 
     def needs_password(self) -> bool:
+        """Return ``True`` if the archive contains encrypted content."""
         return self.password_protected
 
     def list(self) -> list[FileInfo]:
-        """Returns contents information"""
+        """Return information about all archive members.
+
+        :return: A list of :class:`FileInfo` objects, in archive order.
+        """
         alist: list[FileInfo] = []
         lastmodified: datetime.datetime | None = None
         for f in self.files:
@@ -1113,10 +1176,26 @@ class SevenZipFile(contextlib.AbstractContextManager):
         callback: ExtractCallback | None = None,
         factory: WriterFactory | None = None,
     ) -> None:
-        """Extract all members from the archive to the current working
-        directory and set owner, modification time and permissions on
-        directories afterward. ``path`` specifies a different directory
-        to extract to.
+        """Extract all members from the archive.
+
+        Modification times and permissions are restored on extracted files.
+        Member names that would escape the target directory are rejected.
+        An archive can be extracted only once per open; call :meth:`reset`
+        before extracting again.
+
+        :param path: The directory to extract into. Defaults to the current
+            working directory. Created if it does not exist.
+        :param callback: An optional
+            :class:`py7zr.callbacks.ExtractCallback` instance that receives
+            progress reports.
+        :param factory: An optional :class:`WriterFactory`. When given,
+            member data is written to objects created by the factory instead
+            of to files, and directories are skipped. See
+            :ref:`advanced_usage`.
+        :raises PasswordRequired: If the archive is encrypted and no password
+            was given.
+        :raises DecompressionBombError: If the extracted size exceeds
+            ``max_extract_size``.
         """
         self._extract(path=path, callback=callback, writer_factory=factory)
 
@@ -1129,6 +1208,27 @@ class SevenZipFile(contextlib.AbstractContextManager):
         callback: ExtractCallback | None = None,
         factory: WriterFactory | None = None,
     ) -> None:
+        """Extract selected members from the archive.
+
+        Works like :meth:`extractall` but only extracts the members named in
+        *targets*. An archive can be extracted only once per open; call
+        :meth:`reset` before extracting again.
+
+        :param path: The directory to extract into. Defaults to the current
+            working directory.
+        :param targets: A collection (list or set) of member names to extract,
+            or ``None`` to extract everything. Trailing slashes are ignored.
+            For a single member pass ``["name"]``, not a bare string.
+        :param recursive: When ``True``, also extract every member whose name
+            starts with one of the *targets*, so a directory name selects its
+            whole subtree.
+        :param callback: An optional
+            :class:`py7zr.callbacks.ExtractCallback` instance that receives
+            progress reports.
+        :param factory: An optional :class:`WriterFactory`; see
+            :meth:`extractall`.
+        :raises TypeError: If *targets* is not a collection or ``None``.
+        """
         if not self._is_none_or_collection(targets):
             raise TypeError(
                 "targets must be a list or set of file names, or None; "
@@ -1141,6 +1241,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._extract(path, targets, recursive=recursive, callback=callback, writer_factory=factory)
 
     def reporter(self, callback: ExtractCallback) -> None:
+        """Forward progress events from the worker to *callback* (internal).
+
+        Runs in a background thread started by :meth:`extract` and
+        :meth:`extractall`; not intended to be called directly.
+        """
         while True:
             try:
                 item: tuple[str, str, str] | None = self.q.get(timeout=1)
@@ -1170,7 +1275,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         path: pathlib.Path | str,
         arcname: str | None = None,
     ) -> None:
-        """Write files in target path into archive."""
+        """Add a file or a whole directory tree to the archive.
+
+        :param path: A file or directory on disk. Directories are added
+            recursively.
+        :param arcname: The name to store *path* under in the archive.
+            Defaults to *path* with any leading slash or drive letter removed.
+        :raises ValueError: If *path* does not exist or is neither a file nor
+            a directory.
+        """
         if isinstance(path, str):
             path = pathlib.Path(path)
         if not path.exists():
@@ -1185,7 +1298,17 @@ class SevenZipFile(contextlib.AbstractContextManager):
         file: pathlib.Path | str,
         arcname: str | None = None,
     ) -> None:
-        """Write single target file into archive."""
+        """Add a single file to the archive.
+
+        Unlike :meth:`writeall`, directories are stored as a single entry
+        without their contents.
+
+        :param file: A file on disk.
+        :param arcname: The name to store *file* under in the archive.
+            Defaults to *file* with any leading slash or drive letter removed.
+        :raises ValueError: If *file* is not a ``str`` or
+            :class:`pathlib.Path`.
+        """
         if not isinstance(file, str) and not isinstance(file, pathlib.Path):
             raise ValueError("Unsupported file type.")
         if arcname is None:
@@ -1204,6 +1327,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
 
     def writef(self, bio: IO[Any], arcname: str) -> None:
+        """Add the contents of a binary file object to the archive.
+
+        :param bio: A binary file object, such as :class:`io.BytesIO` or a
+            file opened in ``'rb'`` mode.
+        :param arcname: The member name to store the data under.
+        :raises ValueError: If *arcname* is unsafe (absolute, or escaping the
+            archive root with ``..``), or *bio* is a text-mode or unsupported
+            object.
+        """
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
         return self._writef(bio, arcname)
@@ -1247,6 +1379,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         data: str | bytes | bytearray | memoryview,
         arcname: str,
     ) -> None:
+        """Add in-memory data to the archive as a member.
+
+        :param data: The member contents. A ``str`` is encoded as UTF-8.
+        :param arcname: The member name to store the data under.
+        :raises ValueError: If *arcname* is unsafe or *data* has an
+            unsupported type.
+        """
         if not check_archive_path(arcname):
             raise ValueError(f"Specified path is bad: {arcname}")
         return self._writestr(data, arcname)
@@ -1266,8 +1405,11 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise ValueError("Unsupported data type.")
 
     def close(self) -> None:
-        """Flush all the data into archive and close it.
-        When close py7zr start reading target and writing actual archive file.
+        """Finish pending work and close the archive.
+
+        In write modes this compresses any buffered data and writes the
+        archive header, so the archive is incomplete until :meth:`close` is
+        called. Leaving a ``with`` block calls it automatically.
         """
         if "r" in self.mode:
             if self.reporterd is not None:
@@ -1283,8 +1425,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self._var_release()
 
     def reset(self) -> None:
-        """
-        When read mode, it reset file pointer, decompress worker and decompressor
+        """Rewind a read-mode archive so it can be extracted again.
+
+        Resets the file position, the extraction worker and all
+        decompressors. Has no effect in write modes.
         """
         if self.mode == "r":
             self.fp.seek(self.afterheader)
@@ -1294,6 +1438,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     folder.decompressor = None
 
     def test(self) -> bool | None:
+        """Check the CRCs of the compressed (packed) streams.
+
+        This is fast because nothing is decompressed, but it only detects
+        damage to streams that carry a stored CRC. Use :meth:`testzip` for a
+        full check.
+
+        :return: ``True`` if all stored CRCs match, ``False`` if one does not,
+            or ``None`` when the archive stores no packed-stream CRCs.
+        """
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
         crcs: list[int] | None = self.header.main_streams.packinfo.crcs
@@ -1312,6 +1465,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         return True
 
     def testzip(self) -> str | None:
+        """Decompress every member and check its CRC, without writing files.
+
+        Named after :meth:`zipfile.ZipFile.testzip`.
+
+        :return: The name of the first member with a bad CRC, or ``None`` if
+            all members are intact.
+        """
         self.fp.seek(self.afterheader)
         self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
         for f in self.files:
@@ -1330,8 +1490,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
 # exported functions
 # --------------------
 def is_7zfile(file: SupportsReadAndSeek | IO[bytes] | str | os.PathLike[str]) -> bool:
-    """Quickly see if a file is a 7Z file by checking the magic number.
-    The file argument may be a filename or file-like object too.
+    """Return ``True`` if *file* is a 7z archive, based on its magic number.
+
+    :param file: A path, or a binary file object supporting ``read`` and
+        ``seek``.
+    :return: ``True`` for a 7z archive. ``False`` otherwise, including when
+        the path does not exist.
+    :raises TypeError: If *file* is neither a path nor a file object.
     """
     if hasattr(file, "read") and hasattr(file, "seek"):
         return SevenZipFile._check_7zfile(file)  # type: ignore
@@ -1354,8 +1519,23 @@ def is_7zfile(file: SupportsReadAndSeek | IO[bytes] | str | os.PathLike[str]) ->
 
 
 def unpack_7zarchive(archive, path, extra=None):
-    """
-    Function for registering with shutil.register_unpack_format().
+    """Extract a 7z archive; a helper for :func:`shutil.register_unpack_format`.
+
+    Register it once, then extract with :func:`shutil.unpack_archive`:
+
+    .. code-block:: python
+
+        import shutil
+        from py7zr import unpack_7zarchive
+
+        shutil.register_unpack_format("7zip", [".7z"], unpack_7zarchive)
+        shutil.unpack_archive("archive.7z", "extract_dir")
+
+    :param archive: Path of the archive to extract.
+    :param path: The directory to extract into.
+    :param extra: Unused; accepted for :mod:`shutil` compatibility.
+
+    Raises ``shutil.ReadError`` if *archive* is not a 7z file.
     """
     if not is_7zfile(archive):
         raise ReadError(f"{archive} is not a 7zip file.")
@@ -1364,8 +1544,25 @@ def unpack_7zarchive(archive, path, extra=None):
 
 
 def pack_7zarchive(base_name, base_dir, owner=None, group=None, dry_run=None, logger=None):
-    """
-    Function for registering with shutil.register_archive_format().
+    """Create a 7z archive; a helper for :func:`shutil.register_archive_format`.
+
+    Register it once, then create archives with :func:`shutil.make_archive`:
+
+    .. code-block:: python
+
+        import shutil
+        from py7zr import pack_7zarchive
+
+        shutil.register_archive_format("7zip", pack_7zarchive, description="7zip archive")
+        shutil.make_archive("archive", "7zip", "base_dir")
+
+    :param base_name: Archive path without the ``.7z`` suffix.
+    :param base_dir: The directory to archive.
+    :param owner: Unused; accepted for :mod:`shutil` compatibility.
+    :param group: Unused; accepted for :mod:`shutil` compatibility.
+    :param dry_run: When true, only return the archive name.
+    :param logger: An optional logger used in dry-run mode.
+    :return: The archive file name, ``base_name + ".7z"``.
     """
     target_name = f"{base_name}.7z"
     if dry_run:

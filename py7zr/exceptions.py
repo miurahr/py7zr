@@ -35,7 +35,7 @@ class ArchiveError(Exception):
 
 
 class Bad7zFile(ArchiveError):
-    pass
+    """Raised when a file is not a valid 7z archive or its headers are malformed."""
 
 
 class CrcError(ArchiveError):
@@ -69,15 +69,15 @@ class UnsupportedCompressionMethodError(ArchiveError):
 
 
 class DecompressionError(ArchiveError):
-    pass
+    """Raised when extraction fails, for example when a directory cannot be created."""
 
 
 class InternalError(ArchiveError):
-    pass
+    """Raised on an unexpected internal state; indicates a bug in py7zr."""
 
 
 class PasswordRequired(Exception):
-    pass
+    """Raised when reading or writing an encrypted archive without a password."""
 
 
 class DecompressionBombError(ArchiveError):
