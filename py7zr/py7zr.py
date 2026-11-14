@@ -538,7 +538,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         elif isinstance(file, io.IOBase):
             self._filePassed = True
             self.fp = file
-            self.filename = getattr(file, "name", None)
+            self.filename = getattr(file, "name", None)  # type: ignore
             self.mode = mode  # noqa
         else:
             raise TypeError(f"invalid file: {type(file)}")
@@ -699,6 +699,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         callback: ExtractCallback | None = None,
         recursive: bool | None = False,
         writer_factory: WriterFactory | None = None,
+        enable_symlink: bool = False,
     ) -> None:
         if callback is None:
             pass
@@ -767,7 +768,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
             elif f.is_socket:
                 pass  # TODO: implement me.
             elif f.is_symlink or f.is_junction:
-                self.worker.register_filelike(f.id, outfilename)
+                if enable_symlink:
+                    self.worker.register_filelike(f.id, outfilename)
+                else:
+                    # Archive has symlink or junction
+                    # this has security consequences.
+                    raise ValueError("Archive has symbolic link that is not explicitly enabled.")
             else:
                 self.worker.register_filelike(f.id, outfilename)
                 target_files.append((outfilename, f.file_properties()))
@@ -874,9 +880,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header.calccrc(header_len, header_crc)
         self.sig_header.write(self.fp)
 
-    def _writeall(self, path, arcname):
+    def _writeall(self, path, arcname, dereference: bool) -> None:
         try:
-            if path.is_symlink() and not self.dereference:
+            if path.is_symlink() and not dereference:
                 self.write(path, arcname)
             elif path.is_file():
                 self.write(path, arcname)
@@ -885,14 +891,14 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     self.write(path, arcname)
                 for nm in sorted(os.listdir(str(path))):
                     arc = os.path.join(arcname, nm) if arcname is not None else None
-                    self._writeall(path.joinpath(nm), arc)
+                    self._writeall(path.joinpath(nm), arc, dereference)
             else:
                 return  # pathlib ignores ELOOP and return False for is_*().
         except OSError as ose:
-            if self.dereference and ose.errno in [errno.ELOOP]:
+            if dereference and ose.errno in [errno.ELOOP]:
                 return  # ignore ELOOP here, this resulted to stop looped symlink reference.
-            elif self.dereference and sys.platform == "win32" and ose.errno in [errno.ENOENT]:
-                return  # ignore ENOENT which is happened when a case of ELOOP on windows.
+            elif dereference and sys.platform == "win32" and ose.errno in [errno.ENOENT]:
+                return  # ignore ENOENT which is happened when a case of ELOOP on Windows.
             else:
                 raise
 
@@ -1181,6 +1187,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         *,
         callback: ExtractCallback | None = None,
         factory: WriterFactory | None = None,
+        enable_symlink: bool = True,
     ) -> None:
         """Extract all members from the archive.
 
@@ -1203,7 +1210,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         :raises DecompressionBombError: If the extracted size exceeds
             ``max_extract_size``.
         """
-        self._extract(path=path, callback=callback, writer_factory=factory)
+        self._extract(path=path, callback=callback, writer_factory=factory, enable_symlink=enable_symlink)
 
     def extract(
         self,
@@ -1213,6 +1220,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         *,
         callback: ExtractCallback | None = None,
         factory: WriterFactory | None = None,
+        enable_symlink: bool = True,
     ) -> None:
         """Extract selected members from the archive.
 
@@ -1244,7 +1252,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         # This also matches the behavior of TarFile
         if targets is not None:
             targets = [remove_trailing_slash(target) for target in targets]
-        self._extract(path, targets, recursive=recursive, callback=callback, writer_factory=factory)
+        self._extract(
+            path, targets, recursive=recursive, callback=callback, writer_factory=factory, enable_symlink=enable_symlink
+        )
 
     def reporter(self, callback: ExtractCallback) -> None:
         """Forward progress events from the worker to *callback* (internal).
@@ -1280,6 +1290,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         path: pathlib.Path | str,
         arcname: str | None = None,
+        dereference: bool | None = None,
     ) -> None:
         """Add a file or a whole directory tree to the archive.
 
@@ -1294,8 +1305,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
             path = pathlib.Path(path)
         if not path.exists():
             raise ValueError("specified path does not exist.")
+        if dereference is None:
+            dereference = self.dereference
         if path.is_dir() or path.is_file():
-            self._writeall(path, arcname)
+            self._writeall(path, arcname, dereference)
         else:
             raise ValueError("specified path is not a directory or a file")
 
@@ -1303,6 +1316,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self,
         file: pathlib.Path | str,
         arcname: str | None = None,
+        dereference: bool | None = None,
     ) -> None:
         """Add a single file to the archive.
 
@@ -1326,11 +1340,13 @@ class SevenZipFile(contextlib.AbstractContextManager):
         else:
             path = file
         folder = self.header.initialize()
-        file_info = self._make_file_info(path, arcname, self.dereference)
+        if dereference is None:
+            dereference = self.dereference
+        file_info = self._make_file_info(path, arcname, dereference)
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        self.worker.archive(self.fp, self.files, folder, dereference=self.dereference)
+        self.worker.archive(self.fp, self.files, folder, dereference)
 
     def writef(self, bio: IO[Any], arcname: str) -> None:
         """Add the contents of a binary file object to the archive.
@@ -1373,7 +1389,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(file_info["emptystream"])
             self.files.append(file_info)
-            self.worker.archive(self.fp, self.files, folder, dereference=False)
+            self.worker.archive(self.fp, self.files, folder, False)
         else:
             file_info = self._make_file_info_from_name(bio, size, arcname)
             self.header.files_info.files.append(file_info)
@@ -1908,7 +1924,10 @@ class Worker:
 
     def writestr(self, fp: IO[bytes], f, folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
-        insize, foutsize, crc = compressor.compress(f.data(), fp)
+        fd: BinaryIO | None = f.data()
+        if fd is None:
+            return 0, 0
+        insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
     def flush_archive(self, fp, folder):
@@ -1927,7 +1946,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: IO[bytes], files, folder, dereference: bool=False) -> None:
+    def archive(self, fp: IO[bytes], files, folder, dereference: bool) -> None:
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
