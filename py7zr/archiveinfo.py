@@ -883,9 +883,10 @@ class FilesInfo:
 
     def _read_start_pos(self, fp: BinaryIO) -> None:
         defined = read_boolean(fp, len(self.files), checkall=True)
-        # NOTE: the "external" flag is currently ignored, should be 0x00
+        # External StartPos data is not supported.
         external = fp.read(1)
-        assert external == 0x00
+        if external != b"\x00":
+            raise Bad7zFile("Invalid StartPos external flag")
         for i, f in enumerate(self.files):
             f["startpos"] = read_real_uint64(fp)[0] if defined[i] else None
 
@@ -1056,13 +1057,15 @@ class Header:
             remaining = uncompressed_size
             folder_data = bytearray()
             while remaining > 0:
-                # Once the packed stream is exhausted the decompressor keeps
+                # Once the packed stream is exhausted, the decompressor keeps
                 # returning b"" forever, so bail out instead of spinning when an
                 # iteration makes no progress at either end.
-                before = (len(folder_data), decompressor.consumed)
-                folder_data += decompressor.decompress(fp, max_length=remaining)
-                remaining = uncompressed_size - len(folder_data)
-                if (len(folder_data), decompressor.consumed) == before:
+                before = decompressor.consumed
+                decompressed = decompressor.decompress(fp, max_length=remaining)
+                if decompressed:
+                    folder_data += decompressed
+                    remaining -= len(decompressed)
+                elif decompressor.consumed == before:
                     raise Bad7zFile("truncated or corrupted encoded header")
             self.size += compressed_size
             src_start += compressed_size

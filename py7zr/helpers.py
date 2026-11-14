@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 RELATIVE_PATH_MARKER = "./"
 
 
-def calculate_crc32(data: bytes, value: int = 0, blocksize: int = 1024 * 1024) -> int:
+def calculate_crc32(data: bytes | bytearray, value: int = 0, blocksize: int = 1024 * 1024) -> int:
     """Calculate CRC32 of strings with arbitrary lengths."""
     if len(data) <= blocksize:
         value = zlib.crc32(data, value)

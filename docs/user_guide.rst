@@ -24,7 +24,7 @@ using standard 'pip' command as like follows;
     $ pip install py7zr
 
 The py7zr depends on several external libraries. You should install these libraries with py7zr.
-There are `PyCryptodomex`_, `PyPPMd`_, `pybcj`_, `texttable`_, and `multivolumefile`_.
+There are `PyCryptodome`_, `PyPPMd`_, `pybcj`_, `texttable`_, and `multivolumefile`_.
 There are also dependency whether `Brotli`_ or `BrotliCFFI`_ depends on your python flavour.
 The library `backports.zstd`_ is a dependency for Python before 3.14.
 These packages are automatically installed when installing with ``pip`` command.
@@ -37,7 +37,7 @@ There are several dependencies to support algorithms and CLI expressions.
 ===================== ===============================
 Package               Purpose
 ===================== ===============================
-`PyCryptodomex`_      7zAES encryption
+`PyCryptodome`_      7zAES encryption
 `backports.zstd`      ZStandard compression for Python before 3.14
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
@@ -48,7 +48,7 @@ Package               Purpose
 `texttable`_          CLI formatter
 ===================== ===============================
 
-.. _`PyCryptodomex` : https://www.pycryptodome.org/en/latest/index.html
+.. _`PyCryptodome` : https://www.pycryptodome.org/en/latest/index.html
 .. _`backports.zstd` : https://pypi.org/project/backports.zstd
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/Brotli
