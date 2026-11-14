@@ -1924,7 +1924,7 @@ class Worker:
 
     def writestr(self, fp: IO[bytes], f, folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
-        fd: Optional[BinaryIO] = f.data()
+        fd: BinaryIO | None = f.data()
         if fd is None:
             return 0, 0
         insize, foutsize, crc = compressor.compress(fd, fp)
