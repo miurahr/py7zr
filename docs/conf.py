@@ -37,6 +37,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.extlinks',
     'sphinx.ext.graphviz',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx_a4doc',
 ]
@@ -57,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'py7zr'
-copyright = u'2019-2022, Hiroshi Miura'
+copyright = u'2019-2026, Hiroshi Miura'
 author = u'Hiroshi Miura'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -311,9 +312,12 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 #-- Options for extlink extension
-extlinks = {'issue': ('https://github.com/miurahr/aqtinstall/issues/%s',
+extlinks = {'issue': ('https://github.com/miurahr/py7zr/issues/%s',
                       'issue %s')}
 
 #-- Options for linkcheck
 linkcheck_ignore = [r'https://github.com/miurahr/py7zr/compare/.+',
                    ]
+
+#-- Options for intersphinx
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}

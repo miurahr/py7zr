@@ -20,7 +20,8 @@ The py7zr is written in the Python programming language. Python installation for
 various platforms with various ways. You need to install Python environment which
 support `pip` command. Venv/Virtualenv is recommended for development.
 
-We have a test suite with python 3.10, 3.11, 3.12, 3.13, 3.14, 3.14t, 3.15-dev and pypy3.11.
+We have a test suite with Python 3.10, 3.11, 3.12, 3.13, 3.14, 3.15,
+the free-threaded builds 3.14t and 3.15t, and PyPy 3.11.
 If you want to run all the test with these versions and variant on your local,
 you should install these versions. You can run test with CI environment on
 Github actions.
@@ -72,12 +73,32 @@ You should implemented a review feedback unless you strongly object to it.
 Code style
 ----------
 
-The py7zr uses the PEP8 code style. In addition to the standard PEP8, we have an extended
-guidelines
+The py7zr uses the PEP8 code style. In addition to the standard PEP8, we have extended
+guidelines, configured in ``pyproject.toml``:
 
-* line length should not exceed 125 characters.
+* Line length should not exceed 125 characters.
 
-* It also use MyPy static type check enforcement.
+* Code is formatted with `black` and linted with `ruff` (``tox -e check``).
+
+* Static type checking is enforced with MyPy (``tox -e mypy``).
+
+
+Documentation
+-------------
+
+Docstrings are the single source of truth for the API reference.
+:ref:`api_documentation` and :ref:`internal_classes` below are generated from them
+with Sphinx autodoc, so document behaviour in the docstring rather than in ``docs/*.rst``.
+
+* Write docstrings in reStructuredText with Sphinx field lists
+  (``:param:``, ``:return:``, ``:raises:``, ``:ivar:``).
+
+* Public methods without a docstring do not appear in the API reference.
+
+* Keep tutorials and longer examples in :ref:`user_guide` or :ref:`advanced_usage`,
+  and link to them from the docstring with ``:ref:``.
+
+Build the documentation locally with ``tox -e docs``.
 
 
 Security tests
@@ -270,12 +291,21 @@ Here is a callback interface class. ExtractCallback class is a concrete class us
 Classes details
 ================
 
-Here is a detailed interface documentation for implementer.
+Here is a detailed interface documentation for internal implementation classes.
+The public-facing API is documented in :ref:`api_documentation`.
+These sections cover internal classes used by contributors working on the library core
+and may change without notice.
 
-ArchiveFile Objects
--------------------
+py7zr module
+------------
 
-.. automodule:: py7zr.py7zr
+.. autoclass:: py7zr.py7zr.ArchiveFile
+   :members:
+
+.. autoclass:: py7zr.py7zr.ArchiveFileList
+   :members:
+
+.. autoclass:: py7zr.py7zr.Worker
    :members:
 
 
@@ -297,4 +327,18 @@ helpers module
 --------------
 
 .. automodule:: py7zr.helpers
+   :members:
+
+
+io module
+---------
+
+.. automodule:: py7zr.io
+   :members: MemIO, HashIO, HashIOFactory, Py7zBytesIO, BytesIOFactory, NullIO, NullIOFactory
+
+
+callbacks module
+----------------
+
+.. automodule:: py7zr.callbacks
    :members:

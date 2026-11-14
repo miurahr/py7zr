@@ -22,25 +22,49 @@ from abc import ABC, abstractmethod
 
 
 class Py7zIO(ABC):
+    """Abstract binary stream that receives one extracted archive member.
+
+    Objects of this type are created by a :class:`WriterFactory` passed as
+    ``factory`` to :meth:`py7zr.SevenZipFile.extract` or
+    :meth:`py7zr.SevenZipFile.extractall`. The interface is similar to
+    :class:`typing.BinaryIO` with an additional :meth:`size` method.
+
+    py7zr may extract members in worker threads, so implementations should
+    be thread-safe.
+    """
 
     @abstractmethod
     def write(self, s: bytes | bytearray) -> int:
+        """Receive the next chunk of the member's data.
+
+        Called repeatedly while the member is decompressed; append *s* to
+        whatever was written before.
+
+        :return: The number of bytes written.
+        """
         pass
 
     @abstractmethod
     def read(self, size: int | None = None) -> bytes:
+        """Return up to *size* bytes, or all remaining data when *size* is ``None``."""
         pass
 
     @abstractmethod
     def seek(self, offset: int, whence: int = 0) -> int:
+        """Change the stream position, as :meth:`io.IOBase.seek`.
+
+        :return: The new absolute position.
+        """
         pass
 
     @abstractmethod
     def flush(self) -> None:
+        """Flush buffered data, if any."""
         pass
 
     @abstractmethod
     def size(self) -> int:
+        """Return the number of bytes written so far."""
         pass
 
     def close(self) -> None:
@@ -106,10 +130,22 @@ class Py7zBytesIO(Py7zIO):
 
 
 class WriterFactory(ABC):
+    """Abstract factory that creates a :class:`Py7zIO` object for each extracted member.
+
+    Pass an instance as ``factory`` to :meth:`py7zr.SevenZipFile.extract` or
+    :meth:`py7zr.SevenZipFile.extractall` to receive member data in memory or
+    stream it elsewhere instead of writing files to disk.
+    See :ref:`advanced_usage` for examples.
+    """
 
     @abstractmethod
     def create(self, filename: str) -> Py7zIO:
-        """request writer which compatible with BinaryIO, such as BytesIO object."""
+        """Return a new :class:`Py7zIO` object that will receive the member *filename*.
+
+        :param filename: The member's output path, using ``/`` as separator.
+            Directories and special files are skipped, so this is only called
+            for regular files and symbolic links.
+        """
         pass
 
 
