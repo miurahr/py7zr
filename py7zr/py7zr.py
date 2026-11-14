@@ -444,8 +444,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
 
     * Deflate64 compression is not supported for writing archives.
     * Socket files stored in archives are not extracted.
-    * When duplicate file names exist in an archive, later entries
-      overwrite earlier ones.
+    * When duplicate file names exist in an archive, the first member
+      keeps its original name and subsequent duplicates receive
+      incrementing numeric suffixes, such as ``file.txt_0``.
     * Multiprocessing extraction is disabled for password-protected
       archives and when a file-like object is passed instead of a path.
     * Appending to a non-7z file falls back to creating a new archive.
