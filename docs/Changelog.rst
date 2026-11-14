@@ -23,6 +23,7 @@ Security
 --------
 - Fix arbitrary file write above the extraction directory via a symlink
   chain (incomplete fix of CVE-2026-23879, GHSA-jwx8-hv8g-gjjq).
+
   - ``canonical_path()`` cancelled ``..`` lexically before any symlink was
     resolved, so ``link/..`` was treated as the directory holding ``link``
     instead of the parent of its target. A chain of symlink members
@@ -35,6 +36,7 @@ Security
     cannot be rejected by name.
   - Archive member names containing a ``..`` component are now rejected
     outright.
+
 - Fix memory exhaustion when opening a crafted archive header (GHSA-6pr6-cqpq-x889).
 - Fix extraction hang on a crafted COPY stream (GHSA-v999-q5cj-95jg).
 

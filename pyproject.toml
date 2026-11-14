@@ -170,12 +170,13 @@ requires = ["tox>=4.19"]
 envlist = [
     "mypy",
     "check",
-    "pypy-3.10",
+    "pypy-3.11",
     "3.10",
     "3.11",
     "3.12",
     "3.13",
     "3.14",
+    "3.15",
     "docs",
     "mprof",
     "distcheck"

@@ -16,34 +16,25 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm, windows-11-arm]
-        python-version: [
-            "3.10",
-            "3.11",
-            "3.12",
-            "3.13",
-            "3.14",
-            "3.14t",
-            "3.15",
-            "3.15t",
-            "pypy-3.11",
-        ]
+        os: [ ubuntu-latest ]
+        python-version: ["3.14t", "3.15", "3.15t", "pypy-3.11" ]
         include:
+          - os: windows-latest
+            python-version: "3.11"
+          - os: windows-latest
+            python-version: "3.15"
+          - os: windows-latest
+            python-version: "3.15t"
           - os: macos-latest
-            python-version: "pypy-3.11"
+            python-version: "3.15"
           - os: macos-latest
-            python-version: "3.14"
-        exclude:
+            python-version: "3.15t"
+          - os: ubuntu-24.04-arm
+            python-version: "3.15"
+          - os: ubuntu-24.04-arm
+            python-version: "3.15t"
           - os: windows-11-arm
-            python-version: 'pypy-3.11'
-          - os: windows-11-arm
-            python-version: '3.10'
-          - os: windows-11-arm
-            python-version: '3.14'
-          - os: windows-11-arm
-            python-version: '3.14t'
-          - os: windows-11-arm
-            python-version: '3.15-dev'
+            python-version: "3.15"
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -72,13 +63,11 @@ jobs:
           Expand-Archive -LiteralPath $file -DestinationPath $env:GITHUB_WORKSPACE
           choco install graphviz
       - name: Install dependencies
-        run: |
-          pip install -U pip tox wheel setuptools setuptools_scm[toml]
-          pip install tox-gh-actions coveralls coverage[toml]
+        run: pip install tox setuptools setuptools_scm[toml] coveralls coverage[toml]
       - name: Test project with tox
         if: runner.os != 'Windows'
         run: |
-          tox
+          tox -e ${{ matrix.python-version }}
           coverage xml -o cobertura.xml
         env:
           PYTEST_ADDOPTS: "--cov-config=pyproject.toml --cov --cov-append --benchmark-skip"
@@ -86,7 +75,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           echo LIBARCHIVE="${env:LIBARCHIVE}"
-          tox
+          tox -e ${{ matrix.python-version }}
           coverage xml -o cobertura.xml
         env:
           LIBARCHIVE: "${{ github.workspace }}\\libarchive\\bin\\archive.dll"
@@ -114,6 +103,8 @@ jobs:
   test_slow_tests:
     name: Test slow cases
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: '3.14'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -121,8 +112,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
-          architecture: x64
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install system library(linux)
         run: |
           sudo apt-get update -q -y
@@ -130,9 +120,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip setuptools setuptools_scm[toml]
-          pip install tox tox-gh-actions
+          pip install tox
       - name: Test project with tox
-        run: tox
+        run: tox -e ${{ env.PYTHON_VERSION }}
         env:
           PYTEST_ADDOPTS: "--no-cov --run-slow -k extract_high_compression_rate"
 

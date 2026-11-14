@@ -37,8 +37,8 @@ There are several dependencies to support algorithms and CLI expressions.
 ===================== ===============================
 Package               Purpose
 ===================== ===============================
-`PyCryptodome`_      7zAES encryption
-`backports.zstd`      ZStandard compression for Python before 3.14
+`PyCryptodome`_       7zAES encryption
+`backports.zstd`_     ZStandard compression for Python before 3.14
 `PyPPMd`_             PPMd compression
 `Brotli`_             Brotli compression (CPython)
 `BrotliCFFI`_         Brotli compression (PyPy)
@@ -53,7 +53,7 @@ Package               Purpose
 .. _`PyPPMd` : https://pypi.org/project/pyppmd
 .. _`Brotli` : https://pypi.org/project/Brotli
 .. _`BrotliCFFI` : https://pypi.org/project/brotlicffi
-.. _`zipfile-deflate64` : https://github.com/brianhelba/zipfile-deflate64
+.. _`inflate64` : https://pypi.org/project/inflate64
 .. _`pybcj` : https://pypi.org/project/pybcj
 .. _`multivolumefile` : https://pypi.org/project/multivolumefile
 .. _`texttable` : https://pypi.org/project/texttable
@@ -271,6 +271,134 @@ following example do it for you.
     with multivolumefile.open('example.7z', mode='wb', volume_size=10240) as target_archive:
         with SevenZipFile(target_archive, 'w') as archive:
             archive.writeall(target, 'target')
+
+
+.. _compression_methods:
+
+Compression Methods
+===================
+
+'py7zr' supports algorithms and filters which `lzma module`_ and `liblzma`_ support.
+It also supports BZip2 and Deflate that are implemented in Python core libraries,
+and ZStandard, PPMd and Brotli with third party libraries.
+Deflate64 is supported with `inflate64`_ except on PyPy, and BCJ2 is not supported.
+
+.. _`lzma module`: https://docs.python.org/3/library/lzma.html
+.. _`liblzma`: https://tukaani.org/xz/
+
+Here is a table of algorithms.
+
++---+----------------------+------------+-----------------------------+
+|  #|   Category           | Algorithm  | Note                        |
++===+======================+============+=============================+
+|  1| - Compression        | LZMA2      |  default (LZMA2+BCJ)        |
++---+ - Decompression      +------------+-----------------------------+
+|  2|                      | LZMA       |                             |
++---+                      +------------+-----------------------------+
+|  3|                      | Bzip2      |                             |
++---+                      +------------+-----------------------------+
+|  4|                      | Deflate    |                             |
++---+                      +------------+-----------------------------+
+|  5|                      | COPY       |                             |
++---+                      +------------+-----------------------------+
+|  6|                      | PPMd       | depend on pyppmd            |
++---+                      +------------+-----------------------------+
+|  7|                      | ZStandard  | depend on backports.zstd    |
+|   |                      |            | for Python before 3.14      |
++---+                      +------------+-----------------------------+
+|  8|                      | Brotli     | depend on brotli,brotliCFFI |
++---+                      +------------+-----------------------------+
+|  9|                      | Deflate64  | depend on inflate64,        |
+|   |                      |            | not on PyPy                 |
++---+----------------------+------------+-----------------------------+
+| 10| - Filter             | BCJ        |(X86, ARM, PPC, ARMT, SPARC, |
+|   |                      |            | IA64)  depend on pybcj      |
++---+                      +------------+-----------------------------+
+| 11|                      | Delta      |                             |
++---+----------------------+------------+-----------------------------+
+| 12| - Encryption         | 7zAES      | depend on pycryptodome      |
+|   | - Decryption         |            |                             |
++---+----------------------+------------+-----------------------------+
+| 13| - Unsupported        | BCJ2       |                             |
++---+----------------------+------------+-----------------------------+
+
+- A feature handling symbolic link is basically compatible with 'p7zip' implementation,
+  but not work with original 7-zip because the original does not implement the feature.
+
+
+Possible filters value
+----------------------
+
+Here is a list of examples for possible ``filters`` values.
+You can use it when creating a :class:`~py7zr.SevenZipFile` object in write mode.
+The constants are listed in :ref:`api-constants`.
+
+.. code-block:: python
+
+    from py7zr import FILTER_LZMA, SevenZipFile
+
+    filters = [{'id': FILTER_LZMA}]
+    archive = SevenZipFile('target.7z', mode='w', filters=filters)
+
+
+LZMA2 + Delta
+    ``[{'id': FILTER_DELTA}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA2 + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA2 + ARM
+    ``[{'id': FILTER_ARM}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA}]``
+
+LZMA2
+    ``[{'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}]``
+
+LZMA
+    ``[{'id': FILTER_LZMA}]``
+
+BZip2
+    ``[{'id': FILTER_BZIP2}]``
+
+Deflate
+    ``[{'id': FILTER_DEFLATE}]``
+
+Deflate64
+    ``[{'id': FILTER_DEFLATE64}]``
+
+    ``FILTER_DEFLATE64`` is not exported from the ``py7zr`` package; import it with
+    ``from py7zr.properties import FILTER_DEFLATE64``.
+
+ZStandard
+    ``[{'id': FILTER_ZSTD, 'level': 3}]``
+
+PPMd
+    ``[{'id': FILTER_PPMD, 'order': 6, 'mem': 24}]``
+
+    ``[{'id': FILTER_PPMD, 'order': 6, 'mem': "16m"}]``
+
+Brotli
+    ``[{'id': FILTER_BROTLI, 'level': 11}]``
+
+7zAES + LZMA2 + Delta
+    ``[{'id': FILTER_DELTA}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + LZMA2 + BCJ
+    ``[{'id': FILTER_X86}, {'id': FILTER_LZMA2, 'preset': PRESET_DEFAULT}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + LZMA
+    ``[{'id': FILTER_LZMA}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + Deflate
+    ``[{'id': FILTER_DEFLATE}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + BZip2
+    ``[{'id': FILTER_BZIP2}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
+
+7zAES + ZStandard
+    ``[{'id': FILTER_ZSTD}, {'id': FILTER_CRYPTO_AES256_SHA256}]``
 
 
 Presentation material
