@@ -547,8 +547,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         try:
             if mode == "r":
                 self._real_get_contents(password)
-                self.fp.seek(self.afterheader)  # seek into start of payload and prepare worker to extract
-                self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
+                self.fp.seek(self.pack_data_start)  # seek into start of payload and prepare worker to extract
+                self.worker = Worker(self.files, self.pack_data_start, self.header, self.mp)
             elif mode == "w":
                 self._prepare_write(filters, password)
             elif mode == "x":
@@ -598,9 +598,15 @@ class SevenZipFile(contextlib.AbstractContextManager):
             raise Bad7zFile("invalid header data")
         header = Header.retrieve(self.fp, buffer, self.afterheader, password)  # type: ignore[arg-type]
         if header is None:
+            self.pack_data_start = self.afterheader
             return
         header.size += 32 + self.sig_header.nextheadersize
         self.header = header
+        # Calculate pack data start position once
+        if self.header.main_streams is not None:
+            self.pack_data_start = self.afterheader + self.header.main_streams.packinfo.packpos
+        else:
+            self.pack_data_start = self.afterheader
         buffer.close()
         self.files = ArchiveFileList()
         if getattr(self.header, "files_info", None) is None:
@@ -625,7 +631,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             unpacksizes = [0]
 
         pstat = self.ParseStatus()
-        pstat.src_pos = self.afterheader
+        pstat.src_pos = self.pack_data_start
         file_in_solid = 0
 
         for file_id, file_info in enumerate(self.header.files_info.files):
@@ -827,9 +833,9 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.filters = filters
         self.header.password = password
         if self.header.main_streams is not None:
-            pos = self.afterheader + self.header.main_streams.packinfo.packpositions[-1]
+            pos = self.pack_data_start + self.header.main_streams.packinfo.packpositions[-1]
         else:
-            pos = self.afterheader
+            pos = self.pack_data_start
         self.fp.seek(pos)
         self.worker = Worker(self.files, pos, self.header, self.mp)
 
@@ -844,9 +850,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.sig_header = SignatureHeader()
         self.sig_header._write_skeleton(self.fp)
         self.afterheader = self.fp.tell()
+        self.pack_data_start = self.afterheader
         self.header = Header.build_header(filters, password)
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
+        self.fp.seek(self.pack_data_start)
+        self.worker = Worker(self.files, self.pack_data_start, self.header, self.mp)
 
     def _write_flush(self):
         if self.header is not None:
@@ -1430,8 +1437,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         decompressors. Has no effect in write modes.
         """
         if self.mode == "r":
-            self.fp.seek(self.afterheader)
-            self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
+            self.fp.seek(self.pack_data_start)
+            self.worker = Worker(self.files, self.pack_data_start, self.header, self.mp)
             if self.header.main_streams is not None and self.header.main_streams.unpackinfo.numfolders > 0:
                 for i, folder in enumerate(self.header.main_streams.unpackinfo.folders):
                     folder.decompressor = None
@@ -1446,12 +1453,12 @@ class SevenZipFile(contextlib.AbstractContextManager):
         :return: ``True`` if all stored CRCs match, ``False`` if one does not,
             or ``None`` when the archive stores no packed-stream CRCs.
         """
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
+        self.fp.seek(self.pack_data_start)
+        self.worker = Worker(self.files, self.pack_data_start, self.header, self.mp)
         crcs: list[int] | None = self.header.main_streams.packinfo.crcs
         if crcs is None or len(crcs) == 0:
             return None
-        packpos = self.afterheader + self.header.main_streams.packinfo.packpos
+        packpos = self.pack_data_start
         packsizes = self.header.main_streams.packinfo.packsizes
         digestdefined = self.header.main_streams.packinfo.digestdefined
         j = 0
@@ -1471,8 +1478,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         :return: The name of the first member with a bad CRC, or ``None`` if
             all members are intact.
         """
-        self.fp.seek(self.afterheader)
-        self.worker = Worker(self.files, self.afterheader, self.header, self.mp)
+        self.fp.seek(self.pack_data_start)
+        self.worker = Worker(self.files, self.pack_data_start, self.header, self.mp)
         for f in self.files:
             self.worker.register_filelike(f.id, None)
         try:
