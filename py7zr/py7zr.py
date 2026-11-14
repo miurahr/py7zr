@@ -2,7 +2,7 @@
 #
 # p7zr library
 #
-# Copyright (c) 2019-2024 Hiroshi Miura <miurahr@linux.com>
+# Copyright (c) 2019-2026 Hiroshi Miura <miurahr@linux.com>
 # Copyright (c) 2004-2015 by Joachim Bauch, mail@joachim-bauch.de
 # 7-Zip Copyright (C) 1999-2010 Igor Pavlov
 # LZMA SDK Copyright (C) 1999-2010 Igor Pavlov
@@ -44,7 +44,7 @@ from dataclasses import dataclass
 from multiprocessing import Process
 from shutil import ReadError
 from threading import Thread
-from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, TypedDict
+from typing import IO, TYPE_CHECKING, Any, BinaryIO, Protocol, Tuple, TypedDict
 
 import multivolumefile
 
@@ -482,7 +482,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         mode: str = "r",
         *,
         filters: list[dict[str, int]] | None = None,
-        dereference=False,
+        dereference: bool = False,
         password: str | None = None,
         header_encryption: bool = False,
         blocksize: int | None = None,
@@ -1330,7 +1330,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
         self.header.files_info.files.append(file_info)
         self.header.files_info.emptyfiles.append(file_info["emptystream"])
         self.files.append(file_info)
-        self.worker.archive(self.fp, self.files, folder, deref=self.dereference)
+        self.worker.archive(self.fp, self.files, folder, dereference=self.dereference)
 
     def writef(self, bio: IO[Any], arcname: str) -> None:
         """Add the contents of a binary file object to the archive.
@@ -1373,7 +1373,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
             self.header.files_info.files.append(file_info)
             self.header.files_info.emptyfiles.append(file_info["emptystream"])
             self.files.append(file_info)
-            self.worker.archive(self.fp, self.files, folder, deref=False)
+            self.worker.archive(self.fp, self.files, folder, dereference=False)
         else:
             file_info = self._make_file_info_from_name(bio, size, arcname)
             self.header.files_info.files.append(file_info)
@@ -1880,7 +1880,7 @@ class Worker:
             member = linkname
         return member
 
-    def _after_write(self, insize, foutsize, crc):
+    def _after_write(self, insize: int, foutsize: int, crc: int) -> Tuple[int, int]:
         self.header.main_streams.substreamsinfo.digestsdefined.append(True)
         self.header.main_streams.substreamsinfo.digests.append(crc)
         if self.header.main_streams.substreamsinfo.unpacksizes is None:
@@ -1906,7 +1906,7 @@ class Worker:
                 insize, foutsize, crc = compressor.compress(fd, fp)
         return self._after_write(insize, foutsize, crc)
 
-    def writestr(self, fp: IO[bytes], f, folder):
+    def writestr(self, fp: IO[bytes], f, folder) -> Tuple[int, int]:
         compressor = folder.get_compressor()
         insize, foutsize, crc = compressor.compress(f.data(), fp)
         return self._after_write(insize, foutsize, crc)
@@ -1927,7 +1927,7 @@ class Worker:
         self.header.main_streams.packinfo.packsizes.append(compressor.packsize)
         folder.unpacksizes = compressor.unpacksizes
 
-    def archive(self, fp: IO[bytes], files, folder, deref=False):
+    def archive(self, fp: IO[bytes], files, folder, dereference: bool=False) -> None:
         """Run archive task for specified 7zip folder."""
         f = files[self.current_file_index]
         if f.has_strdata():
@@ -1935,8 +1935,8 @@ class Worker:
             self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
             self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
-        elif (f.is_symlink and not deref) or not f.emptystream:
-            foutsize, crc = self.write(fp, f, (f.is_symlink and not deref), folder)
+        elif (f.is_symlink and not dereference) or not f.emptystream:
+            foutsize, crc = self.write(fp, f, (f.is_symlink and not dereference), folder)
             self.header.files_info.files[self.current_file_index]["maxsize"] = foutsize
             self.header.files_info.files[self.current_file_index]["digest"] = crc
             self.last_file_index = self.current_file_index
