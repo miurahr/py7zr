@@ -474,7 +474,6 @@ class SevenZipFile(contextlib.AbstractContextManager):
       incrementing numeric suffixes, such as ``file.txt_0``.
     * Multiprocessing extraction is disabled for password-protected
       archives and when a file-like object is passed instead of a path.
-    * Appending to a non-7z file falls back to creating a new archive.
     """
 
     def __init__(
