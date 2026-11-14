@@ -63,13 +63,17 @@ from py7zr.properties import (
     get_default_blocksize,
 )
 
-try:
-    import brotli  # type: ignore  # noqa
-except ImportError:
+if sys.implementation.name == "cpython":
+    try:
+        import brotli  # type: ignore  # noqa
+    except ImportError:
+        brotli = None
+else:
     try:
         import brotlicffi as brotli  # type: ignore  # noqa
     except ImportError:
         brotli = None
+
 brotli_major = 1
 brotli_minor = 0
 
