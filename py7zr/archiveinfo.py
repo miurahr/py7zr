@@ -1335,7 +1335,7 @@ class SignatureHeader:
     the header database. It is the first section read when opening an archive.
 
     :ivar version: Tuple of major and minor version bytes. Currently
-        ``(b'\\x00', b'\\x04')`` for 7z format version 0.4.
+        version 0.4 (major=0, minor=4).
     :ivar startheadercrc: CRC-32 of the next header offset, size, and CRC
         fields, used to verify the signature header integrity.
     :ivar nextheaderofs: Offset from the end of the signature header to the
