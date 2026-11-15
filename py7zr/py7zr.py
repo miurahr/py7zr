@@ -68,6 +68,7 @@ from py7zr.helpers import (
     filetime_to_dt,
     get_sanitized_output_path,
     is_path_valid,
+    is_root_member_name,
     readlink,
     remove_trailing_slash,
 )
@@ -736,6 +737,10 @@ class SevenZipFile(contextlib.AbstractContextManager):
                 if f.filename not in targets and not any([f.filename.startswith(target) for target in targets]):
                     self.worker.register_filelike(f.id, None)
                     continue
+            if f.is_directory and is_root_member_name(f.filename):
+                # The entry for the extraction directory itself, e.g. '.' from 'bsdtar -C dir .'.
+                # It already exists, so there is nothing to create.
+                continue
 
             # When archive has a multiple files which have same name
             # To guarantee order of archive, multi-thread decompression becomes off.
