@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 =============
 
+Fixed
+-----
+- Recursive extraction selects only the requested paths and their descendants,
+  excluding sibling paths that share the same name prefix.
+
 Changed
 -------
 - Switch the 7zAES crypto dependency from ``pycryptodomex`` (``Cryptodome``
