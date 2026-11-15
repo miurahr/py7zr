@@ -380,6 +380,14 @@ def is_relative_to(my: pathlib.Path, *other) -> bool:
     return True
 
 
+def is_root_member_name(fname: str) -> bool:
+    """
+    Return True when a member name refers to the extraction directory itself,
+    such as the './' entry stored by 'bsdtar -C dir .' (read back as '.').
+    """
+    return not [p for p in pathlib.PurePosixPath(fname).parts if p != "/"]
+
+
 def _sanitize_member_name(fname: str) -> str:
     """
     Normalize an archive member name and reject names that can never be extracted

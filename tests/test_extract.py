@@ -772,6 +772,38 @@ def test_extract_root_path_arcname(tmp_path):
 
 
 @pytest.mark.files
+def test_extract_dot_root_entry(tmp_path):
+    # Made with 'bsdtar --format 7zip -cf bsdtar_dot_root.7z -C dir .', which stores
+    # a './' entry for the top directory itself next to './test1.txt' and so on.
+    filename_7z = testdata_path.joinpath("bsdtar_dot_root.7z")
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        assert sorted(archive.getnames()) == [".", "./sub", "./sub/test2.txt", "./test1.txt"]
+        archive.extractall(path=tmp_path)
+    assert sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*")) == [
+        "sub",
+        "sub/test2.txt",
+        "test1.txt",
+    ]
+    assert tmp_path.joinpath("test1.txt").read_bytes() == b"This is a test\n"
+    assert tmp_path.joinpath("sub", "test2.txt").read_bytes() == b"This is another test\n"
+
+    with py7zr.SevenZipFile(filename_7z, "r") as archive:
+        factory = py7zr.io.BytesIOFactory(64)
+        archive.extractall(factory=factory)
+    assert sorted(factory.products.keys()) == ["sub/test2.txt", "test1.txt"]
+    assert factory.products["test1.txt"].read() == b"This is a test\n"
+
+    # Only a directory entry is skipped; a regular file named '.' is still refused.
+    dotfile_7z = tmp_path.joinpath("dotfile", "dotfile.7z")
+    dotfile_7z.parent.mkdir()
+    with py7zr.SevenZipFile(dotfile_7z, "w") as archive:
+        archive._writestr(b"data", ".")
+    with py7zr.SevenZipFile(dotfile_7z, "r") as archive:
+        with pytest.raises(py7zr.exceptions.Bad7zFile):
+            archive.extractall(path=tmp_path.joinpath("dotfile", "out"))
+
+
+@pytest.mark.files
 def test_extract_target_parent_folder(tmp_path):
     target_path = pathlib.Path(os.path.relpath(tmp_path, os.getcwd()))
     f = "solid.7z"
