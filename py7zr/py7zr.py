@@ -733,7 +733,7 @@ class SevenZipFile(contextlib.AbstractContextManager):
                     self.worker.register_filelike(f.id, None)
                     continue
             elif targets is not None and recursive is True:
-                if f.filename not in targets and not any([f.filename.startswith(target) for target in targets]):
+                if f.filename not in targets and not any(f.filename.startswith(target + "/") for target in targets):
                     self.worker.register_filelike(f.id, None)
                     continue
 
@@ -1225,9 +1225,8 @@ class SevenZipFile(contextlib.AbstractContextManager):
         :param targets: A collection (list or set) of member names to extract,
             or ``None`` to extract everything. Trailing slashes are ignored.
             For a single member pass ``["name"]``, not a bare string.
-        :param recursive: When ``True``, also extract every member whose name
-            starts with one of the *targets*, so a directory name selects its
-            whole subtree.
+        :param recursive: When ``True``, also extract descendants of the
+            *targets*, so a directory name selects its whole subtree.
         :param callback: An optional
             :class:`py7zr.callbacks.ExtractCallback` instance that receives
             progress reports.

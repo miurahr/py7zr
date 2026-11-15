@@ -227,6 +227,50 @@ def test_py7zr_extract_specified_file(tmp_path):
 
 
 @pytest.mark.api
+@pytest.mark.parametrize("target", ["scripts", "scripts/", "scripts/keep.txt"])
+@pytest.mark.parametrize("use_factory", [False, True])
+def test_recursive_extract_respects_path_boundaries(tmp_path, target, use_factory):
+    contents = {
+        "scripts/keep.txt": b"keep",
+        "scripts/nested/deep.txt": b"deep",
+        "scripts/keep.txt.bak": b"backup file",
+        "scripts-backup/other.txt": b"sibling directory",
+        "scripts.txt": b"sibling file",
+    }
+    source = BytesIO()
+    with py7zr.SevenZipFile(source, "w") as archive:
+        for name, data in contents.items():
+            archive.writestr(data, name)
+    source.seek(0)
+    expected = {"scripts/keep.txt": b"keep"}
+    if target in ("scripts", "scripts/"):
+        expected.update(
+            {
+                "scripts/nested/deep.txt": b"deep",
+                "scripts/keep.txt.bak": b"backup file",
+            }
+        )
+
+    destination = tmp_path / "extracted"
+    factory = py7zr.io.BytesIOFactory(limit=100) if use_factory else None
+    with py7zr.SevenZipFile(source) as archive:
+        archive.extract(
+            path=None if use_factory else destination,
+            targets=[target],
+            recursive=True,
+            factory=factory,
+        )
+
+    if factory is not None:
+        actual = {name: product.read() for name, product in factory.products.items()}
+    else:
+        actual = {
+            path.relative_to(destination).as_posix(): path.read_bytes() for path in destination.rglob("*") if path.is_file()
+        }
+    assert actual == expected
+
+
+@pytest.mark.api
 def test_py7zr_extract_specified_file_with_trailing_slash(tmp_path):
     archive = py7zr.SevenZipFile(open(os.path.join(testdata_path, "test_1.7z"), "rb"))
     expected = [
