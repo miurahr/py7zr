@@ -755,7 +755,11 @@ class SevenZipDecompressor:
             if filter_id == FILTER_LZMA:
                 lzma1 = True
             if properties is not None:
-                filters[:0] = [lzma._decode_filter_properties(filter_id, properties)]  # type: ignore
+                decoded = lzma._decode_filter_properties(filter_id, properties)  # type: ignore
+                if filter_id == FILTER_LZMA2 and 0 < unpacksize < decoded["dict_size"]:
+                    # Match distances cannot exceed the total unpacked size.
+                    decoded["dict_size"] = max(4096, unpacksize)
+                filters[:0] = [decoded]
             else:
                 filters[:0] = [{"id": filter_id}]
         if lzma1:
