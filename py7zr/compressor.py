@@ -588,6 +588,10 @@ class LZMA1Decompressor(ISevenZipDecompressor):
     def decompress(self, data: bytes | bytearray | memoryview, max_length: int = -1) -> bytes:
         return self._decompressor.decompress(data, max_length)
 
+    @property
+    def needs_input(self) -> bool:
+        return self._decompressor.needs_input
+
 
 class SevenZipDecompressor:
     """Main decompressor object which is properly configured and bind to each 7zip folder.
@@ -695,6 +699,9 @@ class SevenZipDecompressor:
         #  size to consume for target file is smaller one from
         #    rest_size - unused_s
         #    block_size - unused_s
+        #  with a single decoder, skip the read while it still holds unconsumed input
+        if len(self.chain) == 1 and not getattr(self.chain[0], "needs_input", True):
+            return b""
         rest_size = self.input_size - self.consumed
         unused_s = len(self._unused)
         read_size = min(rest_size - unused_s, self.block_size - unused_s)
@@ -724,6 +731,11 @@ class SevenZipDecompressor:
                     self._unused = bytearray()
                 else:
                     tmp = self._decompress(data, max_length)
+                if not tmp and not data:
+                    # The decoder had no buffered output left, so read packed data now.
+                    data = self._read_data(fp)
+                    if data:
+                        tmp = self._decompress(data, max_length)
                 if current_buf_len + len(tmp) <= max_length:
                     res = self._buf[self._pos :] + tmp
                     self._buf = bytearray()

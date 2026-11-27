@@ -3,8 +3,10 @@ import binascii
 import ctypes
 import hashlib
 import io
+import lzma
 import os
 import pathlib
+import random
 import shutil
 import subprocess
 import sys
@@ -777,3 +779,78 @@ def test_extract_target_parent_folder(tmp_path):
     f = "solid.7z"
     archive = py7zr.SevenZipFile(testdata_path.joinpath(f).open(mode="rb"))
     check_archive(archive, target_path, False)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "filters",
+    [
+        [{"id": py7zr.FILTER_LZMA2, "preset": 1}],
+        [{"id": py7zr.FILTER_LZMA, "preset": 1}],
+    ],
+    ids=["lzma2", "lzma"],
+)
+def test_extract_solid_does_not_read_ahead_of_decoder(tmp_path, monkeypatch, filters):
+    block_size = 64 * 1024
+    monkeypatch.setattr(py7zr.compressor, "get_default_blocksize", lambda: block_size)
+    path = tmp_path.joinpath("solid_random.7z")
+    rnd = random.Random(626)
+    with py7zr.SevenZipFile(path, "w", filters=filters) as archive:
+        for i in range(64):
+            archive.writestr(rnd.randbytes(16 * 1024), f"member{i:04d}.bin")
+    written = 0
+    max_ahead = 0
+
+    class TrackingIO(py7zr.io.NullIO):
+        def write(self, data):
+            nonlocal written, max_ahead
+            written += len(data)
+            max_ahead = max(max_ahead, folder.decompressor.consumed - written)
+            return len(data)
+
+    class TrackingFactory(py7zr.io.WriterFactory):
+        def create(self, filename):
+            return TrackingIO()
+
+    with py7zr.SevenZipFile(path, "r") as archive:
+        folder = archive.header.main_streams.unpackinfo.folders[0]
+        archive.extractall(factory=TrackingFactory())
+    assert written == 64 * 16 * 1024
+    assert max_ahead <= 2 * block_size
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("filter_id", [py7zr.FILTER_LZMA2, py7zr.FILTER_LZMA], ids=["lzma2", "lzma"])
+def test_extract_solid_member_ending_at_read_boundary(tmp_path, monkeypatch, filter_id):
+    block_size = 64 * 1024
+    monkeypatch.setattr(py7zr.compressor, "get_default_blocksize", lambda: block_size)
+    filters = [{"id": filter_id, "preset": 1}]
+    data = random.Random(626).randbytes(4 * block_size)
+    packed = lzma.compress(data, format=lzma.FORMAT_RAW, filters=filters)
+    # first.bin ends where the decoder runs out of the first block of packed input.
+    split = len(lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters).decompress(packed[:block_size]))
+    path = tmp_path.joinpath("boundary.7z")
+    with py7zr.SevenZipFile(path, "w", filters=filters) as archive:
+        archive.writestr(data[:split], "first.bin")
+        archive.writestr(data[split:], "second.bin")
+    with py7zr.SevenZipFile(path, "r") as archive:
+        archive.extractall(path=tmp_path)
+    assert tmp_path.joinpath("first.bin").read_bytes() == data[:split]
+    assert tmp_path.joinpath("second.bin").read_bytes() == data[split:]
+
+
+@pytest.mark.unit
+def test_extract_solid_bcj_lzma1_small_members(tmp_path, monkeypatch):
+    monkeypatch.setattr(py7zr.compressor, "get_default_blocksize", lambda: 64 * 1024)
+    monkeypatch.setattr(py7zr.py7zr, "get_memory_limit", lambda: 65530)
+    filters = [{"id": py7zr.FILTER_X86}, {"id": py7zr.FILTER_LZMA, "preset": 1}]
+    rnd = random.Random(626)
+    members = {f"member{i}.bin": rnd.randbytes(size) for i, size in enumerate([1, 250000, 3, 5, 100000])}
+    path = tmp_path.joinpath("bcj_lzma1.7z")
+    with py7zr.SevenZipFile(path, "w", filters=filters) as archive:
+        for name, data in members.items():
+            archive.writestr(data, name)
+    with py7zr.SevenZipFile(path, "r") as archive:
+        archive.extractall(path=tmp_path)
+    for name, data in members.items():
+        assert tmp_path.joinpath(name).read_bytes() == data
