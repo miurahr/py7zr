@@ -744,6 +744,9 @@ class SevenZipDecompressor:
                     res = self._buf[self._pos :] + tmp[: max_length - current_buf_len]
                     self._buf = bytearray(tmp[max_length - current_buf_len :])
                     self._pos = 0
+        if len(self.chain) == 1 and self._unpacked[0] >= self._unpacksizes[0] and self._pos >= len(self._buf):
+            # all output is delivered, so read the rest of the packed input
+            self.consumed += len(fp.read(min(self.input_size - self.consumed, self.block_size)))
         self.digest = calculate_crc32(res, self.digest)
         return res
 

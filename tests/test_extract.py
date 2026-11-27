@@ -854,3 +854,38 @@ def test_extract_solid_bcj_lzma1_small_members(tmp_path, monkeypatch):
         archive.extractall(path=tmp_path)
     for name, data in members.items():
         assert tmp_path.joinpath(name).read_bytes() == data
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("corrupt_crc", [False, True], ids=["valid_crc", "bad_crc"])
+@pytest.mark.parametrize("block_size", [64 * 1024, 32 * 1024], ids=["one_block", "two_blocks"])
+def test_extract_solid_reads_packed_tail_for_folder_crc(tmp_path, monkeypatch, block_size, corrupt_crc):
+    monkeypatch.setattr(py7zr.compressor, "get_default_blocksize", lambda: block_size)
+    monkeypatch.setattr(py7zr.py7zr, "get_memory_limit", lambda: block_size)
+    # Raw LZMA2: one uncompressed chunk of 65533 bytes plus the end marker, 1 byte more than whole blocks.
+    packed = b"\x01\xff\xfc" + b"A" * 65533 + b"\x00"
+    assert len(packed) % block_size == 1
+    folder_crc = binascii.crc32(b"A" * 65533) ^ (0xFFFFFFFF if corrupt_crc else 0)
+    # One folder with a folder CRC, two members of 1 and 65532 bytes without member CRCs.
+    header = (
+        b"\x01\x04\x06\x00\x01\x09\xc1\x01\x00\x00"
+        + b"\x07\x0b\x01\x00\x01\x21\x21\x01\x18\x0c\xc0\xfd\xff"
+        + b"\x0a\x01"
+        + folder_crc.to_bytes(4, "little")
+        + b"\x00\x08\x0d\x02\x09\x01\x00\x00"
+        + b"\x05\x02\x11\x09\x00a\x00\x00\x00b\x00\x00\x00\x00\x00"
+    )
+    next_header = len(packed).to_bytes(8, "little") + len(header).to_bytes(8, "little")
+    next_header += binascii.crc32(header).to_bytes(4, "little")
+    start_header = b"\x00\x04" + binascii.crc32(next_header).to_bytes(4, "little") + next_header
+    path = tmp_path.joinpath("folder_crc_only.7z")
+    path.write_bytes(b"7z\xbc\xaf\x27\x1c" + start_header + packed + header)
+    with py7zr.SevenZipFile(path, "r") as archive:
+        assert [f.crc32 for f in archive.files] == [None, None]
+        if corrupt_crc:
+            with pytest.raises(CrcError):
+                archive.extractall(path=tmp_path)
+        else:
+            archive.extractall(path=tmp_path)
+            assert tmp_path.joinpath("a").read_bytes() == b"A"
+            assert tmp_path.joinpath("b").read_bytes() == b"A" * 65532
